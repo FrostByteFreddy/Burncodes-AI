@@ -1,0 +1,15 @@
+flask
+flask-cors
+langchain
+langchain-community
+langchain-google-genai
+python-dotenv
+nest_asyncio
+crawl4ai
+chromadb
+pypdf
+docx2txt
+unstructured
+python-magic
+requests
+httpx
