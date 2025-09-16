@@ -49,11 +49,11 @@ const formData = ref({
 })
 
 const setFormData = () => {
-    if (authStore.user && authStore.user.profile) {
+    if (authStore.user && authStore.user.user_metadata) {
         formData.value = {
-            first_name: authStore.user.profile.first_name,
-            last_name: authStore.user.profile.last_name,
-            phone_number: authStore.user.profile.phone_number,
+            first_name: authStore.user.user_metadata.first_name,
+            last_name: authStore.user.user_metadata.last_name,
+            phone_number: authStore.user.user_metadata.phone_number,
         }
     }
 }

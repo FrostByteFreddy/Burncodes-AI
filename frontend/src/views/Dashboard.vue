@@ -44,16 +44,26 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useTenantsStore } from '../stores/tenants'
+import { useAuthStore } from '../stores/auth'
 import { useRouter } from 'vue-router'
 
 const tenantsStore = useTenantsStore()
+const authStore = useAuthStore()
 const router = useRouter()
 const showCreateModal = ref(false) // For a future modal implementation
 
 onMounted(() => {
-  tenantsStore.fetchTenants()
+  if (authStore.user) {
+    tenantsStore.fetchTenants()
+  }
+})
+
+watch(() => authStore.user, (newUser) => {
+  if (newUser) {
+    tenantsStore.fetchTenants()
+  }
 })
 
 const handleDelete = async (id) => {

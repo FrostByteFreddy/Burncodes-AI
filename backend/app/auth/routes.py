@@ -1,6 +1,8 @@
+import os
 from flask import Blueprint, request, jsonify
 from app.database.supabase_client import supabase
 from app.auth.decorators import token_required
+from supabase import create_client, Client
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -16,7 +18,7 @@ def signup():
         return jsonify({"error": "Email and password are required"}), 400
 
     try:
-        # Sign up the user
+        # Sign up the user with metadata
         response = supabase.auth.sign_up({
             "email": email,
             "password": password,
@@ -27,22 +29,9 @@ def signup():
                 }
             }
         })
-
-        # The user object is available in response.user
-        new_user = response.user
-        if new_user:
-            # Create a corresponding profile in the 'profiles' table
-            profile_data = {
-                "id": new_user.id,
-                "email": new_user.email,
-                "first_name": first_name,
-                "last_name": last_name
-            }
-            supabase.table('profiles').insert(profile_data).execute()
-
+        # The profile table is gone, user data is stored in auth.users.
         return jsonify({"message": "Signup successful! Please check your email to confirm your account."}), 201
     except Exception as e:
-        # Attempt to parse Supabase-specific errors
         error_message = str(e)
         if "User already registered" in error_message:
             return jsonify({"error": "User with this email already exists."}), 409
@@ -75,35 +64,40 @@ def login():
 @auth_bp.route('/user', methods=['GET'])
 @token_required
 def get_user(current_user):
-    try:
-        # The user object from the token doesn't contain profile data.
-        # We need to fetch it from the 'profiles' table.
-        profile = supabase.table('profiles').select("*").eq('id', current_user.id).single().execute()
-        return jsonify(profile.data), 200
-    except Exception as e:
-        return jsonify({"error": "Could not retrieve profile", "details": str(e)}), 500
+    # The user object from the decorator has everything we need.
+    # Supabase user object structure has metadata in `user_metadata`.
+    return jsonify({
+        "id": current_user.id,
+        "email": current_user.email,
+        "user_metadata": current_user.user_metadata
+    }), 200
 
 
 @auth_bp.route('/user', methods=['PUT'])
 @token_required
 def update_user(current_user):
     data = request.get_json()
-    update_data = {
-        "first_name": data.get('first_name'),
-        "last_name": data.get('last_name'),
-        "phone_number": data.get('phone_number')
-    }
-    # Filter out any None values so we only update provided fields
-    update_data = {k: v for k, v in update_data.items() if v is not None}
 
-    if not update_data:
-        return jsonify({"error": "No update information provided"}), 400
+    # Prepare the metadata to update
+    user_metadata = current_user.user_metadata or {}
+    if 'first_name' in data:
+        user_metadata['first_name'] = data['first_name']
+    if 'last_name' in data:
+        user_metadata['last_name'] = data['last_name']
+    if 'phone_number' in data:
+        user_metadata['phone_number'] = data['phone_number']
 
     try:
-        updated_profile = supabase.table('profiles').update(update_data).eq('id', current_user.id).execute()
-        return jsonify(updated_profile.data), 200
+        # The user's JWT in the decorator has permission to update their own data.
+        # We need to get the token from the request to make an authenticated call.
+        token = request.headers['Authorization'].split(" ")[1]
+        updated_user_response = supabase.auth.update_user(
+            {"data": user_metadata},
+            jwt=token
+        )
+        return jsonify(updated_user_response.user.user_metadata), 200
     except Exception as e:
-        return jsonify({"error": "Could not update profile", "details": str(e)}), 500
+        return jsonify({"error": "Could not update user metadata", "details": str(e)}), 500
 
 @auth_bp.route('/logout', methods=['POST'])
 @token_required
