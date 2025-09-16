@@ -1,12 +1,21 @@
 import os
+import json
+from uuid import UUID
 from flask import Flask
 from flask_cors import CORS
 from dotenv import load_dotenv
+
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, UUID):
+            return str(obj)
+        return super().default(obj)
 
 def create_app():
     load_dotenv()
 
     app = Flask(__name__)
+    app.json_encoder = CustomJSONEncoder
     CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
     # --- Configuration ---

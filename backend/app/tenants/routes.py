@@ -23,8 +23,8 @@ def create_tenant(current_user):
 
         # Create Tenant object
         tenant_data = {
-            "id": str(tenant_id),
-            "user_id": str(current_user.id),
+            "id": tenant_id,
+            "user_id": current_user.id,
             "name": data['name'],
             "intro_message": data['intro_message'],
             "system_persona": data['system_persona'],
