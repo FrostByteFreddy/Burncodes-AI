@@ -41,9 +41,10 @@ export const useAuthStore = defineStore('auth', () => {
       password,
     })
     if (error) throw error
-    // Wait a moment for the session to be set by the client
-    await new Promise(r => setTimeout(r, 200));
-    await fetchUser();
+
+    session.value = data.session
+    user.value = data.user
+
     router.push('/dashboard')
   }
 
@@ -51,16 +52,18 @@ export const useAuthStore = defineStore('auth', () => {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
     user.value = null
+    session.value = null
     router.push('/login')
   }
 
   // Listen for auth state changes
-  supabase.auth.onAuthStateChange((event, session) => {
+  supabase.auth.onAuthStateChange((event, _session) => {
     if (event === 'SIGNED_IN') {
-      user.value = session.user
-      fetchUser() // Fetch profile on sign in
+      session.value = _session
+      user.value = _session.user
     } else if (event === 'SIGNED_OUT') {
       user.value = null
+      session.value = null
     }
   })
 
@@ -80,5 +83,5 @@ export const useAuthStore = defineStore('auth', () => {
     return data.user
   }
 
-  return { user, fetchUser, signUp, login, logout, updateProfile }
+  return { user, session, fetchUser, signUp, login, logout, updateProfile }
 })
