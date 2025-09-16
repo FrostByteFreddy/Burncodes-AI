@@ -9,7 +9,7 @@ import os
 
 tenants_bp = Blueprint('tenants', __name__)
 
-@tenants_bp.route('/', methods=['POST'])
+@tenants_bp.route('', methods=['POST'])
 @token_required
 def create_tenant(current_user):
     data = request.get_json()
@@ -60,7 +60,7 @@ def create_tenant(current_user):
         return jsonify({"error": "Failed to create tenant", "details": str(e)}), 500
 
 
-@tenants_bp.route('/', methods=['GET'])
+@tenants_bp.route('', methods=['GET'])
 @token_required
 def get_tenants(current_user):
     try:
