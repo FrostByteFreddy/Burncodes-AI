@@ -15,22 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
       session.value = null
     } else {
       session.value = data.session
-      if (session.value) {
-        user.value = session.value.user
-        // Also fetch profile data if user exists
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.value.id)
-          .single()
-        if (profileError) {
-          console.error('Error fetching profile:', profileError)
-        } else {
-          user.value.profile = profile
-        }
-      } else {
-          user.value = null
-      }
+      user.value = data.session?.user ?? null
     }
   }
 
@@ -82,20 +67,17 @@ export const useAuthStore = defineStore('auth', () => {
   async function updateProfile(profileData) {
     if (!user.value) throw new Error('User not logged in.')
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .update(profileData)
-      .eq('id', user.value.id)
-      .select()
-      .single()
+    const { data, error } = await supabase.auth.updateUser({
+        data: profileData
+    })
 
     if (error) throw error
 
-    // Update the local user profile data
-    if (data) {
-      user.value.profile = data
+    // Update the user object in the store
+    if (data.user) {
+        user.value = data.user
     }
-    return data
+    return data.user
   }
 
   return { user, fetchUser, signUp, login, logout, updateProfile }
