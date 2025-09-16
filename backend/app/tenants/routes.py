@@ -213,12 +213,18 @@ def upload_source(current_user, tenant_id):
         content = docs_from_loader[0].page_content
 
         # Process and vectorize the document
-        documents = asyncio.run(processor.async_create_document_chunks_with_metadata(content, file.filename, source_id))
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        documents = loop.run_until_complete(processor.async_create_document_chunks_with_metadata(content, file.filename, source_id))
+        loop.close()
+
         processor.process_documents(documents, tenant_id)
 
         return jsonify({"success": True, "message": f"File '{file.filename}' processed.", "source_id": source_id}), 201
 
     except Exception as e:
+        if 'loop' in locals() and not loop.is_closed():
+            loop.close()
         return jsonify({"error": f"Failed to process file: {str(e)}"}), 500
 
 @tenants_bp.route('/<uuid:tenant_id>/sources/crawl', methods=['POST'])
@@ -252,7 +258,11 @@ def crawl_sources(current_user, tenant_id):
         urls_with_ids = [(rec['source_location'], rec['id']) for rec in source_records.data]
 
         # Process and vectorize the URLs
-        documents = asyncio.run(processor.process_urls_concurrently(urls_with_ids, tenant_id))
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        documents = loop.run_until_complete(processor.process_urls_concurrently(urls_with_ids, tenant_id))
+        loop.close()
+
         processor.process_documents(documents, tenant_id)
 
         processed_sources = list(set([doc.metadata['source'] for doc in documents]))
@@ -263,6 +273,8 @@ def crawl_sources(current_user, tenant_id):
         }), 200
 
     except Exception as e:
+        if 'loop' in locals() and not loop.is_closed():
+            loop.close()
         return jsonify({"error": f"Failed to process URLs: {str(e)}"}), 500
 
 
