@@ -1,38 +1,40 @@
 <template>
-    <div class="flex flex-col h-screen bg-gray-900 text-white font-sans">
-        <header class="bg-gray-800 p-4 shadow-md z-10">
-            <h1 class="text-xl font-bold text-center">Chat with {{ tenantId }}</h1>
-        </header>
+    <div class="min-h-screen bg-gray-900 text-white font-sans flex items-center justify-center p-4">
+        <div class="flex flex-col w-full max-w-4xl h-[90vh] bg-gray-800 rounded-2xl shadow-2xl">
+            <header class="bg-gray-700 p-4 shadow-md z-10 rounded-t-2xl">
+                <h1 class="text-xl font-bold text-center">Test Chat</h1>
+            </header>
 
-        <main class="flex-grow p-4 overflow-y-auto" ref="chatContainer">
-            <div v-for="(message, index) in chatHistory" :key="index"
-                :class="message.isUser ? 'flex justify-end' : 'flex justify-start'">
-                <div class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 shadow-md"
-                    :class="message.isUser ? 'bg-gradient-to-br from-orange-600 to-red-700' : 'bg-gray-700'">
-                    <div v-if="message.isUser" class="whitespace-pre-wrap">{{ message.text }}</div>
-                    <div v-else class="prose prose-invert max-w-none" v-html="message.html"></div>
+            <main class="flex-grow p-4 overflow-y-auto" ref="chatContainer">
+                <div v-for="(message, index) in chatHistory" :key="index"
+                    :class="message.isUser ? 'flex justify-end' : 'flex justify-start'">
+                    <div class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 shadow-md"
+                        :class="message.isUser ? 'bg-gradient-to-br from-orange-600 to-red-700' : 'bg-gray-600'">
+                        <div v-if="message.isUser" class="whitespace-pre-wrap">{{ message.text }}</div>
+                        <div v-else class="prose prose-invert max-w-none" v-html="message.html"></div>
+                    </div>
                 </div>
-            </div>
-            <div v-if="isThinking" class="flex justify-start">
-                <div class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 bg-gray-700 flex items-center space-x-2">
-                    <span class="w-3 h-3 bg-gray-500 rounded-full animate-pulse"></span>
-                    <span class="w-3 h-3 bg-gray-500 rounded-full animate-pulse" style="animation-delay: 200ms;"></span>
-                    <span class="w-3 h-3 bg-gray-500 rounded-full animate-pulse" style="animation-delay: 400ms;"></span>
+                <div v-if="isThinking" class="flex justify-start">
+                    <div class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 bg-gray-600 flex items-center space-x-2">
+                        <span class="w-3 h-3 bg-gray-500 rounded-full animate-pulse"></span>
+                        <span class="w-3 h-3 bg-gray-500 rounded-full animate-pulse" style="animation-delay: 200ms;"></span>
+                        <span class="w-3 h-3 bg-gray-500 rounded-full animate-pulse" style="animation-delay: 400ms;"></span>
+                    </div>
                 </div>
-            </div>
-        </main>
+            </main>
 
-        <footer class="p-4 bg-gray-800">
-            <div class="flex">
-                <input type="text" v-model="userMessage" @keyup.enter="sendMessage"
-                    placeholder="Ask a question..."
-                    class="flex-grow bg-gray-700 border border-gray-600 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                <button @click="sendMessage" :disabled="!userMessage.trim()"
-                    class="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 disabled:from-gray-600 text-white font-bold py-3 px-5 rounded-r-lg">
-                    Send
-                </button>
-            </div>
-        </footer>
+            <footer class="p-4 bg-gray-700 rounded-b-2xl">
+                <div class="flex">
+                    <input type="text" v-model="userMessage" @keyup.enter="sendMessage"
+                        placeholder="Ask a question..."
+                        class="flex-grow bg-gray-600 border border-gray-500 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <button @click="sendMessage" :disabled="!userMessage.trim()"
+                        class="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 disabled:from-gray-600 text-white font-bold py-3 px-5 rounded-r-lg">
+                        Send
+                    </button>
+                </div>
+            </footer>
+        </div>
     </div>
 </template>
 
