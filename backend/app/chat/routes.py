@@ -27,7 +27,7 @@ def handle_chat(tenant_id):
 
     try:
         # Fetch tenant configuration from the database
-        tenant_response = supabase.table('tenants').select("*, tenant_fine_tune(*)").eq('id', tenant_id).single().execute()
+        tenant_response = supabase.table('tenants').select("*, tenant_fine_tune(*)").eq('id', str(tenant_id)).single().execute()
 
         if not tenant_response.data:
             return jsonify({"error": f"Tenant '{tenant_id}' not found"}), 404
@@ -83,7 +83,7 @@ def handle_chat(tenant_id):
 @chat_bp.route('/<uuid:tenant_id>/intro', methods=['GET'])
 def get_intro_message(tenant_id):
     try:
-        tenant = supabase.table('tenants').select("intro_message").eq('id', tenant_id).single().execute()
+        tenant = supabase.table('tenants').select("intro_message").eq('id', str(tenant_id)).single().execute()
         if not tenant.data:
             return jsonify({"error": f"Tenant '{tenant_id}' not found"}), 404
         return jsonify({"intro_message": tenant.data['intro_message']})

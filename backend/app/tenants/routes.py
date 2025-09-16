@@ -44,7 +44,7 @@ def create_tenant(current_user):
         if fine_tune_rules:
             rules_to_insert = [
                 {
-                    "tenant_id": tenant_id,
+                    "tenant_id": str(tenant_id),
                     "trigger": rule['trigger'],
                     "instruction": rule['instruction']
                 } for rule in fine_tune_rules
@@ -74,7 +74,7 @@ def get_tenants(current_user):
 @token_required
 def get_tenant(current_user, tenant_id):
     try:
-        tenant = supabase.table('tenants').select("*, tenant_fine_tune(*), tenant_sources(*)").eq('id', tenant_id).eq('user_id', current_user.id).single().execute()
+        tenant = supabase.table('tenants').select("*, tenant_fine_tune(*), tenant_sources(*)").eq('id', str(tenant_id)).eq('user_id', current_user.id).single().execute()
         if not tenant.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
         return jsonify(tenant.data), 200
@@ -85,10 +85,11 @@ def get_tenant(current_user, tenant_id):
 @token_required
 def update_tenant(current_user, tenant_id):
     data = request.get_json()
+    tenant_id_str = str(tenant_id)
 
     try:
         # Verify tenant ownership
-        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id).eq('user_id', current_user.id).single().execute()
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
@@ -100,23 +101,23 @@ def update_tenant(current_user, tenant_id):
         ]
         tenant_update_data = {k: v for k, v in data.items() if k in allowed_fields}
         if tenant_update_data:
-            supabase.table('tenants').update(tenant_update_data).eq('id', tenant_id).execute()
+            supabase.table('tenants').update(tenant_update_data).eq('id', tenant_id_str).execute()
 
         # Update fine-tuning rules (replace all existing rules)
         if 'fine_tune_rules' in data:
             # First, delete old rules
-            supabase.table('tenant_fine_tune').delete().eq('tenant_id', tenant_id).execute()
+            supabase.table('tenant_fine_tune').delete().eq('tenant_id', tenant_id_str).execute()
             # Then, insert new ones if any
             new_rules = data['fine_tune_rules']
             if new_rules:
                 rules_to_insert = [
-                    {"tenant_id": tenant_id, "trigger": r['trigger'], "instruction": r['instruction']}
+                    {"tenant_id": tenant_id_str, "trigger": r['trigger'], "instruction": r['instruction']}
                     for r in new_rules
                 ]
                 supabase.table('tenant_fine_tune').insert(rules_to_insert).execute()
 
         # Fetch the updated tenant to return
-        updated_tenant = supabase.table('tenants').select("*, tenant_fine_tune(*)").eq('id', tenant_id).single().execute()
+        updated_tenant = supabase.table('tenants').select("*, tenant_fine_tune(*)").eq('id', tenant_id_str).single().execute()
         return jsonify(updated_tenant.data), 200
 
     except Exception as e:
@@ -125,18 +126,19 @@ def update_tenant(current_user, tenant_id):
 @tenants_bp.route('/<uuid:tenant_id>', methods=['DELETE'])
 @token_required
 def delete_tenant(current_user, tenant_id):
+    tenant_id_str = str(tenant_id)
     try:
         # Verify tenant ownership
-        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id).eq('user_id', current_user.id).single().execute()
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
         # Delete from all related tables first
-        supabase.table('tenant_fine_tune').delete().eq('tenant_id', tenant_id).execute()
-        supabase.table('tenant_sources').delete().eq('tenant_id', tenant_id).execute()
+        supabase.table('tenant_fine_tune').delete().eq('tenant_id', tenant_id_str).execute()
+        supabase.table('tenant_sources').delete().eq('tenant_id', tenant_id_str).execute()
 
         # Finally, delete the tenant itself
-        supabase.table('tenants').delete().eq('id', tenant_id).execute()
+        supabase.table('tenants').delete().eq('id', tenant_id_str).execute()
 
         # Here you would also add logic to delete the vector store from ChromaDB
         # This will be handled in a later step.
@@ -151,13 +153,14 @@ def delete_tenant(current_user, tenant_id):
 @tenants_bp.route('/<uuid:tenant_id>/sources', methods=['GET'])
 @token_required
 def get_sources(current_user, tenant_id):
+    tenant_id_str = str(tenant_id)
     try:
         # Verify tenant ownership
-        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id).eq('user_id', current_user.id).single().execute()
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
-        sources = supabase.table('tenant_sources').select("*").eq('tenant_id', tenant_id).execute()
+        sources = supabase.table('tenant_sources').select("*").eq('tenant_id', tenant_id_str).execute()
         return jsonify(sources.data), 200
     except Exception as e:
         return jsonify({"error": "Failed to retrieve sources", "details": str(e)}), 500
@@ -165,8 +168,9 @@ def get_sources(current_user, tenant_id):
 @tenants_bp.route('/<uuid:tenant_id>/sources/upload', methods=['POST'])
 @token_required
 def upload_source(current_user, tenant_id):
+    tenant_id_str = str(tenant_id)
     # Verify tenant ownership
-    tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id).eq('user_id', current_user.id).single().execute()
+    tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
     if not tenant_check.data:
         return jsonify({"error": "Tenant not found or access denied"}), 404
 
@@ -178,14 +182,14 @@ def upload_source(current_user, tenant_id):
 
     try:
         # Save file temporarily
-        tenant_upload_path = os.path.join('uploads', str(tenant_id))
+        tenant_upload_path = os.path.join('uploads', tenant_id_str)
         os.makedirs(tenant_upload_path, exist_ok=True)
         filepath = os.path.join(tenant_upload_path, file.filename)
         file.save(filepath)
 
         # Create a source record in the database
         source_data = {
-            "tenant_id": tenant_id,
+            "tenant_id": tenant_id_str,
             "source_type": SourceType.FILE,
             "source_location": file.filename,
             "status": "PROCESSING"
@@ -222,12 +226,13 @@ def upload_source(current_user, tenant_id):
 def crawl_sources(current_user, tenant_id):
     data = request.get_json()
     urls = data.get('urls')
+    tenant_id_str = str(tenant_id)
 
     if not urls or not isinstance(urls, list):
         return jsonify({"error": "A list of URLs is required"}), 400
 
     # Verify tenant ownership
-    tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id).eq('user_id', current_user.id).single().execute()
+    tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
     if not tenant_check.data:
         return jsonify({"error": "Tenant not found or access denied"}), 404
 
@@ -235,7 +240,7 @@ def crawl_sources(current_user, tenant_id):
         # Create source records in the database
         sources_to_insert = [
             {
-                "tenant_id": tenant_id,
+                "tenant_id": tenant_id_str,
                 "source_type": SourceType.URL,
                 "source_location": url,
                 "status": "PROCESSING"
@@ -264,14 +269,15 @@ def crawl_sources(current_user, tenant_id):
 @tenants_bp.route('/<uuid:tenant_id>/sources/<int:source_id>', methods=['DELETE'])
 @token_required
 def delete_source(current_user, tenant_id, source_id):
+    tenant_id_str = str(tenant_id)
     try:
         # Verify tenant ownership
-        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id).eq('user_id', current_user.id).single().execute()
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
         # Verify source ownership
-        source_check = supabase.table('tenant_sources').select("id").eq('id', source_id).eq('tenant_id', tenant_id).single().execute()
+        source_check = supabase.table('tenant_sources').select("id").eq('id', source_id).eq('tenant_id', tenant_id_str).single().execute()
         if not source_check.data:
             return jsonify({"error": "Source not found or access denied"}), 404
 
