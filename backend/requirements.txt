@@ -13,3 +13,5 @@ unstructured
 python-magic
 requests
 httpx
+supabase
+pydantic
