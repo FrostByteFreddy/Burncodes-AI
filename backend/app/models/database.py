@@ -32,5 +32,10 @@ class Tenant(BaseModel):
     intro_message: str
     system_persona: str
     rag_prompt_template: str
+    doc_language: Optional[str] = None
+    doc_description: Optional[str] = None
+    source_description: Optional[str] = None
+    last_updated_description: Optional[str] = None
+    translation_target: Optional[str] = None
     fine_tune_rules: List[TenantFineTune] = []
     sources: List[TenantSource] = []

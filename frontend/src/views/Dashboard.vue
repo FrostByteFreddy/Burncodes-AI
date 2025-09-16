@@ -39,7 +39,11 @@
       </div>
     </div>
 
-    <!-- Create Tenant Modal would go here -->
+    <CreateTenantModal
+      :show="showCreateModal"
+      @close="showCreateModal = false"
+      @create="handleCreateTenant"
+    />
   </div>
 </template>
 
@@ -47,12 +51,11 @@
 import { onMounted, ref, watch } from 'vue'
 import { useTenantsStore } from '../stores/tenants'
 import { useAuthStore } from '../stores/auth'
-import { useRouter } from 'vue-router'
+import CreateTenantModal from '../components/CreateTenantModal.vue'
 
 const tenantsStore = useTenantsStore()
 const authStore = useAuthStore()
-const router = useRouter()
-const showCreateModal = ref(false) // For a future modal implementation
+const showCreateModal = ref(false)
 
 onMounted(() => {
   if (authStore.user) {
@@ -65,6 +68,16 @@ watch(() => authStore.user, (newUser) => {
     tenantsStore.fetchTenants()
   }
 })
+
+const handleCreateTenant = async (tenantData) => {
+  try {
+    await tenantsStore.createTenant(tenantData)
+    showCreateModal.value = false
+  } catch (error) {
+    console.error("Failed to create tenant:", error)
+    // Optionally, show an error message to the user
+  }
+}
 
 const handleDelete = async (id) => {
   if (confirm('Are you sure you want to delete this tenant and all its data? This cannot be undone.')) {

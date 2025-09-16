@@ -55,17 +55,36 @@ def run_verification(playwright):
         # Wait for the loading message to disappear
         expect(page.get_by_text("Loading tenants...")).to_be_hidden(timeout=10000)
 
-        # Check for either the success message or an error message
-        no_tenants_locator = page.get_by_text("No tenants found")
-        error_locator = page.get_by_text("Error:")
+        # Verify the "No tenants found" message is visible initially
+        page.pause()
+        expect(page.get_by_text("No tenants found")).to_be_visible(timeout=15000)
 
-        expect(no_tenants_locator.or_(error_locator)).to_be_visible()
+        # --- Create a new tenant ---
+        page.get_by_role("button", name="Create New Tenant").click()
 
-        # Take a screenshot of the dashboard
-        page.screenshot(path="jules-scratch/verification/dashboard_after_fix.png")
+        # Fill out the modal form
+        modal = page.locator(".bg-gray-800")
+        expect(modal.get_by_role("heading", name="Create New Tenant")).to_be_visible()
 
-        # Assert that there is no error
-        expect(error_locator).to_be_hidden()
+        tenant_name = f"My Test Tenant {int(time.time())}"
+        modal.get_by_label("Tenant Name").fill(tenant_name)
+        modal.get_by_label("Document Language").fill("en-US")
+        modal.get_by_label("Document Description").fill("Test document description")
+        modal.get_by_role("button", name="Create").click()
+
+        # Verify the new tenant appears on the dashboard
+        expect(page.get_by_text(tenant_name)).to_be_visible(timeout=10000)
+
+        # Navigate to the settings page
+        page.get_by_role("link", name="Manage").click()
+        expect(page.get_by_role("heading", name=tenant_name)).to_be_visible()
+
+        # Verify the new fields were saved
+        expect(page.get_by_label("Document Language")).to_have_value("en-US")
+        expect(page.get_by_label("Document Description")).to_have_value("Test document description")
+
+        # Take a screenshot of the settings page
+        page.screenshot(path="jules-scratch/verification/tenant_settings.png")
         print("✅ Verification successful, screenshot taken.")
 
     except Exception as e:
@@ -82,10 +101,6 @@ def run_verification(playwright):
                 print(f"✅ Cleaned up test user: {unique_email}")
         except Exception as e:
             print(f"⚠️ Failed to clean up test user: {e}")
-
-    # Add a delay before the final assertions
-    page.wait_for_timeout(2000)
-
 
 with sync_playwright() as playwright:
     run_verification(playwright)
