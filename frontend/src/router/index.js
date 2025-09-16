@@ -18,6 +18,7 @@ const routes = [
   { path: '/dashboard', name: 'Dashboard', component: Dashboard, meta: { requiresAuth: true } },
   {
     path: '/tenant/:tenantId',
+    name: 'Tenant',
     component: Tenant,
     meta: { requiresAuth: true },
     props: true,
