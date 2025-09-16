@@ -52,7 +52,7 @@ def create_tenant(current_user):
             supabase.table('tenant_fine_tune').insert(rules_to_insert).execute()
 
         # Fetch the created tenant with its rules to return it
-        created_tenant = supabase.table('tenants').select("*, tenant_fine_tune(*)").eq('id', tenant_id).single().execute()
+        created_tenant = supabase.table('tenants').select("*, tenant_fine_tune(*)").eq('id', str(tenant_id)).single().execute()
 
         return jsonify(created_tenant.data), 201
 
