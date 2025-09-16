@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_ANON_KEY")
+key: str = os.environ.get("SUPABASE_SERVICE_KEY")
 
 if not url or not key:
-    raise EnvironmentError("Supabase URL and Key must be set in the environment variables.")
+    raise EnvironmentError("Supabase URL and Service Key must be set in the environment variables.")
 
 supabase: Client = create_client(url, key)
