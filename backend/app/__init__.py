@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from celery import Celery
 from app.logging_config import error_logger # Import to initialize logging
 
-celery = Celery(__name__, broker='redis://127.0.0.1:6379/0', backend='redis://127.0.0.1:6379/0')
+celery = Celery(__name__, broker='redis://127.0.0.1:6379/0')
 
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
