@@ -1,9 +1,8 @@
-import asyncio
 from flask import Blueprint, request, jsonify
 from app.database.supabase_client import supabase
 from app.auth.decorators import token_required
 from app.models.database import Tenant, TenantFineTune, SourceType
-from app.data_processing import processor
+from app.data_processing.tasks import process_local_filepath, process_urls, crawl_links_task
 from app.logging_config import error_logger
 from uuid import uuid4
 import os
@@ -135,33 +134,22 @@ def upload_source(current_user, tenant_id):
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     try:
         tenant_upload_path = os.path.join('uploads', tenant_id_str)
         os.makedirs(tenant_upload_path, exist_ok=True)
         filepath = os.path.join(tenant_upload_path, file.filename)
         file.save(filepath)
 
-        source_data = {"tenant_id": tenant_id_str, "source_type": SourceType.FILE, "source_location": file.filename, "status": "PROCESSING"}
+        source_data = {"tenant_id": tenant_id_str, "source_type": SourceType.FILE, "source_location": file.filename, "status": "QUEUED"}
         source_record = supabase.table('tenant_sources').insert(source_data).execute()
         source_id = source_record.data[0]['id']
 
-        documents = loop.run_until_complete(processor.async_process_local_filepath(filepath, file.filename, source_id))
-        os.remove(filepath)
+        task = process_local_filepath.delay(filepath, file.filename, source_id, tenant_id_str)
 
-        if not documents:
-            supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute()
-            return jsonify({"error": f"Unsupported file type or no content could be extracted from: {file.filename}"}), 400
-
-        processor.process_documents(documents, tenant_id)
-        return jsonify({"success": True, "message": f"File '{file.filename}' processed.", "source_id": source_id}), 201
+        return jsonify({"task_id": task.id}), 202
     except Exception as e:
         error_logger.error(f"Error processing file upload for tenant {tenant_id_str}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": f"Failed to process file: {str(e)}"}), 500
-    finally:
-        if loop and not loop.is_closed():
-            loop.close()
 
 @tenants_bp.route('/<uuid:tenant_id>/sources/crawl', methods=['POST'])
 @token_required
@@ -177,19 +165,13 @@ def crawl_sources(current_user, tenant_id):
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            sources_to_insert = [{"tenant_id": tenant_id_str, "source_type": SourceType.URL, "source_location": url, "status": "PROCESSING"} for url in urls]
-            source_records = supabase.table('tenant_sources').insert(sources_to_insert).execute()
-            urls_with_ids = [(rec['source_location'], rec['id']) for rec in source_records.data]
-            documents = loop.run_until_complete(processor.process_urls_concurrently(urls_with_ids, tenant_id))
-            processor.process_documents(documents, tenant_id)
-            processed_sources = list(set([doc.metadata['source'] for doc in documents]))
-            return jsonify({"success": True, "message": f"Successfully processed {len(processed_sources)} URLs.", "processed_sources": processed_sources}), 200
-        finally:
-            if loop and not loop.is_closed():
-                loop.close()
+        sources_to_insert = [{"tenant_id": tenant_id_str, "source_type": SourceType.URL, "source_location": url, "status": "QUEUED"} for url in urls]
+        source_records = supabase.table('tenant_sources').insert(sources_to_insert).execute()
+        urls_with_ids = [(rec['source_location'], rec['id']) for rec in source_records.data]
+
+        task = process_urls.delay(urls_with_ids, tenant_id_str)
+
+        return jsonify({"task_id": task.id}), 202
     except Exception as e:
         error_logger.error(f"Error processing crawl for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": f"Failed to process URLs: {str(e)}"}), 500
@@ -208,15 +190,9 @@ def discover_links(current_user, tenant_id):
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            links_by_depth = loop.run_until_complete(processor.crawl_recursive_for_links(start_url))
-            discovery_summary = [{"depth": i + 1, "count": len(links), "links": links} for i, links in enumerate(links_by_depth)]
-            return jsonify(discovery_summary), 200
-        finally:
-            if loop and not loop.is_closed():
-                loop.close()
+        task = crawl_links_task.delay(start_url)
+
+        return jsonify({"task_id": task.id}), 202
     except Exception as e:
         error_logger.error(f"Error discovering links for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": f"Failed to discover links: {str(e)}"}), 500

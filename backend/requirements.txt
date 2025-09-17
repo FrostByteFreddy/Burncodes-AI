@@ -17,3 +17,5 @@ supabase
 pydantic
 uuid
 icalendar
+celery
+redis
