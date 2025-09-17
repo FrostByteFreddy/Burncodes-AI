@@ -35,17 +35,17 @@
                 class="w-full p-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-lg" />
             </div>
         </div>
-        <div>
+        <div class="d-none">
             <label for="doc_description" class="block text-sm font-medium text-gray-300">Document Description</label>
             <input v-model="formData.doc_description" type="text" id="doc_description"
             class="w-full p-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-lg" />
         </div>
-         <div>
+         <div class="d-none">
             <label for="source_description" class="block text-sm font-medium text-gray-300">Source Description</label>
             <input v-model="formData.source_description" type="text" id="source_description"
             class="w-full p-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-lg" />
         </div>
-        <div>
+        <div class="d-none">
             <label for="last_updated_description" class="block text-sm font-medium text-gray-300">Last Updated Description</label>
             <input v-model="formData.last_updated_description" type="text" id="last_updated_description"
             class="w-full p-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-lg" />

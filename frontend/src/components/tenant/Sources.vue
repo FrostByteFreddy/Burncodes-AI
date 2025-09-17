@@ -15,7 +15,7 @@
 
       <!-- URL Crawl -->
       <div>
-        <label for="url-input" class="block text-sm font-medium text-gray-300 mb-2">Crawl Website</label>
+        <label for="url-input" class="block text-sm font-medium text-gray-300 mb-2 mt-5">Crawl Website</label>
         <input v-model="startUrl" id="url-input" type="text" placeholder="https://example.com"
           class="w-full p-3 text-white bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-white"
           :class="{'border-red-500': !isUrlValid && startUrl}"
@@ -69,7 +69,7 @@
       <!-- Existing Sources List -->
       <div v-else class="space-y-4 max-h-96 overflow-y-auto">
         <!-- URL Sources Accordion -->
-        <details class="bg-gray-700 rounded-lg" open>
+        <details class="bg-gray-700 rounded-lg">
           <summary class="cursor-pointer font-semibold p-4">
             Crawled URLs ({{ urlSources.length }})
           </summary>

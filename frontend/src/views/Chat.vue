@@ -29,7 +29,7 @@
                         placeholder="Ask a question..."
                         class="flex-grow bg-gray-600 border border-gray-500 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     <button @click="sendMessage" :disabled="!userMessage.trim()"
-                        class="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 disabled:from-gray-600 text-white font-bold py-3 px-5 rounded-r-lg">
+                        class="bg-accent-gradient disabled:from-gray-600 text-white font-bold py-3 px-5 rounded-r-lg disabled:opacity-50">
                         Send
                     </button>
                 </div>
