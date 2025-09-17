@@ -34,7 +34,7 @@
                     <input type="text" v-model="userMessage" @keyup.enter="sendMessage"
                         placeholder="Ask a question..."
                         class="flex-grow bg-gray-600 border border-gray-500 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    <button @click="sendMessage" :disabled="!userMessage.trim()"
+                    <button @click="sendMessage" :disabled="!userMessage.trim() || isThinking"
                         class="bg-accent-gradient disabled:from-gray-600 text-white font-bold py-3 px-5 rounded-r-lg disabled:opacity-50">
                         Send
                     </button>
@@ -61,7 +61,6 @@ marked.use({ renderer });
 
 const processBotMessage = (content) => {
     try {
-        // Ensure content is a string before processing
         if (typeof content !== 'string') {
             console.error("processBotMessage received non-string content:", content);
             return { text: '', html: '' };
@@ -70,10 +69,8 @@ const processBotMessage = (content) => {
         const html = marked(cleanedText);
         return { text: cleanedText, html };
     } catch (e) {
-        // If marked.js fails for any reason, log the error and return the raw text
         console.error("Error parsing content with marked.js:", e);
-        console.error("Original content:", content); // Log the content that caused the error
-        // Return the raw content as a fallback to prevent the entire chat from failing
+        console.error("Original content:", content);
         return { text: content, html: content };
     }
 };
@@ -122,7 +119,6 @@ const loadChatHistoryFromCookie = () => {
     return null;
 };
 
-// --- Watch for changes in chat history and save to cookie ---
 watch(chatHistory, (newHistory) => {
     saveChatHistoryToCookie(newHistory);
 }, { deep: true });
@@ -153,8 +149,46 @@ const fetchIntroMessage = async () => {
     }
 };
 
+const pollTaskStatus = (taskId) => {
+    const interval = setInterval(async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/chat/task/${taskId}/status`);
+            const { task_status, task_result } = response.data;
+
+            if (task_status === 'SUCCESS') {
+                clearInterval(interval);
+                const newHistory = task_result.chat_history;
+                chatHistory.value = newHistory.map(msg => {
+                    if (msg.type === 'ai') {
+                        const { text, html } = processBotMessage(msg.content);
+                        return { text, html, isUser: false };
+                    }
+                    return { text: msg.content, html: null, isUser: true };
+                });
+                isThinking.value = false;
+                await scrollToBottom();
+            } else if (task_status === 'FAILURE') {
+                clearInterval(interval);
+                const errorMsg = `Error: Processing failed. ${task_result?.exc_message || ''}`;
+                const { text, html } = processBotMessage(errorMsg);
+                chatHistory.value.push({ text, html, isUser: false });
+                isThinking.value = false;
+                await scrollToBottom();
+            }
+            // If status is PENDING, do nothing and let the interval continue.
+        } catch (error) {
+            clearInterval(interval);
+            const errorMsg = `Error: Could not get task status.`;
+            const { text, html } = processBotMessage(errorMsg);
+            chatHistory.value.push({ text, html, isUser: false });
+            isThinking.value = false;
+            await scrollToBottom();
+        }
+    }, 2000); // Poll every 2 seconds
+};
+
 const sendMessage = async () => {
-    if (!userMessage.value.trim() || !tenantId.value) return;
+    if (!userMessage.value.trim() || !tenantId.value || isThinking.value) return;
 
     const currentMessage = userMessage.value;
     const historyForBackend = chatHistory.value.map(msg => ({
@@ -173,30 +207,24 @@ const sendMessage = async () => {
             chat_history: historyForBackend
         };
         const response = await axios.post(`${API_BASE_URL}/chat/${tenantId.value}`, payload);
-        const newHistory = response.data.chat_history;
-
-        chatHistory.value = newHistory.map(msg => {
-            if (msg.type === 'ai') {
-                const { text, html } = processBotMessage(msg.content);
-                return { text, html, isUser: false };
-            }
-            return { text: msg.content, html: null, isUser: true };
-        });
-
+        const { task_id } = response.data;
+        if (task_id) {
+            pollTaskStatus(task_id);
+        } else {
+            throw new Error("No task_id received from the server.");
+        }
     } catch (error) {
-        const errorMsg = `Error: ${error.response?.data?.error || 'Could not get a response.'}`;
+        const errorMsg = `Error: ${error.response?.data?.error || 'Could not send message.'}`;
         const { text, html } = processBotMessage(errorMsg);
         chatHistory.value.push({ text, html, isUser: false });
-    } finally {
         isThinking.value = false;
         await scrollToBottom();
     }
 };
 
+
 const resetChat = () => {
-    // Clear the chat history. The watcher will automatically clear the cookie.
     chatHistory.value = [];
-    // Fetch a new introductory message to start a new conversation.
     fetchIntroMessage();
 };
 
