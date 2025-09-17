@@ -21,13 +21,11 @@ redis-server
 
 The Celery worker picks up tasks from the Redis queue and executes them. This is where all the heavy lifting (like data processing and LLM calls) happens.
 
-**Important:** You must use the `-P gevent` flag for the worker to handle asynchronous tasks correctly.
-
 ```sh
 # Navigate to the backend directory and activate your virtual environment
 # e.g., source venv/bin/activate
 
-celery -A celery_worker.celery worker -P gevent --loglevel=info
+celery -A celery_worker.celery worker --loglevel=info
 ```
 *Keep this terminal open.*
 
