@@ -17,19 +17,17 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL")
 QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
 
 @shared_task(bind=True)
-def chat_task(self, tenant_id, query, chat_history_json):
+async def chat_task(self, tenant_id, query, chat_history_json):
     """
     Celery task to handle the chat logic asynchronously.
     """
     try:
-        # Since this task is async, we can run the async logic directly.
-        result = asyncio.run(async_chat_logic(tenant_id, query, chat_history_json))
-        return result
+        return await async_chat_logic(tenant_id, query, chat_history_json)
     except Exception as e:
         error_logger.error(f"Error in chat task for tenant {tenant_id}: {e}", exc_info=True)
-        # Record failure
-        self.update_state(state='FAILURE', meta={'exc_type': type(e).__name__, 'exc_message': str(e)})
-        return {"error": str(e)}
+        # The task will be marked as FAILED by Celery, and the exception will be stored.
+        # We can re-raise to ensure Celery's default error handling.
+        raise
 
 async def async_chat_logic(tenant_id, query, chat_history_json):
     loop = asyncio.get_running_loop()

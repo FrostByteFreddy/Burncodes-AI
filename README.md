@@ -107,7 +107,7 @@ First, you need to have Redis installed and running.
     ```
 3.  **Start the Celery worker:**
     ```sh
-    celery -A celery_worker.celery worker --loglevel=info
+    celery -A celery_worker.celery worker -P gevent --loglevel=info
     ```
     This worker will listen for and execute tasks from the queue. Keep this terminal running.
 
