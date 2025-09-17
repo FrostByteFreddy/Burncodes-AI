@@ -1,6 +1,9 @@
 import asyncio
+import nest_asyncio
 from celery import shared_task
 from app.database.supabase_client import supabase
+
+nest_asyncio.apply()
 from app.data_processing.processor import get_vectorstore
 from app.logging_config import error_logger
 import os
