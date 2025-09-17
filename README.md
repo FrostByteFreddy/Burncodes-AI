@@ -46,11 +46,15 @@ This project is built with a Vue.js frontend and a Flask backend.
     GEMINI_MODEL="gemini-pro"
     QUERY_GEMINI_MODEL="gemini-1.5-flash"
     FLASK_DEBUG=True
+    CELERY_BROKER_URL="redis://127.0.0.1:6379/0"
+    CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"
     ```
     * `GOOGLE_API_KEY`: Your API key for Google Generative AI.
     * `GEMINI_MODEL`: The Gemini model to use for generating answers.
     * `QUERY_GEMINI_MODEL`: The Gemini model to use for query rewriting and other internal tasks.
     * `FLASK_DEBUG`: Set to `True` for development mode.
+    * `CELERY_BROKER_URL`: The connection URL for the Redis message broker.
+    * `CELERY_RESULT_BACKEND`: The connection URL for the Redis result backend.
 
 ### Frontend
 
