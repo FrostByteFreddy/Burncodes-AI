@@ -1,0 +1,91 @@
+import asyncio
+from celery import shared_task
+from app.database.supabase_client import supabase
+from app.data_processing.processor import get_vectorstore
+from app.logging_config import error_logger
+import os
+
+# --- LangChain Core Imports ---
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
+from langchain.chains import create_retrieval_chain
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain.chains import create_history_aware_retriever
+
+GEMINI_MODEL = os.getenv("GEMINI_MODEL")
+QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
+
+@shared_task(bind=True)
+def chat_task(self, tenant_id, query, chat_history_json):
+    """
+    Celery task to handle the chat logic asynchronously.
+    """
+    try:
+        # Since this task is async, we can run the async logic directly.
+        result = asyncio.run(async_chat_logic(tenant_id, query, chat_history_json))
+        return result
+    except Exception as e:
+        error_logger.error(f"Error in chat task for tenant {tenant_id}: {e}", exc_info=True)
+        # Record failure
+        self.update_state(state='FAILURE', meta={'exc_type': type(e).__name__, 'exc_message': str(e)})
+        return {"error": str(e)}
+
+async def async_chat_logic(tenant_id, query, chat_history_json):
+    loop = asyncio.get_running_loop()
+
+    # --- Run blocking I/O in executor ---
+    tenant_response = await loop.run_in_executor(
+        None,
+        lambda: supabase.table('tenants').select("*, tenant_fine_tune(*)").eq('id', str(tenant_id)).single().execute()
+    )
+
+    if not tenant_response.data:
+        raise Exception(f"Tenant '{tenant_id}' not found")
+
+    tenant_config = tenant_response.data
+
+    # --- Run blocking vector store initialization in executor ---
+    db = await loop.run_in_executor(None, get_vectorstore, tenant_id)
+    collection_count = await loop.run_in_executor(None, db._collection.count)
+
+    if collection_count == 0:
+        raise Exception(f"No documents have been processed for tenant '{tenant_id}'.")
+
+    chat_history = [HumanMessage(content=msg['content']) if msg['type'] == 'human' else AIMessage(content=msg['content']) for msg in chat_history_json]
+
+    # --- These are CPU-bound and can be initialized here ---
+    answer_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.2)
+    query_rewrite_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0)
+
+    history_aware_prompt = ChatPromptTemplate.from_messages([
+        ("system", "Given a chat history and a follow up question, rephrase the follow up question to be a standalone question."),
+        ("placeholder", "{chat_history}"),
+        ("human", "{input}"),
+    ])
+
+    retriever = db.as_retriever(search_type="mmr", search_kwargs={'k': 7, 'fetch_k': 25})
+    history_aware_retriever_chain = create_history_aware_retriever(query_rewrite_llm, retriever, history_aware_prompt)
+
+    fine_tune_rules = tenant_config.get('tenant_fine_tune', [])
+    formatted_fine_tune_rules = ""
+    if fine_tune_rules:
+        rule_strings = [f"- When the user's question is about '{rule['trigger']}', you must follow this instruction: '{rule['instruction']}'" for rule in fine_tune_rules]
+        formatted_fine_tune_rules = "\n".join(rule_strings)
+
+    rag_prompt_template = PromptTemplate.from_template(tenant_config['rag_prompt_template'])
+    final_rag_prompt = rag_prompt_template.partial(
+        persona=tenant_config.get('system_persona', ''),
+        fine_tune_instructions=formatted_fine_tune_rules
+    )
+
+    document_chain = create_stuff_documents_chain(answer_llm, final_rag_prompt)
+    conversational_rag_chain = create_retrieval_chain(history_aware_retriever_chain, document_chain)
+
+    # This is the main async I/O call to the LLM
+    response = await conversational_rag_chain.ainvoke({"chat_history": chat_history, "input": query})
+
+    updated_history = chat_history + [HumanMessage(content=query), AIMessage(content=response["answer"])]
+    updated_history_json = [{"type": "human" if isinstance(msg, HumanMessage) else "ai", "content": msg.content} for msg in updated_history]
+
+    return {"answer": response["answer"], "chat_history": updated_history_json}
