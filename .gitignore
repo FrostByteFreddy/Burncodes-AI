@@ -11,6 +11,7 @@ frontend/.env
 /backend/uploads/
 /backend/vector_store/
 /backend/chromadb/
+dump.rdb
 
 # Frontend dependencies and build artifacts
 /frontend/node_modules/

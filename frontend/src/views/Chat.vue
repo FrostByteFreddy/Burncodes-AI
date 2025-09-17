@@ -50,15 +50,6 @@ import { useRoute } from 'vue-router';
 import axios from 'axios';
 import { marked } from 'marked';
 
-// --- Marked.js Configuration for Links ---
-const renderer = new marked.Renderer();
-const linkRenderer = renderer.link;
-renderer.link = (href, title, text) => {
-  const html = linkRenderer.call(renderer, href, title, text);
-  return html.replace(/^<a /, '<a target="_blank" rel="noopener noreferrer" ');
-};
-marked.use({ renderer });
-
 const processBotMessage = (content) => {
     try {
         if (typeof content !== 'string') {
@@ -235,6 +226,20 @@ onMounted(() => {
         scrollToBottom();
     } else {
         fetchIntroMessage();
+    }
+
+    // --- Handle Link Clicks ---
+    if (chatContainer.value) {
+        chatContainer.value.addEventListener('click', (e) => {
+            const link = e.target.closest('a');
+            if (link && link.href) {
+                // Open external links in a new tab
+                if (link.hostname !== window.location.hostname) {
+                    e.preventDefault();
+                    window.open(link.href, '_blank', 'noopener,noreferrer');
+                }
+            }
+        });
     }
 });
 </script>
