@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from app.database.supabase_client import supabase
 from app.logging_config import error_logger
 from app.chat.tasks import chat_task
-from celery.result import AsyncResult
+from app import celery
 
 chat_bp = Blueprint('chat', __name__)
 
@@ -25,7 +25,7 @@ def handle_chat(tenant_id):
 
 @chat_bp.route('/task/<string:task_id>/status', methods=['GET'])
 def get_task_status(task_id):
-    task_result = AsyncResult(task_id)
+    task_result = celery.AsyncResult(task_id)
     result = {
         "task_id": task_id,
         "task_status": task_result.status,
