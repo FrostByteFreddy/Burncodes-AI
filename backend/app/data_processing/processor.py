@@ -116,8 +116,10 @@ def smart_chunk_markdown(markdown: str, max_len: int = 1000) -> list[str]:
 async def async_create_document_chunks_with_metadata(content: str, source: str, source_id: int) -> list[Document]:
     """Asynchronously cleans, chunks, and creates Document objects with metadata."""
     documents = []
+    loop = asyncio.get_running_loop()
     try:
-        supabase.table('tenant_sources').update({"status": "PROCESSING"}).eq('id', source_id).execute()
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "PROCESSING"}).eq('id', source_id).execute())
+
         clean_content = await async_clean_markdown_with_llm(content)
 
         if DEBUG:
@@ -140,11 +142,11 @@ async def async_create_document_chunks_with_metadata(content: str, source: str, 
             )
             documents.append(doc)
 
-        supabase.table('tenant_sources').update({"status": "COMPLETED"}).eq('id', source_id).execute()
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "COMPLETED"}).eq('id', source_id).execute())
         return documents
     except Exception as e:
         print(f"Error creating document chunks for source {source_id}: {e}")
-        supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute()
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
         return []
 
 
