@@ -1,8 +1,14 @@
 <template>
     <div class="min-h-screen bg-gray-900 text-white font-sans flex items-center justify-center p-4">
         <div class="flex flex-col w-full max-w-4xl h-[90vh] bg-gray-800 rounded-2xl shadow-2xl">
-            <header class="bg-gray-700 p-4 shadow-md z-10 rounded-t-2xl">
-                <h1 class="text-xl font-bold text-center">Test Chat</h1>
+            <header class="bg-gray-700 p-4 shadow-md z-10 rounded-t-2xl flex justify-between items-center">
+                <div class="w-1/4"></div> <!-- Spacer -->
+                <h1 class="text-xl font-bold text-center w-1/2">Test Chat</h1>
+                <div class="w-1/4 flex justify-end">
+                    <button @click="resetChat" class="text-xs bg-gray-600 hover:bg-gray-500 text-white font-semibold py-1 px-3 rounded-lg transition-colors duration-200">
+                        Reset
+                    </button>
+                </div>
             </header>
 
             <main class="flex-grow p-4 overflow-y-auto" ref="chatContainer">
@@ -39,10 +45,25 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted, nextTick, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 import { marked } from 'marked';
+
+// --- Marked.js Configuration for Links ---
+const renderer = new marked.Renderer();
+const linkRenderer = renderer.link;
+renderer.link = (href, title, text) => {
+  const html = linkRenderer.call(renderer, href, title, text);
+  return html.replace(/^<a /, '<a target="_blank" rel="noopener noreferrer" ');
+};
+marked.use({ renderer });
+
+const processBotMessage = (content) => {
+    const cleanedText = content.replace(/{:target="_blank"}/g, '');
+    const html = marked(cleanedText);
+    return { text: cleanedText, html };
+};
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -52,6 +73,47 @@ const chatHistory = ref([]);
 const userMessage = ref('');
 const isThinking = ref(false);
 const chatContainer = ref(null);
+
+// --- Cookie Management for Chat History ---
+const CHAT_COOKIE_KEY = `chatHistory_${tenantId.value}`;
+
+const saveChatHistoryToCookie = (history) => {
+    if (!history || history.length === 0) {
+        document.cookie = `${CHAT_COOKIE_KEY}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        return;
+    }
+    const jsonHistory = JSON.stringify(history);
+    const d = new Date();
+    d.setTime(d.getTime() + (24 * 60 * 60 * 1000)); // Expires in 1 day
+    let expires = "expires=" + d.toUTCString();
+    document.cookie = `${CHAT_COOKIE_KEY}=${encodeURIComponent(jsonHistory)};${expires};path=/`;
+};
+
+const loadChatHistoryFromCookie = () => {
+    const name = CHAT_COOKIE_KEY + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) === 0) {
+            try {
+                return JSON.parse(decodeURIComponent(c.substring(name.length, c.length)));
+            } catch (e) {
+                console.error("Error parsing chat history from cookie:", e);
+                return null;
+            }
+        }
+    }
+    return null;
+};
+
+// --- Watch for changes in chat history and save to cookie ---
+watch(chatHistory, (newHistory) => {
+    saveChatHistoryToCookie(newHistory);
+}, { deep: true });
+
 
 const scrollToBottom = async () => {
     await nextTick();
@@ -66,15 +128,12 @@ const fetchIntroMessage = async () => {
     await scrollToBottom();
     try {
         const response = await axios.get(`${API_BASE_URL}/chat/${tenantId.value}/intro`);
-        const introMsg = response.data.intro_message;
-        chatHistory.value.push({
-            text: introMsg,
-            html: marked(introMsg),
-            isUser: false
-        });
+        const { text, html } = processBotMessage(response.data.intro_message);
+        chatHistory.value.push({ text, html, isUser: false });
     } catch (error) {
         const errorMsg = `Error: ${error.response?.data?.error || 'Could not get initial message.'}`;
-        chatHistory.value.push({ text: errorMsg, html: marked(errorMsg), isUser: false });
+        const { text, html } = processBotMessage(errorMsg);
+        chatHistory.value.push({ text, html, isUser: false });
     } finally {
         isThinking.value = false;
         await scrollToBottom();
@@ -103,23 +162,39 @@ const sendMessage = async () => {
         const response = await axios.post(`${API_BASE_URL}/chat/${tenantId.value}`, payload);
         const newHistory = response.data.chat_history;
 
-        chatHistory.value = newHistory.map(msg => ({
-            text: msg.content,
-            html: msg.type === 'ai' ? marked(msg.content) : null,
-            isUser: msg.type === 'human'
-        }));
+        chatHistory.value = newHistory.map(msg => {
+            if (msg.type === 'ai') {
+                const { text, html } = processBotMessage(msg.content);
+                return { text, html, isUser: false };
+            }
+            return { text: msg.content, html: null, isUser: true };
+        });
 
     } catch (error) {
         const errorMsg = `Error: ${error.response?.data?.error || 'Could not get a response.'}`;
-        chatHistory.value.push({ text: errorMsg, html: marked(errorMsg), isUser: false });
+        const { text, html } = processBotMessage(errorMsg);
+        chatHistory.value.push({ text, html, isUser: false });
     } finally {
         isThinking.value = false;
         await scrollToBottom();
     }
 };
 
-onMounted(() => {
+const resetChat = () => {
+    // Clear the chat history. The watcher will automatically clear the cookie.
+    chatHistory.value = [];
+    // Fetch a new introductory message to start a new conversation.
     fetchIntroMessage();
+};
+
+onMounted(() => {
+    const savedHistory = loadChatHistoryFromCookie();
+    if (savedHistory && savedHistory.length > 0) {
+        chatHistory.value = savedHistory;
+        scrollToBottom();
+    } else {
+        fetchIntroMessage();
+    }
 });
 </script>
 

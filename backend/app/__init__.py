@@ -4,6 +4,7 @@ from uuid import UUID
 from flask import Flask
 from flask_cors import CORS
 from dotenv import load_dotenv
+from app.logging_config import error_logger # Import to initialize logging
 
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
