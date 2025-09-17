@@ -232,7 +232,22 @@ const handleUpload = async () => {
     document.getElementById('file-upload').value = ''
     addToast('File uploaded successfully!', 'success');
   } catch (error) {
-    addToast(`File upload failed: ${error.response?.data?.error || 'Unknown error'}`, 'error');
+    let errorMessage = 'Unknown error';
+    if (error.response) {
+      console.error('Error response data:', error.response.data);
+      if (typeof error.response.data === 'string') {
+        errorMessage = error.response.data;
+      } else if (error.response.data && error.response.data.error) {
+        errorMessage = error.response.data.error;
+      } else {
+        errorMessage = `Server error: ${error.response.status}`;
+      }
+    } else if (error.request) {
+      errorMessage = 'No response from server. Check network connection.';
+    } else {
+      errorMessage = error.message;
+    }
+    addToast(`File upload failed: ${errorMessage}`, 'error');
   } finally {
     loading.value = false
   }
