@@ -19,3 +19,4 @@ uuid
 icalendar
 celery
 redis
+gunicorn
