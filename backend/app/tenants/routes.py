@@ -4,6 +4,7 @@ from app.database.supabase_client import supabase
 from app.auth.decorators import token_required
 from app.models.database import Tenant, TenantFineTune, SourceType
 from app.data_processing import processor
+from app.logging_config import error_logger
 from uuid import uuid4
 import os
 
@@ -180,6 +181,8 @@ def upload_source(current_user, tenant_id):
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     try:
         # Save file temporarily
         tenant_upload_path = os.path.join('uploads', tenant_id_str)
@@ -198,11 +201,11 @@ def upload_source(current_user, tenant_id):
         source_id = source_record.data[0]['id']
 
         # Process the file using the new processor function
-        documents = asyncio.run(
+        documents = loop.run_until_complete(
             processor.async_process_local_filepath(filepath, file.filename, source_id)
         )
 
-        os.remove(filepath)  # Clean up the saved file
+        os.remove(filepath) # Clean up the saved file
 
         if not documents:
             # The processor function handles setting the status to PROCESSING/COMPLETED/ERROR
@@ -210,14 +213,17 @@ def upload_source(current_user, tenant_id):
             supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute()
             return jsonify({"error": f"Unsupported file type or no content could be extracted from: {file.filename}"}), 400
 
-        # This function is synchronous and does not need an event loop
+        # The loop is now available for this synchronous function that needs it
         processor.process_documents(documents, tenant_id)
 
         return jsonify({"success": True, "message": f"File '{file.filename}' processed.", "source_id": source_id}), 201
 
     except Exception as e:
-        # No need to manage the loop here anymore, asyncio.run handles it.
+        error_logger.error(f"Error processing file upload for tenant {tenant_id_str}: {e}", exc_info=True)
         return jsonify({"error": f"Failed to process file: {str(e)}"}), 500
+    finally:
+        if loop and not loop.is_closed():
+            loop.close()
 
 @tenants_bp.route('/<uuid:tenant_id>/sources/crawl', methods=['POST'])
 @token_required
@@ -234,6 +240,8 @@ def crawl_sources(current_user, tenant_id):
     if not tenant_check.data:
         return jsonify({"error": "Tenant not found or access denied"}), 404
 
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     try:
         # Create source records in the database
         sources_to_insert = [
@@ -250,9 +258,9 @@ def crawl_sources(current_user, tenant_id):
         urls_with_ids = [(rec['source_location'], rec['id']) for rec in source_records.data]
 
         # Process and vectorize the URLs
-        documents = asyncio.run(processor.process_urls_concurrently(urls_with_ids, tenant_id))
+        documents = loop.run_until_complete(processor.process_urls_concurrently(urls_with_ids, tenant_id))
 
-        # This function is synchronous and does not need an event loop
+        # The loop is now available for this synchronous function that needs it
         processor.process_documents(documents, tenant_id)
 
         processed_sources = list(set([doc.metadata['source'] for doc in documents]))
@@ -263,8 +271,11 @@ def crawl_sources(current_user, tenant_id):
         }), 200
 
     except Exception as e:
-        # No need to manage the loop here anymore, asyncio.run handles it.
+        error_logger.error(f"Error processing crawl for tenant {tenant_id_str}: {e}", exc_info=True)
         return jsonify({"error": f"Failed to process URLs: {str(e)}"}), 500
+    finally:
+        if loop and not loop.is_closed():
+            loop.close()
 
 
 @tenants_bp.route('/<uuid:tenant_id>/sources/discover', methods=['POST'])
@@ -282,8 +293,10 @@ def discover_links(current_user, tenant_id):
     if not tenant_check.data:
         return jsonify({"error": "Tenant not found or access denied"}), 404
 
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     try:
-        links_by_depth = asyncio.run(processor.crawl_recursive_for_links(start_url))
+        links_by_depth = loop.run_until_complete(processor.crawl_recursive_for_links(start_url))
 
         # We need to flatten the list for the final crawl, but for now, let's return counts
         discovery_summary = [
@@ -294,8 +307,11 @@ def discover_links(current_user, tenant_id):
         return jsonify(discovery_summary), 200
 
     except Exception as e:
-        # No need to manage the loop here anymore, asyncio.run handles it.
+        error_logger.error(f"Error discovering links for tenant {tenant_id_str}: {e}", exc_info=True)
         return jsonify({"error": f"Failed to discover links: {str(e)}"}), 500
+    finally:
+        if loop and not loop.is_closed():
+            loop.close()
 
 
 @tenants_bp.route('/<uuid:tenant_id>/sources/<int:source_id>', methods=['DELETE'])
