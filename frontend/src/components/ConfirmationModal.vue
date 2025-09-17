@@ -21,8 +21,7 @@
         </button>
         <button
           @click="onConfirm"
-          :disabled="isConfirmDisabled"
-          class="px-6 py-2 text-white bg-red-600 hover:bg-red-500 rounded-md disabled:bg-red-800 disabled:cursor-not-allowed"
+          class="px-6 py-2 text-white bg-red-600 hover:bg-red-500 rounded-md disabled:bg-red-800"
         >
           {{ confirmButtonText }}
         </button>
