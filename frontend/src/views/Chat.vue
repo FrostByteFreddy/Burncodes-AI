@@ -60,9 +60,22 @@ renderer.link = (href, title, text) => {
 marked.use({ renderer });
 
 const processBotMessage = (content) => {
-    const cleanedText = content.replace(/{:target="_blank"}/g, '');
-    const html = marked(cleanedText);
-    return { text: cleanedText, html };
+    try {
+        // Ensure content is a string before processing
+        if (typeof content !== 'string') {
+            console.error("processBotMessage received non-string content:", content);
+            return { text: '', html: '' };
+        }
+        const cleanedText = content.replace(/{:target="_blank"}/g, '');
+        const html = marked(cleanedText);
+        return { text: cleanedText, html };
+    } catch (e) {
+        // If marked.js fails for any reason, log the error and return the raw text
+        console.error("Error parsing content with marked.js:", e);
+        console.error("Original content:", content); // Log the content that caused the error
+        // Return the raw content as a fallback to prevent the entire chat from failing
+        return { text: content, html: content };
+    }
 };
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
