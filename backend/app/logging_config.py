@@ -1,32 +1,18 @@
 import logging
-import os
-from logging.handlers import TimedRotatingFileHandler
+from app.utils.supabase_handler import SupabaseHandler
 
 def setup_logging():
-    """Sets up a timed rotating file logger for error messages."""
-    log_dir = 'logs'
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-
+    """Sets up a logger to send errors to Supabase."""
     logger = logging.getLogger('api_error_logger')
     logger.setLevel(logging.ERROR)
 
-    # Prevent adding handlers multiple times in case of reloads
+    # Prevent adding handlers multiple times in case of reloads,
+    # which can happen in a development environment like Flask's.
     if logger.hasHandlers():
         return logger
 
-    # Rotates the log file every hour, keeps 24 backups
-    handler = TimedRotatingFileHandler(
-        os.path.join(log_dir, 'error.log'),
-        when='H',
-        interval=1,
-        backupCount=24
-    )
-
-    formatter = logging.Formatter(
-        '%(asctime)s - %(levelname)s - %(message)s [in %(pathname)s:%(lineno)d]'
-    )
-    handler.setFormatter(formatter)
+    # Use our custom Supabase handler
+    handler = SupabaseHandler()
     logger.addHandler(handler)
 
     return logger
