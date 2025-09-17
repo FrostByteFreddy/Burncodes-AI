@@ -43,20 +43,29 @@ def handle_chat(tenant_id):
             loop.close()
 
 async def async_chat_logic(tenant_id, query, chat_history_json):
-    # This function is now indirectly covered by the try/except in handle_chat
-    tenant_response = supabase.table('tenants').select("*, tenant_fine_tune(*)").eq('id', str(tenant_id)).single().execute()
+    loop = asyncio.get_running_loop()
+
+    # --- Run blocking I/O in executor ---
+    tenant_response = await loop.run_in_executor(
+        None,
+        lambda: supabase.table('tenants').select("*, tenant_fine_tune(*)").eq('id', str(tenant_id)).single().execute()
+    )
 
     if not tenant_response.data:
         raise Exception(f"Tenant '{tenant_id}' not found")
 
     tenant_config = tenant_response.data
-    db = get_vectorstore(tenant_id)
 
-    if db._collection.count() == 0:
+    # --- Run blocking vector store initialization in executor ---
+    db = await loop.run_in_executor(None, get_vectorstore, tenant_id)
+    collection_count = await loop.run_in_executor(None, db._collection.count)
+
+    if collection_count == 0:
         raise Exception(f"No documents have been processed for tenant '{tenant_id}'.")
 
     chat_history = [HumanMessage(content=msg['content']) if msg['type'] == 'human' else AIMessage(content=msg['content']) for msg in chat_history_json]
 
+    # --- These are CPU-bound and can be initialized here ---
     answer_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.2)
     query_rewrite_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0)
 
@@ -84,6 +93,7 @@ async def async_chat_logic(tenant_id, query, chat_history_json):
     document_chain = create_stuff_documents_chain(answer_llm, final_rag_prompt)
     conversational_rag_chain = create_retrieval_chain(history_aware_retriever_chain, document_chain)
 
+    # This is the main async I/O call to the LLM
     response = await conversational_rag_chain.ainvoke({"chat_history": chat_history, "input": query})
 
     updated_history = chat_history + [HumanMessage(content=query), AIMessage(content=response["answer"])]
