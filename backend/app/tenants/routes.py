@@ -203,7 +203,6 @@ def upload_source(current_user, tenant_id):
         documents = loop.run_until_complete(
             processor.async_process_local_filepath(filepath, file.filename, source_id)
         )
-        loop.close()
 
         os.remove(filepath) # Clean up the saved file
 
@@ -211,9 +210,12 @@ def upload_source(current_user, tenant_id):
             # The processor function handles setting the status to PROCESSING/COMPLETED/ERROR
             # We just need to check if any documents were returned
             supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute()
+            loop.close()
             return jsonify({"error": f"Unsupported file type or no content could be extracted from: {file.filename}"}), 400
 
+        # Keep loop open for process_documents, which may use it for embeddings
         processor.process_documents(documents, tenant_id)
+        loop.close()
 
         return jsonify({"success": True, "message": f"File '{file.filename}' processed.", "source_id": source_id}), 201
 
@@ -256,9 +258,10 @@ def crawl_sources(current_user, tenant_id):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         documents = loop.run_until_complete(processor.process_urls_concurrently(urls_with_ids, tenant_id))
-        loop.close()
 
+        # Keep loop open for process_documents, which may use it for embeddings
         processor.process_documents(documents, tenant_id)
+        loop.close()
 
         processed_sources = list(set([doc.metadata['source'] for doc in documents]))
         return jsonify({
