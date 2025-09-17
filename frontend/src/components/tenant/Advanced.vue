@@ -1,6 +1,6 @@
 <template>
   <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-    <h3 class="text-xl font-bold text-orange-400 mb-4">Fine-Tuning Rules</h3>
+    <h3 class="text-xl font-bold text-brand-white mb-4">Fine-Tuning Rules</h3>
 
     <!-- Form to add new rule -->
     <form @submit.prevent="addRule" class="mb-6 flex items-start space-x-4">
@@ -14,7 +14,7 @@
         <textarea v-model="newRule.instruction" id="instruction" rows="2" placeholder="e.g., Always refer to the pricing page..."
           class="w-full p-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-lg"></textarea>
       </div>
-      <button type="submit" class="self-end mb-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg">Add Rule</button>
+      <button type="submit" class="self-end mb-1 bg-black border border-white hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg">Add Rule</button>
     </form>
 
     <!-- List of existing rules -->
@@ -36,7 +36,7 @@
     <!-- Save Changes Button -->
     <div class="flex justify-end mt-6">
        <button @click="handleUpdate" :disabled="tenantsStore.loading"
-          class="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
+          class="bg-black border border-white hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
           {{ tenantsStore.loading ? 'Saving...' : 'Save All Rules' }}
         </button>
     </div>

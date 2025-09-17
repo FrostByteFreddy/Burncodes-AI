@@ -2,13 +2,13 @@
   <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
     <!-- Left side: Add new sources -->
     <div class="bg-gray-800 p-6 rounded-lg shadow-lg space-y-6">
-      <h3 class="text-xl font-bold text-accent-gradient">Add New Source</h3>
+      <h3 class="text-xl font-bold text-brand-white">Add New Source</h3>
 
       <!-- File Upload -->
       <div>
         <label for="file-upload" class="block text-sm font-medium text-gray-300 mb-2">Upload File</label>
         <input id="file-upload" type="file" @change="handleFileSelect" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600" />
-        <button @click="handleUpload" :disabled="!selectedFile || loading" class="mt-2 w-full bg-accent-gradient text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
+        <button @click="handleUpload" :disabled="!selectedFile || loading" class="mt-2 w-full bg-black border border-white hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
           {{ loading ? 'Uploading...' : 'Upload File' }}
         </button>
       </div>
@@ -17,13 +17,13 @@
       <div>
         <label for="url-input" class="block text-sm font-medium text-gray-300 mb-2">Crawl Website</label>
         <input v-model="startUrl" id="url-input" type="text" placeholder="https://example.com"
-          class="w-full p-3 text-white bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full p-3 text-white bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-white"
           :class="{'border-red-500': !isUrlValid && startUrl}"
           aria-invalid="!isUrlValid && startUrl"
           aria-describedby="url-error"
         >
         <p v-if="!isUrlValid && startUrl" id="url-error" class="text-red-400 text-sm mt-1">Please enter a valid URL (e.g., https://example.com).</p>
-        <button @click="discoverLinks" :disabled="!startUrl.trim() || loading || !isUrlValid" class="mt-2 w-full bg-accent-gradient text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
+        <button @click="discoverLinks" :disabled="!startUrl.trim() || loading || !isUrlValid" class="mt-2 w-full bg-black border border-white hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
           {{ loading ? 'Discovering...' : 'Discover Links' }}
         </button>
       </div>
@@ -45,7 +45,7 @@
             </option>
           </select>
         </div>
-        <button @click="handleFinalCrawl" :disabled="!selectedDepth || loading" class="w-full bg-accent-gradient text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
+        <button @click="handleFinalCrawl" :disabled="!selectedDepth || loading" class="w-full bg-black border border-white hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
           {{ loading ? 'Crawling...' : `Crawl ${getTotalLinks(selectedDepth)} Pages` }}
         </button>
       </div>
@@ -53,7 +53,7 @@
 
     <!-- Right side: List of existing sources -->
     <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-      <h3 class="text-xl font-bold text-accent-gradient mb-4">Existing Sources</h3>
+      <h3 class="text-xl font-bold text-brand-white mb-4">Existing Sources</h3>
 
       <!-- Loading Skeleton -->
       <div v-if="tenantsStore.loading" class="space-y-4">

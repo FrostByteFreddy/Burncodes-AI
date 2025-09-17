@@ -2,7 +2,7 @@
   <div class="p-8">
     <div class="flex justify-between items-center mb-8">
       <h1 class="text-4xl font-bold text-brand-white">Manage Tenants</h1>
-      <button @click="showCreateModal = true" class="bg-accent-gradient text-white font-bold py-2 px-6 rounded-lg">
+      <button @click="showCreateModal = true" class="bg-black border border-white hover:bg-gray-900 text-white font-bold py-2 px-6 rounded-lg">
         New Tenant
       </button>
     </div>
@@ -16,7 +16,7 @@
     <div v-else-if="!tenantsStore.loading && tenantsStore.tenants.length === 0" class="text-center bg-gray-800 p-12 rounded-lg">
       <h2 class="text-2xl font-semibold mb-2">No tenants yet</h2>
       <p class="text-gray-400 mb-6">Create your first tenant to get started.</p>
-      <button @click="showCreateModal = true" class="bg-accent-gradient text-white font-bold py-2 px-6 rounded-lg">
+      <button @click="showCreateModal = true" class="bg-black border border-white hover:bg-gray-900 text-white font-bold py-2 px-6 rounded-lg">
         Create a Tenant
       </button>
     </div>
