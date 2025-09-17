@@ -1,7 +1,7 @@
 <template>
-  <div id="app-layout" class="flex min-h-screen bg-brand-black text-brand-white">
-    <Sidebar v-if="authStore.user" />
-    <main class="flex-1">
+  <div id="app-layout" :class="{'flex': showSidebar}" class="min-h-screen bg-brand-black text-brand-white">
+    <Sidebar v-if="showSidebar" />
+    <main :class="{'flex-1': showSidebar}">
       <router-view />
     </main>
     <ToastContainer />
@@ -9,11 +9,18 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import Sidebar from './components/Sidebar.vue'
 import ToastContainer from './components/ToastContainer.vue'
 import { useAuthStore } from './stores/auth'
 
 const authStore = useAuthStore()
+const route = useRoute()
+
+const showSidebar = computed(() => {
+  return authStore.user && route.name !== 'Chat'
+})
 </script>
 
 <style>
