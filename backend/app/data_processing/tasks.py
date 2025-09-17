@@ -16,7 +16,7 @@ from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
 
 # --- LangChain Core Imports ---
 from langchain_core.documents import Document
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_core.prompts import PromptTemplate
 
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
@@ -125,8 +125,9 @@ async def _get_document_chunks_from_content(content: str, source: str, source_id
 
 @shared_task
 def process_local_filepath(filepath: str, source_filename: str, source_id: int, tenant_id: UUID):
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     docs = asyncio.run(async_process_local_filepath(filepath, source_filename, source_id))
-    process_documents(docs, tenant_id)
+    process_documents(docs, tenant_id, embeddings)
     os.remove(filepath)
 
 
@@ -147,8 +148,9 @@ async def async_process_local_filepath(filepath: str, source_filename: str, sour
 
 @shared_task
 def process_urls(urls: list[tuple[str, int]], tenant_id: UUID):
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     docs = asyncio.run(process_urls_concurrently(urls, tenant_id))
-    process_documents(docs, tenant_id)
+    process_documents(docs, tenant_id, embeddings)
 
 async def process_urls_concurrently(urls: list[tuple[str, int]], tenant_id: UUID) -> list[Document]:
     urls_to_crawl = []

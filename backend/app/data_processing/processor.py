@@ -54,9 +54,10 @@ def get_loader(filepath):
     elif ext == '.ics': return ICSExtensionLoader(filepath)
     return None
 
-def get_vectorstore(tenant_id: UUID):
+from langchain_core.embeddings import Embeddings
+
+def get_vectorstore(tenant_id: UUID, embeddings: Embeddings):
     """Initializes and returns a tenant-specific Chroma vector store instance."""
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     tenant_id_str = str(tenant_id)
     tenant_db_path = os.path.join(VECTOR_STORE_PATH_BASE, tenant_id_str)
 
@@ -99,10 +100,10 @@ def smart_chunk_markdown(markdown: str, max_len: int = 1000) -> list[str]:
     final_chunks = [c for c in chunks if c and len(c) <= max_len]
     return final_chunks
 
-def process_documents(docs: list[Document], tenant_id: UUID):
+def process_documents(docs: list[Document], tenant_id: UUID, embeddings: Embeddings):
     if not docs:
         print("No documents to process")
         return
-    db = get_vectorstore(tenant_id)
+    db = get_vectorstore(tenant_id, embeddings)
     db.add_documents(docs)
     print(f"✅ Added {len(docs)} document chunks to ChromaDB for tenant: {tenant_id}.")

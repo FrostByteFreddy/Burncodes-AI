@@ -1,15 +1,12 @@
 import asyncio
-import nest_asyncio
 from celery import shared_task
 from app.database.supabase_client import supabase
-
-nest_asyncio.apply()
 from app.data_processing.processor import get_vectorstore
 from app.logging_config import error_logger
 import os
 
 # --- LangChain Core Imports ---
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain.chains import create_retrieval_chain
@@ -48,8 +45,11 @@ async def async_chat_logic(tenant_id, query, chat_history_json):
 
     tenant_config = tenant_response.data
 
+    # --- Create embeddings (async-safe) ---
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+
     # --- Run blocking vector store initialization in executor ---
-    db = await loop.run_in_executor(None, get_vectorstore, tenant_id)
+    db = await loop.run_in_executor(None, get_vectorstore, tenant_id, embeddings)
     collection_count = await loop.run_in_executor(None, db._collection.count)
 
     if collection_count == 0:
