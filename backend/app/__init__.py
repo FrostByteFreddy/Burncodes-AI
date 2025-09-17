@@ -5,9 +5,15 @@ from flask import Flask
 from flask_cors import CORS
 from dotenv import load_dotenv
 from celery import Celery
-from app.logging_config import error_logger # Import to initialize logging
+from app.logging_config import error_logger
 
-celery = Celery(__name__, broker='redis://127.0.0.1:6379/0')
+load_dotenv()
+
+celery = Celery(
+    __name__,
+    broker=os.environ.get('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0'),
+    backend=os.environ.get('CELERY_RESULT_BACKEND', 'redis://127.0.0.1:6379/0')
+)
 
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -16,8 +22,6 @@ class CustomJSONEncoder(json.JSONEncoder):
         return super().default(obj)
 
 def create_app():
-    load_dotenv()
-
     app = Flask(__name__)
     app.json_encoder = CustomJSONEncoder
     CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)

@@ -36,7 +36,7 @@ The Flask app serves the API that the frontend interacts with.
 ```sh
 # Navigate to the backend directory and activate your virtual environment
 
-python run.py
+flask run
 ```
 *Keep this terminal open.*
 
