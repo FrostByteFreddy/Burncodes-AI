@@ -15,9 +15,11 @@ from langchain_community.vectorstores import Chroma
 
 # --- LangChain Core Imports ---
 from langchain_community.document_loaders import PyPDFLoader, Docx2txtLoader, TextLoader, CSVLoader
+from langchain_community.document_loaders.base import BaseLoader
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.documents import Document
+from icalendar import Calendar
 
 from app.database.supabase_client import supabase
 
@@ -48,13 +50,43 @@ Here is the raw markdown text:
 """
 
 # --- DOCUMENT LOADERS ---
-SUPPORTED_FILE_EXTENSIONS = ['.pdf', '.docx', '.txt', '.csv']
+class ICSExtensionLoader(BaseLoader):
+    """A simple loader for .ics files."""
+    def __init__(self, file_path: str):
+        self.file_path = file_path
+
+    def load(self) -> list[Document]:
+        with open(self.file_path, 'rb') as f:
+            calendar = Calendar.from_ical(f.read())
+
+        content = ""
+        for component in calendar.walk():
+            if component.name == "VEVENT":
+                summary = component.get('summary')
+                description = component.get('description')
+                start_time = component.get('dtstart').dt if component.get('dtstart') else 'N/A'
+                end_time = component.get('dtend').dt if component.get('dtend') else 'N/A'
+                location = component.get('location')
+
+                content += f"Event: {summary}\n"
+                if description:
+                    content += f"Description: {description}\n"
+                content += f"Start: {start_time}\n"
+                content += f"End: {end_time}\n"
+                if location:
+                    content += f"Location: {location}\n"
+                content += "---\n"
+
+        return [Document(page_content=content)]
+
+SUPPORTED_FILE_EXTENSIONS = ['.pdf', '.docx', '.txt', '.csv', '.ics']
 def get_loader(filepath):
     ext = os.path.splitext(filepath)[1].lower()
     if ext == '.pdf': return PyPDFLoader(filepath)
     elif ext == '.docx': return Docx2txtLoader(filepath)
     elif ext == '.txt': return TextLoader(filepath, encoding='utf-8')
     elif ext == '.csv': return CSVLoader(filepath, encoding='utf-8')
+    elif ext == '.ics': return ICSExtensionLoader(filepath)
     return None
 
 # --- ASYNC CHROMA & CRAWLING HELPERS ---
@@ -149,6 +181,41 @@ async def async_create_document_chunks_with_metadata(content: str, source: str, 
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
         return []
 
+async def async_create_document_chunks_for_structured_data(content: str, source: str, source_id: int) -> list[Document]:
+    """Asynchronously chunks and creates Document objects for structured data without LLM cleaning."""
+    documents = []
+    loop = asyncio.get_running_loop()
+    try:
+        # Note: This path skips the `async_clean_markdown_with_llm` step
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "PROCESSING"}).eq('id', source_id).execute())
+
+        # Directly chunk the raw content
+        chunks = smart_chunk_markdown(content, max_len=1000)
+        timestamp = datetime.now(timezone.utc).isoformat()
+        for i, chunk in enumerate(chunks):
+            doc = Document(
+                page_content=chunk,
+                metadata={"source": source, "source_id": source_id, "chunk": i, "last_updated": timestamp}
+            )
+            documents.append(doc)
+
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "COMPLETED"}).eq('id', source_id).execute())
+        print(f"✅ Created {len(documents)} chunks for structured file {source} (source_id: {source_id})")
+        return documents
+    except Exception as e:
+        print(f"Error creating document chunks for structured source {source_id}: {e}")
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
+        return []
+
+async def _get_document_chunks_from_content(content: str, source: str, source_id: int, ext: str) -> list[Document]:
+    """Internal helper to decide which chunking strategy to use based on file extension."""
+    structured_extensions = ['.csv', '.ics']
+    if ext in structured_extensions:
+        # Use the direct path for structured data
+        return await async_create_document_chunks_for_structured_data(content, source, source_id)
+    else:
+        # Use the LLM cleaning path for unstructured data
+        return await async_create_document_chunks_with_metadata(content, source, source_id)
 
 def process_documents(docs: list[Document], tenant_id: UUID):
     if not docs:
@@ -157,6 +224,22 @@ def process_documents(docs: list[Document], tenant_id: UUID):
     db = get_vectorstore(tenant_id)
     db.add_documents(docs)
     print(f"✅ Added {len(docs)} document chunks to ChromaDB for tenant: {tenant_id}.")
+
+async def async_process_local_filepath(filepath: str, source_filename: str, source_id: int) -> list[Document]:
+    """Loads a local file and processes it into document chunks."""
+    ext = os.path.splitext(source_filename)[1].lower()
+    loader = get_loader(filepath)
+    if not loader:
+        print(f"⚠️ No loader found for extension {ext}, skipping file {source_filename}")
+        return []
+
+    docs_from_loader = loader.load()
+    if not docs_from_loader:
+        return []
+
+    content = docs_from_loader[0].page_content
+    # Now call the centralized logic
+    return await _get_document_chunks_from_content(content, source_filename, source_id, ext)
 
 async def async_process_file_url(url: str, tenant_id: UUID, source_id: int) -> list[Document]:
     """Downloads a file from a URL and processes its content."""
@@ -188,7 +271,7 @@ async def async_process_file_url(url: str, tenant_id: UUID, source_id: int) -> l
         if not docs_from_loader: return []
 
         content = docs_from_loader[0].page_content
-        return await async_create_document_chunks_with_metadata(content, url, source_id)
+        return await _get_document_chunks_from_content(content, url, source_id, ext)
 
     except Exception as e:
         print(f"❌ Error processing file URL {url}: {e}")

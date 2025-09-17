@@ -197,26 +197,21 @@ def upload_source(current_user, tenant_id):
         source_record = supabase.table('tenant_sources').insert(source_data).execute()
         source_id = source_record.data[0]['id']
 
-        # Process the file
-        loader = processor.get_loader(filepath)
-        if not loader:
-            supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute()
-            return jsonify({"error": f"Unsupported file type: {file.filename}"}), 400
-
-        docs_from_loader = loader.load()
-        os.remove(filepath) # Clean up the saved file
-
-        if not docs_from_loader:
-            supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute()
-            return jsonify({"error": f"No content could be extracted from: {file.filename}"}), 400
-
-        content = docs_from_loader[0].page_content
-
-        # Process and vectorize the document
+        # Process the file using the new processor function
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        documents = loop.run_until_complete(processor.async_create_document_chunks_with_metadata(content, file.filename, source_id))
+        documents = loop.run_until_complete(
+            processor.async_process_local_filepath(filepath, file.filename, source_id)
+        )
         loop.close()
+
+        os.remove(filepath) # Clean up the saved file
+
+        if not documents:
+            # The processor function handles setting the status to PROCESSING/COMPLETED/ERROR
+            # We just need to check if any documents were returned
+            supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute()
+            return jsonify({"error": f"Unsupported file type or no content could be extracted from: {file.filename}"}), 400
 
         processor.process_documents(documents, tenant_id)
 
