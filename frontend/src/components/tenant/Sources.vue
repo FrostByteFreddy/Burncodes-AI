@@ -120,7 +120,7 @@ import { ref, computed } from 'vue'
 import { useTenantsStore } from '../../stores/tenants'
 import { useAuthStore } from '../../stores/auth'
 import { useToast } from '../../composables/useToast'
-import ConfirmationModal from './ConfirmationModal.vue'
+import ConfirmationModal from '../ConfirmationModal.vue'
 import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';

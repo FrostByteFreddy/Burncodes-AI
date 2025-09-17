@@ -6,23 +6,8 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-      <!-- Sidebar Navigation -->
-      <aside class="md:col-span-1">
-        <nav class="space-y-2">
-          <router-link :to="{ name: 'TenantSettings' }" class="sidebar-link">
-            Settings
-          </router-link>
-          <router-link :to="{ name: 'TenantSources' }" class="sidebar-link">
-            Sources
-          </router-link>
-          <router-link :to="{ name: 'TenantAdvanced' }" class="sidebar-link">
-            Advanced
-          </router-link>
-        </nav>
-      </aside>
-
       <!-- Main Content -->
-      <main class="md:col-span-3">
+      <main class="md:col-span-4">
         <router-view />
       </main>
     </div>

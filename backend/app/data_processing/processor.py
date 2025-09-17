@@ -224,7 +224,7 @@ async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]]) -
 
     return all_docs
 
-async def crawl_recursive_for_links(start_url: str, max_depth: int = 4):
+async def crawl_recursive_for_links(start_url: str, max_depth: int = 3):
     """
     Uses crawl4ai to recursively discover all internal links from a starting URL,
     categorized by depth.
