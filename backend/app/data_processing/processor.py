@@ -224,30 +224,49 @@ async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]]) -
 
     return all_docs
 
-async def crawl_recursive_for_links(start_urls, max_depth=3):
-    """Uses crawl4ai to recursively discover all internal links from a starting URL."""
+async def crawl_recursive_for_links(start_url: str, max_depth: int = 4):
+    """
+    Uses crawl4ai to recursively discover all internal links from a starting URL,
+    categorized by depth.
+    """
     browser_config = BrowserConfig(headless=True, verbose=False)
     run_config = CrawlerRunConfig(cache_mode=CacheMode.BYPASS, stream=False)
-    visited = set()
-    def normalize_url(url): return urldefrag(url)[0]
-    current_urls = set([normalize_url(u) for u in start_urls])
+
+    all_found_urls = set()
+    links_by_depth = []
+
+    def normalize_url(url):
+        return urldefrag(url)[0].rstrip('/')
+
+    current_urls_to_crawl = {normalize_url(start_url)}
+    all_found_urls.add(normalize_url(start_url))
 
     async with AsyncWebCrawler(config=browser_config) as crawler:
         for depth in range(max_depth):
-            print(f"Crawling depth {depth + 1} with {len(current_urls)} URLs...")
-            urls_to_crawl = [url for url in current_urls if url not in visited]
-            if not urls_to_crawl: break
-            results = await crawler.arun_many(urls=urls_to_crawl, config=run_config)
+            if not current_urls_to_crawl:
+                break
+
+            print(f"Crawling depth {depth + 1} with {len(current_urls_to_crawl)} URLs...")
+
+            # Add current level's URLs to the results
+            depth_links = list(current_urls_to_crawl)
+            links_by_depth.append(depth_links)
+
+            # Crawl and find links for the next level
+            results = await crawler.arun_many(urls=depth_links, config=run_config)
+
             next_level_urls = set()
             for result in results:
-                norm_url = normalize_url(result.url)
-                visited.add(norm_url)
                 if result.success:
                     for link in result.links.get("internal", []):
-                        next_url = normalize_url(link["href"])
-                        if next_url not in visited: next_level_urls.add(next_url)
-            current_urls = next_level_urls
-    return list(visited)
+                        normalized_link = normalize_url(link["href"])
+                        if normalized_link not in all_found_urls:
+                            next_level_urls.add(normalized_link)
+                            all_found_urls.add(normalized_link)
+
+            current_urls_to_crawl = next_level_urls
+
+    return links_by_depth
 
 async def process_urls_concurrently(urls: list[tuple[str, int]], tenant_id: UUID) -> list[Document]:
     urls_to_crawl = []

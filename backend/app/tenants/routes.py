@@ -278,6 +278,41 @@ def crawl_sources(current_user, tenant_id):
         return jsonify({"error": f"Failed to process URLs: {str(e)}"}), 500
 
 
+@tenants_bp.route('/<uuid:tenant_id>/sources/discover', methods=['POST'])
+@token_required
+def discover_links(current_user, tenant_id):
+    data = request.get_json()
+    start_url = data.get('url')
+
+    if not start_url:
+        return jsonify({"error": "URL is required"}), 400
+
+    # Basic ownership check
+    tenant_id_str = str(tenant_id)
+    tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
+    if not tenant_check.data:
+        return jsonify({"error": "Tenant not found or access denied"}), 404
+
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        links_by_depth = loop.run_until_complete(processor.crawl_recursive_for_links(start_url))
+        loop.close()
+
+        # We need to flatten the list for the final crawl, but for now, let's return counts
+        discovery_summary = [
+            {"depth": i + 1, "count": len(links), "links": links}
+            for i, links in enumerate(links_by_depth)
+        ]
+
+        return jsonify(discovery_summary), 200
+
+    except Exception as e:
+        if 'loop' in locals() and not loop.is_closed():
+            loop.close()
+        return jsonify({"error": f"Failed to discover links: {str(e)}"}), 500
+
+
 @tenants_bp.route('/<uuid:tenant_id>/sources/<int:source_id>', methods=['DELETE'])
 @token_required
 def delete_source(current_user, tenant_id, source_id):

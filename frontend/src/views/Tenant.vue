@@ -1,18 +1,30 @@
 <template>
   <div class="container mx-auto p-6" v-if="tenantsStore.currentTenant">
-    <div class="mb-6">
+    <div class="mb-8">
       <h1 class="text-3xl font-bold">{{ tenantsStore.currentTenant.name }}</h1>
       <p class="text-gray-400">Manage your tenant settings, sources, and advanced configurations.</p>
     </div>
 
-    <div class="flex border-b border-gray-700 mb-6">
-      <router-link :to="{ name: 'TenantSettings' }" class="tab-link">Settings</router-link>
-      <router-link :to="{ name: 'TenantSources' }" class="tab-link">Sources</router-link>
-      <router-link :to="{ name: 'TenantAdvanced' }" class="tab-link">Advanced</router-link>
-    </div>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <!-- Sidebar Navigation -->
+      <aside class="md:col-span-1">
+        <nav class="space-y-2">
+          <router-link :to="{ name: 'TenantSettings' }" class="sidebar-link">
+            Settings
+          </router-link>
+          <router-link :to="{ name: 'TenantSources' }" class="sidebar-link">
+            Sources
+          </router-link>
+          <router-link :to="{ name: 'TenantAdvanced' }" class="sidebar-link">
+            Advanced
+          </router-link>
+        </nav>
+      </aside>
 
-    <div>
-      <router-view />
+      <!-- Main Content -->
+      <main class="md:col-span-3">
+        <router-view />
+      </main>
     </div>
   </div>
   <div v-else-if="tenantsStore.loading" class="text-center p-10">
@@ -35,6 +47,7 @@ onMounted(() => {
   tenantsStore.fetchTenant(route.params.tenantId)
 })
 
+// When switching between tenants, fetch the new tenant's data
 watch(() => route.params.tenantId, (newId) => {
   if (newId) {
     tenantsStore.fetchTenant(newId)
@@ -43,10 +56,10 @@ watch(() => route.params.tenantId, (newId) => {
 </script>
 
 <style scoped>
-.tab-link {
-  @apply py-2 px-4 text-gray-400 hover:text-white;
+.sidebar-link {
+  @apply block w-full text-left py-2 px-4 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors;
 }
 .router-link-exact-active {
-  @apply text-orange-400 border-b-2 border-orange-400;
+  @apply bg-gray-800 text-orange-400 font-semibold;
 }
 </style>
