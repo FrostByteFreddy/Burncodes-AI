@@ -2,13 +2,13 @@
   <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
     <!-- Left side: Add new sources -->
     <div class="bg-gray-800 p-6 rounded-lg shadow-lg space-y-6">
-      <h3 class="text-xl font-bold text-orange-400">Add New Source</h3>
+      <h3 class="text-xl font-bold text-accent-gradient">Add New Source</h3>
 
       <!-- File Upload -->
       <div>
         <label for="file-upload" class="block text-sm font-medium text-gray-300 mb-2">Upload File</label>
-        <input id="file-upload" type="file" @change="handleFileSelect" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100" />
-        <button @click="handleUpload" :disabled="!selectedFile || loading" class="mt-2 w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
+        <input id="file-upload" type="file" @change="handleFileSelect" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600" />
+        <button @click="handleUpload" :disabled="!selectedFile || loading" class="mt-2 w-full bg-accent-gradient text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
           {{ loading ? 'Uploading...' : 'Upload File' }}
         </button>
       </div>
@@ -16,9 +16,14 @@
       <!-- URL Crawl -->
       <div>
         <label for="url-input" class="block text-sm font-medium text-gray-300 mb-2">Crawl Website</label>
-        <input v-model="startUrl" id="url-input" type="text" placeholder="Enter a single domain to crawl (e.g., example.com)"
-          class="w-full p-3 text-white bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-        <button @click="discoverLinks" :disabled="!startUrl.trim() || loading" class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
+        <input v-model="startUrl" id="url-input" type="text" placeholder="https://example.com"
+          class="w-full p-3 text-white bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          :class="{'border-red-500': !isUrlValid && startUrl}"
+          aria-invalid="!isUrlValid && startUrl"
+          aria-describedby="url-error"
+        >
+        <p v-if="!isUrlValid && startUrl" id="url-error" class="text-red-400 text-sm mt-1">Please enter a valid URL (e.g., https://example.com).</p>
+        <button @click="discoverLinks" :disabled="!startUrl.trim() || loading || !isUrlValid" class="mt-2 w-full bg-accent-gradient text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
           {{ loading ? 'Discovering...' : 'Discover Links' }}
         </button>
       </div>
@@ -40,7 +45,7 @@
             </option>
           </select>
         </div>
-        <button @click="handleFinalCrawl" :disabled="!selectedDepth || loading" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
+        <button @click="handleFinalCrawl" :disabled="!selectedDepth || loading" class="w-full bg-accent-gradient text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
           {{ loading ? 'Crawling...' : `Crawl ${getTotalLinks(selectedDepth)} Pages` }}
         </button>
       </div>
@@ -48,9 +53,21 @@
 
     <!-- Right side: List of existing sources -->
     <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-      <h3 class="text-xl font-bold text-orange-400 mb-4">Existing Sources</h3>
-      <div v-if="tenantsStore.currentTenant && tenantsStore.currentTenant.tenant_sources.length > 0" class="space-y-4 max-h-96 overflow-y-auto">
+      <h3 class="text-xl font-bold text-accent-gradient mb-4">Existing Sources</h3>
 
+      <!-- Loading Skeleton -->
+      <div v-if="tenantsStore.loading" class="space-y-4">
+        <div v-for="n in 3" :key="n" class="h-16 bg-gray-700 rounded-lg animate-pulse"></div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else-if="!tenantsStore.currentTenant || tenantsStore.currentTenant.tenant_sources.length === 0" class="text-center p-8 rounded-lg bg-gray-700">
+        <h4 class="text-xl font-semibold">No sources yet</h4>
+        <p class="text-gray-400 mt-2">Add a source to start building your chatbot's knowledge base.</p>
+      </div>
+
+      <!-- Existing Sources List -->
+      <div v-else class="space-y-4 max-h-96 overflow-y-auto">
         <!-- URL Sources Accordion -->
         <details class="bg-gray-700 rounded-lg" open>
           <summary class="cursor-pointer font-semibold p-4">
@@ -62,7 +79,7 @@
                 <p class="font-semibold truncate" :title="source.source_location">{{ source.source_location }}</p>
                 <p class="text-xs text-gray-400">Status: {{ source.status }}</p>
               </div>
-              <button @click="handleDelete(source.id)" class="text-red-500 hover:text-red-400 text-2xl leading-none">&times;</button>
+              <button @click="confirmDelete(source)" class="text-red-500 hover:text-red-400 font-semibold text-xl">&times;</button>
             </div>
             <p v-if="urlSources.length === 0" class="text-gray-500 text-sm">No URLs have been crawled yet.</p>
           </div>
@@ -79,35 +96,57 @@
                 <p class="font-semibold truncate" :title="source.source_location">{{ source.source_location }}</p>
                 <p class="text-xs text-gray-400">Status: {{ source.status }}</p>
               </div>
-              <button @click="handleDelete(source.id)" class="text-red-500 hover:text-red-400 text-2xl leading-none">&times;</button>
+              <button @click="confirmDelete(source)" class="text-red-500 hover:text-red-400 font-semibold text-xl">&times;</button>
             </div>
              <p v-if="fileSources.length === 0" class="text-gray-500 text-sm">No files have been uploaded yet.</p>
           </div>
         </details>
-
       </div>
-      <p v-else class="text-gray-500">No sources added yet.</p>
     </div>
+
+    <ConfirmationModal
+      :show="showConfirmationModal"
+      title="Delete Source"
+      :message="`Are you sure you want to delete the source '${sourceToDelete?.source_location}'?`"
+      confirmButtonText="Delete"
+      @confirm="handleDelete"
+      @cancel="cancelDelete"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useTenantsStore } from '../../stores/tenants'
-import axios from 'axios'
 import { useAuthStore } from '../../stores/auth'
+import { useToast } from '../../composables/useToast'
+import ConfirmationModal from './ConfirmationModal.vue'
+import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 const tenantsStore = useTenantsStore()
 const authStore = useAuthStore()
+const { addToast } = useToast()
 
 const selectedFile = ref(null)
 const loading = ref(false)
 
-// New state for recursive crawl
 const startUrl = ref('')
 const discoveryResults = ref([])
 const selectedDepth = ref(0)
+
+const sourceToDelete = ref(null)
+const showConfirmationModal = ref(false)
+
+const isUrlValid = computed(() => {
+  if (!startUrl.value) return true;
+  try {
+    const url = new URL(startUrl.value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch (_) {
+    return false;
+  }
+});
 
 const urlSources = computed(() => {
   if (tenantsStore.currentTenant && tenantsStore.currentTenant.tenant_sources) {
@@ -145,11 +184,11 @@ const discoverLinks = async () => {
         const response = await axios.post(`${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/discover`, { url: startUrl.value }, { headers: getAuthHeaders() });
         discoveryResults.value = response.data;
         if (discoveryResults.value.length > 0) {
-            selectedDepth.value = discoveryResults.value.length; // Default to max depth
+            selectedDepth.value = discoveryResults.value.length;
         }
+        addToast('Link discovery successful!', 'success');
     } catch (error) {
-        console.error('Link discovery failed:', error);
-        alert(`Link discovery failed: ${error.response?.data?.error || 'Unknown error'}`);
+        addToast(`Link discovery failed: ${error.response?.data?.error || 'Unknown error'}`, 'error');
     } finally {
         loading.value = false;
     }
@@ -165,13 +204,13 @@ const handleFinalCrawl = async () => {
 
     try {
         await axios.post(`${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/crawl`, { urls: urlsToCrawl }, { headers: getAuthHeaders() });
-        await tenantsStore.fetchTenant(tenantsStore.currentTenant.id); // Refresh data
+        await tenantsStore.fetchTenant(tenantsStore.currentTenant.id);
         startUrl.value = '';
         discoveryResults.value = [];
         selectedDepth.value = 0;
+        addToast('Crawling initiated successfully!', 'success');
     } catch (error) {
-        console.error('URL crawling failed:', error);
-        alert(`URL crawling failed: ${error.response?.data?.error || 'Unknown error'}`);
+        addToast(`URL crawling failed: ${error.response?.data?.error || 'Unknown error'}`, 'error');
     } finally {
         loading.value = false;
     }
@@ -188,25 +227,37 @@ const handleUpload = async () => {
   formData.append('file', selectedFile.value)
   try {
     await axios.post(`${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/upload`, formData, { headers: getAuthHeaders() })
-    await tenantsStore.fetchTenant(tenantsStore.currentTenant.id) // Refresh data
+    await tenantsStore.fetchTenant(tenantsStore.currentTenant.id)
     selectedFile.value = null
     document.getElementById('file-upload').value = ''
+    addToast('File uploaded successfully!', 'success');
   } catch (error) {
-    console.error('File upload failed:', error)
+    addToast(`File upload failed: ${error.response?.data?.error || 'Unknown error'}`, 'error');
   } finally {
     loading.value = false
   }
 }
 
-const handleDelete = async (sourceId) => {
-  if (!tenantsStore.currentTenant) return
-  if (confirm('Are you sure you want to delete this source? This might affect your chatbot\'s knowledge.')) {
-    try {
-        await axios.delete(`${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/${sourceId}`, { headers: getAuthHeaders() })
-        await tenantsStore.fetchTenant(tenantsStore.currentTenant.id) // Refresh data
-    } catch (error) {
-        console.error('Failed to delete source:', error)
-    }
+const confirmDelete = (source) => {
+  sourceToDelete.value = source;
+  showConfirmationModal.value = true;
+};
+
+const cancelDelete = () => {
+  sourceToDelete.value = null;
+  showConfirmationModal.value = false;
+};
+
+const handleDelete = async () => {
+  if (!tenantsStore.currentTenant || !sourceToDelete.value) return
+  try {
+      await axios.delete(`${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/${sourceToDelete.value.id}`, { headers: getAuthHeaders() })
+      await tenantsStore.fetchTenant(tenantsStore.currentTenant.id)
+      addToast('Source deleted successfully!', 'success');
+  } catch (error) {
+      addToast(`Failed to delete source: ${error.response?.data?.error || 'Unknown error'}`, 'error');
+  } finally {
+    cancelDelete();
   }
 }
 </script>
