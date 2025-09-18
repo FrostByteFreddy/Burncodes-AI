@@ -240,78 +240,138 @@ async def async_process_file_url(url: str, tenant_id: UUID, source_id: int) -> l
             os.remove(tmp_filepath)
         return []
 
+from app.models.database import CrawlingStatus
+
+def normalize_url(url):
+    """Normalizes a URL by removing fragment and trailing slash."""
+    return urldefrag(url)[0].rstrip('/')
+
 @shared_task(bind=True)
-def crawl_links_task(self, start_url: str, max_depth: int = 3, batch_size: int = 50):
+def crawl_links_task(self, tenant_id: UUID, start_url: str, max_depth: int = 2):
     """
-    Celery task to discover links recursively from a starting URL.
-    This task orchestrates the crawl level by level to manage memory usage.
+    Orchestrator Celery task to initiate a distributed web crawl.
+    Creates a CrawlingJob and the first CrawlingTask.
     """
     try:
-        self.update_state(state='PROGRESS', meta={'status': 'Initializing crawl...'})
+        start_url = normalize_url(start_url)
+        job_data = {
+            "tenant_id": str(tenant_id),
+            "start_url": start_url,
+            "max_depth": max_depth,
+            "status": CrawlingStatus.IN_PROGRESS.value
+        }
+        job_response = supabase.table('crawling_jobs').insert(job_data).execute()
+        job = job_response.data[0]
+        job_id = job['id']
 
-        links_by_depth = []
-        all_found_urls = set()
+        self.update_state(state='PROGRESS', meta={'job_id': job_id, 'status': 'Job created'})
 
-        def normalize_url(url):
-            return urldefrag(url)[0].rstrip('/')
+        task_data = {
+            "job_id": job_id,
+            "url": start_url,
+            "depth": 1,
+            "status": CrawlingStatus.PENDING.value
+        }
+        task_response = supabase.table('crawling_tasks').insert(task_data).execute()
+        task = task_response.data[0]
+        task_id = task['id']
 
-        current_urls_to_crawl = {normalize_url(start_url)}
-        all_found_urls.add(normalize_url(start_url))
+        process_single_url_task.delay(task_id=task_id, tenant_id=tenant_id)
 
-        for depth in range(max_depth):
-            if not current_urls_to_crawl:
-                break
-
-            status_message = f"Processing depth {depth + 1} with {len(current_urls_to_crawl)} URLs..."
-            print(status_message)
-            self.update_state(state='PROGRESS', meta={'status': status_message})
-
-            # Store the links for the current depth
-            links_for_this_depth = list(current_urls_to_crawl)
-            links_by_depth.append(links_for_this_depth)
-
-            # Discover the next level of URLs
-            next_level_urls_set = asyncio.run(
-                crawl_urls_in_batches(
-                    urls_to_crawl=list(current_urls_to_crawl),
-                    batch_size=batch_size
-                )
-            )
-
-            # Filter out URLs we've already seen
-            newly_discovered_urls = {normalize_url(url) for url in next_level_urls_set}
-            current_urls_to_crawl = newly_discovered_urls - all_found_urls
-            all_found_urls.update(current_urls_to_crawl)
-
-        # Format results for the frontend
-        formatted_results = [
-            {"depth": i + 1, "count": len(links), "links": links}
-            for i, links in enumerate(links_by_depth)
-        ]
-        return {'status': 'Completed', 'result': formatted_results}
+        return {'status': 'Crawl initiated', 'job_id': job_id}
 
     except Exception as e:
-        error_message = f"An error occurred during crawling: {e}"
+        error_message = f"Failed to initiate crawl: {e}"
         print(error_message)
+        if 'job_id' in locals():
+            supabase.table('crawling_jobs').update({"status": CrawlingStatus.FAILED.value}).eq('id', job_id).execute()
         self.update_state(state='FAILURE', meta={'status': error_message})
         raise e
 
-async def crawl_urls_in_batches(urls_to_crawl: list[str], batch_size: int) -> set[str]:
+@shared_task(bind=True)
+def process_single_url_task(self, task_id: int, tenant_id: UUID):
     """
-    Crawls a list of URLs in batches to find new internal links.
-    This is a helper function to keep memory usage low.
+    Worker Celery task to crawl a single URL, process its content, and discover new links.
     """
-    browser_config = BrowserConfig(headless=True, verbose=False)
-    run_config = CrawlerRunConfig(cache_mode=CacheMode.BYPASS, stream=False)
-    all_new_links = set()
+    task_details = {}
+    try:
+        task_response = supabase.table('crawling_tasks').select('*, crawling_jobs(*)').eq('id', task_id).single().execute()
+        task_details = task_response.data
+        if not task_details:
+            raise Exception(f"Task with id {task_id} not found.")
 
-    async with AsyncWebCrawler(config=browser_config) as crawler:
-        for i in range(0, len(urls_to_crawl), batch_size):
-            batch = urls_to_crawl[i:i + batch_size]
-            print(f"  Crawling batch of {len(batch)} URLs...")
-            results = await crawler.arun_many(urls=batch, config=run_config)
-            for result in results:
-                if result.success:
+        job = task_details['crawling_jobs']
+        url = task_details['url']
+        depth = task_details['depth']
+        max_depth = job['max_depth']
+
+        supabase.table('crawling_tasks').update({"status": CrawlingStatus.IN_PROGRESS.value}).eq('id', task_id).execute()
+        print(f"Crawling URL: {url} at depth {depth}")
+
+        browser_config = BrowserConfig(headless=True, verbose=False)
+        run_config = CrawlerRunConfig(cache_mode=CacheMode.BYPASS, stream=False)
+
+        async def crawl_and_process():
+            new_links = set()
+            async with AsyncWebCrawler(config=browser_config) as crawler:
+                result = await crawler.arun(url=url, config=run_config)
+
+                if result.success and result.markdown:
+                    source_data = {
+                        "tenant_id": str(tenant_id),
+                        "source_type": "URL",
+                        "source_location": url,
+                        "status": "PROCESSING"
+                    }
+                    source_response = supabase.table('tenant_sources').insert(source_data).execute()
+                    source_id = source_response.data[0]['id']
+
+                    docs = await async_create_document_chunks_with_metadata(result.markdown, result.url, source_id)
+                    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+                    process_documents(docs, tenant_id, embeddings)
+
                     for link in result.links.get("internal", []):
-                        all_new_links.add(link["href"])
-    return all_new_links
+                        new_links.add(normalize_url(link["href"]))
+            return new_links
+
+        found_links = asyncio.run(crawl_and_process())
+
+        if depth < max_depth:
+            existing_urls_response = supabase.table('crawling_tasks').select('url').eq('job_id', job['id']).execute()
+            existing_urls = {item['url'] for item in existing_urls_response.data}
+            new_unique_links = found_links - existing_urls
+
+            for link in new_unique_links:
+                new_task_data = {"job_id": job['id'], "url": link, "depth": depth + 1, "status": CrawlingStatus.PENDING.value}
+                new_task_response = supabase.table('crawling_tasks').insert(new_task_data).execute()
+                new_task_id = new_task_response.data[0]['id']
+                process_single_url_task.delay(task_id=new_task_id, tenant_id=tenant_id)
+
+        supabase.table('crawling_tasks').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', task_id).execute()
+        print(f"✅ Completed processing URL: {url}")
+
+    except Exception as e:
+        error_message = f"Error processing URL {task_details.get('url', 'unknown')}: {e}"
+        print(f"❌ {error_message}")
+        supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
+        raise e
+
+@shared_task(bind=True)
+def check_job_completion_task(self):
+    """
+    Periodic Celery task to check if crawling jobs are completed.
+    """
+    try:
+        in_progress_jobs_response = supabase.table('crawling_jobs').select('*').eq('status', CrawlingStatus.IN_PROGRESS.value).execute()
+        in_progress_jobs = in_progress_jobs_response.data
+
+        for job in in_progress_jobs:
+            job_id = job['id']
+            pending_tasks_response = supabase.table('crawling_tasks').select('id', count='exact').in_('status', [CrawlingStatus.PENDING.value, CrawlingStatus.IN_PROGRESS.value]).eq('job_id', job_id).execute()
+
+            if pending_tasks_response.count == 0:
+                print(f"🎉 Job {job_id} has no more pending tasks. Marking as completed.")
+                supabase.table('crawling_jobs').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', job_id).execute()
+
+    except Exception as e:
+        print(f"Error in check_job_completion_task: {e}")

@@ -44,6 +44,13 @@ def create_app():
         broker_connection_retry_on_startup=True
     )
 
+    celery.conf.beat_schedule = {
+        'check-job-completion-every-minute': {
+            'task': 'app.data_processing.tasks.check_job_completion_task',
+            'schedule': 60.0,
+        },
+    }
+
     celery.autodiscover_tasks(['app.chat', 'app.data_processing'])
 
 

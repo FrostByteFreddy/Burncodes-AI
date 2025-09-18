@@ -39,3 +39,27 @@ class Tenant(BaseModel):
     translation_target: Optional[str] = None
     fine_tune_rules: List[TenantFineTune] = []
     sources: List[TenantSource] = []
+
+class CrawlingStatus(str, Enum):
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+class CrawlingJob(BaseModel):
+    id: Optional[int] = None
+    tenant_id: UUID
+    start_url: str
+    max_depth: int
+    status: CrawlingStatus = CrawlingStatus.PENDING
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+class CrawlingTask(BaseModel):
+    id: Optional[int] = None
+    job_id: int
+    url: str
+    depth: int
+    status: CrawlingStatus = CrawlingStatus.PENDING
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
