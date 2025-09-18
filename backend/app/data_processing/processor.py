@@ -3,6 +3,9 @@ import re
 import chromadb
 from uuid import UUID
 from flask import current_app
+from supabase import SupabaseClient
+from app.database.supabase_client import supabase
+
 
 # --- LangChain Core Imports ---
 from langchain_community.document_loaders import PyPDFLoader, Docx2txtLoader, TextLoader, CSVLoader
@@ -101,10 +104,24 @@ def smart_chunk_markdown(markdown: str, max_len: int = 1000) -> list[str]:
     final_chunks = [c for c in chunks if c and len(c) <= max_len]
     return final_chunks
 
-def process_documents(docs: list[Document], tenant_id: UUID, embeddings: Embeddings):
+def process_documents(docs: list[Document], tenant_id: UUID, embeddings: Embeddings, supabase_client: SupabaseClient = supabase):
     if not docs:
         print("No documents to process")
         return
-    db = get_vectorstore(tenant_id, embeddings)
-    db.add_documents(docs)
-    print(f"✅ Added {len(docs)} document chunks to ChromaDB for tenant: {tenant_id}.")
+
+    source_ids = list(set(doc.metadata['source_id'] for doc in docs if 'source_id' in doc.metadata))
+
+    try:
+        db = get_vectorstore(tenant_id, embeddings)
+        db.add_documents(docs)
+        print(f"✅ Added {len(docs)} document chunks to ChromaDB for tenant: {tenant_id}.")
+
+        if source_ids:
+            supabase_client.table('tenant_sources').update({"status": "COMPLETED"}).in_('id', source_ids).execute()
+            print(f"✅ Marked sources {source_ids} as COMPLETED.")
+
+    except Exception as e:
+        print(f"❌ Error processing documents for tenant {tenant_id}: {e}")
+        if source_ids:
+            supabase_client.table('tenant_sources').update({"status": "ERROR"}).in_('id', source_ids).execute()
+            print(f"🔥 Marked sources {source_ids} as ERROR.")
