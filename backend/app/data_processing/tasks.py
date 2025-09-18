@@ -1,6 +1,7 @@
 import os
 import asyncio
 import re
+import random
 import tempfile
 import httpx
 from datetime import datetime, timezone
@@ -21,6 +22,23 @@ from langchain_core.prompts import PromptTemplate
 
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
+
+USER_AGENTS = [
+    # Chrome on Windows
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+    # Chrome on macOS
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+    # Firefox on Windows
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/114.0",
+    # Safari on macOS
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
+    # Chrome on Android
+    "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36",
+    # Safari on iOS
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1"
+]
+
 CLEANUP_PROMPT_TEMPLATE = """
 You are an expert data pre-processor. Your task is to clean and reformat raw markdown text extracted from a website so it is optimized for a Retrieval-Augmented Generation (RAG) system's vector database.
 
@@ -289,7 +307,7 @@ def crawl_links_task(self, tenant_id: UUID, start_url: str, max_depth: int = 2):
         raise e
 
 @shared_task(bind=True)
-def process_single_url_task(self, task_id: int, tenant_id: UUID):
+def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str = None):
     """
     Worker Celery task to crawl a single URL, process its content, and discover new links.
     """
@@ -308,7 +326,17 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID):
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.IN_PROGRESS.value}).eq('id', task_id).execute()
         print(f"Crawling URL: {url} at depth {depth}")
 
-        browser_config = BrowserConfig(headless=True, verbose=False)
+        # --- Browser Configuration with User-Agent and Referer ---
+        selected_user_agent = random.choice(USER_AGENTS)
+        headers = {"User-Agent": selected_user_agent}
+        if parent_url:
+            headers["Referer"] = parent_url
+
+        browser_config = BrowserConfig(
+            headless=True,
+            verbose=False,
+            headers=headers
+        )
         run_config = CrawlerRunConfig(cache_mode=CacheMode.BYPASS, stream=False)
 
         async def crawl_and_process():
@@ -334,7 +362,12 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID):
                         new_links.add(normalize_url(link["href"]))
             return new_links
 
-        found_links = asyncio.run(crawl_and_process())
+        try:
+            found_links = asyncio.run(asyncio.wait_for(crawl_and_process(), timeout=60.0))
+        except asyncio.TimeoutError:
+            print(f"❌ Timeout processing URL {url}")
+            supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
+            return
 
         if depth < max_depth:
             existing_urls_response = supabase.table('crawling_tasks').select('url').eq('job_id', job['id']).execute()
@@ -345,7 +378,9 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID):
                 new_task_data = {"job_id": job['id'], "url": link, "depth": depth + 1, "status": CrawlingStatus.PENDING.value}
                 new_task_response = supabase.table('crawling_tasks').insert(new_task_data).execute()
                 new_task_id = new_task_response.data[0]['id']
-                process_single_url_task.delay(task_id=new_task_id, tenant_id=tenant_id)
+                delay_seconds = random.randint(1, 5)
+                # Pass the current URL as the parent_url for the next tasks
+                process_single_url_task.delay(task_id=new_task_id, tenant_id=tenant_id, parent_url=url, countdown=delay_seconds)
 
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', task_id).execute()
         print(f"✅ Completed processing URL: {url}")
@@ -354,7 +389,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID):
         error_message = f"Error processing URL {task_details.get('url', 'unknown')}: {e}"
         print(f"❌ {error_message}")
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
-        raise e
+        # Do not re-raise the exception to prevent Celery from logging it as a failure
 
 @shared_task(bind=True)
 def check_job_completion_task(self):
