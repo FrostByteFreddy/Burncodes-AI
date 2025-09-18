@@ -98,7 +98,6 @@ async def async_create_document_chunks_with_metadata(content: str, source: str, 
             )
             documents.append(doc)
 
-        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "COMPLETED"}).eq('id', source_id).execute())
         return documents
     except Exception as e:
         print(f"Error creating document chunks for source {source_id}: {e}")
@@ -123,7 +122,6 @@ async def async_create_document_chunks_for_structured_data(content: str, source:
             )
             documents.append(doc)
 
-        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "COMPLETED"}).eq('id', source_id).execute())
         print(f"✅ Created {len(documents)} chunks for structured file {source} (source_id: {source_id})")
         return documents
     except Exception as e:
