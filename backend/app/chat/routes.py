@@ -25,13 +25,19 @@ def handle_chat(tenant_id):
 
 @chat_bp.route('/task/<string:task_id>/status', methods=['GET'])
 def get_task_status(task_id):
-    task_result = AsyncResult(task_id)
-    result = {
+    task = AsyncResult(task_id)
+    response = {
         "task_id": task_id,
-        "task_status": task_result.status,
-        "task_result": task_result.result
+        "state": task.state,
     }
-    return jsonify(result)
+    if task.state == 'FAILURE':
+        response['result'] = str(task.info)  # Convert exception to string
+    elif task.state == 'SUCCESS':
+        response['result'] = task.result
+    else:
+        # For PENDING or other states, info might be a string or dict
+        response['result'] = str(task.info)
+    return jsonify(response)
 
 @chat_bp.route('/<uuid:tenant_id>/intro', methods=['GET'])
 def get_intro_message(tenant_id):
