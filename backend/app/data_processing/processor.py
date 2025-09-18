@@ -2,6 +2,7 @@ import os
 import re
 import chromadb
 from uuid import UUID
+from flask import current_app
 
 # --- LangChain Core Imports ---
 from langchain_community.document_loaders import PyPDFLoader, Docx2txtLoader, TextLoader, CSVLoader
@@ -12,7 +13,6 @@ from langchain_core.documents import Document
 from icalendar import Calendar
 
 # --- CONFIGURATION ---
-VECTOR_STORE_PATH_BASE = 'chromadb'
 SUPPORTED_FILE_EXTENSIONS = ['.pdf', '.docx', '.txt', '.csv', '.ics']
 
 # --- DOCUMENT LOADERS ---
@@ -59,7 +59,8 @@ from langchain_core.embeddings import Embeddings
 def get_vectorstore(tenant_id: UUID, embeddings: Embeddings):
     """Initializes and returns a tenant-specific Chroma vector store instance."""
     tenant_id_str = str(tenant_id)
-    tenant_db_path = os.path.join(VECTOR_STORE_PATH_BASE, tenant_id_str)
+    vector_store_path_base = current_app.config['VECTOR_STORE_PATH_BASE']
+    tenant_db_path = os.path.join(vector_store_path_base, tenant_id_str)
 
     client_settings = chromadb.Settings(
         is_persistent=True,
