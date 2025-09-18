@@ -240,48 +240,78 @@ async def async_process_file_url(url: str, tenant_id: UUID, source_id: int) -> l
             os.remove(tmp_filepath)
         return []
 
-@shared_task
-def crawl_links_task(start_url: str, max_depth: int = 3):
-    return asyncio.run(crawl_recursive_for_links(start_url, max_depth))
-
-async def crawl_recursive_for_links(start_url: str, max_depth: int = 3):
+@shared_task(bind=True)
+def crawl_links_task(self, start_url: str, max_depth: int = 3, batch_size: int = 50):
     """
-    Uses crawl4ai to recursively discover all internal links from a starting URL,
-    categorized by depth.
+    Celery task to discover links recursively from a starting URL.
+    This task orchestrates the crawl level by level to manage memory usage.
     """
-    browser_config = BrowserConfig(headless=True, verbose=False)
-    run_config = CrawlerRunConfig(cache_mode=CacheMode.BYPASS, stream=False)
+    try:
+        self.update_state(state='PROGRESS', meta={'status': 'Initializing crawl...'})
 
-    all_found_urls = set()
-    links_by_depth = []
+        links_by_depth = []
+        all_found_urls = set()
 
-    def normalize_url(url):
-        return urldefrag(url)[0].rstrip('/')
+        def normalize_url(url):
+            return urldefrag(url)[0].rstrip('/')
 
-    current_urls_to_crawl = {normalize_url(start_url)}
-    all_found_urls.add(normalize_url(start_url))
+        current_urls_to_crawl = {normalize_url(start_url)}
+        all_found_urls.add(normalize_url(start_url))
 
-    async with AsyncWebCrawler(config=browser_config) as crawler:
         for depth in range(max_depth):
             if not current_urls_to_crawl:
                 break
 
-            print(f"Crawling depth {depth + 1} with {len(current_urls_to_crawl)} URLs...")
+            status_message = f"Processing depth {depth + 1} with {len(current_urls_to_crawl)} URLs..."
+            print(status_message)
+            self.update_state(state='PROGRESS', meta={'status': status_message})
 
-            depth_links = list(current_urls_to_crawl)
-            links_by_depth.append(depth_links)
+            # Store the links for the current depth
+            links_for_this_depth = list(current_urls_to_crawl)
+            links_by_depth.append(links_for_this_depth)
 
-            results = await crawler.arun_many(urls=depth_links, config=run_config)
+            # Discover the next level of URLs
+            next_level_urls_set = asyncio.run(
+                crawl_urls_in_batches(
+                    urls_to_crawl=list(current_urls_to_crawl),
+                    batch_size=batch_size
+                )
+            )
 
-            next_level_urls = set()
+            # Filter out URLs we've already seen
+            newly_discovered_urls = {normalize_url(url) for url in next_level_urls_set}
+            current_urls_to_crawl = newly_discovered_urls - all_found_urls
+            all_found_urls.update(current_urls_to_crawl)
+
+        # Format results for the frontend
+        formatted_results = [
+            {"depth": i + 1, "count": len(links), "links": links}
+            for i, links in enumerate(links_by_depth)
+        ]
+        return {'status': 'Completed', 'result': formatted_results}
+
+    except Exception as e:
+        error_message = f"An error occurred during crawling: {e}"
+        print(error_message)
+        self.update_state(state='FAILURE', meta={'status': error_message})
+        raise e
+
+async def crawl_urls_in_batches(urls_to_crawl: list[str], batch_size: int) -> set[str]:
+    """
+    Crawls a list of URLs in batches to find new internal links.
+    This is a helper function to keep memory usage low.
+    """
+    browser_config = BrowserConfig(headless=True, verbose=False)
+    run_config = CrawlerRunConfig(cache_mode=CacheMode.BYPASS, stream=False)
+    all_new_links = set()
+
+    async with AsyncWebCrawler(config=browser_config) as crawler:
+        for i in range(0, len(urls_to_crawl), batch_size):
+            batch = urls_to_crawl[i:i + batch_size]
+            print(f"  Crawling batch of {len(batch)} URLs...")
+            results = await crawler.arun_many(urls=batch, config=run_config)
             for result in results:
                 if result.success:
                     for link in result.links.get("internal", []):
-                        normalized_link = normalize_url(link["href"])
-                        if normalized_link not in all_found_urls:
-                            next_level_urls.add(normalized_link)
-                            all_found_urls.add(normalized_link)
-
-            current_urls_to_crawl = next_level_urls
-
-    return links_by_depth
+                        all_new_links.add(link["href"])
+    return all_new_links
