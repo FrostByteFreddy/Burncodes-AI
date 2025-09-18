@@ -306,7 +306,7 @@ def crawl_links_task(self, tenant_id: UUID, start_url: str, max_depth: int = 2):
         self.update_state(state='FAILURE', meta={'status': error_message})
         raise e
 
-@shared_task(bind=True)
+@shared_task(bind=True, time_limit=300) # 5-minute hard time limit
 def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str = None):
     """
     Worker Celery task to crawl a single URL, process its content, and discover new links.
@@ -339,36 +339,40 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         )
         run_config = CrawlerRunConfig(cache_mode=CacheMode.BYPASS, stream=False)
 
-        async def crawl_and_process():
-            new_links = set()
+        # --- Step 1: Crawl the page with a specific timeout ---
+        async def crawl_page_only():
             async with AsyncWebCrawler(config=browser_config) as crawler:
-                result = await crawler.arun(url=url, config=run_config)
+                return await crawler.arun(url=url, config=run_config)
 
-                if result.success and result.markdown:
-                    source_data = {
-                        "tenant_id": str(tenant_id),
-                        "source_type": "URL",
-                        "source_location": url,
-                        "status": "PROCESSING"
-                    }
-                    source_response = supabase.table('tenant_sources').insert(source_data).execute()
-                    source_id = source_response.data[0]['id']
-
-                    docs = await async_create_document_chunks_with_metadata(result.markdown, result.url, source_id)
-                    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-                    process_documents(docs, tenant_id, embeddings)
-
-                    for link in result.links.get("internal", []):
-                        new_links.add(normalize_url(link["href"]))
-            return new_links
-
+        crawl_result = None
         try:
-            found_links = asyncio.run(asyncio.wait_for(crawl_and_process(), timeout=60.0))
+            crawl_result = asyncio.run(asyncio.wait_for(crawl_page_only(), timeout=60.0))
         except asyncio.TimeoutError:
-            print(f"❌ Timeout processing URL {url}")
+            print(f"❌ Timeout loading page {url}")
             supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
             return
 
+        # --- Step 2: Process the content (outside the page load timeout) ---
+        found_links = set()
+        if crawl_result and crawl_result.success and crawl_result.markdown:
+            source_data = {
+                "tenant_id": str(tenant_id),
+                "source_type": "URL",
+                "source_location": url,
+                "status": "PROCESSING"
+            }
+            source_response = supabase.table('tenant_sources').insert(source_data).execute()
+            source_id = source_response.data[0]['id']
+
+            # This part can take a long time, especially the LLM call
+            docs = asyncio.run(async_create_document_chunks_with_metadata(crawl_result.markdown, crawl_result.url, source_id))
+            embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+            process_documents(docs, tenant_id, embeddings)
+
+            for link in crawl_result.links.get("internal", []):
+                found_links.add(normalize_url(link["href"]))
+
+        # --- Step 3: Enqueue new tasks ---
         if depth < max_depth:
             existing_urls_response = supabase.table('crawling_tasks').select('url').eq('job_id', job['id']).execute()
             existing_urls = {item['url'] for item in existing_urls_response.data}
@@ -379,7 +383,6 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
                 new_task_response = supabase.table('crawling_tasks').insert(new_task_data).execute()
                 new_task_id = new_task_response.data[0]['id']
                 delay_seconds = random.randint(1, 5)
-                # Pass the current URL as the parent_url for the next tasks
                 process_single_url_task.delay(task_id=new_task_id, tenant_id=tenant_id, parent_url=url, countdown=delay_seconds)
 
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', task_id).execute()
@@ -389,7 +392,6 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         error_message = f"Error processing URL {task_details.get('url', 'unknown')}: {e}"
         print(f"❌ {error_message}")
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
-        # Do not re-raise the exception to prevent Celery from logging it as a failure
 
 @shared_task(bind=True)
 def check_job_completion_task(self):
