@@ -3,7 +3,7 @@ import re
 import chromadb
 from uuid import UUID
 from flask import current_app
-from supabase import SupabaseClient
+from supabase import Client
 from app.database.supabase_client import supabase
 
 
@@ -104,7 +104,7 @@ def smart_chunk_markdown(markdown: str, max_len: int = 1000) -> list[str]:
     final_chunks = [c for c in chunks if c and len(c) <= max_len]
     return final_chunks
 
-def process_documents(docs: list[Document], tenant_id: UUID, embeddings: Embeddings, supabase_client: SupabaseClient = supabase):
+def process_documents(docs: list[Document], tenant_id: UUID, embeddings: Embeddings, supabase_client: Client = supabase):
     if not docs:
         print("No documents to process")
         return
