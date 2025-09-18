@@ -191,7 +191,7 @@ def discover_links(current_user, tenant_id):
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
-        task = crawl_links_task.delay(start_url)
+        task = crawl_links_task.delay(tenant_id=tenant_id, start_url=start_url)
 
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
