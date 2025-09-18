@@ -6,20 +6,26 @@ ENV PYTHONUNBUFFERED True
 ENV APP_HOME /app
 WORKDIR $APP_HOME
 
-# 1. Install all system and Python dependencies for BOTH services
+# 1. Update package lists and install system dependencies for Playwright
 RUN apt-get update && apt-get install -y \
     libgtk-4-1 \
     libgraphene-1.0-0 \
-    # ... and all other system dependencies ...
+    libgstgl-1.0-0 \
+    libgstcodecparsers-1.0-0 \
+    libenchant-2-2 \
+    libsecret-1-0 \
+    libmanette-0.2-0 \
+    libgles2 \
+
+    # Clean up apt lists to reduce image size
     && rm -rf /var/lib/apt/lists/*
 
+# 2. Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 2. Install Playwright browsers
+# 3. Install Playwright browsers
 RUN playwright install
 
-# 3. Copy all your application code
+# 4. Copy your application code into the container
 COPY . .
-
-# Run commands come from render settings
