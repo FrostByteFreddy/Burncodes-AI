@@ -26,3 +26,17 @@ main {
     max-height: 100vh;
     overflow: scroll;
 }
+
+/* Target all scrollbars */
+::-webkit-scrollbar {
+  width: 2px;
+  height: 2px;
+}
+::-webkit-scrollbar-track {
+
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #555555;
+  border-radius: 20px;
+}
