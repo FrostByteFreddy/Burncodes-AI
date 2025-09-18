@@ -381,7 +381,14 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
                 new_task_response = supabase.table('crawling_tasks').insert(new_task_data).execute()
                 new_task_id = new_task_response.data[0]['id']
                 delay_seconds = random.randint(1, 5)
-                process_single_url_task.delay(task_id=new_task_id, tenant_id=tenant_id, parent_url=url, countdown=delay_seconds)
+                process_single_url_task.apply_async(
+                    kwargs={
+                        'task_id': new_task_id,
+                        'tenant_id': tenant_id,
+                        'parent_url': url
+                    },
+                    countdown=delay_seconds
+                )
 
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', task_id).execute()
         print(f"✅ Completed processing URL: {url}")
