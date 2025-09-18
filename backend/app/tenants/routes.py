@@ -4,6 +4,7 @@ from app.auth.decorators import token_required
 from app.models.database import Tenant, TenantFineTune, SourceType
 from app.data_processing.tasks import process_local_filepath, process_urls, crawl_links_task
 from app.logging_config import error_logger
+from app import celery
 from uuid import uuid4
 import os
 
@@ -215,3 +216,31 @@ def delete_source(current_user, tenant_id, source_id):
     except Exception as e:
         error_logger.error(f"Error deleting source {source_id} for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to delete source", "details": str(e)}), 500
+
+@tenants_bp.route('/tasks/<string:task_id>', methods=['GET'])
+@token_required
+def get_task_status(current_user, task_id):
+    try:
+        task = celery.AsyncResult(task_id)
+        if task.state == 'PENDING':
+            response = {
+                'state': task.state,
+                'status': 'Pending...'
+            }
+        elif task.state != 'FAILURE':
+            response = {
+                'state': task.state,
+                'status': task.info.get('status', ''),
+                'result': task.info.get('result', {})
+            }
+            if 'result' in task.info:
+                response['result'] = task.info['result']
+        else:
+            response = {
+                'state': task.state,
+                'status': str(task.info),
+            }
+        return jsonify(response)
+    except Exception as e:
+        error_logger.error(f"Error getting task status for task {task_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to get task status", "details": str(e)}), 500

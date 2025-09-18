@@ -9,11 +9,7 @@ from app.logging_config import error_logger
 
 load_dotenv()
 
-celery = Celery(
-    __name__,
-    broker=os.environ.get('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0'),
-    backend=os.environ.get('CELERY_RESULT_BACKEND', 'redis://127.0.0.1:6379/0')
-)
+celery = Celery(__name__)
 
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -33,12 +29,21 @@ def create_app():
     os.makedirs(app.config['UPLOAD_FOLDER_BASE'], exist_ok=True)
 
     # --- Celery Configuration ---
+    broker_url = os.environ.get('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0')
+    result_backend = os.environ.get('CELERY_RESULT_BACKEND', 'redis://127.0.0.1:6379/0')
+
     app.config.update(
-        CELERY_BROKER_URL=os.environ.get('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0'),
-        CELERY_RESULT_BACKEND=os.environ.get('CELERY_RESULT_BACKEND', 'redis://127.0.0.1:6379/0'),
+        CELERY_BROKER_URL=broker_url,
+        CELERY_RESULT_BACKEND=result_backend,
         CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP=True
     )
-    celery.conf.update(app.config)
+
+    celery.conf.update(
+        broker_url=broker_url,
+        result_backend=result_backend,
+        broker_connection_retry_on_startup=True
+    )
+
     celery.autodiscover_tasks(['app.chat', 'app.data_processing'])
 
 

@@ -175,6 +175,34 @@ const getTotalLinks = (depth) => {
     .reduce((total, result) => total + result.count, 0);
 };
 
+const pollTaskStatus = async (taskId) => {
+  const intervalId = setInterval(async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/tenants/tasks/${taskId}`, { headers: getAuthHeaders() });
+      const task = response.data;
+
+      if (task.state === 'SUCCESS') {
+        clearInterval(intervalId);
+        loading.value = false;
+        discoveryResults.value = task.result;
+        if (discoveryResults.value.length > 0) {
+          selectedDepth.value = discoveryResults.value.length;
+        }
+        addToast('Link discovery successful!', 'success');
+      } else if (task.state === 'FAILURE') {
+        clearInterval(intervalId);
+        loading.value = false;
+        addToast(`Link discovery failed: ${task.status}`, 'error');
+      }
+      // If PENDING, the spinner continues
+    } catch (error) {
+      clearInterval(intervalId);
+      loading.value = false;
+      addToast('Failed to get task status.', 'error');
+    }
+  }, 3000); // Poll every 3 seconds
+};
+
 const discoverLinks = async () => {
     if (!startUrl.value.trim() || !tenantsStore.currentTenant) return;
     loading.value = true;
@@ -182,14 +210,11 @@ const discoverLinks = async () => {
     selectedDepth.value = 0;
     try {
         const response = await axios.post(`${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/discover`, { url: startUrl.value }, { headers: getAuthHeaders() });
-        discoveryResults.value = response.data;
-        if (discoveryResults.value.length > 0) {
-            selectedDepth.value = discoveryResults.value.length;
-        }
-        addToast('Link discovery successful!', 'success');
+        const taskId = response.data.task_id;
+        addToast('Link discovery started...', 'info');
+        pollTaskStatus(taskId);
     } catch (error) {
         addToast(`Link discovery failed: ${error.response?.data?.error || 'Unknown error'}`, 'error');
-    } finally {
         loading.value = false;
     }
 };
