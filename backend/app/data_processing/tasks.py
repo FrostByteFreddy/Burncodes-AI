@@ -12,9 +12,10 @@ from celery import shared_task
 from app.database.supabase_client import supabase
 from app.data_processing.processor import get_vectorstore, get_loader, smart_chunk_markdown, process_documents, SUPPORTED_FILE_EXTENSIONS
 from app.data_processing.crawler import shared_crawler
+from app.data_processing.config import CRAWLER_RUN_CONFIG
 
 # --- Crawl4AI Imports ---
-from crawl4ai import CrawlerRunConfig, CacheMode
+from crawl4ai import CacheMode # CrawlerRunConfig is now imported from config
 
 # --- LangChain Core Imports ---
 from langchain_core.documents import Document
@@ -197,7 +198,6 @@ async def process_urls_concurrently(urls: list[tuple[str, int]], tenant_id: UUID
 
 async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]]) -> list[Document]:
     """Crawls URLs and processes their content concurrently using the shared crawler."""
-    run_config = CrawlerRunConfig(cache_mode=CacheMode.BYPASS, stream=False)
     all_docs = []
     semaphore = asyncio.Semaphore(10)
 
@@ -209,7 +209,7 @@ async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]]) -
 
     # Use the shared crawler instance
     url_to_source_id = {url: source_id for url, source_id in urls_to_process}
-    results = await shared_crawler.arun_many(urls=list(url_to_source_id.keys()), config=run_config)
+    results = await shared_crawler.arun_many(urls=list(url_to_source_id.keys()), config=CRAWLER_RUN_CONFIG)
 
     tasks = [process_single_result(result, url_to_source_id[result.url]) for result in results]
     processed_chunks_list = await asyncio.gather(*tasks)
@@ -330,15 +330,10 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         if parent_url:
             headers["Referer"] = parent_url
 
-        run_config = CrawlerRunConfig(
-            cache_mode=CacheMode.BYPASS,
-            stream=False
-        )
-
         # --- Step 1: Crawl the page with a specific timeout ---
         async def crawl_page_only():
             # Pass the dynamic headers directly to the arun method.
-            return await shared_crawler.arun(url=url, config=run_config, headers=headers)
+            return await shared_crawler.arun(url=url, config=CRAWLER_RUN_CONFIG, headers=headers)
 
         crawl_result = None
         try:
