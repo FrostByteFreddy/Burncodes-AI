@@ -5,7 +5,7 @@ const toasts = reactive([])
 let toastId = 0
 
 export function useToast() {
-  const addToast = (message, type = 'success', duration = 3000) => {
+  const addToast = (message, type = 'success', duration = 10000) => {
     const id = toastId++
     toasts.push({ id, message, type })
     setTimeout(() => removeToast(id), duration)

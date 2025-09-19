@@ -4,20 +4,22 @@ import { useAuthStore } from '../stores/auth'
 import Login from '../views/Login.vue'
 import Signup from '../views/Signup.vue'
 import Tenant from '../views/Tenant.vue'
-import Profile from '../views/Profile.vue' // We will create this view next
-import Chat from '../views/Chat.vue' // We will create this view next
+import Profile from '../views/Profile.vue' 
+import Chat from '../views/Chat.vue'
 import ManageTenants from '../views/ManageTenants.vue'
 import Subscription from '../views/Subscription.vue'
 import TenantSettings from '../components/tenant/Settings.vue'
 import TenantSources from '../components/tenant/Sources.vue'
 import TenantAdvanced from '../components/tenant/Advanced.vue'
 
+const uuidRegex = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
+
 const routes = [
   { path: '/', redirect: '/manage-tenants' },
   { path: '/login', name: 'Login', component: Login, meta: { public: true } },
   { path: '/signup', name: 'Signup', component: Signup, meta: { public: true } },
   {
-    path: '/tenant/:tenantId',
+    path: `/tenant/:tenantId(${uuidRegex})`,
     name: 'Tenant',
     component: Tenant,
     meta: { requiresAuth: true },
@@ -32,7 +34,7 @@ const routes = [
   { path: '/profile', name: 'Profile', component: Profile, meta: { requiresAuth: true } },
   { path: '/manage-tenants', name: 'ManageTenants', component: ManageTenants, meta: { requiresAuth: true } },
   { path: '/subscription', name: 'Subscription', component: Subscription, meta: { requiresAuth: true } },
-  { path: '/chat/:tenantId', name: 'Chat', component: Chat, meta: { public: true }, props: true },
+  { path: `/chat/:tenantId(${uuidRegex})`, name: 'Chat', component: Chat, meta: { public: true }, props: true },
 ]
 
 const router = createRouter({
