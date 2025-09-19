@@ -21,7 +21,7 @@ body {
     background-color: black;
 }
 
-#app-layout > main {
+#app-layout > main:not(:has(#test-chat)) {
 
     max-height: 100vh;
     overflow: scroll;

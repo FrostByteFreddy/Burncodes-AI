@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen bg-gray-900 text-white font-sans flex items-center justify-center p-4">
+    <div id="test-chat" class="min-h-screen bg-gray-900 text-white font-sans flex items-center justify-center p-4">
         <div class="flex flex-col w-full max-w-4xl h-[90vh] bg-gray-800 rounded-2xl shadow-2xl">
             <header class="bg-gray-700 p-4 shadow-md z-10 rounded-t-2xl flex justify-between items-center">
                 <div class="w-1/4"></div> <!-- Spacer -->
