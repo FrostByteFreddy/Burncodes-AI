@@ -232,10 +232,15 @@ def get_crawling_job_progress(current_user, tenant_id, job_id):
         from app.models.database import CrawlingStatus
         tenant_id_str = str(tenant_id)
 
-        # Security check: Ensure the job belongs to a tenant owned by the current user
-        job_check_response = supabase.table('crawling_jobs').select('id, tenants!inner(user_id)').eq('id', job_id).eq('tenants.user_id', current_user.id).single().execute()
-        if not job_check_response.data:
-            return jsonify({"error": "Job not found or access denied"}), 404
+        # Security check Step 1: Verify the user owns the tenant specified in the URL
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
+        if not tenant_check.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+
+        # Security check Step 2: Verify the job belongs to that tenant
+        job_check = supabase.table('crawling_jobs').select("id").eq('id', job_id).eq('tenant_id', tenant_id_str).single().execute()
+        if not job_check.data:
+            return jsonify({"error": "Job not found or not part of this tenant"}), 404
 
         # Fetch task counts by status
         status_counts_response = supabase.table('crawling_tasks').select('status', count='exact').eq('job_id', job_id).execute()
