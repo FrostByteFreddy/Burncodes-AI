@@ -56,29 +56,27 @@ const router = useRouter()
 const dropdownOpen = ref(false)
 const activeTenant = ref(null)
 
-onMounted(async () => {
-  await tenantsStore.fetchTenants()
-  if (tenantsStore.tenants.length === 1) {
-    selectTenant(tenantsStore.tenants[0])
-  }
-})
+onMounted(() => {
+  tenantsStore.fetchTenants()
+});
 
-watch(() => tenantsStore.tenants, (newTenants) => {
-  if (newTenants.length === 1 && !activeTenant.value) {
-    selectTenant(newTenants[0]);
-  }
-  // If the active tenant is deleted, reset it
-  if (activeTenant.value && !newTenants.find(t => t.id === activeTenant.value.id)) {
+watch(() => [tenantsStore.tenants, router.currentRoute.value.params.tenantId], ([newTenants, tenantId]) => {
+  if (tenantId) {
+    const tenant = newTenants.find(t => t.id === tenantId);
+    if (tenant) {
+      activeTenant.value = tenant;
+    }
+  } else if (newTenants.length === 1) {
+    activeTenant.value = newTenants[0];
+  } else {
     activeTenant.value = null;
-    router.push('/manage-tenants');
   }
-}, { deep: true });
+}, { immediate: true, deep: true });
 
 
 const selectTenant = (tenant) => {
   activeTenant.value = tenant
   dropdownOpen.value = false
-  // Navigate to the tenant's settings page when a tenant is selected
   router.push({ name: 'TenantSettings', params: { tenantId: tenant.id } })
 }
 
