@@ -24,8 +24,8 @@ def create_app():
 
     # --- Configuration ---
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a_default_secret_key')
-    app.config['UPLOAD_FOLDER_BASE'] = os.getenv("UPLOADS_DIR", "uploads")
-    app.config['VECTOR_STORE_PATH_BASE'] = os.getenv("CHROMADB_PATH", "chromadb")
+    app.config['UPLOAD_FOLDER_BASE'] = os.getenv("UPLOADS_DIR", "/data/uploads")
+    app.config['VECTOR_STORE_PATH_BASE'] = os.getenv("CHROMADB_PATH", "/data/chromadb")
     os.makedirs(app.config['UPLOAD_FOLDER_BASE'], exist_ok=True)
 
     # --- Celery Configuration ---
