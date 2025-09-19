@@ -43,14 +43,28 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-  const authStore = useAuthStore();
+  const authStore = useAuthStore()
+
+  let sessionFoundInStorage = false
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+      sessionFoundInStorage = true
+      break
+    }
+  }
 
   // Try to auto-login user from session/localStorage
   if (!authStore.user) {
-    await authStore.fetchUser();
+    await authStore.fetchUser()
   }
 
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  if (sessionFoundInStorage && !authStore.user) {
+    console.log('Session expired, showing modal.')
+    authStore.sessionExpired = true
+  }
+
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
   const isPublic = to.matched.some(record => record.meta.public);
 
   if (requiresAuth && !authStore.user) {
