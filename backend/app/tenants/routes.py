@@ -137,21 +137,14 @@ def upload_source(current_user, tenant_id):
 
     s3_path = f"{tenant_id_str}/{file.filename}"
     try:
-        # Upload the file to Supabase Storage
-        response = supabase.storage.from_(bucket_name).upload(
+        # Upload the file to Supabase Storage.
+        # We don't need to check the response object.
+        # If this fails, it will raise an exception.
+        supabase.storage.from_(bucket_name).upload(
             path=s3_path,
             file=file.read(),
             file_options={"content-type": file.content_type}
         )
-
-        # Check if the upload was successful
-        if response.status_code != 200:
-            # Try to parse the error message from the response
-            try:
-                error_details = response.json()
-            except Exception:
-                error_details = response.text
-            raise Exception(f"Failed to upload to S3. Status: {response.status_code}, Details: {error_details}")
 
         # The source_location will now be the S3 path
         source_data = {"tenant_id": tenant_id_str, "source_type": SourceType.FILE, "source_location": s3_path, "status": "QUEUED"}
