@@ -136,7 +136,8 @@ def upload_source(current_user, tenant_id):
         return jsonify({"error": "No selected file"}), 400
 
     try:
-        upload_folder_base = os.getenv('UPLOAD_FOLDER_BASE', '/data/uploads')
+        from flask import current_app
+        upload_folder_base = current_app.config['UPLOAD_FOLDER_BASE']
         tenant_upload_path = os.path.join(upload_folder_base, tenant_id_str)
         os.makedirs(tenant_upload_path, exist_ok=True)
         filepath = os.path.join(tenant_upload_path, file.filename)
