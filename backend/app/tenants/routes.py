@@ -242,12 +242,19 @@ def get_crawling_job_progress(current_user, tenant_id, job_id):
         if not job_check.data:
             return jsonify({"error": "Job not found or not part of this tenant"}), 404
 
-        # Fetch task counts by status
-        status_counts_response = supabase.table('crawling_tasks').select('status', count='exact').eq('job_id', job_id).execute()
+        # Fetch all task statuses for the job
+        tasks_response = supabase.table('crawling_tasks').select('status').eq('job_id', job_id).execute()
 
+        from collections import Counter
+        # Count the statuses in Python
+        status_list = [task['status'] for task in tasks_response.data]
+        db_counts = Counter(status_list)
+
+        # Initialize counts for all possible statuses and merge the db counts
         counts = {status.value: 0 for status in CrawlingStatus}
-        for item in status_counts_response.data:
-            counts[item['status']] = item['count']
+        for status_str, count in db_counts.items():
+            if status_str in counts:
+                counts[status_str] = count
 
         progress = {
             "total": sum(counts.values()),
