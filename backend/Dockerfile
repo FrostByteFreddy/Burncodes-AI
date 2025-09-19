@@ -21,6 +21,10 @@ ENV PLAYWRIGHT_BROWSERS_PATH=0
 RUN playwright install-deps
 RUN playwright install
 
+# Adding this because of chrome_crashpad_handler: --database is required when crawling
+ENV XDG_CONFIG_HOME=/tmp/.chromium
+ENV XDG_CACHE_HOME=/tmp/.chromium
+
 # 3. Create required directories in the CORRECT home directory
 RUN CHROME_DIRS="/home/appuser/.local /home/appuser/.config /home/appuser/.cache /home/appuser/.pki" && \
     mkdir -p ${CHROME_DIRS} && \
