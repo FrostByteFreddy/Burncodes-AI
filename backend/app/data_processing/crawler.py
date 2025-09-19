@@ -11,7 +11,6 @@ browser_config = BrowserConfig(
     user_agent_mode="random",
     viewport_width=1920,
     viewport_height=1080,
-    check_robots_txt=True,
     enable_stealth=True
 )
 
