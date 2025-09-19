@@ -12,7 +12,7 @@ from celery import shared_task
 from app.database.supabase_client import supabase, bucket_name
 from app.data_processing.processor import get_vectorstore, get_loader, smart_chunk_markdown, process_documents, SUPPORTED_FILE_EXTENSIONS
 from app.data_processing.crawler import shared_crawler
-from app.data_processing.config import CRAWLER_RUN_CONFIG
+from app.data_processing.config import CRAWLER_RUN_CONFIG, MAX_CONCURRENT_CRAWLS_PER_JOB
 
 # --- Crawl4AI Imports ---
 from crawl4ai import CacheMode # CrawlerRunConfig is now imported from config
@@ -380,25 +380,24 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             for link in crawl_result.links.get("internal", []):
                 found_links.add(normalize_url(link["href"]))
 
-        # --- Step 3: Enqueue new tasks ---
+        # --- Step 3: Discover and save new links ---
         if depth < max_depth:
             existing_urls_response = supabase.table('crawling_tasks').select('url').eq('job_id', job['id']).execute()
             existing_urls = {item['url'] for item in existing_urls_response.data}
             new_unique_links = found_links - existing_urls
 
-            for link in new_unique_links:
-                new_task_data = {"job_id": job['id'], "url": link, "depth": depth + 1, "status": CrawlingStatus.PENDING.value}
-                new_task_response = supabase.table('crawling_tasks').insert(new_task_data).execute()
-                new_task_id = new_task_response.data[0]['id']
-                delay_seconds = random.randint(1, 5)
-                process_single_url_task.apply_async(
-                    kwargs={
-                        'task_id': new_task_id,
-                        'tenant_id': tenant_id,
-                        'parent_url': url
-                    },
-                    countdown=delay_seconds
-                )
+            if new_unique_links:
+                new_tasks_data = [
+                    {
+                        "job_id": job['id'],
+                        "url": link,
+                        "depth": depth + 1,
+                        "status": CrawlingStatus.PENDING.value,
+                        "parent_url": url  # Add the current URL as the parent
+                    }
+                    for link in new_unique_links
+                ]
+                supabase.table('crawling_tasks').insert(new_tasks_data).execute()
 
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', task_id).execute()
         print(f"✅ Completed processing URL: {url}")
@@ -409,9 +408,10 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
 
 @shared_task(bind=True)
-def check_job_completion_task(self):
+def job_scheduler_task(self):
     """
-    Periodic Celery task to check if crawling jobs are completed.
+    Periodic task to schedule new crawling tasks and check for job completion.
+    This task acts as a central orchestrator to control concurrency per job.
     """
     try:
         in_progress_jobs_response = supabase.table('crawling_jobs').select('*').eq('status', CrawlingStatus.IN_PROGRESS.value).execute()
@@ -419,11 +419,38 @@ def check_job_completion_task(self):
 
         for job in in_progress_jobs:
             job_id = job['id']
-            pending_tasks_response = supabase.table('crawling_tasks').select('id', count='exact').in_('status', [CrawlingStatus.PENDING.value, CrawlingStatus.IN_PROGRESS.value]).eq('job_id', job_id).execute()
+            tenant_id = job['tenant_id']
 
-            if pending_tasks_response.count == 0:
-                print(f"🎉 Job {job_id} has no more pending tasks. Marking as completed.")
-                supabase.table('crawling_jobs').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', job_id).execute()
+            # Count currently running tasks for this job
+            running_tasks_response = supabase.table('crawling_tasks').select('id', count='exact').eq('job_id', job_id).eq('status', CrawlingStatus.IN_PROGRESS.value).execute()
+            running_tasks_count = running_tasks_response.count
+
+            # --- Job Completion Check ---
+            # If no tasks are currently running, check if there are any pending tasks left.
+            if running_tasks_count == 0:
+                pending_tasks_response = supabase.table('crawling_tasks').select('id', count='exact').eq('job_id', job_id).eq('status', CrawlingStatus.PENDING.value).execute()
+                if pending_tasks_response.count == 0:
+                    print(f"🎉 Job {job_id} has no more running or pending tasks. Marking as completed.")
+                    supabase.table('crawling_jobs').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', job_id).execute()
+                    continue  # Proceed to the next job
+
+            # --- New Task Scheduling ---
+            # If the number of running tasks is below the concurrency limit, enqueue more.
+            if running_tasks_count < MAX_CONCURRENT_CRAWLS_PER_JOB:
+                # Calculate how many new tasks we can schedule
+                limit = MAX_CONCURRENT_CRAWLS_PER_JOB - running_tasks_count
+
+                # Fetch pending tasks to schedule
+                tasks_to_schedule_response = supabase.table('crawling_tasks').select('*').eq('job_id', job_id).eq('status', CrawlingStatus.PENDING.value).limit(limit).execute()
+                tasks_to_schedule = tasks_to_schedule_response.data
+
+                for task in tasks_to_schedule:
+                    print(f"Scheduler: Enqueuing task {task['id']} for job {job_id}.")
+                    process_single_url_task.delay(
+                        task_id=task['id'],
+                        tenant_id=tenant_id,
+                        parent_url=task.get('parent_url')  # Pass the parent_url
+                    )
 
     except Exception as e:
-        print(f"Error in check_job_completion_task: {e}")
+        print(f"Error in job_scheduler_task: {e}")
