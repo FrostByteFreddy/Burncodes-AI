@@ -6,12 +6,13 @@ ENV PYTHONUNBUFFERED True
 ENV APP_HOME /app
 WORKDIR $APP_HOME
 
-# Create a non-root user, group, and a dedicated home directory <--- CHANGE
+# Create user, group, and home directory using basic commands
 RUN addgroup --system appgroup && \
-    adduser --system --ingroup appgroup --home /home/appuser --create-home appuser
+    adduser --system --ingroup appgroup appuser && \
+    mkdir -p /home/appuser && \
+    chown -R appuser:appgroup /home/appuser
 
 # 1. Install Python dependencies
-# Copy requirements first to leverage Docker cache
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -20,7 +21,7 @@ ENV PLAYWRIGHT_BROWSERS_PATH=0
 RUN playwright install-deps
 RUN playwright install
 
-# 3. Create required directories in the CORRECT home directory <--- CHANGE
+# 3. Create required directories in the CORRECT home directory
 RUN CHROME_DIRS="/home/appuser/.local /home/appuser/.config /home/appuser/.cache /home/appuser/.pki" && \
     mkdir -p ${CHROME_DIRS} && \
     chown -R appuser:appgroup ${CHROME_DIRS}
