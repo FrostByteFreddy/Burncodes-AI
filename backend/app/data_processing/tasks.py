@@ -191,10 +191,10 @@ async def async_process_s3_file(s3_path: str, source_filename: str, source_id: i
         if tmp_filepath and os.path.exists(tmp_filepath):
             os.remove(tmp_filepath)
         # Clean up the S3 file after processing, regardless of success or failure
-        try:
-            supabase.storage.from_(bucket_name).remove([s3_path])
-        except Exception as e:
-            print(f"Failed to remove S3 file {s3_path} after processing: {e}")
+        # try:
+        #     supabase.storage.from_(bucket_name).remove([s3_path])
+        # except Exception as e:
+        #     print(f"Failed to remove S3 file {s3_path} after processing: {e}")
 
 @shared_task
 def process_urls(urls: list[tuple[str, int]], tenant_id: UUID):
