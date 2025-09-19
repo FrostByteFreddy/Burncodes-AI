@@ -4,7 +4,7 @@ import { useAuthStore } from '../stores/auth'
 import Login from '../views/Login.vue'
 import Signup from '../views/Signup.vue'
 import Tenant from '../views/Tenant.vue'
-import Profile from '../views/Profile.vue' 
+import Profile from '../views/Profile.vue'
 import Chat from '../views/Chat.vue'
 import ManageTenants from '../views/ManageTenants.vue'
 import Subscription from '../views/Subscription.vue'
@@ -12,14 +12,12 @@ import TenantSettings from '../components/tenant/Settings.vue'
 import TenantSources from '../components/tenant/Sources.vue'
 import TenantAdvanced from '../components/tenant/Advanced.vue'
 
-const uuidRegex = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
-
 const routes = [
   { path: '/', redirect: '/manage-tenants' },
   { path: '/login', name: 'Login', component: Login, meta: { public: true } },
   { path: '/signup', name: 'Signup', component: Signup, meta: { public: true } },
   {
-    path: `/tenant/:tenantId(${uuidRegex})`,
+    path: '/tenant/:tenantId',
     name: 'Tenant',
     component: Tenant,
     meta: { requiresAuth: true },
@@ -34,7 +32,7 @@ const routes = [
   { path: '/profile', name: 'Profile', component: Profile, meta: { requiresAuth: true } },
   { path: '/manage-tenants', name: 'ManageTenants', component: ManageTenants, meta: { requiresAuth: true } },
   { path: '/subscription', name: 'Subscription', component: Subscription, meta: { requiresAuth: true } },
-  { path: `/chat/:tenantId(${uuidRegex})`, name: 'Chat', component: Chat, meta: { public: true }, props: true },
+  { path: '/chat/:tenantId', name: 'Chat', component: Chat, meta: { public: true }, props: true },
 ]
 
 const router = createRouter({
@@ -44,7 +42,6 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
-  const tenantsStore = useTenantsStore(); // Make sure to import useTenantsStore
 
   // Try to auto-login user from session/localStorage
   if (!authStore.user) {
@@ -52,21 +49,19 @@ router.beforeEach(async (to, from, next) => {
   }
 
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const isPublic = to.matched.some(record => record.meta.public);
 
   if (requiresAuth && !authStore.user) {
-    return next('/login');
+    // Redirect to login if route requires auth and user is not logged in
+    next('/login');
+  } else if ((to.name === 'Login' || to.name === 'Signup') && authStore.user) {
+    // If user is logged in, redirect from login/signup to the main view
+    next('/manage-tenants');
   }
-
-  // If navigating to a tenant route, ensure tenant data is loaded before proceeding
-  if (to.params.tenantId && !tenantsStore.currentTenant) {
-    await tenantsStore.fetchTenant(to.params.tenantId);
+  else {
+    // Otherwise, proceed
+    next();
   }
-
-  if ((to.name === 'Login' || to.name === 'Signup') && authStore.user) {
-    return next('/manage-tenants');
-  }
-
-  next();
 });
 
 export default router

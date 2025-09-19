@@ -29,10 +29,7 @@ const tenantsStore = useTenantsStore()
 const route = useRoute()
 
 onMounted(() => {
-  // Fetch tenant data if it's not already loaded or if the ID is different
-  if (!tenantsStore.currentTenant || tenantsStore.currentTenant.id !== route.params.tenantId) {
-    tenantsStore.fetchTenant(route.params.tenantId)
-  }
+  tenantsStore.fetchTenant(route.params.tenantId)
 })
 
 // When switching between tenants, fetch the new tenant's data
