@@ -135,15 +135,23 @@ def upload_source(current_user, tenant_id):
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
+    s3_path = f"{tenant_id_str}/{file.filename}"
     try:
-        s3_path = f"{tenant_id_str}/{file.filename}"
-
         # Upload the file to Supabase Storage
-        supabase.storage.from_(bucket_name).upload(
+        response = supabase.storage.from_(bucket_name).upload(
             path=s3_path,
             file=file.read(),
             file_options={"content-type": file.content_type}
         )
+
+        # Check if the upload was successful
+        if response.status_code != 200:
+            # Try to parse the error message from the response
+            try:
+                error_details = response.json()
+            except Exception:
+                error_details = response.text
+            raise Exception(f"Failed to upload to S3. Status: {response.status_code}, Details: {error_details}")
 
         # The source_location will now be the S3 path
         source_data = {"tenant_id": tenant_id_str, "source_type": SourceType.FILE, "source_location": s3_path, "status": "QUEUED"}
@@ -156,7 +164,7 @@ def upload_source(current_user, tenant_id):
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
         error_logger.error(f"Error processing file upload for tenant {tenant_id_str}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        # Attempt to clean up the uploaded file if the task submission fails
+        # Attempt to clean up the uploaded file if an error occurs
         try:
             supabase.storage.from_(bucket_name).remove([s3_path])
         except Exception as cleanup_e:
