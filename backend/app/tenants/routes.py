@@ -210,6 +210,53 @@ def discover_links(current_user, tenant_id):
         error_logger.error(f"Error discovering links for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": f"Failed to discover links: {str(e)}"}), 500
 
+@tenants_bp.route('/<uuid:tenant_id>/crawling_jobs', methods=['GET'])
+@token_required
+def get_crawling_jobs(current_user, tenant_id):
+    try:
+        tenant_id_str = str(tenant_id)
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
+        if not tenant_check.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+
+        jobs = supabase.table('crawling_jobs').select("*").eq('tenant_id', tenant_id_str).order('created_at', desc=True).execute()
+        return jsonify(jobs.data), 200
+    except Exception as e:
+        error_logger.error(f"Error getting crawling jobs for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to retrieve crawling jobs", "details": str(e)}), 500
+
+@tenants_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/progress', methods=['GET'])
+@token_required
+def get_crawling_job_progress(current_user, tenant_id, job_id):
+    try:
+        from app.models.database import CrawlingStatus
+        tenant_id_str = str(tenant_id)
+
+        # Security check: Ensure the job belongs to a tenant owned by the current user
+        job_check_response = supabase.table('crawling_jobs').select('id, tenants!inner(user_id)').eq('id', job_id).eq('tenants.user_id', current_user.id).single().execute()
+        if not job_check_response.data:
+            return jsonify({"error": "Job not found or access denied"}), 404
+
+        # Fetch task counts by status
+        status_counts_response = supabase.table('crawling_tasks').select('status', count='exact').eq('job_id', job_id).execute()
+
+        counts = {status.value: 0 for status in CrawlingStatus}
+        for item in status_counts_response.data:
+            counts[item['status']] = item['count']
+
+        progress = {
+            "total": sum(counts.values()),
+            "completed": counts.get(CrawlingStatus.COMPLETED.value, 0),
+            "pending": counts.get(CrawlingStatus.PENDING.value, 0),
+            "in_progress": counts.get(CrawlingStatus.IN_PROGRESS.value, 0),
+            "failed": counts.get(CrawlingStatus.FAILED.value, 0)
+        }
+
+        return jsonify(progress), 200
+    except Exception as e:
+        error_logger.error(f"Error getting job progress for job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to retrieve job progress", "details": str(e)}), 500
+
 @tenants_bp.route('/<uuid:tenant_id>/sources/<int:source_id>', methods=['DELETE'])
 @token_required
 def delete_source(current_user, tenant_id, source_id):

@@ -439,7 +439,7 @@ def job_scheduler_task(self):
             if running_tasks_count < MAX_CONCURRENT_CRAWLS_PER_JOB:
                 # Calculate how many new tasks we can schedule
                 limit = MAX_CONCURRENT_CRAWLS_PER_JOB - running_tasks_count
-                
+
                 # Fetch pending tasks to schedule
                 tasks_to_schedule_response = supabase.table('crawling_tasks').select('*').eq('job_id', job_id).eq('status', CrawlingStatus.PENDING.value).limit(limit).execute()
                 tasks_to_schedule = tasks_to_schedule_response.data

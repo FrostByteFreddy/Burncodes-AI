@@ -53,6 +53,24 @@
 
     <!-- Right side: List of existing sources -->
     <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <!-- Crawling Activity -->
+      <div class="mb-8">
+        <h3 class="text-xl font-bold text-brand-white mb-4">Crawling Activity</h3>
+        <div v-if="crawlingJobs.length === 0" class="text-center p-8 rounded-lg bg-gray-700">
+            <h4 class="text-xl font-semibold">No crawling activity yet</h4>
+            <p class="text-gray-400 mt-2">Use the "Discover Links" feature to start a new crawl.</p>
+        </div>
+        <div v-else class="space-y-4 max-h-60 overflow-y-auto">
+            <div v-for="job in crawlingJobs" :key="job.id" class="bg-gray-700 p-4 rounded-lg">
+                <p class="font-semibold truncate" :title="job.start_url">{{ job.start_url }}</p>
+                <div class="flex justify-between items-center mt-2">
+                    <p class="text-xs text-gray-400">Status: <span class="font-bold" :class="{ 'text-green-400': job.status === 'COMPLETED', 'text-yellow-400': job.status === 'IN_PROGRESS' }">{{ job.status }}</span></p>
+                    <p class="text-xs text-gray-400">{{ new Date(job.created_at).toLocaleString() }}</p>
+                </div>
+                <CrawlingJobProgress :job="job" :tenantId="tenantsStore.currentTenant.id" @job-completed="handleJobCompletion" />
+            </div>
+        </div>
+      </div>
       <h3 class="text-xl font-bold text-brand-white mb-4">Existing Sources</h3>
 
       <!-- Loading Skeleton -->
@@ -116,11 +134,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useTenantsStore } from '../../stores/tenants'
 import { useAuthStore } from '../../stores/auth'
 import { useToast } from '../../composables/useToast'
 import ConfirmationModal from '../ConfirmationModal.vue'
+import CrawlingJobProgress from './CrawlingJobProgress.vue'
 import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
@@ -137,6 +156,8 @@ const selectedDepth = ref(0)
 
 const sourceToDelete = ref(null)
 const showConfirmationModal = ref(false)
+
+const crawlingJobs = ref([])
 
 const isUrlValid = computed(() => {
   if (!startUrl.value) return true;
@@ -300,4 +321,25 @@ const handleDelete = async () => {
     cancelDelete();
   }
 }
+
+const handleJobCompletion = async (jobId) => {
+  addToast(`Crawl job completed! Refreshing sources...`, 'success');
+  await tenantsStore.fetchTenant(tenantsStore.currentTenant.id);
+  await fetchCrawlingJobs();
+};
+
+const fetchCrawlingJobs = async () => {
+  if (!tenantsStore.currentTenant) return;
+  try {
+    const response = await axios.get(`${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/crawling_jobs`, { headers: getAuthHeaders() });
+    crawlingJobs.value = response.data;
+  } catch (error) {
+    addToast('Failed to fetch crawling activity.', 'error');
+    console.error('Failed to fetch crawling jobs:', error);
+  }
+};
+
+onMounted(() => {
+  fetchCrawlingJobs();
+});
 </script>
