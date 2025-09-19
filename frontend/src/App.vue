@@ -5,6 +5,7 @@
       <router-view />
     </main>
     <ToastContainer />
+    <SessionExpiredModal v-if="authStore.sessionExpired" />
   </div>
 </template>
 
@@ -13,6 +14,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import Sidebar from './components/Sidebar.vue'
 import ToastContainer from './components/ToastContainer.vue'
+import SessionExpiredModal from './components/SessionExpiredModal.vue'
 import { useAuthStore } from './stores/auth'
 
 const authStore = useAuthStore()

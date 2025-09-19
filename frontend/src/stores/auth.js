@@ -6,6 +6,7 @@ import router from '../router'
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const session = ref(null)
+  const sessionExpired = ref(false)
 
   async function fetchUser() {
     const { data, error } = await supabase.auth.getSession()
@@ -44,11 +45,13 @@ export const useAuthStore = defineStore('auth', () => {
 
     session.value = data.session
     user.value = data.user
+    sessionExpired.value = false // Reset on new login
 
     router.push('/dashboard')
   }
 
   async function logout() {
+    sessionExpired.value = false // Also reset on logout
     const { error } = await supabase.auth.signOut()
     if (error) throw error
     user.value = null
@@ -61,6 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (event === 'SIGNED_IN') {
       session.value = _session
       user.value = _session.user
+      sessionExpired.value = false
     } else if (event === 'SIGNED_OUT') {
       user.value = null
       session.value = null
@@ -83,5 +87,5 @@ export const useAuthStore = defineStore('auth', () => {
     return data.user
   }
 
-  return { user, session, fetchUser, signUp, login, logout, updateProfile }
+  return { user, session, sessionExpired, fetchUser, signUp, login, logout, updateProfile }
 })
