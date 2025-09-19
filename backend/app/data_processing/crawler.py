@@ -8,7 +8,8 @@ browser_config = BrowserConfig(
     verbose=False,
     user_agent_mode="random",
     viewport_width=1920,
-    viewport_height=1080
+    viewport_height=1080,
+    extra_args=['--disable-crash-reporter']
 )
 
 shared_crawler = AsyncWebCrawler(
