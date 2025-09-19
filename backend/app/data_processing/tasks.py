@@ -386,19 +386,22 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             existing_urls = {item['url'] for item in existing_urls_response.data}
             new_unique_links = found_links - existing_urls
 
+            from celery import chain
+            new_tasks_to_chain = []
             for link in new_unique_links:
                 new_task_data = {"job_id": job['id'], "url": link, "depth": depth + 1, "status": CrawlingStatus.PENDING.value}
                 new_task_response = supabase.table('crawling_tasks').insert(new_task_data).execute()
                 new_task_id = new_task_response.data[0]['id']
-                delay_seconds = random.randint(1, 5)
-                process_single_url_task.apply_async(
-                    kwargs={
-                        'task_id': new_task_id,
-                        'tenant_id': tenant_id,
-                        'parent_url': url
-                    },
-                    countdown=delay_seconds
+                # Create a signature for each new task
+                new_tasks_to_chain.append(
+                    process_single_url_task.s(task_id=new_task_id, tenant_id=tenant_id, parent_url=url)
                 )
+
+            # If there are new tasks, chain them together to run sequentially
+            if new_tasks_to_chain:
+                task_chain = chain(new_tasks_to_chain)
+                # Apply a random delay to the start of the entire chain
+                task_chain.apply_async(countdown=random.randint(1, 5))
 
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', task_id).execute()
         print(f"✅ Completed processing URL: {url}")
