@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
-from app.database.supabase_client import supabase
+from app.database.supabase_client import supabase, bucket_name
 from app.auth.decorators import token_required
 from app.models.database import Tenant, TenantFineTune, SourceType
-from app.data_processing.tasks import process_local_filepath, process_urls, crawl_links_task
+from app.data_processing.tasks import process_s3_file, process_urls, crawl_links_task
 from app.logging_config import error_logger
 from app import celery
 from uuid import uuid4
@@ -136,22 +136,31 @@ def upload_source(current_user, tenant_id):
         return jsonify({"error": "No selected file"}), 400
 
     try:
-        from flask import current_app
-        upload_folder_base = current_app.config['UPLOAD_FOLDER_BASE']
-        tenant_upload_path = os.path.join(upload_folder_base, tenant_id_str)
-        os.makedirs(tenant_upload_path, exist_ok=True)
-        filepath = os.path.join(tenant_upload_path, file.filename)
-        file.save(filepath)
+        s3_path = f"{tenant_id_str}/{file.filename}"
 
-        source_data = {"tenant_id": tenant_id_str, "source_type": SourceType.FILE, "source_location": file.filename, "status": "QUEUED"}
+        # Upload the file to Supabase Storage
+        supabase.storage.from_(bucket_name).upload(
+            path=s3_path,
+            file=file.read(),
+            file_options={"content-type": file.content_type}
+        )
+
+        # The source_location will now be the S3 path
+        source_data = {"tenant_id": tenant_id_str, "source_type": SourceType.FILE, "source_location": s3_path, "status": "QUEUED"}
         source_record = supabase.table('tenant_sources').insert(source_data).execute()
         source_id = source_record.data[0]['id']
 
-        task = process_local_filepath.delay(filepath, file.filename, source_id, tenant_id_str)
+        # Call the new Celery task with the S3 path
+        task = process_s3_file.delay(s3_path, file.filename, source_id, tenant_id_str)
 
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
         error_logger.error(f"Error processing file upload for tenant {tenant_id_str}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        # Attempt to clean up the uploaded file if the task submission fails
+        try:
+            supabase.storage.from_(bucket_name).remove([s3_path])
+        except Exception as cleanup_e:
+            error_logger.error(f"Failed to clean up S3 file {s3_path} after an error: {cleanup_e}", extra={'user_id': current_user.id})
         return jsonify({"error": f"Failed to process file: {str(e)}"}), 500
 
 @tenants_bp.route('/<uuid:tenant_id>/sources/crawl', methods=['POST'])
