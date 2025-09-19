@@ -23,30 +23,8 @@
           aria-describedby="url-error"
         >
         <p v-if="!isUrlValid && startUrl" id="url-error" class="text-red-400 text-sm mt-1">Please enter a valid URL (e.g., https://example.com).</p>
-        <button @click="discoverLinks" :disabled="!startUrl.trim() || loading || !isUrlValid" class="mt-2 w-full bg-black border border-white hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
-          {{ loading ? 'Discovering...' : 'Discover Links' }}
-        </button>
-      </div>
-
-      <!-- Discovery Results -->
-      <div v-if="discoveryResults.length > 0" class="space-y-4">
-        <h4 class="text-lg font-semibold">Discovery Results</h4>
-        <div class="bg-gray-700 p-4 rounded-lg">
-          <div v-for="result in discoveryResults" :key="result.depth" class="flex justify-between items-center">
-            <span>Depth {{ result.depth }}:</span>
-            <span>{{ result.count }} links found</span>
-          </div>
-        </div>
-        <div>
-          <label for="depth-select" class="block text-sm font-medium text-gray-300 mb-2">Select crawl depth</label>
-          <select v-model.number="selectedDepth" id="depth-select" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg">
-            <option v-for="result in discoveryResults" :key="result.depth" :value="result.depth">
-              Up to Depth {{ result.depth }} ({{ getTotalLinks(result.depth) }} total pages)
-            </option>
-          </select>
-        </div>
-        <button @click="handleFinalCrawl" :disabled="!selectedDepth || loading" class="w-full bg-black border border-white hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
-          {{ loading ? 'Crawling...' : `Crawl ${getTotalLinks(selectedDepth)} Pages` }}
+        <button @click="startCrawl" :disabled="!startUrl.trim() || loading || !isUrlValid" class="mt-2 w-full bg-black border border-white hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">
+          {{ loading ? 'Crawling...' : 'Crawl Website' }}
         </button>
       </div>
     </div>
@@ -151,8 +129,6 @@ const selectedFile = ref(null)
 const loading = ref(false)
 
 const startUrl = ref('')
-const discoveryResults = ref([])
-const selectedDepth = ref(0)
 
 const sourceToDelete = ref(null)
 const showConfirmationModal = ref(false)
@@ -190,73 +166,16 @@ const getAuthHeaders = () => {
     return { Authorization: `Bearer ${authStore.session.access_token}` }
 }
 
-const getTotalLinks = (depth) => {
-  return discoveryResults.value
-    .slice(0, depth)
-    .reduce((total, result) => total + result.count, 0);
-};
-
-const pollTaskStatus = async (taskId) => {
-  const intervalId = setInterval(async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/tenants/tasks/${taskId}`, { headers: getAuthHeaders() });
-      const task = response.data;
-
-      if (task.state === 'SUCCESS') {
-        clearInterval(intervalId);
-        loading.value = false;
-        discoveryResults.value = task.result;
-        if (discoveryResults.value.length > 0) {
-          selectedDepth.value = discoveryResults.value.length;
-        }
-        addToast('Link discovery successful!', 'success');
-      } else if (task.state === 'FAILURE') {
-        clearInterval(intervalId);
-        loading.value = false;
-        addToast(`Link discovery failed: ${task.status}`, 'error');
-      }
-      // If PENDING, the spinner continues
-    } catch (error) {
-      clearInterval(intervalId);
-      loading.value = false;
-      addToast('Failed to get task status.', 'error');
-    }
-  }, 3000); // Poll every 3 seconds
-};
-
-const discoverLinks = async () => {
+const startCrawl = async () => {
     if (!startUrl.value.trim() || !tenantsStore.currentTenant) return;
     loading.value = true;
-    discoveryResults.value = [];
-    selectedDepth.value = 0;
     try {
-        const response = await axios.post(`${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/discover`, { url: startUrl.value }, { headers: getAuthHeaders() });
-        const taskId = response.data.task_id;
-        addToast('Link discovery started...', 'info');
-        pollTaskStatus(taskId);
+        await axios.post(`${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/discover`, { url: startUrl.value }, { headers: getAuthHeaders() });
+        addToast('Crawling job started successfully!', 'success');
+        startUrl.value = ''; // Clear the input field
+        await fetchCrawlingJobs(); // Refresh the jobs list
     } catch (error) {
-        addToast(`Link discovery failed: ${error.response?.data?.error || 'Unknown error'}`, 'error');
-        loading.value = false;
-    }
-};
-
-const handleFinalCrawl = async () => {
-    if (!selectedDepth.value || !tenantsStore.currentTenant) return;
-    loading.value = true;
-
-    const urlsToCrawl = discoveryResults.value
-        .slice(0, selectedDepth.value)
-        .flatMap(result => result.links);
-
-    try {
-        await axios.post(`${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/crawl`, { urls: urlsToCrawl }, { headers: getAuthHeaders() });
-        await tenantsStore.fetchTenant(tenantsStore.currentTenant.id);
-        startUrl.value = '';
-        discoveryResults.value = [];
-        selectedDepth.value = 0;
-        addToast('Crawling initiated successfully!', 'success');
-    } catch (error) {
-        addToast(`URL crawling failed: ${error.response?.data?.error || 'Unknown error'}`, 'error');
+        addToast(`Failed to start crawl: ${error.response?.data?.error || 'Unknown error'}`, 'error');
     } finally {
         loading.value = false;
     }
