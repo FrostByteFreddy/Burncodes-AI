@@ -330,17 +330,16 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         if parent_url:
             headers["Referer"] = parent_url
 
-        # Pass headers to the run_config, not the browser_config
+        # Pass headers to the arun method, not the run_config
         run_config = CrawlerRunConfig(
             cache_mode=CacheMode.BYPASS,
-            stream=False,
-            headers=headers
+            stream=False
         )
 
         # --- Step 1: Crawl the page with a specific timeout ---
         async def crawl_page_only():
-            # Use the shared_crawler instance
-            return await shared_crawler.arun(url=url, config=run_config)
+            # Use the shared_crawler instance and pass headers directly
+            return await shared_crawler.arun(url=url, config=run_config, headers=headers)
 
         crawl_result = None
         try:
