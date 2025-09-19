@@ -22,10 +22,30 @@ def create_app():
     app.json_encoder = CustomJSONEncoder
     CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
-    # --- Configuration ---
+    # --- Configuration and Directory Setup ---
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a_default_secret_key')
-    app.config['UPLOAD_FOLDER_BASE'] = os.getenv("UPLOADS_DIR", "uploads")
-    app.config['VECTOR_STORE_PATH_BASE'] = os.getenv("CHROMADB_PATH", "chromadb")
+
+    # Define base paths for persistent data
+    upload_folder = os.getenv("UPLOAD_FOLDER_BASE", "/data/uploads")
+    vector_store_path = os.getenv("VECTOR_STORE_PATH_BASE", "/data/chromadb")
+    crawl_cache_path = os.getenv("CRAWL_CACHE_PATH", "/data/crawl4ai_cache")
+
+    app.config['UPLOAD_FOLDER_BASE'] = upload_folder
+    app.config['VECTOR_STORE_PATH_BASE'] = vector_store_path
+    app.config['CRAWL_CACHE_PATH'] = crawl_cache_path
+
+    # Attempt to create directories at startup, but don't crash if it fails
+    try:
+        os.makedirs(upload_folder, exist_ok=True)
+        os.makedirs(vector_store_path, exist_ok=True)
+        os.makedirs(crawl_cache_path, exist_ok=True)
+        error_logger.info("Successfully created/ensured data directories.")
+    except PermissionError:
+        error_logger.warning(
+            f"Could not create data directories ({upload_folder}, {vector_store_path}, {crawl_cache_path}). "
+            "This is expected if running without write permissions to the volume. "
+            "The application will attempt to create subdirectories as needed."
+        )
 
     # --- Celery Configuration ---
     broker_url = os.environ.get('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0')
