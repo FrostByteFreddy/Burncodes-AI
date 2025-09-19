@@ -324,23 +324,21 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.IN_PROGRESS.value}).eq('id', task_id).execute()
         print(f"Crawling URL: {url} at depth {depth}")
 
-        # --- Browser Configuration with User-Agent and Referer ---
-        selected_user_agent = random.choice(USER_AGENTS)
-        headers = {"User-Agent": selected_user_agent}
+        # The user agent is randomized by the BrowserConfig.
+        # We dynamically add the Referer header for each request if a parent URL exists.
+        headers = {}
         if parent_url:
             headers["Referer"] = parent_url
 
-        # Pass headers to the run_config, not the browser_config
         run_config = CrawlerRunConfig(
             cache_mode=CacheMode.BYPASS,
-            stream=False,
-            headers=headers
+            stream=False
         )
 
         # --- Step 1: Crawl the page with a specific timeout ---
         async def crawl_page_only():
-            # Use the shared_crawler instance
-            return await shared_crawler.arun(url=url, config=run_config)
+            # Pass the dynamic headers directly to the arun method.
+            return await shared_crawler.arun(url=url, config=run_config, headers=headers)
 
         crawl_result = None
         try:
