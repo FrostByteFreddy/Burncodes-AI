@@ -8,13 +8,7 @@ browser_config = BrowserConfig(
     verbose=False,
     user_agent_mode="random",
     viewport_width=1920,
-    viewport_height=1080,
-    playwright_extra_kwargs={
-        "args": [
-            "--no-sandbox",
-            "--disable-setuid-sandbox"
-        ]
-    }
+    viewport_height=1080
 )
 
 shared_crawler = AsyncWebCrawler(
