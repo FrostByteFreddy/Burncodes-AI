@@ -44,6 +44,7 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
+  const tenantsStore = useTenantsStore(); // Make sure to import useTenantsStore
 
   // Try to auto-login user from session/localStorage
   if (!authStore.user) {
@@ -51,19 +52,21 @@ router.beforeEach(async (to, from, next) => {
   }
 
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-  const isPublic = to.matched.some(record => record.meta.public);
 
   if (requiresAuth && !authStore.user) {
-    // Redirect to login if route requires auth and user is not logged in
-    next('/login');
-  } else if ((to.name === 'Login' || to.name === 'Signup') && authStore.user) {
-    // If user is logged in, redirect from login/signup to the main view
-    next('/manage-tenants');
+    return next('/login');
   }
-  else {
-    // Otherwise, proceed
-    next();
+
+  // If navigating to a tenant route, ensure tenant data is loaded before proceeding
+  if (to.params.tenantId && !tenantsStore.currentTenant) {
+    await tenantsStore.fetchTenant(to.params.tenantId);
   }
+
+  if ((to.name === 'Login' || to.name === 'Signup') && authStore.user) {
+    return next('/manage-tenants');
+  }
+
+  next();
 });
 
 export default router
