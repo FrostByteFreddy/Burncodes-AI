@@ -65,9 +65,9 @@ def create_app():
     )
 
     celery.conf.beat_schedule = {
-        'check-job-completion-every-minute': {
-            'task': 'app.data_processing.tasks.check_job_completion_task',
-            'schedule': 60.0,
+        'job-scheduler-every-30-seconds': {
+            'task': 'app.data_processing.tasks.job_scheduler_task',
+            'schedule': 30.0,
         },
     }
 
