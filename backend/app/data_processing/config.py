@@ -8,5 +8,5 @@ CRAWLER_RUN_CONFIG = CrawlerRunConfig(
     check_robots_txt=True,
     cache_mode=CacheMode.ENABLED,
     override_navigator=True,
-    stream=False,  # Kept from original config as it seems important for the processing flow
+    stream=False
 )
