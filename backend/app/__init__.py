@@ -28,11 +28,11 @@ def create_app():
     
     # Define base paths for persistent data
     upload_folder = os.getenv("UPLOAD_FOLDER_BASE", "/data/uploads")
-    vector_store_path = os.getenv("VECTOR_STORE_PATH_BASE", "/data/chromadb")
+    vector_store_path = os.getenv("CRAWL4_AI_BASE_DIRECTORY", "/data/chromadb")
     crawl_cache_path = os.getenv("CRAWL_CACHE_PATH", "/data/crawl4ai_cache")
 
     app.config['UPLOAD_FOLDER_BASE'] = upload_folder
-    app.config['VECTOR_STORE_PATH_BASE'] = vector_store_path
+    app.config['CRAWL4_AI_BASE_DIRECTORY'] = vector_store_path
     app.config['CRAWL_CACHE_PATH'] = crawl_cache_path
 
     # Attempt to create directories at startup, but don't crash if it fails

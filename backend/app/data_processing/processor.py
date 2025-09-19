@@ -62,7 +62,7 @@ from langchain_core.embeddings import Embeddings
 def get_vectorstore(tenant_id: UUID, embeddings: Embeddings):
     """Initializes and returns a tenant-specific Chroma vector store instance."""
     tenant_id_str = str(tenant_id)
-    vector_store_path_base = current_app.config['VECTOR_STORE_PATH_BASE']
+    vector_store_path_base = current_app.config['CRAWL4_AI_BASE_DIRECTORY']
     tenant_db_path = os.path.join(vector_store_path_base, tenant_id_str)
 
     client_settings = chromadb.Settings(
