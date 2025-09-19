@@ -144,7 +144,7 @@ const pollTaskStatus = (taskId) => {
     const interval = setInterval(async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/chat/task/${taskId}/status`);
-            const { task_status, task_result } = response.data;
+            const { state: task_status, result: task_result } = response.data;
 
             if (task_status === 'SUCCESS') {
                 clearInterval(interval);
@@ -175,7 +175,7 @@ const pollTaskStatus = (taskId) => {
             isThinking.value = false;
             await scrollToBottom();
         }
-    }, 2000); // Poll every 2 seconds
+    }, 1000); // Poll once per second
 };
 
 const sendMessage = async () => {
