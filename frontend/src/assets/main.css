@@ -21,10 +21,11 @@ body {
     background-color: black;
 }
 
-main {
+#app-layout > main {
 
     max-height: 100vh;
     overflow: scroll;
+    padding: 4rem 20px;
 }
 
 /* Target all scrollbars */
