@@ -62,7 +62,8 @@ def create_app():
         broker_url=broker_url,
         result_backend=result_backend,
         broker_connection_retry_on_startup=True,
-        task_acks_late = True
+        task_acks_late = True,
+        worker_prefetch_multiplier = 1
     )
 
     celery.conf.beat_schedule = {
