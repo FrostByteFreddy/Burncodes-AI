@@ -156,6 +156,7 @@ const pollTaskStatus = (taskId) => {
                     }
                     return { text: msg.content, html: null, isUser: true };
                 });
+                saveChatHistoryToCookie(chatHistory.value);
                 isThinking.value = false;
                 await scrollToBottom();
             } else if (task_status === 'FAILURE') {
@@ -187,7 +188,7 @@ const sendMessage = async () => {
         content: msg.text
     }));
 
-    chatHistory.value.push({ text: currentMessage, html: currentMessage, isUser: true });
+    chatHistory.value.push({ text: currentMessage, html: null, isUser: true });
     userMessage.value = '';
     isThinking.value = true;
     await scrollToBottom();
