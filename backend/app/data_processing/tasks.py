@@ -279,7 +279,7 @@ def normalize_url(url):
     return urldefrag(url)[0].rstrip('/')
 
 @shared_task(bind=True)
-def crawl_links_task(self, tenant_id: UUID, start_url: str, max_depth: int = 2):
+def crawl_links_task(self, tenant_id: UUID, start_url: str, max_depth: int = 3):
     """
     Orchestrator Celery task to initiate a distributed web crawl.
     Creates a CrawlingJob and the first CrawlingTask.

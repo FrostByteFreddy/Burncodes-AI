@@ -6,7 +6,7 @@ This document provides technical details about the backend services, including h
 
 ## 1. How to Start the Services
 
-The backend consists of three main services that must be run simultaneously in separate terminals: **Redis**, the **Celery Worker**, and the **Flask Application**.
+The backend consists of four main services that must be run simultaneously in separate terminals: **Redis**, the **Celery Worker**, the **Celery Beat Scheduler**, and the **Flask Application**.
 
 ### Terminal 1: Start Redis
 
@@ -29,7 +29,18 @@ celery -A celery_worker.celery worker --loglevel=info
 ```
 *Keep this terminal open.*
 
-### Terminal 3: Start the Flask Application
+### Terminal 3: Start the Celery Beat Scheduler
+
+The Celery Beat service is responsible for scheduling periodic tasks, such as the job scheduler that queues new crawling tasks.
+
+```sh
+# Navigate to the backend directory and activate your virtual environment
+
+celery -A celery_worker.celery beat --loglevel=info
+```
+*Keep this terminal open.*
+
+### Terminal 4: Start the Flask Application
 
 The Flask app serves the API that the frontend interacts with.
 
