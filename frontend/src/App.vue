@@ -1,28 +1,28 @@
 <template>
-  <div class="min-h-screen bg-base-100 text-base-content">
-    <div class="flex">
-      <Sidebar v-if="showSidebar" :is-open="isSidebarOpen" @close-sidebar="isSidebarOpen = false" />
-      
-      <div class="flex-1 flex flex-col min-h-screen">
-        <header v-if="showSidebar" class="md:hidden flex items-center justify-between p-4 bg-base-100/80 backdrop-blur-lg border-b border-base-300 sticky top-0 z-10">
-          <button @click="isSidebarOpen = !isSidebarOpen" class="btn btn-square btn-ghost">
-            <font-awesome-icon :icon="['fas', 'bars']" class="h-6 w-6" />
-          </button>
-          <h2 class="text-xl font-semibold text-center text-primary">BurnCodes AI</h2>
-        </header>
+    <div class="bg-base-100 text-base-content" :class="isSidebarOpen ? 'overflow-hidden' : ''">
+        <div class="flex">
+            <Sidebar v-if="showSidebar" :is-open="isSidebarOpen" @close-sidebar="isSidebarOpen = false" />
 
-        <main class="flex-1">
-          <router-view />
-        </main>
-      </div>
+            <div class="flex-1 flex flex-col h-100">
+                <header v-if="showSidebar"
+                    class="md:hidden flex items-center justify-between p-4 bg-base-100/80 backdrop-blur-lg border-b border-base-300 sticky top-0 z-10">
+                    <button @click="isSidebarOpen = !isSidebarOpen" class="btn btn-square btn-ghost">
+                        <font-awesome-icon :icon="['fas', 'bars']" class="h-6 w-6" />
+                    </button>
+                </header>
+
+                <main class="flex-1">
+                    <router-view />
+                </main>
+            </div>
+        </div>
+
+        <!-- Mobile sidebar overlay -->
+        <div v-if="isSidebarOpen" @click="isSidebarOpen = false" class="fixed inset-0 bg-black/60 z-30 md:hidden"></div>
+
+        <ToastContainer />
+        <SessionExpiredModal v-if="authStore.sessionExpired" />
     </div>
-
-    <!-- Mobile sidebar overlay -->
-    <div v-if="isSidebarOpen" @click="isSidebarOpen = false" class="fixed inset-0 bg-black/60 z-30 md:hidden"></div>
-
-    <ToastContainer />
-    <SessionExpiredModal v-if="authStore.sessionExpired" />
-  </div>
 </template>
 
 <script setup>
@@ -38,7 +38,7 @@ const route = useRoute()
 const isSidebarOpen = ref(false)
 
 const showSidebar = computed(() => {
-  return authStore.user && route.name !== 'Chat'
+    return authStore.user && route.name !== 'Chat'
 })
 </script>
 

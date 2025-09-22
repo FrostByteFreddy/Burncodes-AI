@@ -20,7 +20,7 @@ const props = defineProps({
 })
 
 const toastClasses = {
-    success: 'bg-green-500',
-    error: 'bg-red-500',
+    success: 'bg-green-700',
+    error: 'bg-red-600',
 }
 </script>

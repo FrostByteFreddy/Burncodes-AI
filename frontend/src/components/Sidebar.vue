@@ -1,15 +1,15 @@
 <template>
     <aside
-        class="fixed inset-y-0 left-0 z-40 w-3/4 sm:w-64 bg-neutral text-neutral-content border-r border-base-300 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0"
+        class="fixed inset-y-0 left-0 z-40 w-3/4 sm:w-64 bg-neutral text-neutral-content transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0"
         :class="isOpen ? 'translate-x-0' : '-translate-x-full'">
-        <div class="md:hidden absolute top-2 right-2">
+        <!-- <div class="md:hidden absolute top-2 -right-2">
             <button @click="$emit('close-sidebar')" class="btn btn-square btn-ghost">
                 <font-awesome-icon :icon="['fas', 'times']" class="h-6 w-6" />
             </button>
-        </div>
+        </div> -->
 
         <div class="flex flex-col h-screen px-4 py-8">
-            <h2 class="text-3xl font-semibold text-center text-primary">BurnCodes AI</h2>
+            <h2 class="hidden sm:block text-3xl font-semibold text-center text-primary ">BurnCodes AI</h2>
 
             <div class="relative mt-6">
                 <div v-if="tenantsStore.tenants.length > 1">

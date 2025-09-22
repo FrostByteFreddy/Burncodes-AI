@@ -2,10 +2,12 @@
     <div class="p-6">
         <div class="flex justify-between items-center mb-8">
             <h1 class="text-4xl font-bold text-base-content">Manage Tenants</h1>
-            <button @click="showCreateModal = true" class="btn btn-primary">
-                <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
-                New Tenant
-            </button>
+            <div v-if="tenantsStore.tenants.length !== 0">
+                <button @click="showCreateModal = true" class="btn btn-primary">
+                    <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
+                    New Tenant
+                </button>
+            </div>
         </div>
 
         <!-- Loading Skeleton -->
@@ -19,10 +21,12 @@
             <font-awesome-icon :icon="['fas', 'folder-open']" class="text-5xl text-base-content/20 mb-4" />
             <h2 class="text-2xl font-semibold mb-2">No tenants yet</h2>
             <p class="text-base-content/70 mb-6">Create your first tenant to get started.</p>
-            <button @click="showCreateModal = true" class="btn btn-primary">
-                <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
-                Create a Tenant
-            </button>
+            <div v-if="tenantsStore.tenants.length === 0">
+                <button @click="showCreateModal = true" class="btn btn-primary">
+                    <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
+                    Create a Tenant
+                </button>
+            </div>
         </div>
 
         <!-- Tenant List -->
