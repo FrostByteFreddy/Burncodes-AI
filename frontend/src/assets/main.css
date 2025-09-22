@@ -13,7 +13,7 @@
     @apply bg-secondary text-secondary-content hover:bg-secondary-focus;
   }
   .btn-error {
-    @apply bg-error text-white hover:bg-error-focus;
+    @apply bg-error text-white hover:brightness-90;
   }
   .btn-sm {
     @apply py-1 px-3 text-sm;
