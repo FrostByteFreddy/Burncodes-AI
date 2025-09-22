@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-base-100 p-6 rounded-lg shadow-lg">
+    <div class="bg-base-100 rounded-lg shadow-none sm:shadow-lg">
         <form @submit.prevent="handleUpdate" class="space-y-6">
             <div>
                 <label for="name" class="block text-sm font-medium text-base-content">Tenant Name</label>

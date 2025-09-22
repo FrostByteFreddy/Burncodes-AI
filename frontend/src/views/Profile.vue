@@ -1,10 +1,10 @@
 <template>
-    <div class="container mx-auto p-6">
+    <div class="container mx-auto p-4 sm:p-6">
         <h1 class="text-3xl font-bold mb-6 flex items-center">
             <font-awesome-icon :icon="['fas', 'user-pen']" class="mr-3 text-primary" />
             My Profile
         </h1>
-        <div class="max-w-2xl mx-auto bg-base-100 p-8 rounded-lg shadow-lg">
+        <div class="max-w-2xl mx-auto bg-base-100 rounded-lg shadow-none sm:shadow-lg">
             <form v-if="authStore.user" @submit.prevent="handleUpdate" class="space-y-6">
                 <div>
                     <label for="email" class="block text-sm font-medium text-base-content">Email</label>
