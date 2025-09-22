@@ -1,7 +1,7 @@
 <template>
-  <div id="app-layout" :class="{'flex': showSidebar}" class="min-h-screen bg-brand-black text-brand-white">
+  <div id="app-layout" :class="{'flex': showSidebar}" class="min-h-screen bg-base-100 text-base-content">
     <Sidebar v-if="showSidebar" />
-    <main :class="{'flex-1': showSidebar}">
+    <main :class="{'flex-1': showSidebar}" class="transition-all duration-300 ease-in-out">
       <router-view />
     </main>
     <ToastContainer />

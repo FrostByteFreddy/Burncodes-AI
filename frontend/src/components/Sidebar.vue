@@ -1,46 +1,68 @@
 <template>
-  <div class="flex flex-col w-64 h-screen px-4 py-8 bg-brand-black border-r border-gray-700">
-    <h2 class="text-3xl font-semibold text-center text-accent-gradient">SwiftAnswer</h2>
+  <aside class="flex flex-col w-64 h-screen px-4 py-8 bg-neutral text-neutral-content border-r border-base-300 transition-all duration-300 ease-in-out">
+    <h2 class="text-3xl font-semibold text-center text-primary">SwiftAnswer</h2>
 
     <div class="relative mt-6">
       <div v-if="tenantsStore.tenants.length > 1">
-        <button @click="dropdownOpen = !dropdownOpen" class="w-full px-4 py-2 text-left text-brand-white bg-gray-800 rounded-md hover:bg-gray-700 focus:outline-none focus:bg-gray-700">
+        <button @click="dropdownOpen = !dropdownOpen" class="w-full px-4 py-2 text-left bg-base-100 text-base-content rounded-md hover:bg-base-200 focus:outline-none focus:bg-base-200 flex justify-between items-center">
           <span class="truncate">{{ activeTenant ? activeTenant.name : 'Select a Tenant' }}</span>
-          <svg class="w-5 h-5 absolute right-2 top-2.5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-          </svg>
+          <font-awesome-icon :icon="['fas', 'chevron-down']" class="w-5 h-5" />
         </button>
-        <div v-show="dropdownOpen" class="absolute right-0 w-full mt-2 py-2 bg-gray-800 rounded-md shadow-xl z-20">
-          <a v-for="tenant in tenantsStore.tenants" :key="tenant.id" @click="selectTenant(tenant)" href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-brand-white">
+        <div v-show="dropdownOpen" class="absolute right-0 w-full mt-2 py-2 bg-base-100 rounded-md shadow-xl z-20">
+          <a v-for="tenant in tenantsStore.tenants" :key="tenant.id" @click="selectTenant(tenant)" href="#" class="block px-4 py-2 text-sm text-base-content hover:bg-base-200">
             {{ tenant.name }}
           </a>
         </div>
       </div>
-      <div v-else-if="tenantsStore.tenants.length === 1" class="px-4 py-2 text-brand-white">
+      <div v-else-if="tenantsStore.tenants.length === 1" class="px-4 py-2">
         <span class="font-semibold">{{ tenantsStore.tenants[0].name }}</span>
       </div>
     </div>
 
     <div class="flex flex-col justify-between flex-1 mt-6">
       <nav v-if="activeTenant">
-        <router-link :to="{ name: 'TenantSources', params: { tenantId: activeTenant.id } }" class="flex items-center px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-brand-white rounded-md">Sources</router-link>
-        <router-link :to="{ name: 'TenantSettings', params: { tenantId: activeTenant.id } }" class="flex items-center px-4 py-2 mt-2 text-gray-300 hover:bg-gray-700 hover:text-brand-white rounded-md">Configuration</router-link>
-        <router-link :to="{ name: 'TenantAdvanced', params: { tenantId: activeTenant.id } }" class="flex items-center px-4 py-2 mt-2 text-gray-300 hover:bg-gray-700 hover:text-brand-white rounded-md">Advanced</router-link>
-        <a :href="`/chat/${activeTenant.id}`" target="_blank" class="flex items-center px-4 py-2 mt-2 text-gray-300 hover:bg-gray-700 hover:text-brand-white rounded-md">Chatbot</a>
+        <router-link :to="{ name: 'TenantSources', params: { tenantId: activeTenant.id } }" class="flex items-center px-4 py-2 rounded-md hover:bg-neutral-focus">
+          <font-awesome-icon :icon="['fas', 'database']" class="w-5 h-5 mr-3" />
+          Sources
+        </router-link>
+        <router-link :to="{ name: 'TenantSettings', params: { tenantId: activeTenant.id } }" class="flex items-center px-4 py-2 mt-2 rounded-md hover:bg-neutral-focus">
+          <font-awesome-icon :icon="['fas', 'sliders']" class="w-5 h-5 mr-3" />
+          Configuration
+        </router-link>
+        <router-link :to="{ name: 'TenantFineTune', params: { tenantId: activeTenant.id } }" class="flex items-center px-4 py-2 mt-2 rounded-md hover:bg-neutral-focus">
+          <font-awesome-icon :icon="['fas', 'flask-vial']" class="w-5 h-5 mr-3" />
+          Fine Tune
+        </router-link>
+        <a :href="`/chat/${activeTenant.id}`" target="_blank" class="flex items-center px-4 py-2 mt-2 rounded-md hover:bg-neutral-focus">
+          <font-awesome-icon :icon="['fas', 'comments']" class="w-5 h-5 mr-3" />
+          Chatbot
+        </a>
       </nav>
-      <div v-else class="text-center text-gray-500">
+      <div v-else class="text-center text-neutral-content opacity-50">
         <p>Select a tenant to see management options.</p>
       </div>
 
       <div>
-        <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Settings</h3>
-        <router-link to="/profile" class="flex items-center px-4 py-2 mt-2 text-gray-300 hover:bg-gray-700 hover:text-brand-white rounded-md">Profile</router-link>
-        <router-link to="/manage-tenants" class="flex items-center px-4 py-2 mt-2 text-gray-300 hover:bg-gray-700 hover:text-brand-white rounded-md">Manage Tenants</router-link>
-        <router-link to="/subscription" class="flex items-center px-4 py-2 mt-2 text-gray-300 hover:bg-gray-700 hover:text-brand-white rounded-md">Subscription</router-link>
-        <button @click="handleLogout" class="w-full flex items-center px-4 py-2 mt-2 text-gray-300 hover:bg-gray-700 hover:text-brand-white rounded-md">Logout</button>
+        <h3 class="px-4 mb-2 text-xs font-semibold uppercase tracking-wider opacity-50">Settings</h3>
+        <router-link to="/profile" class="flex items-center px-4 py-2 mt-2 rounded-md hover:bg-neutral-focus">
+          <font-awesome-icon :icon="['fas', 'user']" class="w-5 h-5 mr-3" />
+          Profile
+        </router-link>
+        <router-link to="/manage-tenants" class="flex items-center px-4 py-2 mt-2 rounded-md hover:bg-neutral-focus">
+          <font-awesome-icon :icon="['fas', 'list-check']" class="w-5 h-5 mr-3" />
+          Manage Tenants
+        </router-link>
+        <router-link to="/subscription" class="flex items-center px-4 py-2 mt-2 rounded-md hover:bg-neutral-focus">
+          <font-awesome-icon :icon="['fas', 'credit-card']" class="w-5 h-5 mr-3" />
+          Subscription
+        </router-link>
+        <button @click="handleLogout" class="w-full flex items-center px-4 py-2 mt-2 rounded-md hover:bg-neutral-focus">
+          <font-awesome-icon :icon="['fas', 'arrow-right-from-bracket']" class="w-5 h-5 mr-3" />
+          Logout
+        </button>
       </div>
     </div>
-  </div>
+  </aside>
 </template>
 
 <script setup>

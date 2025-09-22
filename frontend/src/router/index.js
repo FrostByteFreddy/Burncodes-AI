@@ -10,7 +10,7 @@ import ManageTenants from '../views/ManageTenants.vue'
 import Subscription from '../views/Subscription.vue'
 import TenantSettings from '../components/tenant/Settings.vue'
 import TenantSources from '../components/tenant/Sources.vue'
-import TenantAdvanced from '../components/tenant/Advanced.vue'
+import TenantFineTune from '../components/tenant/FineTune.vue'
 
 const uuidRegex = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
 
@@ -28,7 +28,7 @@ const routes = [
       { path: '', redirect: { name: 'TenantSettings' } },
       { path: 'settings', name: 'TenantSettings', component: TenantSettings },
       { path: 'sources', name: 'TenantSources', component: TenantSources },
-      { path: 'advanced', name: 'TenantAdvanced', component: TenantAdvanced },
+      { path: 'fine-tune', name: 'TenantFineTune', component: TenantFineTune },
     ]
   },
   { path: '/profile', name: 'Profile', component: Profile, meta: { requiresAuth: true } },

@@ -1,13 +1,13 @@
 <template>
   <div class="mt-2">
-    <div class="flex justify-between text-sm font-medium text-gray-400 mb-1">
+    <div class="flex justify-between text-sm font-medium text-base-content/70 mb-1">
       <span>{{ progress.completed }} / {{ progress.total }} pages</span>
       <span>{{ progressPercentage.toFixed(0) }}%</span>
     </div>
-    <div class="w-full bg-gray-600 rounded-full h-2.5">
-      <div class="bg-green-500 h-2.5 rounded-full" :style="{ width: progressPercentage + '%' }"></div>
+    <div class="w-full bg-base-300 rounded-full h-2.5">
+      <div class="bg-success h-2.5 rounded-full" :style="{ width: progressPercentage + '%' }"></div>
     </div>
-    <div v-if="job.status === 'IN_PROGRESS'" class="text-xs text-center text-gray-400 mt-1">
+    <div v-if="job.status === 'IN_PROGRESS'" class="text-xs text-center text-base-content/70 mt-1">
       Polling for updates...
     </div>
   </div>
