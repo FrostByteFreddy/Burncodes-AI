@@ -1,28 +1,34 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div class="bg-gray-800 rounded-lg shadow-xl p-8 max-w-md w-full">
-      <h2 class="text-2xl font-bold mb-4">{{ title }}</h2>
-      <p class="text-gray-300 mb-6">{{ message }}</p>
+  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+    <div class="bg-base-100 rounded-lg shadow-xl p-8 max-w-md w-full">
+      <h2 class="text-2xl font-bold mb-4 flex items-center">
+        <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="mr-3 text-error" />
+        {{ title }}
+      </h2>
+      <p class="text-base-content/70 mb-6">{{ message }}</p>
 
       <div v-if="confirmationText">
-        <label class="block text-sm font-medium text-gray-400 mb-2">
-          To confirm, please type "<span class="font-bold">{{ confirmationText }}</span>" below:
+        <label class="block text-sm font-medium text-base-content/70 mb-2">
+          To confirm, please type "<span class="font-bold text-base-content">{{ confirmationText }}</span>" below:
         </label>
         <input
           v-model="userInput"
           type="text"
-          class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full px-3 py-2 bg-base-200 border border-base-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 
       <div class="flex justify-end mt-8 space-x-4">
-        <button @click="onCancel" class="px-6 py-2 text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-md">
+        <button @click="onCancel" class="btn btn-secondary">
+          <font-awesome-icon :icon="['fas', 'times']" class="mr-2" />
           Cancel
         </button>
         <button
           @click="onConfirm"
-          class="px-6 py-2 text-white bg-red-600 hover:bg-red-500 rounded-md disabled:bg-red-800"
+          :disabled="isConfirmDisabled"
+          class="btn btn-error"
         >
+          <font-awesome-icon :icon="['fas', 'check']" class="mr-2" />
           {{ confirmButtonText }}
         </button>
       </div>

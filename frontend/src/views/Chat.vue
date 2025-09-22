@@ -1,11 +1,15 @@
 <template>
-    <div id="test-chat" class="min-h-screen bg-gray-900 text-white font-sans flex items-center justify-center p-4">
-        <div class="flex flex-col w-full max-w-4xl h-[90vh] bg-gray-800 rounded-2xl shadow-2xl">
-            <header class="bg-gray-700 p-4 shadow-md z-10 rounded-t-2xl flex justify-between items-center">
+    <div id="test-chat" class="min-h-screen bg-base-200 text-base-content font-sans flex items-center justify-center p-4">
+        <div class="flex flex-col w-full max-w-4xl h-[90vh] bg-base-100 rounded-2xl shadow-2xl">
+            <header class="bg-base-300/50 p-4 shadow-md z-10 rounded-t-2xl flex justify-between items-center">
                 <div class="w-1/4"></div> <!-- Spacer -->
-                <h1 class="text-xl font-bold text-center w-1/2">Test Chat</h1>
+                <h1 class="text-xl font-bold text-center w-1/2 flex items-center justify-center">
+                    <font-awesome-icon :icon="['fas', 'comments']" class="mr-3 text-primary" />
+                    Chat
+                </h1>
                 <div class="w-1/4 flex justify-end">
-                    <button @click="resetChat" class="text-xs bg-gray-600 hover:bg-gray-500 text-white font-semibold py-1 px-3 rounded-lg transition-colors duration-200">
+                    <button @click="resetChat" class="btn btn-secondary btn-sm">
+                        <font-awesome-icon :icon="['fas', 'arrows-rotate']" class="mr-2" />
                         Reset
                     </button>
                 </div>
@@ -15,28 +19,28 @@
                 <div v-for="(message, index) in chatHistory" :key="index"
                     :class="message.isUser ? 'flex justify-end' : 'flex justify-start'">
                     <div class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 shadow-md"
-                        :class="message.isUser ? 'bg-gradient-to-br from-orange-600 to-red-700' : 'bg-gray-600'">
+                        :class="message.isUser ? 'bg-primary text-primary-content' : 'bg-secondary text-secondary-content'">
                         <div v-if="message.isUser" class="whitespace-pre-wrap">{{ message.text }}</div>
-                        <div v-else class="prose prose-invert max-w-none" v-html="message.html"></div>
+                        <div v-else class="prose prose-sm prose-neutral dark:prose-invert max-w-none" v-html="message.html"></div>
                     </div>
                 </div>
                 <div v-if="isThinking" class="flex justify-start">
-                    <div class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 bg-gray-600 flex items-center space-x-2">
-                        <span class="w-3 h-3 bg-gray-500 rounded-full animate-pulse"></span>
-                        <span class="w-3 h-3 bg-gray-500 rounded-full animate-pulse" style="animation-delay: 200ms;"></span>
-                        <span class="w-3 h-3 bg-gray-500 rounded-full animate-pulse" style="animation-delay: 400ms;"></span>
+                    <div class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 bg-secondary flex items-center space-x-2">
+                        <span class="w-3 h-3 bg-secondary-content/50 rounded-full animate-pulse"></span>
+                        <span class="w-3 h-3 bg-secondary-content/50 rounded-full animate-pulse" style="animation-delay: 200ms;"></span>
+                        <span class="w-3 h-3 bg-secondary-content/50 rounded-full animate-pulse" style="animation-delay: 400ms;"></span>
                     </div>
                 </div>
             </main>
 
-            <footer class="p-4 bg-gray-700 rounded-b-2xl">
+            <footer class="p-4 bg-base-300/50 rounded-b-2xl">
                 <div class="flex">
                     <input type="text" v-model="userMessage" @keyup.enter="sendMessage"
                         placeholder="Ask a question..."
-                        class="flex-grow bg-gray-600 border border-gray-500 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        class="flex-grow bg-base-200 border border-base-300 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary">
                     <button @click="sendMessage" :disabled="!userMessage.trim() || isThinking"
-                        class="bg-accent-gradient disabled:from-gray-600 text-white font-bold py-3 px-5 rounded-r-lg disabled:opacity-50">
-                        Send
+                        class="bg-primary text-primary-content font-bold py-3 px-5 rounded-r-lg disabled:opacity-50 disabled:bg-neutral">
+                        <font-awesome-icon :icon="['fas', 'paper-plane']" />
                     </button>
                 </div>
             </footer>
@@ -247,10 +251,10 @@ onMounted(() => {
 
 <style>
 .prose-invert a {
-    color: #fb923c; /* orange-400 */
+    color: theme('colors.primary');
     text-decoration: underline;
 }
 .prose-invert a:hover {
-    color: #fdba74; /* orange-300 */
+    color: theme('colors.primary-focus');
 }
 </style>
