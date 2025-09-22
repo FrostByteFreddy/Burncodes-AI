@@ -1,16 +1,32 @@
 <template>
-  <div id="app-layout" :class="{'flex': showSidebar}" class="min-h-screen bg-base-100 text-base-content">
-    <Sidebar v-if="showSidebar" />
-    <main :class="{'flex-1': showSidebar}" class="transition-all duration-300 ease-in-out">
-      <router-view />
-    </main>
+  <div class="min-h-screen bg-base-100 text-base-content">
+    <div class="flex">
+      <Sidebar v-if="showSidebar" :is-open="isSidebarOpen" @close-sidebar="isSidebarOpen = false" />
+      
+      <div class="flex-1 flex flex-col min-h-screen">
+        <header v-if="showSidebar" class="md:hidden flex items-center justify-between p-4 bg-base-100/80 backdrop-blur-lg border-b border-base-300 sticky top-0 z-10">
+          <button @click="isSidebarOpen = !isSidebarOpen" class="btn btn-square btn-ghost">
+            <font-awesome-icon :icon="['fas', 'bars']" class="h-6 w-6" />
+          </button>
+          <h2 class="text-xl font-semibold text-center text-primary">SwiftAnswer</h2>
+        </header>
+
+        <main class="flex-1">
+          <router-view />
+        </main>
+      </div>
+    </div>
+
+    <!-- Mobile sidebar overlay -->
+    <div v-if="isSidebarOpen" @click="isSidebarOpen = false" class="fixed inset-0 bg-black/60 z-30 md:hidden"></div>
+
     <ToastContainer />
     <SessionExpiredModal v-if="authStore.sessionExpired" />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import Sidebar from './components/Sidebar.vue'
 import ToastContainer from './components/ToastContainer.vue'
@@ -19,6 +35,7 @@ import { useAuthStore } from './stores/auth'
 
 const authStore = useAuthStore()
 const route = useRoute()
+const isSidebarOpen = ref(false)
 
 const showSidebar = computed(() => {
   return authStore.user && route.name !== 'Chat'

@@ -10,7 +10,7 @@
     </div>
     
     <div class="flex flex-col h-screen px-4 py-8">
-      <h2 class="text-3xl font-semibold text-center text-primary">SwiftAnswer</h2>
+      <h2 class="text-3xl font-semibold text-center text-primary">BurnCodes AI</h2>
 
       <div class="relative mt-6">
         <div v-if="tenantsStore.tenants.length > 1">
