@@ -1,5 +1,6 @@
 <template>
-    <div id="test-chat" class="min-h-screen bg-base-200 text-base-content font-sans flex items-center justify-center p-4">
+    <div id="test-chat"
+        class="min-h-screen bg-base-200 text-base-content font-sans flex items-center justify-center p-4">
         <div class="flex flex-col w-full max-w-4xl h-[90vh] bg-base-100 rounded-2xl shadow-2xl">
             <header class="bg-base-300/50 p-4 shadow-md z-10 rounded-t-2xl flex justify-between items-center">
                 <div class="w-1/4"></div> <!-- Spacer -->
@@ -21,22 +22,25 @@
                     <div class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 shadow-md"
                         :class="message.isUser ? 'bg-primary text-primary-content' : 'bg-secondary text-secondary-content'">
                         <div v-if="message.isUser" class="whitespace-pre-wrap">{{ message.text }}</div>
-                        <div v-else class="prose prose-sm prose-neutral dark:prose-invert max-w-none" v-html="message.html"></div>
+                        <div v-else class="prose prose-sm prose-neutral dark:prose-invert max-w-none"
+                            v-html="message.html"></div>
                     </div>
                 </div>
                 <div v-if="isThinking" class="flex justify-start">
-                    <div class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 bg-secondary flex items-center space-x-2">
+                    <div
+                        class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 bg-secondary flex items-center space-x-2">
                         <span class="w-3 h-3 bg-secondary-content/50 rounded-full animate-pulse"></span>
-                        <span class="w-3 h-3 bg-secondary-content/50 rounded-full animate-pulse" style="animation-delay: 200ms;"></span>
-                        <span class="w-3 h-3 bg-secondary-content/50 rounded-full animate-pulse" style="animation-delay: 400ms;"></span>
+                        <span class="w-3 h-3 bg-secondary-content/50 rounded-full animate-pulse"
+                            style="animation-delay: 200ms;"></span>
+                        <span class="w-3 h-3 bg-secondary-content/50 rounded-full animate-pulse"
+                            style="animation-delay: 400ms;"></span>
                     </div>
                 </div>
             </main>
 
             <footer class="p-4 bg-base-300/50 rounded-b-2xl">
                 <div class="flex">
-                    <input type="text" v-model="userMessage" @keyup.enter="sendMessage"
-                        placeholder="Ask a question..."
+                    <input type="text" v-model="userMessage" @keyup.enter="sendMessage" placeholder="Ask a question..."
                         class="flex-grow bg-base-200 border border-base-300 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary">
                     <button @click="sendMessage" :disabled="!userMessage.trim() || isThinking"
                         class="bg-primary text-primary-content font-bold py-3 px-5 rounded-r-lg disabled:opacity-50 disabled:bg-neutral">
@@ -254,6 +258,7 @@ onMounted(() => {
     color: theme('colors.primary');
     text-decoration: underline;
 }
+
 .prose-invert a:hover {
     color: theme('colors.primary-focus');
 }

@@ -8,7 +8,7 @@
           <button @click="isSidebarOpen = !isSidebarOpen" class="btn btn-square btn-ghost">
             <font-awesome-icon :icon="['fas', 'bars']" class="h-6 w-6" />
           </button>
-          <h2 class="text-xl font-semibold text-center text-primary">SwiftAnswer</h2>
+          <h2 class="text-xl font-semibold text-center text-primary">BurnCodes AI</h2>
         </header>
 
         <main class="flex-1">
