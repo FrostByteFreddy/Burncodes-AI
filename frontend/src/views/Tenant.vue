@@ -13,25 +13,6 @@
     <div v-else class="text-center p-10 text-error">
       <p>Could not load tenant data. It might not exist or you may not have permission to view it.</p>
     </div>
-
-    <div v-if="tenantsStore.currentTenant">
-      <div class="mb-8">
-        <nav class="flex space-x-4">
-          <router-link :to="{ name: 'TenantSettings', params: { tenantId: tenantsStore.currentTenant.id } }" class="tenant-nav-link">
-            <font-awesome-icon :icon="['fas', 'sliders']" class="mr-2" />
-            Settings
-          </router-link>
-          <router-link :to="{ name: 'TenantSources', params: { tenantId: tenantsStore.currentTenant.id } }" class="tenant-nav-link">
-            <font-awesome-icon :icon="['fas', 'database']" class="mr-2" />
-            Sources
-          </router-link>
-          <router-link :to="{ name: 'TenantFineTune', params: { tenantId: tenantsStore.currentTenant.id } }" class="tenant-nav-link">
-            <font-awesome-icon :icon="['fas', 'flask-vial']" class="mr-2" />
-            Fine Tune
-          </router-link>
-        </nav>
-      </div>
-
       <main>
         <router-view />
       </main>
