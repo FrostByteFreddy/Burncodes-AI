@@ -10,7 +10,7 @@ from uuid import UUID
 
 from celery import shared_task
 from app.database.supabase_client import supabase, bucket_name
-from app.data_processing.processor import get_vectorstore, get_loader, smart_chunk_markdown, process_documents, SUPPORTED_FILE_EXTENSIONS
+from app.data_processing.processor import get_vectorstore, get_loader, process_documents, SUPPORTED_FILE_EXTENSIONS
 from app.data_processing.crawler import shared_crawler
 from app.data_processing.config import CRAWLER_RUN_CONFIG, MAX_CONCURRENT_CRAWLS_PER_JOB
 
@@ -26,18 +26,31 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
 
 CLEANUP_PROMPT_TEMPLATE = """
-You are an expert data pre-processor. Your task is to clean and reformat raw markdown text extracted from a website so it is optimized for a Retrieval-Augmented Generation (RAG) system's vector database.
+You are an expert data pre-processor. Your task is to clean, reformat, and chunk raw markdown text from a website for a Retrieval-Augmented Generation (RAG) system's vector database.
 
 Follow these rules precisely:
+
+**Part 1: Cleaning and Formatting**
 1.  **Preserve Core Content:** Keep all meaningful paragraphs, headings, lists, and factual information.
 2.  **Keep Important Links:** Preserve important inline markdown links `[like this](...)` that are part of a sentence's context.
 3.  **Remove Noise:** Delete all of the following:
-    * Repetitive navigation bars, headers, and footers.
-    * Advertisements and promotional banners.
-    * Cookie consent notices and legal disclaimers (e.g., Impressum, Datenschutz, AGB).
-    * Image tags `![...](...)` and social media links.
-    * Boilerplate text that doesn't add unique value.
-4.  **Format Cleanly:** Ensure the output is clean, well-structured markdown with proper spacing. Do not add any commentary or explanation. Only output the cleaned markdown.
+    *   Repetitive navigation bars, headers, and footers.
+    *   Advertisements and promotional banners.
+    *   Cookie consent notices and legal disclaimers (e.g., Impressum, Datenschutz, AGB).
+    *   Image tags `![...](...)` and social media links.
+    *   Boilerplate text that doesn't add unique value.
+4.  **Format Cleanly:** Ensure the output is clean, well-structured markdown with proper spacing.
+
+**Part 2: Chunking**
+1.  **Split by Topic:** After cleaning, split the text into logical, self-contained chunks. Each chunk should focus on a single, specific topic (e.g., a person's profile, a specific project, a single feature).
+2.  **Keep Related Information Together:** Ensure that related information, like a person's name, role, and bio, are all in the same chunk. Do not split them.
+3.  **Use a Separator:** Separate each chunk with `---CHUNK_SEPARATOR---`. This is critical.
+4.  **Do Not Alter Content:** Do not rephrase or summarize the original text. Output the chunks exactly as they appear in the source.
+5.  **Handle Short Texts:** If the entire text is short and covers a single topic, output it as a single chunk without a separator.
+
+**Final Output:**
+*   Do not add any commentary or explanation.
+*   Only output the cleaned and chunked markdown, with the separator between chunks.
 
 Here is the raw markdown text:
 ---
@@ -45,14 +58,14 @@ Here is the raw markdown text:
 ---
 """
 
-async def async_clean_markdown_with_llm(markdown_text: str) -> str:
-    """Uses an LLM to clean and optimize raw markdown asynchronously."""
-    print(f"🤖 Calling LLM to clean markdown ({len(markdown_text)} chars)...")
+async def async_clean_and_chunk_markdown_with_llm(markdown_text: str) -> str:
+    """Uses an LLM to clean, optimize, and chunk raw markdown asynchronously."""
+    print(f"🤖 Calling LLM to clean and chunk markdown ({len(markdown_text)} chars)...")
     cleanup_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0.0)
     cleanup_prompt = PromptTemplate.from_template(CLEANUP_PROMPT_TEMPLATE)
     cleanup_chain = cleanup_prompt | cleanup_llm
     response = await cleanup_chain.ainvoke({"raw_markdown": markdown_text})
-    print("✅ Markdown cleaned successfully.")
+    print("✅ Markdown cleaned and chunked successfully.")
     return response.content
 
 async def async_create_document_chunks_with_metadata(content: str, source: str, source_id: int) -> list[Document]:
@@ -62,20 +75,22 @@ async def async_create_document_chunks_with_metadata(content: str, source: str, 
     try:
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "PROCESSING"}).eq('id', source_id).execute())
 
-        clean_content = await async_clean_markdown_with_llm(content)
+        # The LLM now returns a single string with chunks separated by a specific token.
+        cleaned_and_chunked_content = await async_clean_and_chunk_markdown_with_llm(content)
+        chunks = [chunk.strip() for chunk in cleaned_and_chunked_content.split("---CHUNK_SEPARATOR---") if chunk.strip()]
 
         if DEBUG:
             try:
                 os.makedirs('crawled_markdown', exist_ok=True)
                 safe_filename = re.sub(r'https://?|www\.|\/|\?|\=|\&', '_', source) + ".md"
                 filepath = os.path.join('crawled_markdown', safe_filename)
+                # Save the raw, chunked output for inspection
                 with open(filepath, 'w', encoding='utf-8') as f:
-                    f.write(f"# SOURCE: {source}\n\n{clean_content}")
-                print(f"🕵️‍♂️ Saved CLEANED markdown for {source} to {filepath}")
+                    f.write(f"# SOURCE: {source}\n\n{cleaned_and_chunked_content}")
+                print(f"🕵️‍♂️ Saved CLEANED and CHUNKED markdown for {source} to {filepath}")
             except Exception as e:
                 print(f"❌ Could not save cleaned markdown file for {source}: {e}")
 
-        chunks = smart_chunk_markdown(clean_content, max_len=1000)
         timestamp = datetime.now(timezone.utc).isoformat()
         for i, chunk in enumerate(chunks):
             doc = Document(
@@ -98,17 +113,15 @@ async def async_create_document_chunks_for_structured_data(content: str, source:
         # Note: This path skips the `async_clean_markdown_with_llm` step
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "PROCESSING"}).eq('id', source_id).execute())
 
-        # Directly chunk the raw content
-        chunks = smart_chunk_markdown(content, max_len=1000)
+        # For structured data, create a single document with the entire content.
         timestamp = datetime.now(timezone.utc).isoformat()
-        for i, chunk in enumerate(chunks):
-            doc = Document(
-                page_content=chunk,
-                metadata={"source": source, "source_id": source_id, "chunk": i, "last_updated": timestamp}
-            )
-            documents.append(doc)
+        doc = Document(
+            page_content=content,
+            metadata={"source": source, "source_id": source_id, "chunk": 0, "last_updated": timestamp}
+        )
+        documents.append(doc)
 
-        print(f"✅ Created {len(documents)} chunks for structured file {source} (source_id: {source_id})")
+        print(f"✅ Created 1 document for structured file {source} (source_id: {source_id})")
         return documents
     except Exception as e:
         print(f"Error creating document chunks for structured source {source_id}: {e}")
