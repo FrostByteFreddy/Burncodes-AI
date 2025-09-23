@@ -1,5 +1,5 @@
 <template>
-    <div class="container mx-auto p-4 sm:p-6">
+    <div class="container mx-auto px-4 py-4 sm:px-6 sm:py-8">
         <div v-if="tenantsStore.currentTenant" class="mb-8 pb-4 border-b border-base-300">
             <h1 class="text-3xl font-bold flex items-center">
                 <font-awesome-icon :icon="['fas', 'cogs']" class="mr-3 text-primary" />
