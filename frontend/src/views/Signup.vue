@@ -1,6 +1,6 @@
 <template>
     <div class="flex items-center justify-center min-h-screen bg-base-200">
-        <div class="w-full max-w-md space-y-8 bg-base-100 rounded-2xl shadow-none sm:shadow-lg">
+        <div class="w-full max-w-md p-8 space-y-8 card-login">
             <h1 class="text-4xl font-extrabold text-center text-base-content">
                 Create Account
             </h1>

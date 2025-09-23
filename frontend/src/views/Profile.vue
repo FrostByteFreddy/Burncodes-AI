@@ -4,7 +4,7 @@
             <font-awesome-icon :icon="['fas', 'user-pen']" class="mr-3 text-primary" />
             My Profile
         </h1>
-        <div class="max-w-2xl mx-auto bg-base-100 rounded-lg shadow-none sm:shadow-lg">
+        <div class="max-w-2xl mx-auto card">
             <form v-if="authStore.user" @submit.prevent="handleUpdate" class="space-y-6">
                 <div>
                     <label for="email" class="block text-sm font-medium text-base-content">Email</label>

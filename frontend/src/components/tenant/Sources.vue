@@ -1,7 +1,7 @@
 <template>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <!-- Left side: Add new sources -->
-        <div class="bg-base-100 rounded-lg shadow-none sm:shadow-lg space-y-6">
+        <div class="card space-y-6">
             <h3 class="text-xl font-bold text-base-content flex items-center">
                 <font-awesome-icon :icon="['fas', 'plus-circle']" class="mr-3 text-primary" />
                 Add New Source
@@ -37,7 +37,7 @@
         </div>
 
         <!-- Right side: List of existing sources -->
-        <div class="bg-base-100 rounded-lg shadow-none sm:shadow-lg">
+        <div class="card">
             <!-- Crawling Activity -->
             <div class="mb-8">
                 <h3 class="text-xl font-bold text-base-content mb-4 flex items-center">
