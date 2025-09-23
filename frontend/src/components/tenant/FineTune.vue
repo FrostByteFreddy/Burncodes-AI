@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-base-100 rounded-lg shadow-none sm:shadow-lg">
+    <div class="card">
         <h3 class="text-xl font-bold text-base-content mb-4 flex items-center">
             <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" class="mr-3 text-primary" />
             Fine-Tuning Rules

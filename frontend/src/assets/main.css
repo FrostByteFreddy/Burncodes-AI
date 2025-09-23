@@ -3,6 +3,20 @@
 @tailwind utilities;
 
 @layer components {
+  .card {
+    @apply bg-base-100 rounded-lg;
+  }
+
+  .card-login {
+    @apply bg-base-100 rounded-lg p-6 shadow-lg;
+  }
+
+  @media screen and (min-width: 768px) {
+    .card {
+      @apply p-6 shadow-lg;
+    }
+  }
+
   .btn {
     @apply font-bold py-2 px-4 rounded transition-colors duration-200;
   }

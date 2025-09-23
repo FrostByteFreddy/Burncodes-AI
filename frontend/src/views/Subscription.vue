@@ -4,7 +4,7 @@
             <font-awesome-icon :icon="['fas', 'credit-card']" class="mr-3 text-primary" />
             Subscription
         </h1>
-        <div class="mt-8 bg-base-100 rounded-lg text-center shadow-none sm:shadow-lg">
+        <div class="mt-8 card text-center">
             <font-awesome-icon :icon="['fas', 'rocket']" class="text-5xl text-base-content/20 mb-4" />
             <h2 class="text-2xl font-semibold">Coming Soon</h2>
             <p class="text-base-content/70 mt-2">
