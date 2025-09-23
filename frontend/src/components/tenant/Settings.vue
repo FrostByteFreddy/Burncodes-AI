@@ -8,19 +8,19 @@
             </div>
             <div>
                 <label for="intro_message" class="block text-sm font-medium text-base-content">Intro Message</label>
-                <textarea v-model="formData.intro_message" id="intro_message" rows="3"
-                    class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+                <AutoGrowTextarea v-model="formData.intro_message" id="intro_message" rows="3"
+                    class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
             </div>
             <div>
                 <label for="system_persona" class="block text-sm font-medium text-base-content">System Persona</label>
-                <textarea v-model="formData.system_persona" id="system_persona" rows="5"
-                    class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+                <AutoGrowTextarea v-model="formData.system_persona" id="system_persona" rows="5"
+                    class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
             </div>
             <div>
                 <label for="rag_prompt_template" class="block text-sm font-medium text-base-content">RAG Prompt
                     Template</label>
-                <textarea v-model="formData.rag_prompt_template" id="rag_prompt_template" rows="8"
-                    class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+                <AutoGrowTextarea v-model="formData.rag_prompt_template" id="rag_prompt_template" rows="8"
+                    class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -74,6 +74,7 @@
 import { ref, watch } from 'vue'
 import { useTenantsStore } from '../../stores/tenants'
 import { useToast } from '../../composables/useToast'
+import AutoGrowTextarea from '../AutoGrowTextarea.vue'
 
 const tenantsStore = useTenantsStore()
 const { addToast } = useToast()

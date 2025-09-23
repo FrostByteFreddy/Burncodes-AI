@@ -15,9 +15,9 @@
             </div>
             <div class="flex-grow w-full">
                 <label for="instruction" class="block text-sm font-medium text-base-content">Instruction</label>
-                <textarea v-model="newRule.instruction" ref="newInstructionTextarea" id="instruction" rows="1"
+                <AutoGrowTextarea v-model="newRule.instruction" id="instruction" rows="1"
                     placeholder="e.g., Always refer to the pricing page..."
-                    class="w-full p-2 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none overflow-hidden"></textarea>
+                    class="w-full p-2 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
             </div>
             <button type="submit" class="self-end sm:self-end mb-1 btn btn-primary">
                 <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
@@ -39,9 +39,9 @@
                         <div>
                             <label :for="`instruction-${index}`"
                                 class="block text-sm font-medium text-base-content">Instruction</label>
-                            <textarea v-model="rule.instruction" :ref="el => instructionTextareas[index] = el"
+                            <AutoGrowTextarea v-model="rule.instruction"
                                 :id="`instruction-${index}`" rows="1"
-                                class="w-full p-2 mt-1 bg-base-300 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none overflow-hidden"></textarea>
+                                class="w-full p-2 mt-1 bg-base-300 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
                         </div>
                     </div>
                     <button @click="removeRule(index)" class="btn btn-sm text-error hover:bg-error/10 self-center">
@@ -69,36 +69,15 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch } from 'vue'
 import { useTenantsStore } from '../../stores/tenants'
 import { useToast } from '../../composables/useToast'
+import AutoGrowTextarea from '../AutoGrowTextarea.vue'
 
 const tenantsStore = useTenantsStore()
 const { addToast } = useToast()
 const rules = ref([])
 const newRule = ref({ trigger: '', instruction: '' })
-
-const newInstructionTextarea = ref(null)
-const instructionTextareas = ref([])
-
-const autosizeTextarea = (textarea) => {
-    if (!textarea) return;
-    textarea.style.height = 'auto';
-    textarea.style.height = `${textarea.scrollHeight}px`;
-};
-
-// Watch for changes in the new rule's instruction and autosize
-watch(() => newRule.value.instruction, () => {
-    nextTick(() => autosizeTextarea(newInstructionTextarea.value));
-});
-
-// Watch for changes in the list of rules and autosize all textareas
-watch(rules, () => {
-    nextTick(() => {
-        instructionTextareas.value.forEach(autosizeTextarea);
-    });
-}, { deep: true, immediate: true });
-
 
 watch(() => tenantsStore.currentTenant, (newTenant) => {
     if (newTenant && newTenant.tenant_fine_tune) {
@@ -106,20 +85,12 @@ watch(() => tenantsStore.currentTenant, (newTenant) => {
     } else {
         rules.value = []
     }
-    nextTick(() => {
-        instructionTextareas.value.forEach(autosizeTextarea);
-    });
 }, { immediate: true, deep: true })
 
 const addRule = () => {
     if (newRule.value.trigger.trim() && newRule.value.instruction.trim()) {
         rules.value.push({ ...newRule.value })
         newRule.value = { trigger: '', instruction: '' } // Reset form
-        nextTick(() => {
-            if (newInstructionTextarea.value) {
-                newInstructionTextarea.value.style.height = 'auto';
-            }
-        });
     }
 }
 
