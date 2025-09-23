@@ -36,7 +36,7 @@
                         class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
                 </div>
             </div>
-            <div>
+            <!-- <div>
                 <label for="doc_description" class="block text-sm font-medium text-base-content">Document
                     Description</label>
                 <input v-model="formData.doc_description" type="text" id="doc_description"
@@ -53,7 +53,7 @@
                     Description</label>
                 <input v-model="formData.last_updated_description" type="text" id="last_updated_description"
                     class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
-            </div>
+            </div> -->
             <div class="flex justify-end">
                 <button type="submit" :disabled="tenantsStore.loading" class="btn btn-primary">
                     <span v-if="tenantsStore.loading" class="flex items-center justify-center">

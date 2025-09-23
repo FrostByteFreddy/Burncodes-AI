@@ -43,7 +43,7 @@
                             class="w-full p-2 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
                     </div>
                 </div>
-                <div class="d-none">
+                <!-- <div class="d-none">
                     <label for="doc_description" class="block text-sm font-medium text-base-content">Document
                         Description</label>
                     <input v-model="formData.doc_description" type="text" id="doc_description"
@@ -60,7 +60,7 @@
                         Updated Description</label>
                     <input v-model="formData.last_updated_description" type="text" id="last_updated_description"
                         class="w-full p-2 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
-                </div>
+                </div> -->
                 <div class="flex justify-end space-x-4 pt-4">
                     <button type="button" @click="$emit('close')" class="btn btn-secondary">
                         <font-awesome-icon :icon="['fas', 'times']" class="mr-2" />
