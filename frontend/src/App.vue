@@ -5,8 +5,8 @@
 
             <div class="flex-1 flex flex-col h-100">
                 <header v-if="showSidebar"
-                    class="md:hidden flex items-center justify-between p-4 bg-base-100/80 backdrop-blur-lg border-b border-base-300 sticky top-0 z-10">
-                    <button @click="isSidebarOpen = !isSidebarOpen" class="btn btn-square btn-ghost">
+                    class="md:hidden flex items-center justify-between p-4 bg-base-100/80 backdrop-blur-lg border-b border-base-300 sticky top-0 z-10 pt-0 pb-0">
+                    <button @click="isSidebarOpen = !isSidebarOpen" class="btn btn-square btn-ghost pl-0 flex">
                         <font-awesome-icon :icon="['fas', 'bars']" class="h-6 w-6" />
                     </button>
                 </header>
