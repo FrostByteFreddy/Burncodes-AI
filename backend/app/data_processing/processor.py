@@ -79,31 +79,6 @@ def get_vectorstore(tenant_id: UUID, embeddings: Embeddings):
     print(f"✅ ChromaDB vector store initialized for tenant: {tenant_id_str}")
     return vectorstore
 
-def smart_chunk_markdown(markdown: str, max_len: int = 1000) -> list[str]:
-    def split_by_header(md, header_pattern):
-        indices = [m.start() for m in re.finditer(header_pattern, md, re.MULTILINE)]
-        indices.append(len(md))
-        return [md[indices[i]:indices[i+1]].strip() for i in range(len(indices)-1) if md[indices[i]:indices[i+1]].strip()]
-    chunks = []
-    h1_split = split_by_header(markdown, r'^# .+$')
-    if not h1_split: h1_split = [markdown]
-    for h1 in h1_split:
-        if len(h1) > max_len:
-            h2_split = split_by_header(h1, r'^## .+$')
-            if not h2_split: h2_split = [h1]
-            for h2 in h2_split:
-                if len(h2) > max_len:
-                    h3_split = split_by_header(h2, r'^### .+$')
-                    if not h3_split: h3_split = [h2]
-                    for h3 in h3_split:
-                        if len(h3) > max_len:
-                            for i in range(0, len(h3), max_len): chunks.append(h3[i:i+max_len].strip())
-                        else: chunks.append(h3)
-                else: chunks.append(h2)
-        else: chunks.append(h1)
-    final_chunks = [c for c in chunks if c and len(c) <= max_len]
-    return final_chunks
-
 def process_documents(docs: list[Document], tenant_id: UUID, embeddings: Embeddings, supabase_client: Client = supabase):
     if not docs:
         print("No documents to process")
