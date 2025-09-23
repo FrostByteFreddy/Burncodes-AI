@@ -22,7 +22,7 @@
                     <div class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 shadow-md"
                         :class="message.isUser ? 'bg-primary text-primary-content' : 'bg-secondary text-primary'">
                         <div v-if="message.isUser" class="whitespace-pre-wrap">{{ message.text }}</div>
-                        <div v-else class="prose prose-sm prose-neutral dark:prose-invert max-w-none"
+                        <div v-else class="prose prose-sm prose-neutral invert max-w-none whitespace-pre-wrap"
                             v-html="message.html"></div>
                     </div>
                 </div>
