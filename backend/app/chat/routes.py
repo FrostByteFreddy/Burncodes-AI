@@ -49,22 +49,34 @@ def get_task_status(task_id):
         response['result'] = str(task.info)
     return jsonify(response)
 
+from datetime import datetime, timedelta, timezone
+
 @chat_bp.route('/<uuid:tenant_id>/analytics', methods=['GET'])
 def get_chat_analytics(tenant_id):
     try:
         timeframe_hours = request.args.get('timeframe', 24, type=int)
+        now = datetime.now(timezone.utc)
+        start_time = now - timedelta(hours=timeframe_hours)
 
-        # The RLS policy on the chat_logs table will be respected by the function
-        response = supabase.rpc('get_chat_analytics', {
-            'p_tenant_id': str(tenant_id),
-            'p_timeframe_hours': timeframe_hours
-        }).execute()
+        # Fetch the raw chat logs from the database
+        response = supabase.table('chat_logs').select('created_at').eq('tenant_id', str(tenant_id)).gte('created_at', start_time.isoformat()).execute()
 
         if not hasattr(response, 'data'):
-             error_logger.error(f"Supabase RPC response for tenant {tenant_id} is missing 'data' attribute: {response}")
-             return jsonify({"error": "Invalid response from database"}), 500
+            error_logger.error(f"Supabase response for tenant {tenant_id} is missing 'data' attribute: {response}")
+            return jsonify({"error": "Invalid response from database"}), 500
 
-        return jsonify(response.data)
+        # Process the data in Python
+        hourly_counts = {}
+        for log in response.data:
+            created_at = datetime.fromisoformat(log['created_at'])
+            hour_bucket = created_at.strftime('%Y-%m-%dT%H:00:00+00:00')
+            hourly_counts[hour_bucket] = hourly_counts.get(hour_bucket, 0) + 1
+
+        # Format the result into a JSON array
+        analytics_data = [{"time_bucket": hour, "message_count": count} for hour, count in hourly_counts.items()]
+        analytics_data.sort(key=lambda x: x['time_bucket'])
+
+        return jsonify(analytics_data)
 
     except Exception as e:
         error_logger.error(f"Error in chat analytics for tenant {tenant_id}: {e}", exc_info=True)
