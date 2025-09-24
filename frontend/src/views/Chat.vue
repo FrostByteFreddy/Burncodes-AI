@@ -57,6 +57,7 @@ import { ref, onMounted, nextTick, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 import { marked } from 'marked';
+import { v4 as uuidv4 } from 'uuid';
 
 const processBotMessage = (content) => {
     try {
@@ -82,23 +83,24 @@ const chatHistory = ref([]);
 const userMessage = ref('');
 const isThinking = ref(false);
 const chatContainer = ref(null);
+const conversationId = ref(uuidv4());
 
 // --- Cookie Management for Chat History ---
-const CHAT_COOKIE_KEY = `chatHistory_${tenantId.value}`;
+const CHAT_COOKIE_KEY = `chatSession_${tenantId.value}`;
 
-const saveChatHistoryToCookie = (history) => {
+const saveChatToCookie = (history, convId) => {
     if (!history || history.length === 0) {
         document.cookie = `${CHAT_COOKIE_KEY}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
         return;
     }
-    const jsonHistory = JSON.stringify(history);
+    const sessionData = JSON.stringify({ history, conversationId: convId });
     const d = new Date();
     d.setTime(d.getTime() + (24 * 60 * 60 * 1000)); // Expires in 1 day
     let expires = "expires=" + d.toUTCString();
-    document.cookie = `${CHAT_COOKIE_KEY}=${encodeURIComponent(jsonHistory)};${expires};path=/`;
+    document.cookie = `${CHAT_COOKIE_KEY}=${encodeURIComponent(sessionData)};${expires};path=/;SameSite=Lax`;
 };
 
-const loadChatHistoryFromCookie = () => {
+const loadChatFromCookie = () => {
     const name = CHAT_COOKIE_KEY + "=";
     const ca = document.cookie.split(';');
     for (let i = 0; i < ca.length; i++) {
@@ -110,7 +112,7 @@ const loadChatHistoryFromCookie = () => {
             try {
                 return JSON.parse(decodeURIComponent(c.substring(name.length, c.length)));
             } catch (e) {
-                console.error("Error parsing chat history from cookie:", e);
+                console.error("Error parsing chat session from cookie:", e);
                 return null;
             }
         }
@@ -119,7 +121,7 @@ const loadChatHistoryFromCookie = () => {
 };
 
 watch(chatHistory, (newHistory) => {
-    saveChatHistoryToCookie(newHistory);
+    saveChatToCookie(newHistory, conversationId.value);
 }, { deep: true });
 
 
@@ -164,7 +166,7 @@ const pollTaskStatus = (taskId) => {
                     }
                     return { text: msg.content, html: null, isUser: true };
                 });
-                saveChatHistoryToCookie(chatHistory.value);
+                // The history is already being watched and saved, so no need to call saveChatToCookie here
                 isThinking.value = false;
                 await scrollToBottom();
             } else if (task_status === 'FAILURE') {
@@ -204,7 +206,8 @@ const sendMessage = async () => {
     try {
         const payload = {
             query: currentMessage,
-            chat_history: historyForBackend
+            chat_history: historyForBackend,
+            conversation_id: conversationId.value
         };
         const response = await axios.post(`${API_BASE_URL}/chat/${tenantId.value}`, payload);
         const { task_id } = response.data;
@@ -225,15 +228,20 @@ const sendMessage = async () => {
 
 const resetChat = () => {
     chatHistory.value = [];
+    conversationId.value = uuidv4();
+    // Clear the cookie for the old session
+    saveChatToCookie([], null);
     fetchIntroMessage();
 };
 
 onMounted(() => {
-    const savedHistory = loadChatHistoryFromCookie();
-    if (savedHistory && savedHistory.length > 0) {
-        chatHistory.value = savedHistory;
+    const sessionData = loadChatFromCookie();
+    if (sessionData && sessionData.history && sessionData.history.length > 0) {
+        chatHistory.value = sessionData.history;
+        conversationId.value = sessionData.conversationId || uuidv4();
         scrollToBottom();
     } else {
+        conversationId.value = uuidv4();
         fetchIntroMessage();
     }
 

@@ -48,6 +48,16 @@
                         <font-awesome-icon :icon="['fas', 'flask-vial']" class="w-5 h-5 mr-3" />
                         Fine Tune
                     </router-link>
+                    <router-link :to="{ name: 'Analytics', params: { tenantId: activeTenant.id } }"
+                        class="flex items-center px-4 py-2 mt-2 rounded-md hover:bg-neutral-focus">
+                        <font-awesome-icon :icon="['fas', 'chart-line']" class="w-5 h-5 mr-3" />
+                        Analytics
+                    </router-link>
+                    <router-link :to="{ name: 'ChatLogs', params: { tenantId: activeTenant.id } }"
+                        class="flex items-center px-4 py-2 mt-2 rounded-md hover:bg-neutral-focus">
+                        <font-awesome-icon :icon="['fas', 'history']" class="w-5 h-5 mr-3" />
+                        Chat Logs
+                    </router-link>
                     <a :href="`/chat/${activeTenant.id}`" target="_blank"
                         class="flex items-center px-4 py-2 mt-2 rounded-md hover:bg-neutral-focus">
                         <font-awesome-icon :icon="['fas', 'comments']" class="w-5 h-5 mr-3" />
