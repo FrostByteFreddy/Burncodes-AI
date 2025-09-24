@@ -55,25 +55,31 @@ from datetime import datetime, timedelta, timezone
 def get_chat_analytics(tenant_id):
     try:
         timeframe_hours = request.args.get('timeframe', 24, type=int)
+        interval = request.args.get('interval', 'hour') # 'minute', 'hour', or 'day'
         now = datetime.now(timezone.utc)
         start_time = now - timedelta(hours=timeframe_hours)
 
-        # Fetch the raw chat logs from the database
         response = supabase.table('chat_logs').select('created_at').eq('tenant_id', str(tenant_id)).gte('created_at', start_time.isoformat()).execute()
 
         if not hasattr(response, 'data'):
             error_logger.error(f"Supabase response for tenant {tenant_id} is missing 'data' attribute: {response}")
             return jsonify({"error": "Invalid response from database"}), 500
 
-        # Process the data in Python
-        hourly_counts = {}
+        time_format_map = {
+            'minute': '%Y-%m-%dT%H:%M:00+00:00',
+            'hour': '%Y-%m-%dT%H:00:00+00:00',
+            'day': '%Y-%m-%dT00:00:00+00:00'
+        }
+
+        time_format = time_format_map.get(interval, '%Y-%m-%dT%H:00:00+00:00')
+
+        counts = {}
         for log in response.data:
             created_at = datetime.fromisoformat(log['created_at'])
-            hour_bucket = created_at.strftime('%Y-%m-%dT%H:00:00+00:00')
-            hourly_counts[hour_bucket] = hourly_counts.get(hour_bucket, 0) + 1
+            time_bucket = created_at.strftime(time_format)
+            counts[time_bucket] = counts.get(time_bucket, 0) + 1
 
-        # Format the result into a JSON array
-        analytics_data = [{"time_bucket": hour, "message_count": count} for hour, count in hourly_counts.items()]
+        analytics_data = [{"time_bucket": bucket, "message_count": count} for bucket, count in counts.items()]
         analytics_data.sort(key=lambda x: x['time_bucket'])
 
         return jsonify(analytics_data)
