@@ -26,14 +26,22 @@
                 <div>
                     <label for="doc_language" class="block text-sm font-medium text-base-content">Document
                         Language</label>
-                    <input v-model="formData.doc_language" type="text" id="doc_language"
-                        class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
+                    <select v-model="formData.doc_language" id="doc_language"
+                        class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option v-for="lang in languageOptions" :key="lang.value" :value="lang.value">
+                            {{ lang.text }}
+                        </option>
+                    </select>
                 </div>
                 <div>
                     <label for="translation_target" class="block text-sm font-medium text-base-content">Translation
                         Target</label>
-                    <input v-model="formData.translation_target" type="text" id="translation_target"
-                        class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
+                    <select v-model="formData.translation_target" id="translation_target"
+                        class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option v-for="lang in languageOptions" :key="lang.value" :value="lang.value">
+                            {{ lang.text }}
+                        </option>
+                    </select>
                 </div>
             </div>
             <!-- <div>
@@ -78,16 +86,23 @@ import AutoGrowTextarea from '../AutoGrowTextarea.vue'
 
 const tenantsStore = useTenantsStore()
 const { addToast } = useToast()
+
+const languageOptions = ref([
+    { value: 'de', text: 'German' },
+    { value: 'en', text: 'English' },
+    { value: 'fr', text: 'French' }
+])
+
 const formData = ref({
     name: '',
     intro_message: '',
     system_persona: '',
     rag_prompt_template: '',
-    doc_language: '',
+    doc_language: 'en',
     doc_description: '',
     source_description: '',
     last_updated_description: '',
-    translation_target: '',
+    translation_target: 'en',
 })
 
 watch(() => tenantsStore.currentTenant, (newTenant) => {
