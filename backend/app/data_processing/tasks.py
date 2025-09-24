@@ -21,62 +21,39 @@ from crawl4ai import CacheMode # CrawlerRunConfig is now imported from config
 from langchain_core.documents import Document
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_core.prompts import PromptTemplate
+from app.prompts import CLEANUP_PROMPT_TEMPLATES
 
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
 
-CLEANUP_PROMPT_TEMPLATE = """
-You are an expert data pre-processor. Your task is to clean, reformat, and chunk raw markdown text from a website for a Retrieval-Augmented Generation (RAG) system's vector database.
-
-Follow these rules precisely:
-
-**Part 1: Cleaning and Formatting**
-1.  **Preserve Core Content:** Keep all meaningful paragraphs, headings, lists, and factual information.
-2.  **Keep Important Links:** Preserve important inline markdown links `[like this](...)` that are part of a sentence's context.
-3.  **Remove Noise:** Delete all of the following:
-    *   Repetitive navigation bars, headers, and footers.
-    *   Advertisements and promotional banners.
-    *   Cookie consent notices and legal disclaimers (e.g., Impressum, Datenschutz, AGB).
-    *   Image tags `![...](...)` and social media links.
-    *   Boilerplate text that doesn't add unique value.
-4.  **Format Cleanly:** Ensure the output is clean, well-structured markdown with proper spacing.
-
-**Part 2: Chunking**
-1.  **Split by Topic:** After cleaning, split the text into logical, self-contained chunks. Each chunk should focus on a single, specific topic (e.g., a person's profile, a specific project, a single feature).
-2.  **Keep Related Information Together:** Ensure that related information, like a person's name, role, and bio, are all in the same chunk. Do not split them.
-3.  **Use a Separator:** Separate each chunk with `---CHUNK_SEPARATOR---`. This is critical.
-4.  **Do Not Alter Content:** Do not rephrase or summarize the original text. Output the chunks exactly as they appear in the source.
-5.  **Handle Short Texts:** If the entire text is short and covers a single topic, output it as a single chunk without a separator.
-
-**Final Output:**
-*   Do not add any commentary or explanation.
-*   Only output the cleaned and chunked markdown, with the separator between chunks.
-
-Here is the raw markdown text:
----
-{raw_markdown}
----
-"""
-
-async def async_clean_and_chunk_markdown_with_llm(markdown_text: str) -> str:
+async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_language: str = 'en') -> str:
     """Uses an LLM to clean, optimize, and chunk raw markdown asynchronously."""
-    print(f"🤖 Calling LLM to clean and chunk markdown ({len(markdown_text)} chars)...")
+    print(f"🤖 Calling LLM to clean and chunk markdown ({len(markdown_text)} chars) with language '{doc_language}'...")
+
+    # Select the appropriate prompt template based on the document language
+    template = CLEANUP_PROMPT_TEMPLATES.get(doc_language, CLEANUP_PROMPT_TEMPLATES['en'])
+    print(f"📄 Using doc_language: {doc_language}")
+
     cleanup_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0.0)
-    cleanup_prompt = PromptTemplate.from_template(CLEANUP_PROMPT_TEMPLATE)
+    cleanup_prompt = PromptTemplate.from_template(template)
     cleanup_chain = cleanup_prompt | cleanup_llm
     response = await cleanup_chain.ainvoke({"raw_markdown": markdown_text})
     print("✅ Markdown cleaned and chunked successfully.")
     return response.content
 
-async def async_create_document_chunks_with_metadata(content: str, source: str, source_id: int) -> list[Document]:
+async def async_create_document_chunks_with_metadata(content: str, source: str, source_id: int, tenant_id: UUID) -> list[Document]:
     """Asynchronously cleans, chunks, and creates Document objects with metadata."""
     documents = []
     loop = asyncio.get_running_loop()
     try:
+        # Fetch tenant to get doc_language
+        tenant_response = await loop.run_in_executor(None, lambda: supabase.table('tenants').select('doc_language').eq('id', str(tenant_id)).single().execute())
+        doc_language = tenant_response.data.get('doc_language', 'en') if tenant_response.data else 'en'
+
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "PROCESSING"}).eq('id', source_id).execute())
 
         # The LLM now returns a single string with chunks separated by a specific token.
-        cleaned_and_chunked_content = await async_clean_and_chunk_markdown_with_llm(content)
+        cleaned_and_chunked_content = await async_clean_and_chunk_markdown_with_llm(content, doc_language)
         chunks = [chunk.strip() for chunk in cleaned_and_chunked_content.split("---CHUNK_SEPARATOR---") if chunk.strip()]
 
         if DEBUG:
@@ -128,7 +105,7 @@ async def async_create_document_chunks_for_structured_data(content: str, source:
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
         return []
 
-async def _get_document_chunks_from_content(content: str, source: str, source_id: int, ext: str) -> list[Document]:
+async def _get_document_chunks_from_content(content: str, source: str, source_id: int, ext: str, tenant_id: UUID) -> list[Document]:
     """Internal helper to decide which chunking strategy to use based on file extension."""
     structured_extensions = ['.csv', '.ics']
     if ext in structured_extensions:
@@ -136,17 +113,17 @@ async def _get_document_chunks_from_content(content: str, source: str, source_id
         return await async_create_document_chunks_for_structured_data(content, source, source_id)
     else:
         # Use the LLM cleaning path for unstructured data
-        return await async_create_document_chunks_with_metadata(content, source, source_id)
+        return await async_create_document_chunks_with_metadata(content, source, source_id, tenant_id)
 
 @shared_task
 def process_s3_file(s3_path: str, source_filename: str, source_id: int, tenant_id: UUID):
     """Celery task to process a file stored in Supabase S3."""
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-    docs = asyncio.run(async_process_s3_file(s3_path, source_filename, source_id))
+    docs = asyncio.run(async_process_s3_file(s3_path, source_filename, source_id, tenant_id))
     process_documents(docs, tenant_id, embeddings)
     # The temporary file is handled within async_process_s3_file, so no need to remove it here.
 
-async def async_process_s3_file(s3_path: str, source_filename: str, source_id: int) -> list[Document]:
+async def async_process_s3_file(s3_path: str, source_filename: str, source_id: int, tenant_id: UUID) -> list[Document]:
     """
     Downloads a file from S3, processes it into document chunks, and cleans up the temporary file.
     """
@@ -175,7 +152,7 @@ async def async_process_s3_file(s3_path: str, source_filename: str, source_id: i
             return []
 
         content = docs_from_loader[0].page_content
-        return await _get_document_chunks_from_content(content, source_filename, source_id, ext)
+        return await _get_document_chunks_from_content(content, source_filename, source_id, ext, tenant_id)
 
     except Exception as e:
         print(f"❌ Error processing S3 file {s3_path}: {e}")
@@ -212,7 +189,7 @@ async def process_urls_concurrently(urls: list[tuple[str, int]], tenant_id: UUID
 
     tasks = []
     if urls_to_crawl:
-        tasks.append(async_crawl_urls_for_content(urls_to_crawl))
+        tasks.append(async_crawl_urls_for_content(urls_to_crawl, tenant_id))
 
     for file_url, source_id in file_urls_to_process:
         tasks.append(async_process_file_url(file_url, tenant_id, source_id))
@@ -225,22 +202,22 @@ async def process_urls_concurrently(urls: list[tuple[str, int]], tenant_id: UUID
 
     return all_docs
 
-async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]]) -> list[Document]:
+async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]], tenant_id: UUID) -> list[Document]:
     """Crawls URLs and processes their content concurrently using the shared crawler."""
     all_docs = []
     semaphore = asyncio.Semaphore(10)
 
-    async def process_single_result(result, source_id):
+    async def process_single_result(result, source_id, tenant_id):
         async with semaphore:
             if result.success and result.markdown:
-                return await async_create_document_chunks_with_metadata(result.markdown, result.url, source_id)
+                return await async_create_document_chunks_with_metadata(result.markdown, result.url, source_id, tenant_id)
         return []
 
     # Use the shared crawler instance
     url_to_source_id = {url: source_id for url, source_id in urls_to_process}
     results = await shared_crawler.arun_many(urls=list(url_to_source_id.keys()), config=CRAWLER_RUN_CONFIG)
 
-    tasks = [process_single_result(result, url_to_source_id[result.url]) for result in results]
+    tasks = [process_single_result(result, url_to_source_id[result.url], tenant_id) for result in results]
     processed_chunks_list = await asyncio.gather(*tasks)
     for doc_list in processed_chunks_list:
         all_docs.extend(doc_list)
@@ -277,7 +254,7 @@ async def async_process_file_url(url: str, tenant_id: UUID, source_id: int) -> l
         if not docs_from_loader: return []
 
         content = docs_from_loader[0].page_content
-        return await _get_document_chunks_from_content(content, url, source_id, ext)
+        return await _get_document_chunks_from_content(content, url, source_id, ext, tenant_id)
 
     except Exception as e:
         print(f"❌ Error processing file URL {url}: {e}")
@@ -386,7 +363,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             source_id = source_response.data[0]['id']
 
             # This part can take a long time, especially the LLM call
-            docs = asyncio.run(async_create_document_chunks_with_metadata(crawl_result.markdown, crawl_result.url, source_id))
+            docs = asyncio.run(async_create_document_chunks_with_metadata(crawl_result.markdown, crawl_result.url, source_id, tenant_id))
             embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
             process_documents(docs, tenant_id, embeddings)
 

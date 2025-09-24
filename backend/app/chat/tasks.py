@@ -11,6 +11,7 @@ from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain.chains import create_retrieval_chain
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain.chains import create_history_aware_retriever
+from app.prompts import REPHRASE_PROMPTS, FINE_TUNE_RULE_PROMPTS
 
 GEMINI_MODEL = os.getenv("GEMINI_MODEL")
 QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
@@ -30,6 +31,10 @@ def chat_task(self, tenant_id, query, chat_history_json):
             raise Exception(f"Tenant '{tenant_id}' not found")
         tenant_config = tenant_response.data
 
+        # Determine the language for translation, defaulting to 'en'
+        translation_target = tenant_config.get('translation_target', 'en')
+        print(f"📄 Using translation_target: {translation_target}")
+
         # --- Get Vector Store ---
         db = get_vectorstore(tenant_id, embeddings)
         if db._collection.count() == 0:
@@ -41,8 +46,10 @@ def chat_task(self, tenant_id, query, chat_history_json):
         answer_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.2)
         query_rewrite_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0)
 
+        # Select the rephrase prompt based on the translation target
+        rephrase_prompt_tuple = REPHRASE_PROMPTS.get(translation_target, REPHRASE_PROMPTS['en'])
         history_aware_prompt = ChatPromptTemplate.from_messages([
-            ("system", "Given a chat history and a follow up question, rephrase the follow up question to be a standalone question."),
+            rephrase_prompt_tuple,
             ("placeholder", "{chat_history}"),
             ("human", "{input}"),
         ])
@@ -53,7 +60,9 @@ def chat_task(self, tenant_id, query, chat_history_json):
         fine_tune_rules = tenant_config.get('tenant_fine_tune', [])
         formatted_fine_tune_rules = ""
         if fine_tune_rules:
-            rule_strings = [f"- When the user's question is about '{rule['trigger']}', you must follow this instruction: '{rule['instruction']}'" for rule in fine_tune_rules]
+            # Select the fine-tune rule prompt based on the translation target
+            rule_template = FINE_TUNE_RULE_PROMPTS.get(translation_target, FINE_TUNE_RULE_PROMPTS['en'])
+            rule_strings = [rule_template.format(trigger=rule['trigger'], instruction=rule['instruction']) for rule in fine_tune_rules]
             formatted_fine_tune_rules = "\n".join(rule_strings)
 
         rag_prompt_template = PromptTemplate.from_template(tenant_config['rag_prompt_template'])
