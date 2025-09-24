@@ -17,7 +17,7 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL")
 QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
 
 @shared_task(bind=True)
-def chat_task(self, tenant_id, query, chat_history_json):
+def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
     """
     Celery task to handle the chat logic synchronously.
     """
@@ -76,12 +76,26 @@ def chat_task(self, tenant_id, query, chat_history_json):
 
         # --- Invoke Chain ---
         response = conversational_rag_chain.invoke({"chat_history": chat_history, "input": query})
+        ai_message = response["answer"]
+
+        # --- Log Chat to Database ---
+        try:
+            supabase.table('chat_logs').insert({
+                'tenant_id': tenant_id,
+                'conversation_id': conversation_id,
+                'user_message': query,
+                'ai_message': ai_message
+            }).execute()
+        except Exception as db_error:
+            error_logger.error(f"Database Error in chat_task for tenant {tenant_id}: {db_error}", exc_info=True)
+            # Decide if you want to raise the exception or just log it and continue
+            # For now, we'll just log it.
 
         # --- Format Response ---
-        updated_history = chat_history + [HumanMessage(content=query), AIMessage(content=response["answer"])]
+        updated_history = chat_history + [HumanMessage(content=query), AIMessage(content=ai_message)]
         updated_history_json = [{"type": "human" if isinstance(msg, HumanMessage) else "ai", "content": msg.content} for msg in updated_history]
 
-        return {"answer": response["answer"], "chat_history": updated_history_json}
+        return {"answer": ai_message, "chat_history": updated_history_json}
 
     except Exception as e:
         error_logger.error(f"Error in chat task for tenant {tenant_id}: {e}", exc_info=True)

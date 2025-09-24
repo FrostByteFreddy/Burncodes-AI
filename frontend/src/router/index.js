@@ -11,6 +11,8 @@ import Subscription from "../views/Subscription.vue";
 import TenantSettings from "../components/tenant/Settings.vue";
 import TenantSources from "../components/tenant/Sources.vue";
 import TenantFineTune from "../components/tenant/FineTune.vue";
+import Analytics from '@/views/Analytics.vue';
+import ChatLogs from '@/views/ChatLogs.vue';
 
 const uuidRegex =
   "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
@@ -35,6 +37,8 @@ const routes = [
       { path: "settings", name: "TenantSettings", component: TenantSettings },
       { path: "sources", name: "TenantSources", component: TenantSources },
       { path: "fine-tune", name: "TenantFineTune", component: TenantFineTune },
+      { path: "analytics", name: "Analytics", component: Analytics },
+      { path: "chat-logs", name: "ChatLogs", component: ChatLogs },
     ],
   },
   {
