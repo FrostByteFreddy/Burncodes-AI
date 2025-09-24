@@ -229,7 +229,8 @@ async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]]) -
     """Crawls URLs and processes their content concurrently, creating a new crawler for the task."""
     all_docs = []
     semaphore = asyncio.Semaphore(10)
-    crawler = get_crawler()  # Create a new crawler instance
+    crawler = get_crawler()
+    await crawler.start()
 
     try:
         async def process_single_result(result, source_id):
@@ -239,7 +240,6 @@ async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]]) -
             return []
 
         url_to_source_id = {url: source_id for url, source_id in urls_to_process}
-        # Use the new crawler instance
         results = await crawler.arun_many(urls=list(url_to_source_id.keys()), config=CRAWLER_RUN_CONFIG)
 
         tasks = [process_single_result(result, url_to_source_id[result.url]) for result in results]
@@ -249,7 +249,7 @@ async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]]) -
 
         return all_docs
     finally:
-        await crawler.aclose()  # Ensure the crawler is closed
+        await crawler.close()
 
 async def async_process_file_url(url: str, tenant_id: UUID, source_id: int) -> list[Document]:
     """Downloads a file from a URL and processes its content."""
@@ -369,23 +369,20 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
 
         async def crawl_and_close():
             nonlocal crawl_result
+            await crawler.start()
             try:
                 # Pass the dynamic headers directly to the arun method.
                 crawl_result = await crawler.arun(url=url, config=CRAWLER_RUN_CONFIG, headers=headers)
             finally:
-                await crawler.aclose()
+                await crawler.close()
 
         try:
             # Use asyncio.wait_for to enforce a timeout on the entire crawl and close operation
-            asyncio.run(asyncio.wait_for(crawl_and_close(), timeout=70.0)) # Increased timeout slightly
+            asyncio.run(asyncio.wait_for(crawl_and_close(), timeout=70.0))
         except asyncio.TimeoutError:
             print(f"❌ Timeout loading page {url}")
             supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
-            # Ensure crawler is closed even on timeout, just in case
-            try:
-                asyncio.run(crawler.aclose())
-            except Exception as e:
-                print(f"Failed to close crawler on timeout: {e}")
+            # The `finally` block within `crawl_and_close` ensures cleanup happens.
             return
 
         # --- Step 2: Process the content (outside the page load timeout) ---
