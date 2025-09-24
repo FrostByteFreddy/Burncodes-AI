@@ -16,7 +16,9 @@ browser_config = BrowserConfig(
     ]
 )
 
-shared_crawler = AsyncWebCrawler(
-    config=browser_config,
-    base_directory=CRAWL_CACHE_PATH
-)
+def get_crawler():
+    """Creates and returns a new AsyncWebCrawler instance."""
+    return AsyncWebCrawler(
+        config=browser_config,
+        base_directory=CRAWL_CACHE_PATH
+    )
