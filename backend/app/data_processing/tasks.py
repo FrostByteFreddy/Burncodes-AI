@@ -11,7 +11,7 @@ from uuid import UUID
 from celery import shared_task
 from app.database.supabase_client import supabase, bucket_name
 from app.data_processing.processor import get_vectorstore, get_loader, process_documents, SUPPORTED_FILE_EXTENSIONS
-from app.data_processing.crawler import shared_crawler
+from app.data_processing.crawler import get_crawler
 from app.data_processing.config import CRAWLER_RUN_CONFIG, MAX_CONCURRENT_CRAWLS_PER_JOB
 
 # --- Crawl4AI Imports ---
@@ -206,23 +206,27 @@ async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]], t
     """Crawls URLs and processes their content concurrently using the shared crawler."""
     all_docs = []
     semaphore = asyncio.Semaphore(10)
+    crawler = get_crawler()
+    await crawler.start()
 
-    async def process_single_result(result, source_id, tenant_id):
-        async with semaphore:
-            if result.success and result.markdown:
-                return await async_create_document_chunks_with_metadata(result.markdown, result.url, source_id, tenant_id)
-        return []
+    try:
+        async def process_single_result(result, source_id, tenant_id):
+            async with semaphore:
+                if result.success and result.markdown:
+                    return await async_create_document_chunks_with_metadata(result.markdown, result.url, source_id, tenant_id)
+            return []
 
-    # Use the shared crawler instance
-    url_to_source_id = {url: source_id for url, source_id in urls_to_process}
-    results = await shared_crawler.arun_many(urls=list(url_to_source_id.keys()), config=CRAWLER_RUN_CONFIG)
+        url_to_source_id = {url: source_id for url, source_id in urls_to_process}
+        results = await crawler.arun_many(urls=list(url_to_source_id.keys()), config=CRAWLER_RUN_CONFIG)
 
-    tasks = [process_single_result(result, url_to_source_id[result.url], tenant_id) for result in results]
-    processed_chunks_list = await asyncio.gather(*tasks)
-    for doc_list in processed_chunks_list:
-        all_docs.extend(doc_list)
+        tasks = [process_single_result(result, url_to_source_id[result.url], tenant_id) for result in results]
+        processed_chunks_list = await asyncio.gather(*tasks)
+        for doc_list in processed_chunks_list:
+            all_docs.extend(doc_list)
 
-    return all_docs
+        return all_docs
+    finally:
+        await crawler.close()
 
 async def async_process_file_url(url: str, tenant_id: UUID, source_id: int) -> list[Document]:
     """Downloads a file from a URL and processes its content."""
@@ -337,17 +341,25 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             headers["Referer"] = parent_url
 
         # --- Step 1: Crawl the page with a specific timeout ---
-        async def crawl_page_only():
-            # Pass the dynamic headers directly to the arun method.
-            return await shared_crawler.arun(url=url, config=CRAWLER_RUN_CONFIG, headers=headers)
-
+        crawler = get_crawler()
         crawl_result = None
+
+        async def crawl_and_close():
+            nonlocal crawl_result
+            await crawler.start()
+            try:
+                # Pass the dynamic headers directly to the arun method.
+                crawl_result = await crawler.arun(url=url, config=CRAWLER_RUN_CONFIG, headers=headers)
+            finally:
+                await crawler.close()
+
         try:
-            # Use asyncio.wait_for to enforce a timeout on the crawl
-            crawl_result = asyncio.run(asyncio.wait_for(crawl_page_only(), timeout=60.0))
+            # Use asyncio.wait_for to enforce a timeout on the entire crawl and close operation
+            asyncio.run(asyncio.wait_for(crawl_and_close(), timeout=70.0))
         except asyncio.TimeoutError:
             print(f"❌ Timeout loading page {url}")
             supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
+            # The `finally` block within `crawl_and_close` ensures cleanup happens.
             return
 
         # --- Step 2: Process the content (outside the page load timeout) ---
