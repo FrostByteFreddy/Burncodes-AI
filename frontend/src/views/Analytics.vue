@@ -87,7 +87,7 @@ const chartData = computed(() => {
     const date = new Date(log.time_bucket);
     const label = selectedTimeframe.value > 24 ? date.toLocaleDateString() : date.toLocaleTimeString();
     data.labels.push(label);
-    data.datasets[0].data.push(log.chat_count);
+    data.datasets[0].data.push(log.message_count);
   });
 
   return data;
@@ -99,7 +99,7 @@ const chartOptions = {
 };
 
 const updateChart = () => {
-  // This is handled by computed properties, but we can keep this function for clarity
+  fetchData()
 };
 
 onMounted(() => {
