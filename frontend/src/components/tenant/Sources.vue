@@ -29,10 +29,10 @@
                 <p v-if="!isUrlValid && startUrl" id="url-error" class="text-error text-sm mt-1">Please enter a valid
                     URL (e.g., https://example.com).</p>
                 <div class="form-control mt-4">
-                    <label class="cursor-pointer label">
-                        <span class="label-text">Crawl only this page</span>
-                        <input type="checkbox" v-model="crawlSinglePageOnly" class="checkbox checkbox-primary" />
-                    </label>
+                    <div class="flex items-center">
+                        <input type="checkbox" v-model="crawlSinglePageOnly" class="h-4 w-4 rounded border-base-300 text-primary focus:ring-primary" id="single_crawl_only">
+                        <label for="single_crawl_only" class="ml-2 block text-sm">Crawl only this page</label>
+                    </div>
                 </div>
 
                 <div v-if="!crawlSinglePageOnly" class="mt-4">

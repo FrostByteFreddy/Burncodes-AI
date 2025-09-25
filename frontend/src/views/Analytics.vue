@@ -57,6 +57,7 @@ const selectedTimeframe = ref(24);
 
 const intervals = [
     { label: 'Per Minute', value: 'minute' },
+    { label: 'Per 5 Minutes', value: '5-minute' }, // 1. Added new interval option
     { label: 'Per Hour', value: 'hour' },
     { label: 'Per Day', value: 'day' }
 ];
@@ -89,13 +90,13 @@ const chartData = computed(() => {
         labels: [],
         datasets: [{
             label: 'Number of Messages',
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-            borderColor: 'rgba(75, 192, 192, 1)',
+            backgroundColor: 'rgba(168, 85, 247, 0.2)',
+            borderColor: 'rgba(168, 85, 247, 1)',
             borderWidth: 3,
-            pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+            pointBackgroundColor: 'rgba(168, 85, 247, 1)',
             pointBorderColor: '#fff',
             pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: 'rgba(75, 192, 192, 1)',
+            pointHoverBorderColor: 'rgba(168, 85, 247, 1)',
             fill: true,
             tension: 0.4,
             data: []
@@ -110,8 +111,12 @@ const chartData = computed(() => {
     const interval = selectedInterval.value;
 
     let timeUnit, timeFormat;
+    // 2. Added logic to define the time unit for 5 minutes
     if (interval === 'minute') {
         timeUnit = 60 * 1000;
+        timeFormat = { hour: '2-digit', minute: '2-digit' };
+    } else if (interval === '5-minute') {
+        timeUnit = 5 * 60 * 1000;
         timeFormat = { hour: '2-digit', minute: '2-digit' };
     } else if (interval === 'day') {
         timeUnit = 24 * 60 * 60 * 1000;
@@ -121,13 +126,17 @@ const chartData = computed(() => {
         timeFormat = { hour: '2-digit', minute: '2-digit' };
     }
 
-    const totalUnits = timeframeHours * (60 * 60 * 1000) / timeUnit;
+    const totalUnits = Math.ceil(timeframeHours * (60 * 60 * 1000) / timeUnit);
 
     for (let i = 0; i < totalUnits; i++) {
         const date = new Date(now.getTime() - i * timeUnit);
         let bucket;
+        // 3. Added logic to create 5-minute buckets
         if (interval === 'minute') {
             bucket = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes()).toISOString();
+        } else if (interval === '5-minute') {
+            const roundedMinutes = date.getMinutes() - (date.getMinutes() % 5);
+            bucket = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), roundedMinutes).toISOString();
         } else if (interval === 'day') {
             bucket = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString();
         } else { // hour
@@ -147,7 +156,7 @@ const chartData = computed(() => {
 
     sortedBuckets.forEach(bucket => {
         const date = new Date(bucket);
-        const label = date.toLocaleString([], timeFormat);
+        const label = date.toLocaleString('default', timeFormat);
         data.labels.push(label);
         data.datasets[0].data.push(allBuckets.get(bucket));
     });

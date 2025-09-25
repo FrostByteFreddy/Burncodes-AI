@@ -14,19 +14,19 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div v-for="(rule, index) in rules" :key="index"
-                class="group bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-col transition-all duration-300 hover:shadow-md">
+                class="group bg-primary-light p-4 rounded-xl border border-gray-200 flex flex-col transition-all duration-300 hover:shadow-md">
                 <div class="flex-grow space-y-3">
                     <div>
                         <label :for="`trigger-${index}`"
                             class="block text-sm font-medium text-gray-700">Trigger</label>
                         <input v-model="rule.trigger" type="text" :id="`trigger-${index}`"
-                            class="w-full p-2 mt-1 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                            class="w-full p-2 mt-1 border text-white bg-primary-light border-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
                     </div>
                     <div>
                         <label :for="`instruction-${index}`"
                             class="block text-sm font-medium text-gray-700">Instruction</label>
                         <AutoGrowTextarea v-model="rule.instruction" :id="`instruction-${index}`" rows="1"
-                            class="w-full p-2 mt-1 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                            class="w-full p-2 mt-1 border text-white bg-primary-light border-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
                     </div>
                 </div>
 
