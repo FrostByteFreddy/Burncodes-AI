@@ -32,6 +32,13 @@
   .btn-sm {
     @apply py-1 px-3 text-sm;
   }
+
+  .send-button > svg {
+
+    position: relative;
+    transform: rotate(45deg);
+    left: -3px;
+  }
 }
 
 body {

@@ -45,8 +45,8 @@
             <div class="flex">
                 <input type="text" placeholder="Ask a question..."
                     class="chat-input flex-grow border px-5 py-3 text-sm focus:outline-none focus:ring-2" :style="chatInputStyle">
-                <button class="font-bold py-2 px-4" :style="sendButtonStyle">
-                    <font-awesome-icon :icon="['fas', 'paper-plane']" />
+                <button class="send-button font-bold py-2 px-4" :style="sendButtonStyle">
+                    <font-awesome-icon :icon="['fas', 'paper-plane']" rotate="-4" />
                 </button>
             </div>
         </footer>

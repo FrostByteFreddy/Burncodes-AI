@@ -48,8 +48,8 @@
                     <input type="text" v-model="userMessage" @keyup.enter="sendMessage" placeholder="Ask a question..."
                         class="chat-input flex-grow border px-5 py-3 focus:outline-none focus:ring-2" :style="chatInputStyle">
                     <button @click="sendMessage" :disabled="!userMessage.trim() || isThinking"
-                        class="font-bold py-3 px-5 disabled:opacity-50" :style="sendButtonStyle">
-                        <font-awesome-icon :icon="['fas', 'paper-plane']" />
+                        class="send-button font-bold py-3 px-5 disabled:opacity-50" :style="sendButtonStyle">
+                        <font-awesome-icon :icon="['fas', 'fa-paper-plane-top']" />
                     </button>
                 </div>
             </footer>
