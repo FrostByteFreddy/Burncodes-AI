@@ -44,7 +44,7 @@
         <footer class="p-3" style="background-color: var(--chat-header-background-color);">
             <div class="flex">
                 <input type="text" placeholder="Ask a question..."
-                    class="flex-grow border p-2 text-sm focus:outline-none focus:ring-2" :style="chatInputStyle">
+                    class="chat-input flex-grow border px-5 py-3 text-sm focus:outline-none focus:ring-2" :style="chatInputStyle">
                 <button class="font-bold py-2 px-4" :style="sendButtonStyle">
                     <font-awesome-icon :icon="['fas', 'paper-plane']" />
                 </button>
@@ -105,3 +105,11 @@ const sendButtonStyle = computed(() => ({
     borderBottomRightRadius: 'var(--chat-border-radius)',
 }));
 </script>
+
+<!-- Placeholder style -->
+<style scoped>
+.chat-input::placeholder {
+  color: var(--chat-input-text-color);
+  opacity: 0.8;
+}
+</style>

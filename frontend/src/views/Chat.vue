@@ -46,7 +46,7 @@
                 style="background-color: var(--chat-header-background-color); border-bottom-left-radius: var(--chat-border-radius); border-bottom-right-radius: var(--chat-border-radius);">
                 <div class="flex">
                     <input type="text" v-model="userMessage" @keyup.enter="sendMessage" placeholder="Ask a question..."
-                        class="flex-grow border p-3 focus:outline-none focus:ring-2" :style="chatInputStyle">
+                        class="chat-input flex-grow border px-5 py-3 focus:outline-none focus:ring-2" :style="chatInputStyle">
                     <button @click="sendMessage" :disabled="!userMessage.trim() || isThinking"
                         class="font-bold py-3 px-5 disabled:opacity-50" :style="sendButtonStyle">
                         <font-awesome-icon :icon="['fas', 'paper-plane']" />
@@ -325,7 +325,7 @@ onMounted(async () => {
 });
 </script>
 
-<style>
+<style scoped>
 .bot-message-prose a {
     color: var(--chat-bot-message-text-color);
     text-decoration: underline;
@@ -333,5 +333,9 @@ onMounted(async () => {
 
 .bot-message-prose a:hover {
     opacity: 0.8;
+}
+.chat-input::placeholder {
+  color: var(--chat-input-text-color);
+  opacity: 0.8;
 }
 </style>
