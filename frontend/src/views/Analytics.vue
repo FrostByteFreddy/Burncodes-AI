@@ -20,7 +20,9 @@
             {{ error }}
         </div>
         <div v-else>
-            <Line :data="chartData" :options="chartOptions" />
+            <div class="chart-container">
+                <Line :data="chartData" :options="chartOptions" />
+            </div>
         </div>
     </div>
 </template>
@@ -89,7 +91,7 @@ const chartData = computed(() => {
             label: 'Number of Messages',
             backgroundColor: 'rgba(75, 192, 192, 0.2)',
             borderColor: 'rgba(75, 192, 192, 1)',
-            borderWidth: 2,
+            borderWidth: 3,
             pointBackgroundColor: 'rgba(75, 192, 192, 1)',
             pointBorderColor: '#fff',
             pointHoverBackgroundColor: '#fff',
@@ -176,3 +178,10 @@ onMounted(() => {
     fetchData();
 });
 </script>
+
+<style scoped>
+.chart-container {
+    height: 400px;
+    min-width: 100%;
+}
+</style>

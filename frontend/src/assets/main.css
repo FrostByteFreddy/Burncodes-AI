@@ -60,6 +60,11 @@ body {
     }
 }
 
+main:has(#test-chat) {
+
+    max-height: 100vh;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
