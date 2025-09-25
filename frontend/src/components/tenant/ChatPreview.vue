@@ -5,8 +5,8 @@
             style="background-color: var(--chat-header-background-color); color: var(--chat-header-text-color);">
             <div class="w-1/4"></div>
             <h1 class="text-md font-bold text-center w-1/2 flex items-center justify-center">
-                <img v-if="config.logo" :src="config.logo" class="h-6 w-6 mr-2 rounded-full" />
-                <span>{{ config.chatbot_title || 'Chat' }}</span>
+                <img v-if="config.logo" :src="config.logo" class="h-6 mr-2 rounded-full" />
+                <span>{{ config.chatbot_title }}</span>
             </h1>
             <div class="w-1/4 flex justify-end">
                 <button v-if="config.show_reset_button"

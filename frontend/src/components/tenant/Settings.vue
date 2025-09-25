@@ -179,7 +179,7 @@ const languageOptions = ref([
 ])
 
 const defaultWidgetConfig = () => ({
-    chatbot_title: 'Chat Assistant',
+    chatbot_title: '',
     logo: null,
     show_reset_button: true,
     color_palette: [
@@ -277,16 +277,29 @@ const removeColor = (idToRemove) => {
     formData.value.widget_config.color_palette = palette.filter(c => c.id !== idToRemove)
 }
 
-const handleFileUpload = (event, field) => {
-    const file = event.target.files[0]
-    if (!file) return
+// Encodes a file as a base64 string
+const encodeFileAsBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+};
 
-    const reader = new FileReader()
-    reader.onload = (e) => {
-        formData.value.widget_config[field] = e.target.result
+const handleFileUpload = async (event, field) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+        const base64String = await encodeFileAsBase64(file);
+        formData.value.widget_config[field] = base64String;
+        addToast('Logo preview updated!', 'success');
+    } catch (error) {
+        console.error('File reading error:', error);
+        addToast('Failed to read file. Please try a different image.', 'error');
     }
-    reader.readAsDataURL(file)
-}
+};
 
 const handleUpdate = async () => {
     if (tenantsStore.currentTenant) {

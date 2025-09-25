@@ -7,8 +7,8 @@
                 <div class="w-1/4"></div>
                 <h1 class="text-xl font-bold text-center w-1/2 flex items-center justify-center">
                     <img v-if="tenant?.widget_config?.logo" :src="tenant.widget_config.logo"
-                        class="h-8 w-8 mr-3 rounded-full" />
-                    {{ tenant?.widget_config?.chatbot_title || 'Chat' }}
+                        class="h-8 mr-3 rounded-full" />
+                    {{ tenant?.widget_config?.chatbot_title }}
                 </h1>
                 <div class="w-1/4 flex justify-end">
                     <button v-if="tenant?.widget_config?.show_reset_button" @click="resetChat"
