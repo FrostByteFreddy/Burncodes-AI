@@ -1,9 +1,9 @@
 <template>
     <div class="bg-base-100 text-base-content" :class="isSidebarOpen ? 'overflow-hidden' : ''">
-        <div class="flex">
+        <div class="md:flex md:h-screen">
             <Sidebar v-if="showSidebar" :is-open="isSidebarOpen" @close-sidebar="isSidebarOpen = false" />
 
-            <div class="flex-1 flex flex-col h-100">
+            <div class="flex-1 flex flex-col md:overflow-y-auto">
                 <header v-if="showSidebar"
                     class="md:hidden flex items-center justify-between p-4 bg-base-100/80 backdrop-blur-lg border-b border-base-300 sticky top-0 z-10 pt-0 pb-0">
                     <button @click="isSidebarOpen = !isSidebarOpen" class="btn btn-square btn-ghost pl-0 flex">
@@ -11,8 +11,7 @@
                     </button>
                 </header>
 
-                <main class="flex-1">
-                    <router-view />
+                <main class="flex-1 p-6"> <router-view />
                 </main>
             </div>
         </div>

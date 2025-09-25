@@ -1,5 +1,5 @@
 <template>
-    <div :class="`rounded-md shadow-none sm:shadow-lg text-white ${toastClasses[type]}`">
+    <div :class="`rounded-md shadow-none sm:shadow-lg text-white px-6 py-4 ${toastClasses[type]}`">
         {{ message }}
     </div>
 </template>
