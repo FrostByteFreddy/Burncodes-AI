@@ -63,68 +63,82 @@
                 </div>
             </div>
 
-            <div v-show="activeTab === 'appearance'" class="space-y-8">
-                <div class="p-4 border border-base-300 rounded-lg">
-                    <h3 class="text-lg font-bold mb-4">Branding & General</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label for="chatbot_title" class="block text-sm font-medium">Chatbot Title</label>
-                            <input v-model="formData.widget_config.chatbot_title" type="text" id="chatbot_title"
-                                class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
-                        </div>
-                        <div>
-                            <label for="logo" class="block text-sm font-medium">Logo</label>
-                            <input @change="handleFileUpload($event, 'logo')" type="file" id="logo"
-                                class="w-full p-2 mt-1 bg-base-200 border border-base-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-                                accept="image/*" />
-                            <img v-if="formData.widget_config.logo" :src="formData.widget_config.logo"
-                                class="mt-4 max-h-20 rounded-md" />
-                        </div>
-                        <div class="flex items-center">
-                            <input v-model="formData.widget_config.show_reset_button" type="checkbox"
-                                id="show_reset_button"
-                                class="h-4 w-4 rounded border-base-300 text-primary focus:ring-primary" />
-                            <label for="show_reset_button" class="ml-2 block text-sm">Show "Reset Chat" Button</label>
-                        </div>
-                    </div>
-                </div>
+            <div v-show="activeTab === 'appearance'">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-                <div class="p-4 border border-base-300 rounded-lg">
-                    <h3 class="text-lg font-bold mb-4">Color Palette</h3>
-                    <p class="text-sm text-base-content/70 mb-4">Define your brand colors here. You can then assign
-                        these colors to different parts of the chat widget below.</p>
-                    <div class="space-y-3">
-                        <div v-for="(color, index) in formData.widget_config.color_palette" :key="color.id"
-                            class="flex items-center space-x-3">
-                            <input v-model="color.value" type="color"
-                                class="w-12 h-10 p-1 bg-base-200 border-none rounded-lg cursor-pointer" />
-                            <input v-model="color.name" type="text" placeholder="Color Name (e.g., Brand Purple)"
-                                :disabled="index < 2"
-                                class="flex-grow p-2 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-base-300/50" />
-                            <button @click.prevent="removeColor(color.id)" v-if="index > 1"
-                                class="btn btn-ghost btn-sm text-error">
-                                <font-awesome-icon :icon="['fas', 'trash']" />
+                    <div class="space-y-8">
+                        <div class="p-4 border border-base-300 rounded-lg">
+                            <h3 class="text-lg font-bold mb-4">Branding & General</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="chatbot_title" class="block text-sm font-medium">Chatbot Title</label>
+                                    <input v-model="formData.widget_config.chatbot_title" type="text" id="chatbot_title"
+                                        class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
+                                </div>
+                                <div>
+                                    <label for="logo" class="block text-sm font-medium">Logo</label>
+                                    <input @change="handleFileUpload($event, 'logo')" type="file" id="logo"
+                                        class="w-full p-2 mt-1 bg-base-200 border border-base-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                                        accept="image/*" />
+                                    <img v-if="formData.widget_config.logo" :src="formData.widget_config.logo"
+                                        class="mt-4 max-h-20 rounded-md" />
+                                </div>
+                                <div class="flex items-center">
+                                    <input v-model="formData.widget_config.show_reset_button" type="checkbox"
+                                        id="show_reset_button"
+                                        class="h-4 w-4 rounded border-base-300 text-primary focus:ring-primary" />
+                                    <label for="show_reset_button" class="ml-2 block text-sm">Show "Reset Chat"
+                                        Button</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-4 border border-base-300 rounded-lg">
+                            <h3 class="text-lg font-bold mb-4">Color Palette</h3>
+                            <p class="text-sm text-base-content/70 mb-4">Define your brand colors here. You can then
+                                assign these
+                                colors to different parts of the chat widget below.</p>
+                            <div class="space-y-3">
+                                <div v-for="(color, index) in formData.widget_config.color_palette" :key="color.id"
+                                    class="flex items-center space-x-3">
+                                    <input v-model="color.value" type="color"
+                                        class="w-12 h-10 p-1 bg-base-200 border-none rounded-lg cursor-pointer" />
+                                    <input v-model="color.name" type="text"
+                                        placeholder="Color Name (e.g., Brand Purple)" :disabled="index < 2"
+                                        class="flex-grow p-2 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-base-300/50" />
+                                    <button @click.prevent="removeColor(color.id)" v-if="index > 1"
+                                        class="btn btn-ghost btn-sm text-error">
+                                        <font-awesome-icon :icon="['fas', 'trash']" />
+                                    </button>
+                                </div>
+                            </div>
+                            <button @click.prevent="addColor" class="btn btn-secondary btn-sm mt-4">
+                                <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
+                                Add Color
                             </button>
                         </div>
-                    </div>
-                    <button @click.prevent="addColor" class="btn btn-secondary btn-sm mt-4">
-                        <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
-                        Add Color
-                    </button>
-                </div>
 
-                <div class="p-4 border border-base-300 rounded-lg">
-                    <h3 class="text-lg font-bold mb-4">Component Styles</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                        <div v-for="(label, key) in componentStyleLabels" :key="key">
-                            <label :for="key" class="block text-sm font-medium">{{ label }}</label>
-                            <select v-model="formData.widget_config.component_styles[key]" :id="key"
-                                class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
-                                <option v-for="color in formData.widget_config.color_palette" :key="color.id"
-                                    :value="color.id">
-                                    {{ color.name }}
-                                </option>
-                            </select>
+                        <div class="p-4 border border-base-300 rounded-lg">
+                            <h3 class="text-lg font-bold mb-4">Component Styles</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                <div v-for="(label, key) in componentStyleLabels" :key="key">
+                                    <label :for="key" class="block text-sm font-medium">{{ label }}</label>
+                                    <select v-model="formData.widget_config.component_styles[key]" :id="key"
+                                        class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <option v-for="color in formData.widget_config.color_palette" :key="color.id"
+                                            :value="color.id">
+                                            {{ color.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="lg:sticky top-8">
+                            <h3 class="text-lg font-bold mb-4">Live Preview</h3>
+                            <ChatPreview :config="formData.widget_config" />
                         </div>
                     </div>
                 </div>
@@ -152,6 +166,7 @@ import { useTenantsStore } from '../../stores/tenants'
 import { useToast } from '../../composables/useToast'
 import AutoGrowTextarea from '../AutoGrowTextarea.vue'
 import { v4 as uuidv4 } from 'uuid'
+import ChatPreview from './ChatPreview.vue'
 
 const tenantsStore = useTenantsStore()
 const { addToast } = useToast()
