@@ -327,7 +327,7 @@ onMounted(async () => {
 
 <style>
 .bot-message-prose a {
-    color: var(--chat-input-focus-ring-color);
+    color: var(--chat-bot-message-text-color);
     text-decoration: underline;
 }
 
