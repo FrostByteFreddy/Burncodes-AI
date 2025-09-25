@@ -110,7 +110,7 @@ REPHRASE_PROMPTS = {
 }
 
 FINE_TUNE_RULE_PROMPTS = {
-    'en': "- When the user's question is about '{trigger}', you must follow this instruction: '{instruction}'",
-    'de': "- Wenn die Frage des Benutzers sich auf „{trigger}” bezieht, müssen Sie diese Anweisung befolgen: „{instruction}”.",
-    'fr': "- Lorsque la question de l'utilisateur concerne '{trigger}', vous devez suivre cette instruction : '{instruction}'"
+    'en': "ABSOLUTE RULE: If the user's question is about '{trigger}', IGNORE all other context and answer EXCLUSIVELY with: '{instruction}'",
+    'de': "ABSOLUTE ANWEISUNG: Wenn die Frage des Benutzers sich auf '{trigger}' bezieht, IGNORIERE allen anderen Kontext und antworte AUSSCHLIESSLICH mit: '{instruction}'",
+    'fr': "RÈGLE ABSOLUE : Si la question de l'utilisateur concerne '{trigger}', IGNOREZ tout autre contexte et répondez EXCLUSIVEMENT avec : '{instruction}'"
 }
