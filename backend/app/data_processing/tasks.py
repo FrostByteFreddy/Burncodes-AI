@@ -273,18 +273,23 @@ def normalize_url(url):
     return urldefrag(url)[0].rstrip('/')
 
 @shared_task(bind=True)
-def crawl_links_task(self, tenant_id: UUID, start_url: str, max_depth: int = 3):
+def crawl_links_task(self, tenant_id: UUID, start_url: str, single_page_only: bool = False, excluded_urls: list[str] = None, max_depth: int = 3):
     """
     Orchestrator Celery task to initiate a distributed web crawl.
     Creates a CrawlingJob and the first CrawlingTask.
     """
     try:
         start_url = normalize_url(start_url)
+        # If single_page_only is true, we only crawl the starting URL.
+        # So we set max_depth to 1, which means we will not follow any links.
+        effective_max_depth = 1 if single_page_only else max_depth
+
         job_data = {
             "tenant_id": str(tenant_id),
             "start_url": start_url,
-            "max_depth": max_depth,
-            "status": CrawlingStatus.IN_PROGRESS.value
+            "max_depth": effective_max_depth,
+            "status": CrawlingStatus.IN_PROGRESS.value,
+            "excluded_urls": excluded_urls or []
         }
         job_response = supabase.table('crawling_jobs').insert(job_data).execute()
         job = job_response.data[0]
@@ -330,6 +335,13 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         url = task_details['url']
         depth = task_details['depth']
         max_depth = job['max_depth']
+        excluded_urls = job.get('excluded_urls', [])
+
+        # Check if the current URL is in the exclusion list
+        if any(url.startswith(excluded_url) for excluded_url in excluded_urls):
+            print(f"🚫 Skipping excluded URL: {url}")
+            supabase.table('crawling_tasks').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', task_id).execute()
+            return
 
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.IN_PROGRESS.value}).eq('id', task_id).execute()
         print(f"Crawling URL: {url} at depth {depth}")
@@ -386,18 +398,24 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         if depth < max_depth:
             existing_urls_response = supabase.table('crawling_tasks').select('url').eq('job_id', job['id']).execute()
             existing_urls = {item['url'] for item in existing_urls_response.data}
-            new_unique_links = found_links - existing_urls
 
-            if new_unique_links:
+            # Filter out excluded links before adding them to the queue
+            potential_new_links = found_links - existing_urls
+            new_unexcluded_links = {
+                link for link in potential_new_links
+                if not any(link.startswith(excluded_url) for excluded_url in excluded_urls)
+            }
+
+            if new_unexcluded_links:
                 new_tasks_data = [
                     {
                         "job_id": job['id'],
                         "url": link,
                         "depth": depth + 1,
                         "status": CrawlingStatus.PENDING.value,
-                        "parent_url": url  # Add the current URL as the parent
+                        "parent_url": url
                     }
-                    for link in new_unique_links
+                    for link in new_unexcluded_links
                 ]
                 supabase.table('crawling_tasks').insert(new_tasks_data).execute()
 

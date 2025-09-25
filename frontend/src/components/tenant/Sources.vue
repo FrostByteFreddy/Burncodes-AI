@@ -28,8 +28,23 @@
                     aria-describedby="url-error">
                 <p v-if="!isUrlValid && startUrl" id="url-error" class="text-error text-sm mt-1">Please enter a valid
                     URL (e.g., https://example.com).</p>
+                <div class="form-control mt-4">
+                    <label class="cursor-pointer label">
+                        <span class="label-text">Crawl only this page</span>
+                        <input type="checkbox" v-model="crawlSinglePageOnly" class="checkbox checkbox-primary" />
+                    </label>
+                </div>
+
+                <div v-if="!crawlSinglePageOnly" class="mt-4">
+                    <label for="excluded-urls-input" class="block text-sm font-medium text-base-content mb-2">Exclude
+                        URLs (one per line)</label>
+                    <textarea v-model="excludedUrls" id="excluded-urls-input"
+                        placeholder="e.g., https://example.com/fr/..." rows="3"
+                        class="w-full p-3 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+                </div>
+
                 <button @click="startCrawl" :disabled="!startUrl.trim() || loading || !isUrlValid"
-                    class="mt-2 w-full btn btn-primary">
+                    class="mt-4 w-full btn btn-primary">
                     <font-awesome-icon :icon="['fas', 'globe']" class="mr-2" />
                     {{ loading ? 'Crawling...' : 'Crawl Website' }}
                 </button>
@@ -54,7 +69,7 @@
                         <div class="flex justify-between items-center mt-2">
                             <p class="text-xs text-base-content/70">Status: <span class="font-bold"
                                     :class="{ 'text-success': job.status === 'COMPLETED', 'text-warning': job.status === 'IN_PROGRESS' }">{{
-                                    job.status }}</span></p>
+                                        job.status }}</span></p>
                             <p class="text-xs text-base-content/70">{{ new Date(job.created_at).toLocaleString() }}</p>
                         </div>
                         <CrawlingJobProgress :job="job" :tenantId="tenantsStore.currentTenant.id"
@@ -161,6 +176,8 @@ const selectedFile = ref(null)
 const loading = ref(false)
 
 const startUrl = ref('')
+const crawlSinglePageOnly = ref(false)
+const excludedUrls = ref('')
 
 const sourceToDelete = ref(null)
 const showConfirmationModal = ref(false)
@@ -201,10 +218,19 @@ const getAuthHeaders = () => {
 const startCrawl = async () => {
     if (!startUrl.value.trim() || !tenantsStore.currentTenant) return;
     loading.value = true;
+
+    const payload = {
+        url: startUrl.value,
+        single_page_only: crawlSinglePageOnly.value,
+        excluded_urls: crawlSinglePageOnly.value ? [] : excludedUrls.value.split('\n').filter(url => url.trim() !== '')
+    };
+
     try {
-        await axios.post(`${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/discover`, { url: startUrl.value }, { headers: getAuthHeaders() });
+        await axios.post(`${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/discover`, payload, { headers: getAuthHeaders() });
         addToast('Crawling job started successfully!', 'success');
-        startUrl.value = ''; // Clear the input field
+        startUrl.value = '';
+        crawlSinglePageOnly.value = false;
+        excludedUrls.value = '';
         await fetchCrawlingJobs(); // Refresh the jobs list
     } catch (error) {
         addToast(`Failed to start crawl: ${error.response?.data?.error || 'Unknown error'}`, 'error');

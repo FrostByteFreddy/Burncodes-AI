@@ -207,7 +207,10 @@ def discover_links(current_user, tenant_id):
     try:
         data = request.get_json()
         start_url = data.get('url')
+        single_page_only = data.get('single_page_only', False)
+        excluded_urls = data.get('excluded_urls', [])
         tenant_id_str = str(tenant_id)
+
         if not start_url:
             return jsonify({"error": "URL is required"}), 400
 
@@ -215,7 +218,12 @@ def discover_links(current_user, tenant_id):
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
-        task = crawl_links_task.delay(tenant_id=tenant_id, start_url=start_url)
+        task = crawl_links_task.delay(
+            tenant_id=tenant_id,
+            start_url=start_url,
+            single_page_only=single_page_only,
+            excluded_urls=excluded_urls
+        )
 
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
