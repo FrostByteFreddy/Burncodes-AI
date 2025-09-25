@@ -62,6 +62,18 @@ def get_tenant(current_user, tenant_id):
         error_logger.error(f"Error getting tenant {tenant_id} for user {current_user.id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to retrieve tenant", "details": str(e)}), 500
 
+@tenants_bp.route('/<uuid:tenant_id>/public', methods=['GET'])
+def get_public_tenant(tenant_id):
+    try:
+        tenant_id_str = str(tenant_id)
+        tenant = supabase.table('tenants').select("name, widget_config").eq('id', tenant_id_str).single().execute()
+        if not tenant.data:
+            return jsonify({"error": "Tenant not found"}), 404
+        return jsonify(tenant.data), 200
+    except Exception as e:
+        error_logger.error(f"Error getting public tenant {tenant_id}: {e}", exc_info=True)
+        return jsonify({"error": "Failed to retrieve tenant", "details": str(e)}), 500
+
 @tenants_bp.route('/<uuid:tenant_id>', methods=['PUT'])
 @token_required
 def update_tenant(current_user, tenant_id):
@@ -72,7 +84,7 @@ def update_tenant(current_user, tenant_id):
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
-        allowed_fields = ['name', 'intro_message', 'system_persona', 'rag_prompt_template', 'doc_language', 'doc_description', 'source_description', 'last_updated_description', 'translation_target']
+        allowed_fields = ['name', 'intro_message', 'system_persona', 'rag_prompt_template', 'doc_language', 'doc_description', 'source_description', 'last_updated_description', 'translation_target', 'widget_config']
         tenant_update_data = {k: v for k, v in data.items() if k in allowed_fields}
         if tenant_update_data:
             supabase.table('tenants').update(tenant_update_data).eq('id', tenant_id_str).execute()
