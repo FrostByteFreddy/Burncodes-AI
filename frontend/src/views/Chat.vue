@@ -5,7 +5,9 @@
             <header class="bg-base-300/50 p-4 shadow-md z-10 rounded-t-2xl flex justify-between items-center">
                 <div class="w-1/4"></div> <!-- Spacer -->
                 <h1 class="text-xl font-bold text-center w-1/2 flex items-center justify-center">
-                    <font-awesome-icon :icon="['fas', 'comments']" class="mr-3 text-primary" />
+                    <img v-if="tenant?.widget_config?.chatbot_logo" :src="tenant.widget_config.chatbot_logo"
+                        class="h-8 w-8 mr-3 rounded-full" />
+                    <font-awesome-icon v-else :icon="['fas', 'comments']" class="mr-3" :style="chatHeaderStyle" />
                     Chat
                 </h1>
                 <div class="w-1/4 flex justify-end">
@@ -20,10 +22,10 @@
                 <div v-for="(message, index) in chatHistory" :key="index"
                     :class="message.isUser ? 'flex justify-end' : 'flex justify-start'">
                     <div class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 shadow-md"
-                        :class="message.isUser ? 'bg-primary text-primary-content' : 'bg-secondary text-primary'">
+                        :class="message.isUser ? 'text-primary-content' : 'bg-secondary text-primary'"
+                        :style="message.isUser ? userMessageStyle : {}">
                         <div v-if="message.isUser" class="whitespace-pre-wrap">{{ message.text }}</div>
-                        <div v-else class="prose prose-sm prose-neutral max-w-none"
-                            v-html="message.html"></div>
+                        <div v-else class="prose prose-sm prose-neutral max-w-none" v-html="message.html"></div>
                     </div>
                 </div>
                 <div v-if="isThinking" class="flex justify-start">
@@ -41,9 +43,11 @@
             <footer class="p-4 bg-base-300/50 rounded-b-2xl">
                 <div class="flex">
                     <input type="text" v-model="userMessage" @keyup.enter="sendMessage" placeholder="Ask a question..."
-                        class="flex-grow bg-base-200 border border-base-300 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary">
+                        class="flex-grow bg-base-200 border border-base-300 rounded-l-lg p-3 focus:outline-none focus:ring-2"
+                        :style="chatInputStyle">
                     <button @click="sendMessage" :disabled="!userMessage.trim() || isThinking"
-                        class="bg-primary text-primary-content font-bold py-3 px-5 rounded-r-lg disabled:opacity-50 disabled:bg-neutral">
+                        class="text-primary-content font-bold py-3 px-5 rounded-r-lg disabled:opacity-50 disabled:bg-neutral"
+                        :style="sendButtonStyle">
                         <font-awesome-icon :icon="['fas', 'paper-plane']" />
                     </button>
                 </div>
@@ -53,7 +57,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch } from 'vue';
+import { ref, onMounted, nextTick, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 import { marked } from 'marked';
@@ -79,11 +83,32 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000
 
 const route = useRoute();
 const tenantId = ref(route.params.tenantId);
+const tenant = ref(null);
 const chatHistory = ref([]);
 const userMessage = ref('');
 const isThinking = ref(false);
 const chatContainer = ref(null);
 const conversationId = ref(uuidv4());
+
+const userMessageStyle = computed(() => ({
+    backgroundColor: tenant.value?.widget_config?.primary_color || 'var(--p)'
+}));
+
+const sendButtonStyle = computed(() => ({
+    backgroundColor: tenant.value?.widget_config?.primary_color || 'var(--p)'
+}));
+
+const chatHeaderStyle = computed(() => ({
+    color: tenant.value?.widget_config?.primary_color || 'var(--p)'
+}));
+
+const chatInputStyle = computed(() => ({
+    '--ring-color': tenant.value?.widget_config?.primary_color || 'var(--p)',
+    '&:focus': {
+        'ring-color': 'var(--ring-color)'
+    }
+}));
+
 
 // --- Cookie Management for Chat History ---
 const CHAT_COOKIE_KEY = `chatSession_${tenantId.value}`;
@@ -132,6 +157,16 @@ const scrollToBottom = async () => {
     }
 };
 
+const fetchTenant = async () => {
+    if (!tenantId.value) return;
+    try {
+        const response = await axios.get(`${API_BASE_URL}/tenants/${tenantId.value}/public`);
+        tenant.value = response.data;
+    } catch (error) {
+        console.error('Failed to fetch tenant config', error);
+    }
+};
+
 const fetchIntroMessage = async () => {
     if (!tenantId.value) return;
     isThinking.value = true;
@@ -166,7 +201,6 @@ const pollTaskStatus = (taskId) => {
                     }
                     return { text: msg.content, html: null, isUser: true };
                 });
-                // The history is already being watched and saved, so no need to call saveChatToCookie here
                 isThinking.value = false;
                 await scrollToBottom();
             } else if (task_status === 'FAILURE') {
@@ -177,7 +211,6 @@ const pollTaskStatus = (taskId) => {
                 isThinking.value = false;
                 await scrollToBottom();
             }
-            // If status is PENDING, do nothing and let the interval continue.
         } catch (error) {
             clearInterval(interval);
             const errorMsg = `Error: Could not get task status.`;
@@ -186,7 +219,7 @@ const pollTaskStatus = (taskId) => {
             isThinking.value = false;
             await scrollToBottom();
         }
-    }, 1000); // Poll once per second
+    }, 1000);
 };
 
 const sendMessage = async () => {
@@ -225,16 +258,15 @@ const sendMessage = async () => {
     }
 };
 
-
 const resetChat = () => {
     chatHistory.value = [];
     conversationId.value = uuidv4();
-    // Clear the cookie for the old session
     saveChatToCookie([], null);
     fetchIntroMessage();
 };
 
-onMounted(() => {
+onMounted(async () => {
+    await fetchTenant();
     const sessionData = loadChatFromCookie();
     if (sessionData && sessionData.history && sessionData.history.length > 0) {
         chatHistory.value = sessionData.history;
@@ -245,16 +277,12 @@ onMounted(() => {
         fetchIntroMessage();
     }
 
-    // --- Handle Link Clicks ---
     if (chatContainer.value) {
         chatContainer.value.addEventListener('click', (e) => {
             const link = e.target.closest('a');
-            if (link && link.href) {
-                // Open external links in a new tab
-                if (link.hostname !== window.location.hostname) {
-                    e.preventDefault();
-                    window.open(link.href, '_blank', 'noopener,noreferrer');
-                }
+            if (link && link.href && link.hostname !== window.location.hostname) {
+                e.preventDefault();
+                window.open(link.href, '_blank', 'noopener,noreferrer');
             }
         });
     }
