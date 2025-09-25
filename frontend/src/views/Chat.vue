@@ -1,53 +1,54 @@
 <template>
     <div id="test-chat"
         class="min-h-screen bg-base-200 text-base-content font-sans flex items-center justify-center p-4">
-        <div class="flex flex-col w-full max-w-4xl h-[90vh] bg-base-100 rounded-2xl shadow-2xl">
-            <header class="bg-base-300/50 p-4 shadow-md z-10 rounded-t-2xl flex justify-between items-center">
-                <div class="w-1/4"></div> <!-- Spacer -->
+        <div class="flex flex-col w-full max-w-4xl h-[90vh] shadow-2xl" :style="widgetCssVariables">
+            <header class="p-4 shadow-md z-10 flex justify-between items-center"
+                style="background-color: var(--chat-header-background-color); color: var(--chat-header-text-color); border-top-left-radius: var(--chat-border-radius); border-top-right-radius: var(--chat-border-radius);">
+                <div class="w-1/4"></div>
                 <h1 class="text-xl font-bold text-center w-1/2 flex items-center justify-center">
-                    <img v-if="tenant?.widget_config?.chatbot_logo" :src="tenant.widget_config.chatbot_logo"
+                    <img v-if="tenant?.widget_config?.logo" :src="tenant.widget_config.logo"
                         class="h-8 w-8 mr-3 rounded-full" />
-                    <font-awesome-icon v-else :icon="['fas', 'comments']" class="mr-3" :style="chatHeaderStyle" />
-                    Chat
+                    {{ tenant?.widget_config?.chatbot_title || 'Chat' }}
                 </h1>
                 <div class="w-1/4 flex justify-end">
-                    <button @click="resetChat" class="btn btn-secondary btn-sm">
+                    <button v-if="tenant?.widget_config?.show_reset_button" @click="resetChat"
+                        class="btn btn-secondary btn-sm">
                         <font-awesome-icon :icon="['fas', 'arrows-rotate']" class="mr-2" />
                         Reset
                     </button>
                 </div>
             </header>
 
-            <main class="flex-grow p-4 overflow-y-auto" ref="chatContainer">
+            <main class="flex-grow p-4 overflow-y-auto" ref="chatContainer"
+                style="background-color: var(--chat-background-color);">
                 <div v-for="(message, index) in chatHistory" :key="index"
                     :class="message.isUser ? 'flex justify-end' : 'flex justify-start'">
-                    <div class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 shadow-md"
-                        :class="message.isUser ? 'text-primary-content' : 'bg-secondary text-primary'"
-                        :style="message.isUser ? userMessageStyle : {}">
+                    <div class="max-w-xl lg:max-w-2xl px-5 py-3 mb-3 shadow-md"
+                        :style="message.isUser ? userMessageStyle : botMessageStyle">
                         <div v-if="message.isUser" class="whitespace-pre-wrap">{{ message.text }}</div>
-                        <div v-else class="prose prose-sm prose-neutral max-w-none" v-html="message.html"></div>
+                        <div v-else class="prose prose-sm prose-neutral max-w-none bot-message-prose"
+                            v-html="message.html"></div>
                     </div>
                 </div>
                 <div v-if="isThinking" class="flex justify-start">
-                    <div
-                        class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 bg-secondary flex items-center space-x-2">
-                        <span class="w-3 h-3 bg-secondary-content/50 rounded-full animate-pulse"></span>
-                        <span class="w-3 h-3 bg-secondary-content/50 rounded-full animate-pulse"
+                    <div class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 flex items-center space-x-2"
+                        :style="botMessageStyle">
+                        <span class="w-3 h-3 bg-current/50 rounded-full animate-pulse"></span>
+                        <span class="w-3 h-3 bg-current/50 rounded-full animate-pulse"
                             style="animation-delay: 200ms;"></span>
-                        <span class="w-3 h-3 bg-secondary-content/50 rounded-full animate-pulse"
+                        <span class="w-3 h-3 bg-current/50 rounded-full animate-pulse"
                             style="animation-delay: 400ms;"></span>
                     </div>
                 </div>
             </main>
 
-            <footer class="p-4 bg-base-300/50 rounded-b-2xl">
+            <footer class="p-4"
+                style="background-color: var(--chat-header-background-color); border-bottom-left-radius: var(--chat-border-radius); border-bottom-right-radius: var(--chat-border-radius);">
                 <div class="flex">
                     <input type="text" v-model="userMessage" @keyup.enter="sendMessage" placeholder="Ask a question..."
-                        class="flex-grow bg-base-200 border border-base-300 rounded-l-lg p-3 focus:outline-none focus:ring-2"
-                        :style="chatInputStyle">
+                        class="flex-grow border p-3 focus:outline-none focus:ring-2" :style="chatInputStyle">
                     <button @click="sendMessage" :disabled="!userMessage.trim() || isThinking"
-                        class="text-primary-content font-bold py-3 px-5 rounded-r-lg disabled:opacity-50 disabled:bg-neutral"
-                        :style="sendButtonStyle">
+                        class="font-bold py-3 px-5 disabled:opacity-50" :style="sendButtonStyle">
                         <font-awesome-icon :icon="['fas', 'paper-plane']" />
                     </button>
                 </div>
@@ -90,25 +91,60 @@ const isThinking = ref(false);
 const chatContainer = ref(null);
 const conversationId = ref(uuidv4());
 
+// --- Centralized CSS Variable Generator ---
+const widgetCssVariables = computed(() => {
+    const config = tenant.value?.widget_config;
+    if (!config) return {};
+
+    const styles = config.component_styles || {};
+    const palette = config.color_palette || [];
+    const findColor = (colorId, fallback = '#000000') => palette.find(c => c.id === colorId)?.value || fallback;
+
+    return {
+        '--chat-header-background-color': findColor(styles.header_background_color, '#F3F4F6'),
+        '--chat-header-text-color': findColor(styles.header_text_color, '#1F2937'),
+        '--chat-user-message-background-color': findColor(styles.user_message_background_color, '#A855F7'),
+        '--chat-user-message-text-color': findColor(styles.user_message_text_color, '#FFFFFF'),
+        '--chat-bot-message-background-color': findColor(styles.bot_message_background_color, '#F3F4F6'),
+        '--chat-bot-message-text-color': findColor(styles.bot_message_text_color, '#1F2937'),
+        '--chat-send-button-background-color': findColor(styles.send_button_background_color, '#A855F7'),
+        '--chat-send-button-text-color': findColor(styles.send_button_text_color, '#FFFFFF'),
+        '--chat-input-background-color': findColor(styles.input_background_color, '#F9FAFB'),
+        '--chat-input-text-color': findColor(styles.input_text_color, '#1F2937'),
+        '--chat-input-focus-ring-color': findColor(styles.input_focus_ring_color, '#A855F7'),
+        '--chat-background-color': findColor(styles.chat_background_color, '#FFFFFF'),
+        '--chat-border-radius': '16px',
+    };
+});
+
+// Corrected and consolidated computed styles
 const userMessageStyle = computed(() => ({
-    backgroundColor: tenant.value?.widget_config?.primary_color || 'var(--p)'
+    backgroundColor: 'var(--chat-user-message-background-color)',
+    color: 'var(--chat-user-message-text-color)',
+    borderRadius: 'var(--chat-border-radius)',
 }));
 
-const sendButtonStyle = computed(() => ({
-    backgroundColor: tenant.value?.widget_config?.primary_color || 'var(--p)'
-}));
-
-const chatHeaderStyle = computed(() => ({
-    color: tenant.value?.widget_config?.primary_color || 'var(--p)'
+const botMessageStyle = computed(() => ({
+    backgroundColor: 'var(--chat-bot-message-background-color)',
+    color: 'var(--chat-bot-message-text-color)',
+    borderRadius: 'var(--chat-border-radius)',
 }));
 
 const chatInputStyle = computed(() => ({
-    '--ring-color': tenant.value?.widget_config?.primary_color || 'var(--p)',
-    '&:focus': {
-        'ring-color': 'var(--ring-color)'
-    }
+    backgroundColor: 'var(--chat-input-background-color)',
+    color: 'var(--chat-input-text-color)',
+    borderColor: 'var(--chat-header-background-color)',
+    borderTopLeftRadius: 'var(--chat-border-radius)',
+    borderBottomLeftRadius: 'var(--chat-border-radius)',
+    '--tw-ring-color': 'var(--chat-input-focus-ring-color)' // For Tailwind's focus ring
 }));
 
+const sendButtonStyle = computed(() => ({
+    backgroundColor: 'var(--chat-send-button-background-color)',
+    color: 'var(--chat-send-button-text-color)',
+    borderTopRightRadius: 'var(--chat-border-radius)',
+    borderBottomRightRadius: 'var(--chat-border-radius)',
+}));
 
 // --- Cookie Management for Chat History ---
 const CHAT_COOKIE_KEY = `chatSession_${tenantId.value}`;
@@ -290,12 +326,12 @@ onMounted(async () => {
 </script>
 
 <style>
-.prose-invert a {
-    color: theme('colors.primary');
+.bot-message-prose a {
+    color: var(--chat-input-focus-ring-color);
     text-decoration: underline;
 }
 
-.prose-invert a:hover {
-    color: theme('colors.primary-focus');
+.bot-message-prose a:hover {
+    opacity: 0.8;
 }
 </style>

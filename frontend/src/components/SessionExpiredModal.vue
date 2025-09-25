@@ -1,10 +1,10 @@
 <template>
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div class="bg-gray-800 rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-            <h2 class="text-2xl font-bold mb-4">Session Expired</h2>
+            <h2 class="text-2xl font-bold mb-4 text-white">Session Expired</h2>
             <p class="text-gray-300 mb-6">Your session has expired. Please log in again.</p>
             <button @click="onLogout" ref="logoutButton"
-                class="btn-primary">
+                class="btn btn-primary">
                 Log Out
             </button>
         </div>
