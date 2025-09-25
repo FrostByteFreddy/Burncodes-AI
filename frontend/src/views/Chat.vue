@@ -33,11 +33,12 @@
                 <div v-if="isThinking" class="flex justify-start">
                     <div class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 flex items-center space-x-2"
                         :style="botMessageStyle">
-                        <span class="w-3 h-3 bg-current/50 rounded-full animate-pulse"></span>
-                        <span class="w-3 h-3 bg-current/50 rounded-full animate-pulse"
-                            style="animation-delay: 200ms;"></span>
-                        <span class="w-3 h-3 bg-current/50 rounded-full animate-pulse"
-                            style="animation-delay: 400ms;"></span>
+                        <span class="w-3 h-3 bg-current/50 rounded-full animate-bounce"
+                            :style="botThinkingDotsStyle"></span>
+                        <span class="w-3 h-3 bg-current/50 rounded-full animate-bounce" style="animation-delay: 150ms;"
+                            :style="botThinkingDotsStyle"></span>
+                        <span class="w-3 h-3 bg-current/50 rounded-full animate-bounce" style="animation-delay: 300ms;"
+                            :style="botThinkingDotsStyle"></span>
                     </div>
                 </div>
             </main>
@@ -46,10 +47,11 @@
                 style="background-color: var(--chat-header-background-color); border-bottom-left-radius: var(--chat-border-radius); border-bottom-right-radius: var(--chat-border-radius);">
                 <div class="flex">
                     <input type="text" v-model="userMessage" @keyup.enter="sendMessage" placeholder="Ask a question..."
-                        class="chat-input flex-grow border px-5 py-3 focus:outline-none focus:ring-2" :style="chatInputStyle">
+                        class="chat-input flex-grow border px-5 py-3 focus:outline-none focus:ring-2"
+                        :style="chatInputStyle">
                     <button @click="sendMessage" :disabled="!userMessage.trim() || isThinking"
                         class="send-button font-bold py-3 px-5 disabled:opacity-50" :style="sendButtonStyle">
-                        <font-awesome-icon :icon="['fas', 'paper-plane']"/>
+                        <font-awesome-icon :icon="['fas', 'paper-plane']" />
                     </button>
                 </div>
             </footer>
@@ -61,24 +63,8 @@
 import { ref, onMounted, nextTick, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
-import { marked } from 'marked';
+import { processBotMessage } from '@/utils/chatProcessor.js';
 import { v4 as uuidv4 } from 'uuid';
-
-const processBotMessage = (content) => {
-    try {
-        if (typeof content !== 'string') {
-            console.error("processBotMessage received non-string content:", content);
-            return { text: '', html: '' };
-        }
-        const cleanedText = content.replace(/{:target="_blank"}/g, '');
-        const html = marked(cleanedText);
-        return { text: cleanedText, html };
-    } catch (e) {
-        console.error("Error parsing content with marked.js:", e);
-        console.error("Original content:", content);
-        return { text: content, html: content };
-    }
-};
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -128,6 +114,11 @@ const botMessageStyle = computed(() => ({
     backgroundColor: 'var(--chat-bot-message-background-color)',
     color: 'var(--chat-bot-message-text-color)',
     borderRadius: 'var(--chat-border-radius)',
+}));
+
+const botThinkingDotsStyle = computed(() => ({
+    backgroundColor: 'var(--chat-bot-message-text-color',
+    opacity: '.75'
 }));
 
 const chatInputStyle = computed(() => ({
@@ -229,16 +220,48 @@ const pollTaskStatus = (taskId) => {
 
             if (task_status === 'SUCCESS') {
                 clearInterval(interval);
-                const newHistory = task_result.chat_history;
-                chatHistory.value = newHistory.map(msg => {
-                    if (msg.type === 'ai') {
-                        const { text, html } = processBotMessage(msg.content);
-                        return { text, html, isUser: false };
-                    }
-                    return { text: msg.content, html: null, isUser: true };
-                });
                 isThinking.value = false;
-                await scrollToBottom();
+                await scrollToBottom(); // Scroll down after the "thinking" dots disappear
+
+                const fullHistory = task_result.chat_history;
+                const lastMessageFromServer = fullHistory[fullHistory.length - 1];
+
+                if (lastMessageFromServer && lastMessageFromServer.type === 'ai') {
+                    const previousHistory = fullHistory.slice(0, -1);
+                    chatHistory.value = previousHistory.map(msg => {
+                        if (msg.type === 'ai') {
+                            const { text, html } = processBotMessage(msg.content);
+                            return { text, html, isUser: false };
+                        }
+                        return { text: msg.content, html: null, isUser: true };
+                    });
+
+                    chatHistory.value.push({ text: '', html: '', isUser: false });
+                    await nextTick(); // Ensure the empty message div is in the DOM
+
+                    const fullBotResponseText = lastMessageFromServer.content;
+                    const wordsAndSpaces = fullBotResponseText.split(/(\s+)/);
+                    const currentBotMessage = chatHistory.value[chatHistory.value.length - 1];
+
+                    for (const part of wordsAndSpaces) {
+                        currentBotMessage.text += part;
+                        currentBotMessage.html = processBotMessage(currentBotMessage.text).html;
+
+                        await scrollToBottom();
+
+                        const delay = Math.random() * (10 - 5);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                } else {
+                    chatHistory.value = fullHistory.map(msg => {
+                        if (msg.type === 'ai') {
+                            const { text, html } = processBotMessage(msg.content);
+                            return { text, html, isUser: false };
+                        }
+                        return { text: msg.content, html: null, isUser: true };
+                    });
+                    await scrollToBottom();
+                }
             } else if (task_status === 'FAILURE') {
                 clearInterval(interval);
                 const errorMsg = `Error: Processing failed. ${task_result?.exc_message || ''}`;
@@ -334,8 +357,9 @@ onMounted(async () => {
 .bot-message-prose a:hover {
     opacity: 0.8;
 }
+
 .chat-input::placeholder {
-  color: var(--chat-input-text-color);
-  opacity: 0.8;
+    color: var(--chat-input-text-color);
+    opacity: 0.8;
 }
 </style>
