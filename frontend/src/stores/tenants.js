@@ -111,6 +111,20 @@ export const useTenantsStore = defineStore("tenants", () => {
     }
   }
 
+  async function refetch(id) {
+    // This is a "silent" fetch that doesn't set the global loading state,
+    // useful for background updates.
+    try {
+      const response = await apiClient.get(`/tenants/${id}`, {
+        headers: getAuthHeaders(),
+      });
+      currentTenant.value = response.data;
+    } catch (e) {
+      // Don't set the global error state, but maybe log it
+      console.error("Failed to refetch tenant:", e);
+    }
+  }
+
   function selectTenant(tenant) {
     currentTenant.value = tenant;
   }
@@ -134,5 +148,6 @@ export const useTenantsStore = defineStore("tenants", () => {
     updateTenant,
     deleteTenant,
     selectTenant,
+    refetch,
   };
 });
