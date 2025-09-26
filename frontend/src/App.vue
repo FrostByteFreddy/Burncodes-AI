@@ -1,6 +1,7 @@
 <template>
     <div class="bg-base-100 text-base-content" :class="isSidebarOpen ? 'overflow-hidden' : ''">
-        <div class="md:flex md:h-screen">
+        <!-- Default Layout -->
+        <div v-if="layout === 'default'" class="md:flex md:h-screen">
             <Sidebar v-if="showSidebar" :is-open="isSidebarOpen" @close-sidebar="isSidebarOpen = false" />
 
             <div class="flex-1 flex flex-col md:overflow-y-auto">
@@ -28,9 +29,15 @@
                     </div>
                 </header>
 
-                <main class="flex-1 p-6"> <router-view />
+                <main class="flex-1 p-6">
+                    <router-view />
                 </main>
             </div>
+        </div>
+
+        <!-- Blank Layout -->
+        <div v-else>
+            <router-view />
         </div>
 
         <!-- Mobile sidebar overlay -->
@@ -55,6 +62,14 @@ const isSidebarOpen = ref(false)
 
 const showSidebar = computed(() => {
     return authStore.user && route.name !== 'Chat'
+})
+
+const layout = computed(() => {
+    const layoutRoutes = ['Login', 'Signup', 'Chat'];
+    if (layoutRoutes.includes(route.name)) {
+        return 'blank'
+    }
+    return 'default'
 })
 </script>
 
