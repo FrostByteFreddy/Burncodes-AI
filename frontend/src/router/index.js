@@ -110,4 +110,10 @@ router.beforeEach(async (to, from, next) => {
   }
 });
 
+router.afterEach((to) => {
+  if (to.name !== 'Login' && to.name !== 'Signup') {
+    localStorage.setItem('lastVisitedRoute', to.fullPath);
+  }
+});
+
 export default router;
