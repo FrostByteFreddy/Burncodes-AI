@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import axios from "axios";
 import { useAuthStore } from "./auth";
 
@@ -20,6 +20,14 @@ export const useTenantsStore = defineStore("tenants", () => {
     }
     return { Authorization: `Bearer ${authStore.session.access_token}` };
   };
+
+  async function restoreTenant() {
+    const tenantId = localStorage.getItem("currentTenantId");
+    if (tenantId) {
+      await fetchTenant(tenantId);
+    }
+  }
+  restoreTenant();
 
   async function fetchTenants() {
     loading.value = true;
@@ -106,6 +114,18 @@ export const useTenantsStore = defineStore("tenants", () => {
     }
   }
 
+  function selectTenant(tenant) {
+    currentTenant.value = tenant;
+  }
+
+  watch(currentTenant, (newTenant) => {
+    if (newTenant) {
+      localStorage.setItem("currentTenantId", newTenant.id);
+    } else {
+      localStorage.removeItem("currentTenantId");
+    }
+  });
+
   return {
     tenants,
     currentTenant,
@@ -116,5 +136,6 @@ export const useTenantsStore = defineStore("tenants", () => {
     createTenant,
     updateTenant,
     deleteTenant,
+    selectTenant,
   };
 });

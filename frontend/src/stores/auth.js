@@ -47,7 +47,12 @@ export const useAuthStore = defineStore("auth", () => {
     user.value = data.user;
     sessionExpired.value = false; // Reset on new login
 
-    router.push("/dashboard");
+    const lastRoute = localStorage.getItem('lastVisitedRoute');
+    if (lastRoute) {
+      router.push(lastRoute);
+    } else {
+      router.push("/manage-tenants");
+    }
   }
 
   async function logout() {

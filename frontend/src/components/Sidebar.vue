@@ -97,7 +97,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useTenantsStore } from '../stores/tenants'
 import { useAuthStore } from '../stores/auth'
 import { useRouter } from 'vue-router'
@@ -113,7 +113,7 @@ const authStore = useAuthStore()
 const router = useRouter()
 
 const dropdownOpen = ref(false)
-const activeTenant = ref(null)
+const activeTenant = computed(() => tenantsStore.currentTenant)
 
 onMounted(() => {
     tenantsStore.fetchTenants()
@@ -123,18 +123,15 @@ watch(() => [tenantsStore.tenants, router.currentRoute.value.params.tenantId], (
     if (tenantId) {
         const tenant = newTenants.find(t => t.id === tenantId);
         if (tenant) {
-            activeTenant.value = tenant;
+            tenantsStore.selectTenant(tenant);
         }
     } else if (newTenants.length === 1) {
-        activeTenant.value = newTenants[0];
-    } else {
-        activeTenant.value = null;
+        tenantsStore.selectTenant(newTenants[0]);
     }
 }, { immediate: true, deep: true });
 
 
 const selectTenant = (tenant) => {
-    activeTenant.value = tenant
     dropdownOpen.value = false
     router.push({ name: 'TenantSettings', params: { tenantId: tenant.id } })
 }
