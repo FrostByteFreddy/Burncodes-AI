@@ -118,7 +118,7 @@ async def _get_document_chunks_from_content(content: str, source: str, source_id
 @shared_task
 def process_s3_file(s3_path: str, source_filename: str, source_id: int, tenant_id: UUID):
     """Celery task to process a file stored in Supabase S3."""
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
     docs = asyncio.run(async_process_s3_file(s3_path, source_filename, source_id, tenant_id))
     process_documents(docs, tenant_id, embeddings)
     # The temporary file is handled within async_process_s3_file, so no need to remove it here.
@@ -172,7 +172,7 @@ async def async_process_s3_file(s3_path: str, source_filename: str, source_id: i
 
 @shared_task
 def process_urls(urls: list[tuple[str, int]], tenant_id: UUID):
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
     docs = asyncio.run(process_urls_concurrently(urls, tenant_id))
     process_documents(docs, tenant_id, embeddings)
 
@@ -404,7 +404,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             source_id = source_response.data[0]['id']
 
             docs = asyncio.run(async_create_document_chunks_with_metadata(crawl_result.markdown, crawl_result.url, source_id, tenant_id))
-            embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+            embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
             process_documents(docs, tenant_id, embeddings)
 
             # crawl4ai with the configured exclude_patterns will handle not following the excluded links.
