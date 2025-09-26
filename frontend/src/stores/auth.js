@@ -50,7 +50,7 @@ export const useAuthStore = defineStore("auth", () => {
     user.value = data.user;
     sessionExpired.value = false; // Reset on new login
 
-    const lastRoute = localStorage.getItem('lastVisitedRoute');
+    const lastRoute = localStorage.getItem("lastVisitedRoute");
     if (lastRoute) {
       router.push(lastRoute);
     } else {
@@ -60,11 +60,29 @@ export const useAuthStore = defineStore("auth", () => {
 
   async function logout() {
     sessionExpired.value = false; // Also reset on logout
+
+    // Attempt to sign out from Supabase, but don't let it block local cleanup
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    if (error) {
+      // Log the error but continue with cleanup, as the session might already be invalid
+      console.error("Error signing out from Supabase:", error.message);
+    }
+
+    // Clear local state
     user.value = null;
     session.value = null;
-    router.push("/login");
+
+    // Dynamically import tenants store to clear its state and avoid circular deps
+    const { useTenantsStore } = await import("./tenants");
+    const tenantsStore = useTenantsStore();
+    tenantsStore.selectTenant(null); // This clears currentTenant and localStorage key via watcher
+
+    localStorage.removeItem("lastVisitedRoute");
+
+    // Redirect to login page if not already there
+    if (router.currentRoute.value.name !== "Login") {
+      router.push("/login");
+    }
   }
 
   // Listen for auth state changes

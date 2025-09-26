@@ -65,6 +65,13 @@ main:has(#test-chat) {
     max-height: 100vh;
 }
 
+.sidebar-logo svg{
+
+    max-width: 70%;
+    margin-bottom: 4rem;
+}
+
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
