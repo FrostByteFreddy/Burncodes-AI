@@ -23,7 +23,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
     """
     try:
         # --- Create embeddings ---
-        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+        embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
 
         # --- Get Tenant Info ---
         tenant_response = supabase.table('tenants').select("*, tenant_fine_tune(*)").eq('id', str(tenant_id)).single().execute()
