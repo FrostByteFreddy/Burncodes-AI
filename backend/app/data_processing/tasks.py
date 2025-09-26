@@ -12,10 +12,10 @@ from celery import shared_task
 from app.database.supabase_client import supabase, bucket_name
 from app.data_processing.processor import get_vectorstore, get_loader, process_documents, SUPPORTED_FILE_EXTENSIONS
 from app.data_processing.crawler import get_crawler
-from app.data_processing.config import CRAWLER_RUN_CONFIG, MAX_CONCURRENT_CRAWLS_PER_JOB
+from app.data_processing.config import MAX_CONCURRENT_CRAWLS_PER_JOB
 
 # --- Crawl4AI Imports ---
-from crawl4ai import CacheMode # CrawlerRunConfig is now imported from config
+from crawl4ai import CacheMode, CrawlerRunConfig, LinkPreviewConfig
 
 # --- LangChain Core Imports ---
 from langchain_core.documents import Document
@@ -337,7 +337,9 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         max_depth = job['max_depth']
         excluded_urls = job.get('excluded_urls', [])
 
-        # Check if the current URL is in the exclusion list
+        # Check if the current URL is in the exclusion list. This is important because
+        # the crawler's exclude_patterns only applies to discovered links, not the
+        # initial URL of the task.
         if any(url.startswith(excluded_url) for excluded_url in excluded_urls):
             print(f"🚫 Skipping excluded URL: {url}")
             supabase.table('crawling_tasks').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', task_id).execute()
@@ -352,7 +354,17 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         if parent_url:
             headers["Referer"] = parent_url
 
-        # --- Step 1: Crawl the page with a specific timeout ---
+        # --- Step 1: Configure and crawl the page ---
+        # Create a dynamic crawler config to handle exclusions per job.
+        # We add a wildcard to the end of each excluded URL to match any sub-paths.
+        wildcard_excluded_urls = [f"{u}*" for u in excluded_urls]
+        dynamic_run_config = CrawlerRunConfig(
+            link_preview_config=LinkPreviewConfig(
+                exclude_patterns=wildcard_excluded_urls,
+                include_internal=True # Ensure we process internal links
+            )
+        )
+
         crawler = get_crawler()
         crawl_result = None
 
@@ -360,8 +372,8 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             nonlocal crawl_result
             await crawler.start()
             try:
-                # Pass the dynamic headers directly to the arun method.
-                crawl_result = await crawler.arun(url=url, config=CRAWLER_RUN_CONFIG, headers=headers)
+                # Pass the dynamic headers and config directly to the arun method.
+                crawl_result = await crawler.arun(url=url, config=dynamic_run_config, headers=headers)
             finally:
                 await crawler.close()
 
@@ -371,10 +383,9 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         except asyncio.TimeoutError:
             print(f"❌ Timeout loading page {url}")
             supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
-            # The `finally` block within `crawl_and_close` ensures cleanup happens.
             return
 
-        # --- Step 2: Process the content (outside the page load timeout) ---
+        # --- Step 2: Process the content ---
         found_links = set()
         if crawl_result and crawl_result.success and crawl_result.markdown:
             source_data = {
@@ -386,11 +397,12 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             source_response = supabase.table('tenant_sources').insert(source_data).execute()
             source_id = source_response.data[0]['id']
 
-            # This part can take a long time, especially the LLM call
             docs = asyncio.run(async_create_document_chunks_with_metadata(crawl_result.markdown, crawl_result.url, source_id, tenant_id))
             embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
             process_documents(docs, tenant_id, embeddings)
 
+            # crawl4ai with the configured exclude_patterns will handle not following the excluded links.
+            # We can directly use the internal links it returns.
             for link in crawl_result.links.get("internal", []):
                 found_links.add(normalize_url(link["href"]))
 
@@ -399,12 +411,9 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             existing_urls_response = supabase.table('crawling_tasks').select('url').eq('job_id', job['id']).execute()
             existing_urls = {item['url'] for item in existing_urls_response.data}
 
-            # Filter out excluded links before adding them to the queue
-            potential_new_links = found_links - existing_urls
-            new_unexcluded_links = {
-                link for link in potential_new_links
-                if not any(link.startswith(excluded_url) for excluded_url in excluded_urls)
-            }
+            # crawl4ai has already filtered the links based on the exclude_patterns,
+            # so we only need to check for already-queued links.
+            new_unexcluded_links = found_links - existing_urls
 
             if new_unexcluded_links:
                 new_tasks_data = [
