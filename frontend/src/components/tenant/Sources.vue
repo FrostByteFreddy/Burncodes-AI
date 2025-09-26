@@ -250,7 +250,7 @@ const handleUpload = async () => {
     formData.append('file', selectedFile.value)
     try {
         await axios.post(`${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/upload`, formData, { headers: getAuthHeaders() })
-        await tenantsStore.fetchTenant(tenantsStore.currentTenant.id)
+        await tenantsStore.refetch(tenantsStore.currentTenant.id)
         selectedFile.value = null
         document.getElementById('file-upload').value = ''
         addToast('File uploaded successfully!', 'success');
@@ -287,21 +287,36 @@ const cancelDelete = () => {
 };
 
 const handleDelete = async () => {
-    if (!tenantsStore.currentTenant || !sourceToDelete.value) return
+    if (!tenantsStore.currentTenant || !sourceToDelete.value) return;
+    const sourceIdToDelete = sourceToDelete.value.id;
+
+    const originalSources = [...tenantsStore.currentTenant.tenant_sources];
+
+    // Optimistic UI update
+    const sourceIndex = tenantsStore.currentTenant.tenant_sources.findIndex(s => s.id === sourceIdToDelete);
+    if (sourceIndex > -1) {
+        tenantsStore.currentTenant.tenant_sources.splice(sourceIndex, 1);
+    }
+
     try {
-        await axios.delete(`${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/${sourceToDelete.value.id}`, { headers: getAuthHeaders() })
-        await tenantsStore.fetchTenant(tenantsStore.currentTenant.id)
+        await axios.delete(`${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/${sourceIdToDelete}`, { headers: getAuthHeaders() });
         addToast('Source deleted successfully!', 'success');
+        // After successful deletion, we can choose to refetch for consistency or trust the optimistic update.
+        // For now, we'll rely on the optimistic update for speed.
+        // await tenantsStore.refetch(tenantsStore.currentTenant.id);
     } catch (error) {
+        // If the delete fails, revert the UI change
+        tenantsStore.currentTenant.tenant_sources = originalSources;
         addToast(`Failed to delete source: ${error.response?.data?.error || 'Unknown error'}`, 'error');
     } finally {
         cancelDelete();
     }
-}
+};
+
 
 const handleJobCompletion = async (jobId) => {
     addToast(`Crawl job completed! Refreshing sources...`, 'success');
-    await tenantsStore.fetchTenant(tenantsStore.currentTenant.id);
+    await tenantsStore.refetch(tenantsStore.currentTenant.id);
     await fetchCrawlingJobs();
 };
 
