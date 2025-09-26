@@ -1,5 +1,5 @@
 <template>
-    <div id="test-chat" class="bg-base-200 text-base-content font-sans flex items-center justify-center sm:p-4 p-2 h-screen">
+    <div id="test-chat" class="bg-base-200 text-base-content font-sans flex items-center justify-center sm:p-4 p-2">
         <BaseChat v-if="tenant && tenant.widget_config" :config="tenant.widget_config" :chatHistory="chatHistory"
             :isThinking="isThinking" v-model:userMessage="userMessage" @sendMessage="sendMessage" @reset="resetChat" />
     </div>

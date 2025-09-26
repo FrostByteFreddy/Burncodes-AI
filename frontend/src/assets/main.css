@@ -45,6 +45,11 @@ body {
     background-color: theme('colors.base-100');
 }
 
+#test-chat {
+
+    height: 100dvh;
+}
+
 #app-layout > main:not(:has(#test-chat)) {
 
     max-height: 100dvh;
