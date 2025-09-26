@@ -71,7 +71,7 @@ def get_vectorstore(tenant_id: UUID, embeddings: Embeddings):
         anonymized_telemetry=False
     )
     vectorstore = Chroma(
-        collection_name=f"content_{tenant_id_str}",
+        collection_name=f"content_gemini_{tenant_id_str}",
         embedding_function=embeddings,
         client_settings=client_settings,
         persist_directory=tenant_db_path
