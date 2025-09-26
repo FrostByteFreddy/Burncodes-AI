@@ -358,6 +358,12 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         # Create a dynamic crawler config to handle exclusions per job.
         # We add a wildcard to the end of each excluded URL to match any sub-paths.
         wildcard_excluded_urls = [f"{u}*" for u in excluded_urls]
+
+        # Add common image extensions to the exclusion list
+        image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp']
+        image_exclude_patterns = [f"*{ext}" for ext in image_extensions]
+        wildcard_excluded_urls.extend(image_exclude_patterns)
+
         dynamic_run_config = CrawlerRunConfig(
             link_preview_config=LinkPreviewConfig(
                 exclude_patterns=wildcard_excluded_urls,
