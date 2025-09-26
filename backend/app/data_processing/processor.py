@@ -65,16 +65,13 @@ def get_vectorstore(tenant_id: UUID, embeddings: Embeddings):
     vector_store_path_base = current_app.config['CRAWL4_AI_BASE_DIRECTORY']
     tenant_db_path = os.path.join(vector_store_path_base, tenant_id_str)
 
-    client_settings = chromadb.Settings(
-        is_persistent=True,
-        persist_directory=tenant_db_path,
-        anonymized_telemetry=False
-    )
+    # Using the recommended persistent client approach
+    persistent_client = chromadb.PersistentClient(path=tenant_db_path)
+
     vectorstore = Chroma(
+        client=persistent_client,
         collection_name=f"content_gemini_{tenant_id_str}",
         embedding_function=embeddings,
-        client_settings=client_settings,
-        persist_directory=tenant_db_path
     )
     print(f"✅ ChromaDB vector store initialized for tenant: {tenant_id_str}")
     return vectorstore
