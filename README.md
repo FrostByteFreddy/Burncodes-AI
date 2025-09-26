@@ -1,6 +1,6 @@
-# SwiftAnswer
+# BurnCodes AI
 
-SwiftAnswer is a Retrieval-Augmented Generation (RAG) application that allows you to create a personalized question-answering system based on your own documents and websites. You can upload files (PDFs, DOCX, TXT, CSV) or provide a URL, and SwiftAnswer will process and index the content. Once your sources are added, you can ask questions in a chat interface and get answers based on the information in your documents.
+BurnCodes AI is a Retrieval-Augmented Generation (RAG) application that allows you to create a personalized question-answering system based on your own documents and websites. You can upload files (PDFs, DOCX, TXT, CSV) or provide a URL, and BurnCodes AI will process and index the content. Once your sources are added, you can ask questions in a chat interface and get answers based on the information in your documents.
 
 This project is built with a Vue.js frontend and a Flask backend.
 

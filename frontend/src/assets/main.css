@@ -2,41 +2,98 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer utilities {
-  .bg-accent-gradient {
-    background-image: linear-gradient(145deg, #FF2095 5%, #2038D8 55%, #00AEE4 93%);
+@layer components {
+  .card {
+    @apply bg-base-100 rounded-lg;
   }
 
-  .text-accent-gradient {
-    background: linear-gradient(145deg, #FF2095 5%, #2038D8 55%, #00AEE4 93%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-fill-color: transparent;
+  .card-login {
+    @apply bg-base-100 rounded-lg p-6 shadow-lg;
+  }
+
+  @media screen and (min-width: 768px) {
+    .card {
+      @apply p-6 shadow-lg;
+    }
+  }
+
+  .btn {
+    @apply font-bold py-2 px-4 rounded transition-colors duration-200;
+  }
+  .btn-primary {
+    @apply bg-primary text-primary-content hover:bg-primary-focus;
+  }
+  .btn-secondary {
+    @apply bg-secondary text-secondary-content hover:bg-secondary-focus;
+  }
+  .btn-error {
+    @apply bg-error text-white hover:brightness-90;
+  }
+  .btn-sm {
+    @apply py-1 px-3 text-sm;
+  }
+
+  .send-button > svg {
+
+    position: relative;
+    transform: rotate(45deg);
+    left: -3px;
   }
 }
 
 body {
-
-    background-color: black;
+    background-color: theme('colors.base-100');
 }
 
-main {
+#test-chat {
+
+    height: 100dvh;
+}
+
+#app-layout > main:not(:has(#test-chat)) {
+
+    max-height: 100dvh;
+    overflow-y: auto;
+    padding: 2rem;
+}
+
+@media screen and (max-width: 768px){
+
+    #app-layout > main:not(:has(#test-chat)) {
+
+        padding: 2rem 20px;
+    }
+}
+
+main:has(#test-chat) {
 
     max-height: 100vh;
-    overflow: scroll;
 }
 
-/* Target all scrollbars */
+.sidebar-logo svg{
+
+    max-width: 70%;
+    margin-bottom: 1.5rem;
+}
+
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 2px;
-  height: 2px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-
-  background: transparent;
+  background: theme('colors.base-200');
 }
 ::-webkit-scrollbar-thumb {
-  background-color: #555555;
-  border-radius: 20px;
+  background-color: theme('colors.base-300');
+  border-radius: 10px;
+  border: 2px solid theme('colors.base-200');
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: theme('colors.neutral');
+}
+
+details[open] > summary .details-arrow {
+  transform: rotate(180deg);
 }

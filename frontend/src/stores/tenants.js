@@ -1,97 +1,153 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import axios from 'axios'
-import { useAuthStore } from './auth'
+import { defineStore } from "pinia";
+import { ref, watch } from "vue";
+import apiClient from "../utils/api";
+import { useAuthStore } from "./auth";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+export const useTenantsStore = defineStore("tenants", () => {
+  const tenants = ref([]);
+  const currentTenant = ref(null);
+  const loading = ref(false);
+  const error = ref(null);
 
-export const useTenantsStore = defineStore('tenants', () => {
-  const tenants = ref([])
-  const currentTenant = ref(null)
-  const loading = ref(false)
-  const error = ref(null)
-
-  const authStore = useAuthStore()
+  const authStore = useAuthStore();
 
   const getAuthHeaders = () => {
     if (!authStore.session?.access_token) {
-        throw new Error('User is not authenticated.')
+      throw new Error("User is not authenticated.");
     }
-    return { Authorization: `Bearer ${authStore.session.access_token}` }
+    return { Authorization: `Bearer ${authStore.session.access_token}` };
+  };
+
+  async function restoreTenant() {
+    const tenantId = localStorage.getItem("currentTenantId");
+    if (tenantId) {
+      await fetchTenant(tenantId);
+    }
   }
+  restoreTenant();
 
   async function fetchTenants() {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
     try {
-      const response = await axios.get(`${API_BASE_URL}/tenants`, { headers: getAuthHeaders() })
-      tenants.value = response.data
+      const response = await apiClient.get(`/tenants`, {
+        headers: getAuthHeaders(),
+      });
+      tenants.value = response.data;
     } catch (e) {
-      error.value = e.response?.data?.error || 'Failed to fetch tenants'
+      error.value = e.response?.data?.error || "Failed to fetch tenants";
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   async function fetchTenant(id) {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
     try {
-      const response = await axios.get(`${API_BASE_URL}/tenants/${id}`, { headers: getAuthHeaders() })
-      currentTenant.value = response.data
+      const response = await apiClient.get(`/tenants/${id}`, {
+        headers: getAuthHeaders(),
+      });
+      currentTenant.value = response.data;
     } catch (e) {
-      error.value = e.response?.data?.error || 'Failed to fetch tenant'
-      currentTenant.value = null
+      error.value = e.response?.data?.error || "Failed to fetch tenant";
+      currentTenant.value = null;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   async function createTenant(tenantData) {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
     try {
-      const response = await axios.post(`${API_BASE_URL}/tenants`, tenantData, { headers: getAuthHeaders() })
-      tenants.value.push(response.data)
+      const response = await apiClient.post(`/tenants`, tenantData, {
+        headers: getAuthHeaders(),
+      });
+      tenants.value.push(response.data);
     } catch (e) {
-      error.value = e.response?.data?.error || 'Failed to create tenant'
-      throw e
+      error.value = e.response?.data?.error || "Failed to create tenant";
+      throw e;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   async function updateTenant(id, tenantData) {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
     try {
-      const response = await axios.put(`${API_BASE_URL}/tenants/${id}`, tenantData, { headers: getAuthHeaders() })
-      const index = tenants.value.findIndex(t => t.id === id)
+      const response = await apiClient.put(
+        `/tenants/${id}`,
+        tenantData,
+        { headers: getAuthHeaders() }
+      );
+      const index = tenants.value.findIndex((t) => t.id === id);
       if (index !== -1) {
-        tenants.value[index] = response.data
+        tenants.value[index] = response.data;
       }
-      currentTenant.value = response.data
+      currentTenant.value = response.data;
     } catch (e) {
-      error.value = e.response?.data?.error || 'Failed to update tenant'
-      throw e
+      error.value = e.response?.data?.error || "Failed to update tenant";
+      throw e;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   async function deleteTenant(id) {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
     try {
-      await axios.delete(`${API_BASE_URL}/tenants/${id}`, { headers: getAuthHeaders() })
-      tenants.value = tenants.value.filter(t => t.id !== id)
+      await apiClient.delete(`/tenants/${id}`, {
+        headers: getAuthHeaders(),
+      });
+      tenants.value = tenants.value.filter((t) => t.id !== id);
     } catch (e) {
-      error.value = e.response?.data?.error || 'Failed to delete tenant'
-      throw e
+      error.value = e.response?.data?.error || "Failed to delete tenant";
+      throw e;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
-  return { tenants, currentTenant, loading, error, fetchTenants, fetchTenant, createTenant, updateTenant, deleteTenant }
-})
+  async function refetch(id) {
+    // This is a "silent" fetch that doesn't set the global loading state,
+    // useful for background updates.
+    try {
+      const response = await apiClient.get(`/tenants/${id}`, {
+        headers: getAuthHeaders(),
+      });
+      currentTenant.value = response.data;
+    } catch (e) {
+      // Don't set the global error state, but maybe log it
+      console.error("Failed to refetch tenant:", e);
+    }
+  }
+
+  function selectTenant(tenant) {
+    currentTenant.value = tenant;
+  }
+
+  watch(currentTenant, (newTenant) => {
+    if (newTenant) {
+      localStorage.setItem("currentTenantId", newTenant.id);
+    } else {
+      localStorage.removeItem("currentTenantId");
+    }
+  });
+
+  return {
+    tenants,
+    currentTenant,
+    loading,
+    error,
+    fetchTenants,
+    fetchTenant,
+    createTenant,
+    updateTenant,
+    deleteTenant,
+    selectTenant,
+    refetch,
+  };
+});

@@ -3,6 +3,9 @@ import re
 import chromadb
 from uuid import UUID
 from flask import current_app
+from supabase import Client
+from app.database.supabase_client import supabase
+
 
 # --- LangChain Core Imports ---
 from langchain_community.document_loaders import PyPDFLoader, Docx2txtLoader, TextLoader, CSVLoader
@@ -59,7 +62,7 @@ from langchain_core.embeddings import Embeddings
 def get_vectorstore(tenant_id: UUID, embeddings: Embeddings):
     """Initializes and returns a tenant-specific Chroma vector store instance."""
     tenant_id_str = str(tenant_id)
-    vector_store_path_base = current_app.config['VECTOR_STORE_PATH_BASE']
+    vector_store_path_base = current_app.config['CRAWL4_AI_BASE_DIRECTORY']
     tenant_db_path = os.path.join(vector_store_path_base, tenant_id_str)
 
     client_settings = chromadb.Settings(
@@ -76,35 +79,24 @@ def get_vectorstore(tenant_id: UUID, embeddings: Embeddings):
     print(f"✅ ChromaDB vector store initialized for tenant: {tenant_id_str}")
     return vectorstore
 
-def smart_chunk_markdown(markdown: str, max_len: int = 1000) -> list[str]:
-    def split_by_header(md, header_pattern):
-        indices = [m.start() for m in re.finditer(header_pattern, md, re.MULTILINE)]
-        indices.append(len(md))
-        return [md[indices[i]:indices[i+1]].strip() for i in range(len(indices)-1) if md[indices[i]:indices[i+1]].strip()]
-    chunks = []
-    h1_split = split_by_header(markdown, r'^# .+$')
-    if not h1_split: h1_split = [markdown]
-    for h1 in h1_split:
-        if len(h1) > max_len:
-            h2_split = split_by_header(h1, r'^## .+$')
-            if not h2_split: h2_split = [h1]
-            for h2 in h2_split:
-                if len(h2) > max_len:
-                    h3_split = split_by_header(h2, r'^### .+$')
-                    if not h3_split: h3_split = [h2]
-                    for h3 in h3_split:
-                        if len(h3) > max_len:
-                            for i in range(0, len(h3), max_len): chunks.append(h3[i:i+max_len].strip())
-                        else: chunks.append(h3)
-                else: chunks.append(h2)
-        else: chunks.append(h1)
-    final_chunks = [c for c in chunks if c and len(c) <= max_len]
-    return final_chunks
-
-def process_documents(docs: list[Document], tenant_id: UUID, embeddings: Embeddings):
+def process_documents(docs: list[Document], tenant_id: UUID, embeddings: Embeddings, supabase_client: Client = supabase):
     if not docs:
         print("No documents to process")
         return
-    db = get_vectorstore(tenant_id, embeddings)
-    db.add_documents(docs)
-    print(f"✅ Added {len(docs)} document chunks to ChromaDB for tenant: {tenant_id}.")
+
+    source_ids = list(set(doc.metadata['source_id'] for doc in docs if 'source_id' in doc.metadata))
+
+    try:
+        db = get_vectorstore(tenant_id, embeddings)
+        db.add_documents(docs)
+        print(f"✅ Added {len(docs)} document chunks to ChromaDB for tenant: {tenant_id}.")
+
+        if source_ids:
+            supabase_client.table('tenant_sources').update({"status": "COMPLETED"}).in_('id', source_ids).execute()
+            print(f"✅ Marked sources {source_ids} as COMPLETED.")
+
+    except Exception as e:
+        print(f"❌ Error processing documents for tenant {tenant_id}: {e}")
+        if source_ids:
+            supabase_client.table('tenant_sources').update({"status": "ERROR"}).in_('id', source_ids).execute()
+            print(f"🔥 Marked sources {source_ids} as ERROR.")

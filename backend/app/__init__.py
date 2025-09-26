@@ -23,10 +23,30 @@ def create_app():
     CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
     # --- Configuration ---
+    # --- Configuration and Directory Setup ---
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a_default_secret_key')
-    app.config['UPLOAD_FOLDER_BASE'] = os.getenv("UPLOADS_DIR", "uploads")
-    app.config['VECTOR_STORE_PATH_BASE'] = os.getenv("CHROMADB_PATH", "chromadb")
-    os.makedirs(app.config['UPLOAD_FOLDER_BASE'], exist_ok=True)
+    
+    # Define base paths for persistent data
+    upload_folder = os.getenv("UPLOAD_FOLDER_BASE", "/data/uploads")
+    vector_store_path = os.getenv("CRAWL4_AI_BASE_DIRECTORY", "/data/chromadb")
+    crawl_cache_path = os.getenv("CRAWL_CACHE_PATH", "/data/crawl4ai_cache")
+
+    app.config['UPLOAD_FOLDER_BASE'] = upload_folder
+    app.config['CRAWL4_AI_BASE_DIRECTORY'] = vector_store_path
+    app.config['CRAWL_CACHE_PATH'] = crawl_cache_path
+
+    # Attempt to create directories at startup, but don't crash if it fails
+    try:
+        os.makedirs(upload_folder, exist_ok=True)
+        os.makedirs(vector_store_path, exist_ok=True)
+        os.makedirs(crawl_cache_path, exist_ok=True)
+        error_logger.info("Successfully created/ensured data directories.")
+    except PermissionError:
+        error_logger.warning(
+            f"Could not create data directories ({upload_folder}, {vector_store_path}, {crawl_cache_path}). "
+            "This is expected if running without write permissions to the volume. "
+            "The application will attempt to create subdirectories as needed."
+        )
 
     # --- Celery Configuration ---
     broker_url = os.environ.get('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0')
@@ -41,13 +61,15 @@ def create_app():
     celery.conf.update(
         broker_url=broker_url,
         result_backend=result_backend,
-        broker_connection_retry_on_startup=True
+        broker_connection_retry_on_startup=True,
+        task_acks_late = True,
+        worker_prefetch_multiplier = 1
     )
 
     celery.conf.beat_schedule = {
-        'check-job-completion-every-minute': {
-            'task': 'app.data_processing.tasks.check_job_completion_task',
-            'schedule': 60.0,
+        'job-scheduler-every-30-seconds': {
+            'task': 'app.data_processing.tasks.job_scheduler_task',
+            'schedule': 30.0,
         },
     }
 

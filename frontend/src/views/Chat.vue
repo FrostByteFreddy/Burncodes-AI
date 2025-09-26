@@ -1,46 +1,7 @@
 <template>
-    <div class="min-h-screen bg-gray-900 text-white font-sans flex items-center justify-center p-4">
-        <div class="flex flex-col w-full max-w-4xl h-[90vh] bg-gray-800 rounded-2xl shadow-2xl">
-            <header class="bg-gray-700 p-4 shadow-md z-10 rounded-t-2xl flex justify-between items-center">
-                <div class="w-1/4"></div> <!-- Spacer -->
-                <h1 class="text-xl font-bold text-center w-1/2">Test Chat</h1>
-                <div class="w-1/4 flex justify-end">
-                    <button @click="resetChat" class="text-xs bg-gray-600 hover:bg-gray-500 text-white font-semibold py-1 px-3 rounded-lg transition-colors duration-200">
-                        Reset
-                    </button>
-                </div>
-            </header>
-
-            <main class="flex-grow p-4 overflow-y-auto" ref="chatContainer">
-                <div v-for="(message, index) in chatHistory" :key="index"
-                    :class="message.isUser ? 'flex justify-end' : 'flex justify-start'">
-                    <div class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 shadow-md"
-                        :class="message.isUser ? 'bg-gradient-to-br from-orange-600 to-red-700' : 'bg-gray-600'">
-                        <div v-if="message.isUser" class="whitespace-pre-wrap">{{ message.text }}</div>
-                        <div v-else class="prose prose-invert max-w-none" v-html="message.html"></div>
-                    </div>
-                </div>
-                <div v-if="isThinking" class="flex justify-start">
-                    <div class="max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl mb-3 bg-gray-600 flex items-center space-x-2">
-                        <span class="w-3 h-3 bg-gray-500 rounded-full animate-pulse"></span>
-                        <span class="w-3 h-3 bg-gray-500 rounded-full animate-pulse" style="animation-delay: 200ms;"></span>
-                        <span class="w-3 h-3 bg-gray-500 rounded-full animate-pulse" style="animation-delay: 400ms;"></span>
-                    </div>
-                </div>
-            </main>
-
-            <footer class="p-4 bg-gray-700 rounded-b-2xl">
-                <div class="flex">
-                    <input type="text" v-model="userMessage" @keyup.enter="sendMessage"
-                        placeholder="Ask a question..."
-                        class="flex-grow bg-gray-600 border border-gray-500 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    <button @click="sendMessage" :disabled="!userMessage.trim() || isThinking"
-                        class="bg-accent-gradient disabled:from-gray-600 text-white font-bold py-3 px-5 rounded-r-lg disabled:opacity-50">
-                        Send
-                    </button>
-                </div>
-            </footer>
-        </div>
+    <div id="test-chat" class="bg-base-200 text-base-content font-sans flex items-center justify-center sm:p-4 p-2">
+        <BaseChat v-if="tenant && tenant.widget_config" :config="tenant.widget_config" :chatHistory="chatHistory"
+            :isThinking="isThinking" v-model:userMessage="userMessage" @sendMessage="sendMessage" @reset="resetChat" />
     </div>
 </template>
 
@@ -48,49 +9,37 @@
 import { ref, onMounted, nextTick, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
-import { marked } from 'marked';
-
-const processBotMessage = (content) => {
-    try {
-        if (typeof content !== 'string') {
-            console.error("processBotMessage received non-string content:", content);
-            return { text: '', html: '' };
-        }
-        const cleanedText = content.replace(/{:target="_blank"}/g, '');
-        const html = marked(cleanedText);
-        return { text: cleanedText, html };
-    } catch (e) {
-        console.error("Error parsing content with marked.js:", e);
-        console.error("Original content:", content);
-        return { text: content, html: content };
-    }
-};
+import { processBotMessage } from '@/utils/chatProcessor.js';
+import { v4 as uuidv4 } from 'uuid';
+import BaseChat from '@/components/chat/BaseChat.vue';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 const route = useRoute();
 const tenantId = ref(route.params.tenantId);
+const tenant = ref(null);
 const chatHistory = ref([]);
 const userMessage = ref('');
 const isThinking = ref(false);
 const chatContainer = ref(null);
+const conversationId = ref(uuidv4());
 
 // --- Cookie Management for Chat History ---
-const CHAT_COOKIE_KEY = `chatHistory_${tenantId.value}`;
+const CHAT_COOKIE_KEY = `chatSession_${tenantId.value}`;
 
-const saveChatHistoryToCookie = (history) => {
+const saveChatToCookie = (history, convId) => {
     if (!history || history.length === 0) {
         document.cookie = `${CHAT_COOKIE_KEY}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
         return;
     }
-    const jsonHistory = JSON.stringify(history);
+    const sessionData = JSON.stringify({ history, conversationId: convId });
     const d = new Date();
     d.setTime(d.getTime() + (24 * 60 * 60 * 1000)); // Expires in 1 day
     let expires = "expires=" + d.toUTCString();
-    document.cookie = `${CHAT_COOKIE_KEY}=${encodeURIComponent(jsonHistory)};${expires};path=/`;
+    document.cookie = `${CHAT_COOKIE_KEY}=${encodeURIComponent(sessionData)};${expires};path=/;SameSite=Lax`;
 };
 
-const loadChatHistoryFromCookie = () => {
+const loadChatFromCookie = () => {
     const name = CHAT_COOKIE_KEY + "=";
     const ca = document.cookie.split(';');
     for (let i = 0; i < ca.length; i++) {
@@ -102,7 +51,7 @@ const loadChatHistoryFromCookie = () => {
             try {
                 return JSON.parse(decodeURIComponent(c.substring(name.length, c.length)));
             } catch (e) {
-                console.error("Error parsing chat history from cookie:", e);
+                console.error("Error parsing chat session from cookie:", e);
                 return null;
             }
         }
@@ -111,7 +60,7 @@ const loadChatHistoryFromCookie = () => {
 };
 
 watch(chatHistory, (newHistory) => {
-    saveChatHistoryToCookie(newHistory);
+    saveChatToCookie(newHistory, conversationId.value);
 }, { deep: true });
 
 
@@ -119,6 +68,16 @@ const scrollToBottom = async () => {
     await nextTick();
     if (chatContainer.value) {
         chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+    }
+};
+
+const fetchTenant = async () => {
+    if (!tenantId.value) return;
+    try {
+        const response = await axios.get(`${API_BASE_URL}/tenants/${tenantId.value}/public`);
+        tenant.value = response.data;
+    } catch (error) {
+        console.error('Failed to fetch tenant config', error);
     }
 };
 
@@ -144,20 +103,52 @@ const pollTaskStatus = (taskId) => {
     const interval = setInterval(async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/chat/task/${taskId}/status`);
-            const { task_status, task_result } = response.data;
+            const { state: task_status, result: task_result } = response.data;
 
             if (task_status === 'SUCCESS') {
                 clearInterval(interval);
-                const newHistory = task_result.chat_history;
-                chatHistory.value = newHistory.map(msg => {
-                    if (msg.type === 'ai') {
-                        const { text, html } = processBotMessage(msg.content);
-                        return { text, html, isUser: false };
-                    }
-                    return { text: msg.content, html: null, isUser: true };
-                });
                 isThinking.value = false;
-                await scrollToBottom();
+                await scrollToBottom(); // Scroll down after the "thinking" dots disappear
+
+                const fullHistory = task_result.chat_history;
+                const lastMessageFromServer = fullHistory[fullHistory.length - 1];
+
+                if (lastMessageFromServer && lastMessageFromServer.type === 'ai') {
+                    const previousHistory = fullHistory.slice(0, -1);
+                    chatHistory.value = previousHistory.map(msg => {
+                        if (msg.type === 'ai') {
+                            const { text, html } = processBotMessage(msg.content);
+                            return { text, html, isUser: false };
+                        }
+                        return { text: msg.content, html: null, isUser: true };
+                    });
+
+                    chatHistory.value.push({ text: '', html: '', isUser: false });
+                    await nextTick(); // Ensure the empty message div is in the DOM
+
+                    const fullBotResponseText = lastMessageFromServer.content;
+                    const wordsAndSpaces = fullBotResponseText.split(/(\s+)/);
+                    const currentBotMessage = chatHistory.value[chatHistory.value.length - 1];
+
+                    for (const part of wordsAndSpaces) {
+                        currentBotMessage.text += part;
+                        currentBotMessage.html = processBotMessage(currentBotMessage.text).html;
+
+                        await scrollToBottom();
+
+                        const delay = Math.random() * (10 - 5);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                } else {
+                    chatHistory.value = fullHistory.map(msg => {
+                        if (msg.type === 'ai') {
+                            const { text, html } = processBotMessage(msg.content);
+                            return { text, html, isUser: false };
+                        }
+                        return { text: msg.content, html: null, isUser: true };
+                    });
+                    await scrollToBottom();
+                }
             } else if (task_status === 'FAILURE') {
                 clearInterval(interval);
                 const errorMsg = `Error: Processing failed. ${task_result?.exc_message || ''}`;
@@ -166,7 +157,6 @@ const pollTaskStatus = (taskId) => {
                 isThinking.value = false;
                 await scrollToBottom();
             }
-            // If status is PENDING, do nothing and let the interval continue.
         } catch (error) {
             clearInterval(interval);
             const errorMsg = `Error: Could not get task status.`;
@@ -175,7 +165,7 @@ const pollTaskStatus = (taskId) => {
             isThinking.value = false;
             await scrollToBottom();
         }
-    }, 2000); // Poll every 2 seconds
+    }, 1000);
 };
 
 const sendMessage = async () => {
@@ -187,7 +177,7 @@ const sendMessage = async () => {
         content: msg.text
     }));
 
-    chatHistory.value.push({ text: currentMessage, html: currentMessage, isUser: true });
+    chatHistory.value.push({ text: currentMessage, html: null, isUser: true });
     userMessage.value = '';
     isThinking.value = true;
     await scrollToBottom();
@@ -195,7 +185,8 @@ const sendMessage = async () => {
     try {
         const payload = {
             query: currentMessage,
-            chat_history: historyForBackend
+            chat_history: historyForBackend,
+            conversation_id: conversationId.value
         };
         const response = await axios.post(`${API_BASE_URL}/chat/${tenantId.value}`, payload);
         const { task_id } = response.data;
@@ -213,43 +204,37 @@ const sendMessage = async () => {
     }
 };
 
-
 const resetChat = () => {
     chatHistory.value = [];
+    conversationId.value = uuidv4();
+    saveChatToCookie([], null);
     fetchIntroMessage();
 };
 
-onMounted(() => {
-    const savedHistory = loadChatHistoryFromCookie();
-    if (savedHistory && savedHistory.length > 0) {
-        chatHistory.value = savedHistory;
+onMounted(async () => {
+    await fetchTenant();
+    const sessionData = loadChatFromCookie();
+    if (sessionData && sessionData.history && sessionData.history.length > 0) {
+        chatHistory.value = sessionData.history;
+        conversationId.value = sessionData.conversationId || uuidv4();
         scrollToBottom();
     } else {
+        conversationId.value = uuidv4();
         fetchIntroMessage();
     }
 
-    // --- Handle Link Clicks ---
     if (chatContainer.value) {
         chatContainer.value.addEventListener('click', (e) => {
             const link = e.target.closest('a');
-            if (link && link.href) {
-                // Open external links in a new tab
-                if (link.hostname !== window.location.hostname) {
-                    e.preventDefault();
-                    window.open(link.href, '_blank', 'noopener,noreferrer');
-                }
+            if (link && link.href && link.hostname !== window.location.hostname) {
+                e.preventDefault();
+                window.open(link.href, '_blank', 'noopener,noreferrer');
             }
         });
     }
 });
 </script>
 
-<style>
-.prose-invert a {
-    color: #fb923c; /* orange-400 */
-    text-decoration: underline;
-}
-.prose-invert a:hover {
-    color: #fdba74; /* orange-300 */
-}
+<style scoped>
+/* All styles are now in BaseChat.vue */
 </style>

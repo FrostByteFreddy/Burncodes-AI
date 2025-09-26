@@ -37,6 +37,7 @@ class Tenant(BaseModel):
     source_description: Optional[str] = None
     last_updated_description: Optional[str] = None
     translation_target: Optional[str] = None
+    widget_config: Optional[dict] = None
     fine_tune_rules: List[TenantFineTune] = []
     sources: List[TenantSource] = []
 
