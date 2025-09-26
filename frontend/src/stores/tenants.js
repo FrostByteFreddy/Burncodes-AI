@@ -1,10 +1,7 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
-import axios from "axios";
+import { ref, watch } from "vue";
+import apiClient from "../utils/api";
 import { useAuthStore } from "./auth";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 export const useTenantsStore = defineStore("tenants", () => {
   const tenants = ref([]);
@@ -21,11 +18,19 @@ export const useTenantsStore = defineStore("tenants", () => {
     return { Authorization: `Bearer ${authStore.session.access_token}` };
   };
 
+  async function restoreTenant() {
+    const tenantId = localStorage.getItem("currentTenantId");
+    if (tenantId) {
+      await fetchTenant(tenantId);
+    }
+  }
+  restoreTenant();
+
   async function fetchTenants() {
     loading.value = true;
     error.value = null;
     try {
-      const response = await axios.get(`${API_BASE_URL}/tenants`, {
+      const response = await apiClient.get(`/tenants`, {
         headers: getAuthHeaders(),
       });
       tenants.value = response.data;
@@ -40,7 +45,7 @@ export const useTenantsStore = defineStore("tenants", () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await axios.get(`${API_BASE_URL}/tenants/${id}`, {
+      const response = await apiClient.get(`/tenants/${id}`, {
         headers: getAuthHeaders(),
       });
       currentTenant.value = response.data;
@@ -56,7 +61,7 @@ export const useTenantsStore = defineStore("tenants", () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await axios.post(`${API_BASE_URL}/tenants`, tenantData, {
+      const response = await apiClient.post(`/tenants`, tenantData, {
         headers: getAuthHeaders(),
       });
       tenants.value.push(response.data);
@@ -72,8 +77,8 @@ export const useTenantsStore = defineStore("tenants", () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await axios.put(
-        `${API_BASE_URL}/tenants/${id}`,
+      const response = await apiClient.put(
+        `/tenants/${id}`,
         tenantData,
         { headers: getAuthHeaders() }
       );
@@ -94,7 +99,7 @@ export const useTenantsStore = defineStore("tenants", () => {
     loading.value = true;
     error.value = null;
     try {
-      await axios.delete(`${API_BASE_URL}/tenants/${id}`, {
+      await apiClient.delete(`/tenants/${id}`, {
         headers: getAuthHeaders(),
       });
       tenants.value = tenants.value.filter((t) => t.id !== id);
@@ -106,6 +111,18 @@ export const useTenantsStore = defineStore("tenants", () => {
     }
   }
 
+  function selectTenant(tenant) {
+    currentTenant.value = tenant;
+  }
+
+  watch(currentTenant, (newTenant) => {
+    if (newTenant) {
+      localStorage.setItem("currentTenantId", newTenant.id);
+    } else {
+      localStorage.removeItem("currentTenantId");
+    }
+  });
+
   return {
     tenants,
     currentTenant,
@@ -116,5 +133,6 @@ export const useTenantsStore = defineStore("tenants", () => {
     createTenant,
     updateTenant,
     deleteTenant,
+    selectTenant,
   };
 });
