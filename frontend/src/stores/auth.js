@@ -2,11 +2,14 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { supabase } from "../supabase";
 import router from "../router";
+import { useToast } from "../composables/useToast";
 
 export const useAuthStore = defineStore("auth", () => {
   const user = ref(null);
   const session = ref(null);
   const sessionExpired = ref(false);
+
+  const { addToast } = useToast();
 
   async function fetchUser() {
     const { data, error } = await supabase.auth.getSession();
@@ -92,6 +95,11 @@ export const useAuthStore = defineStore("auth", () => {
     return data.user;
   }
 
+  async function handleSessionExpired() {
+    addToast("Your session has expired. Please log in again.", "error");
+    await logout();
+  }
+
   return {
     user,
     session,
@@ -101,5 +109,6 @@ export const useAuthStore = defineStore("auth", () => {
     login,
     logout,
     updateProfile,
+    handleSessionExpired,
   };
 });
