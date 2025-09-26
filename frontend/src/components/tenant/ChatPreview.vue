@@ -5,47 +5,48 @@
             style="background-color: var(--chat-header-background-color); color: var(--chat-header-text-color);">
             <div class="w-1/4"></div>
             <h1 class="text-md font-bold text-center w-1/2 flex items-center justify-center">
-                <img v-if="config.logo" :src="config.logo" class="h-6 mr-2" />
+                <img v-if="config.logo" :src="config.logo" class="h-6 mr-2 rounded-full" />
                 <span>{{ config.chatbot_title }}</span>
             </h1>
             <div class="w-1/4 flex justify-end">
-                <button v-if="config.show_reset_button" class="btn btn-secondary btn-xs btn-square rounded-full aspect-square">
-                    <font-awesome-icon :icon="['fas', 'arrows-rotate']" />
+                <button v-if="config.show_reset_button"
+                    class="btn btn-xs bg-black/10 border-none text-current hover:bg-black/20">
+                    Reset
                 </button>
             </div>
         </header>
 
         <main class="p-4 text-sm" style="background-color: var(--chat-background-color); height: 400px;">
             <div class="flex justify-start mb-3">
-                <div class="max-w-xl lg:max-w-2xl px-5 py-3 shadow-md" :style="botMessageStyle">
+                <div class="px-4 py-2 rounded-2xl"
+                    style="background-color: var(--chat-bot-message-background-color); color: var(--chat-bot-message-text-color);">
                     Welcome! How can I help you today?
                 </div>
             </div>
             <div class="flex justify-end mb-3">
-                <div class="max-w-xl lg:max-w-2xl px-5 py-3 shadow-md" :style="userMessageStyle">
+                <div class="px-4 py-2 rounded-2xl"
+                    style="background-color: var(--chat-user-message-background-color); color: var(--chat-user-message-text-color);">
                     Tell me about your services.
                 </div>
             </div>
             <div class="flex justify-start">
-                <div class="max-w-xl lg:max-w-2xl px-5 py-3 shadow-md flex items-center space-x-2"
-                    :style="botMessageStyle">
-                    <span class="w-3 h-3 bg-current/50 rounded-full animate-bounce"></span>
-                    <span class="w-3 h-3 bg-current/50 rounded-full animate-bounce"
-                        style="animation-delay: 150ms;"></span>
-                    <span class="w-3 h-3 bg-current/50 rounded-full animate-bounce"
-                        style="animation-delay: 300ms;"></span>
+                <div class="px-4 py-2 rounded-2xl flex items-center space-x-1.5"
+                    style="background-color: var(--chat-bot-message-background-color); color: var(--chat-bot-message-text-color);">
+                    <span class="w-2 h-2 bg-current/50 rounded-full animate-pulse"></span>
+                    <span class="w-2 h-2 bg-current/50 rounded-full animate-pulse"
+                        style="animation-delay: 200ms;"></span>
+                    <span class="w-2 h-2 bg-current/50 rounded-full animate-pulse"
+                        style="animation-delay: 400ms;"></span>
                 </div>
             </div>
         </main>
 
         <footer class="p-3" style="background-color: var(--chat-header-background-color);">
-            <div class="flex gap-1">
+            <div class="flex">
                 <input type="text" placeholder="Ask a question..."
-                    class="chat-input flex-grow border px-5 py-3 text-sm focus:outline-none focus:ring-2 rounded-full"
-                    :style="chatInputStyle">
-                <button class="send-button font-bold py-2 px-4 btn-secondary btn-square rounded-full aspect-square"
-                    :style="sendButtonStyle">
-                    <font-awesome-icon :icon="['fas', 'paper-plane']" />
+                    class="chat-input flex-grow border px-5 py-3 text-sm focus:outline-none focus:ring-2" :style="chatInputStyle">
+                <button class="send-button font-bold py-2 px-4" :style="sendButtonStyle">
+                    <font-awesome-icon :icon="['fas', 'paper-plane']"/>
                 </button>
             </div>
         </footer>
@@ -79,43 +80,36 @@ const widgetCssVariables = computed(() => {
         '--chat-bot-message-text-color': findColor(styles.bot_message_text_color, '#1F2937'),
         '--chat-send-button-background-color': findColor(styles.send_button_background_color, '#A855F7'),
         '--chat-send-button-text-color': findColor(styles.send_button_text_color, '#FFFFFF'),
-        '--chat-input-background-color': findColor(styles.input_background_color, '#F9FAFB'),
+        '--chat-input-background-color': findColor(styles.input_background_color, '#FFFFFF'),
         '--chat-input-text-color': findColor(styles.input_text_color, '#1F2937'),
         '--chat-input-focus-ring-color': findColor(styles.input_focus_ring_color, '#A855F7'),
         '--chat-background-color': findColor(styles.chat_background_color, '#FFFFFF'),
-        '--chat-border-radius': '24px', // Synced from main chat
+        '--chat-border-radius': '16px',
     };
 });
 
-const userMessageStyle = computed(() => ({
-    backgroundColor: 'var(--chat-user-message-background-color)',
-    color: 'var(--chat-user-message-text-color)',
-    borderRadius: 'var(--chat-border-radius)',
-}));
-
-const botMessageStyle = computed(() => ({
-    backgroundColor: 'var(--chat-bot-message-background-color)',
-    color: 'var(--chat-bot-message-text-color)',
-    borderRadius: 'var(--chat-border-radius)',
-}));
-
-
+// Simplified styles for the input and button elements
 const chatInputStyle = computed(() => ({
     backgroundColor: 'var(--chat-input-background-color)',
     color: 'var(--chat-input-text-color)',
     borderColor: 'var(--chat-header-background-color)',
+    borderTopLeftRadius: 'var(--chat-border-radius)',
+    borderBottomLeftRadius: 'var(--chat-border-radius)',
     '--tw-ring-color': 'var(--chat-input-focus-ring-color)'
 }));
 
 const sendButtonStyle = computed(() => ({
     backgroundColor: 'var(--chat-send-button-background-color)',
     color: 'var(--chat-send-button-text-color)',
+    borderTopRightRadius: 'var(--chat-border-radius)',
+    borderBottomRightRadius: 'var(--chat-border-radius)',
 }));
 </script>
 
+<!-- Placeholder style -->
 <style scoped>
 .chat-input::placeholder {
-    color: var(--chat-input-text-color);
-    opacity: 0.8;
+  color: var(--chat-input-text-color);
+  opacity: 0.8;
 }
 </style>

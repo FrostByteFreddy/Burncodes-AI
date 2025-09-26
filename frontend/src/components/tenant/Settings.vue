@@ -102,7 +102,7 @@
                                 <div v-for="(color, index) in formData.widget_config.color_palette" :key="color.id"
                                     class="flex items-center space-x-3">
                                     <input v-model="color.value" type="color"
-                                        class="w-12 h-10 p-1 bg-base-200 border-none rounded-lg cursor-pointer aspect-square" />
+                                        class="w-12 h-10 p-1 bg-base-200 border-none rounded-lg cursor-pointer" />
                                     <input v-model="color.name" type="text"
                                         placeholder="Color Name (e.g., Brand Purple)" :disabled="index < 2"
                                         class="flex-grow p-2 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-base-300/50" />

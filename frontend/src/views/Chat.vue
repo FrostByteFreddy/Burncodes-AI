@@ -1,18 +1,20 @@
 <template>
     <div id="test-chat"
-        class="bg-base-200 text-base-content font-sans flex items-center justify-center sm:p-4">
+        class="min-h-screen bg-base-200 text-base-content font-sans flex items-center justify-center p-4">
         <div class="flex flex-col w-full max-w-4xl h-[90vh] shadow-2xl" :style="widgetCssVariables">
-            <header class="p-4 shadow-sm z-10 flex justify-between items-center"
+            <header class="p-4 shadow-md z-10 flex justify-between items-center"
                 style="background-color: var(--chat-header-background-color); color: var(--chat-header-text-color); border-top-left-radius: var(--chat-border-radius); border-top-right-radius: var(--chat-border-radius);">
                 <div class="w-1/4"></div>
                 <h1 class="text-xl font-bold text-center w-1/2 flex items-center justify-center">
-                    <img v-if="tenant?.widget_config?.logo" :src="tenant.widget_config.logo" class="h-8 mr-3" />
+                    <img v-if="tenant?.widget_config?.logo" :src="tenant.widget_config.logo"
+                        class="h-8 mr-3 rounded-full" />
                     {{ tenant?.widget_config?.chatbot_title }}
                 </h1>
                 <div class="w-1/4 flex justify-end">
                     <button v-if="tenant?.widget_config?.show_reset_button" @click="resetChat"
-                        class="btn btn-secondary btn-sm rounded-full aspect-square">
-                        <font-awesome-icon :icon="['fas', 'arrows-rotate']" />
+                        class="btn btn-secondary btn-sm">
+                        <font-awesome-icon :icon="['fas', 'arrows-rotate']" class="mr-2" />
+                        Reset
                     </button>
                 </div>
             </header>
@@ -23,10 +25,9 @@
                     :class="message.isUser ? 'flex justify-end' : 'flex justify-start'">
                     <div class="max-w-xl lg:max-w-2xl px-5 py-3 mb-3 shadow-md"
                         :style="message.isUser ? userMessageStyle : botMessageStyle">
-                        <div v-if="message.isUser" class="whitespace-pre-wrap" :style="userMessageColor">{{ message.text
-                            }}</div>
+                        <div v-if="message.isUser" class="whitespace-pre-wrap">{{ message.text }}</div>
                         <div v-else class="prose prose-sm prose-neutral max-w-none bot-message-prose"
-                            :style="botMessageColor" v-html="message.html"></div>
+                            v-html="message.html"></div>
                     </div>
                 </div>
                 <div v-if="isThinking" class="flex justify-start">
@@ -44,14 +45,12 @@
 
             <footer class="p-4"
                 style="background-color: var(--chat-header-background-color); border-bottom-left-radius: var(--chat-border-radius); border-bottom-right-radius: var(--chat-border-radius);">
-                <div class="flex gap-1">
+                <div class="flex">
                     <input type="text" v-model="userMessage" @keyup.enter="sendMessage" placeholder="Ask a question..."
-                        class="chat-input flex-grow border px-5 py-3 focus:outline-none focus:ring-2 rounded-full"
+                        class="chat-input flex-grow border px-5 py-3 focus:outline-none focus:ring-2"
                         :style="chatInputStyle">
-
                     <button @click="sendMessage" :disabled="!userMessage.trim() || isThinking"
-                        class="send-button disabled:opacity-50 btn btn-secondary btn-square rounded-full aspect-square"
-                        :style="sendButtonStyle">
+                        class="send-button font-bold py-3 px-5 disabled:opacity-50" :style="sendButtonStyle">
                         <font-awesome-icon :icon="['fas', 'paper-plane']" />
                     </button>
                 </div>
@@ -100,7 +99,7 @@ const widgetCssVariables = computed(() => {
         '--chat-input-text-color': findColor(styles.input_text_color, '#1F2937'),
         '--chat-input-focus-ring-color': findColor(styles.input_focus_ring_color, '#A855F7'),
         '--chat-background-color': findColor(styles.chat_background_color, '#FFFFFF'),
-        '--chat-border-radius': '24px',
+        '--chat-border-radius': '16px',
     };
 });
 
@@ -111,20 +110,10 @@ const userMessageStyle = computed(() => ({
     borderRadius: 'var(--chat-border-radius)',
 }));
 
-// Prose override
-const userMessageColor = computed(() => ({
-    color: 'var(--chat-user-message-text-color) !important',
-}));
-
 const botMessageStyle = computed(() => ({
     backgroundColor: 'var(--chat-bot-message-background-color)',
     color: 'var(--chat-bot-message-text-color)',
     borderRadius: 'var(--chat-border-radius)',
-}));
-
-// Prose override
-const botMessageColor = computed(() => ({
-    color: 'var(--chat-bot-message-text-color) !important',
 }));
 
 const botThinkingDotsStyle = computed(() => ({
@@ -136,12 +125,16 @@ const chatInputStyle = computed(() => ({
     backgroundColor: 'var(--chat-input-background-color)',
     color: 'var(--chat-input-text-color)',
     borderColor: 'var(--chat-header-background-color)',
+    borderTopLeftRadius: 'var(--chat-border-radius)',
+    borderBottomLeftRadius: 'var(--chat-border-radius)',
     '--tw-ring-color': 'var(--chat-input-focus-ring-color)' // For Tailwind's focus ring
 }));
 
 const sendButtonStyle = computed(() => ({
     backgroundColor: 'var(--chat-send-button-background-color)',
     color: 'var(--chat-send-button-text-color)',
+    borderTopRightRadius: 'var(--chat-border-radius)',
+    borderBottomRightRadius: 'var(--chat-border-radius)',
 }));
 
 // --- Cookie Management for Chat History ---
