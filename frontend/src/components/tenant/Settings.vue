@@ -210,9 +210,6 @@ const formData = ref({
     system_persona: '',
     rag_prompt_template: '',
     doc_language: 'en',
-    doc_description: '',
-    source_description: '',
-    last_updated_description: '',
     translation_target: 'en',
     widget_config: defaultWidgetConfig()
 })
@@ -251,9 +248,6 @@ watch(() => tenantsStore.currentTenant, (newTenant) => {
             system_persona: newTenant.system_persona,
             rag_prompt_template: newTenant.rag_prompt_template,
             doc_language: newTenant.doc_language,
-            doc_description: newTenant.doc_description,
-            source_description: newTenant.source_description,
-            last_updated_description: newTenant.last_updated_description,
             translation_target: newTenant.translation_target,
             widget_config: newConfig
         }

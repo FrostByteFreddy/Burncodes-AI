@@ -20,11 +20,14 @@ def create_tenant(current_user):
 
         tenant_id = uuid4()
         tenant_data = {
-            "id": str(tenant_id), "user_id": str(current_user.id), "name": data['name'],
-            "intro_message": data['intro_message'], "system_persona": data['system_persona'],
-            "rag_prompt_template": data['rag_prompt_template'], "doc_language": data.get('doc_language'),
-            "doc_description": data.get('doc_description'), "source_description": data.get('source_description'),
-            "last_updated_description": data.get('last_updated_description'), "translation_target": data.get('translation_target'),
+            "id": str(tenant_id), 
+            "user_id": str(current_user.id), 
+            "name": data['name'],
+            "intro_message": data['intro_message'], 
+            "system_persona": data['system_persona'],
+            "rag_prompt_template": data['rag_prompt_template'], 
+            "doc_language": data.get('doc_language'),
+            "translation_target": data.get('translation_target'),
         }
         supabase.table('tenants').insert(tenant_data).execute()
 
@@ -84,7 +87,7 @@ def update_tenant(current_user, tenant_id):
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
-        allowed_fields = ['name', 'intro_message', 'system_persona', 'rag_prompt_template', 'doc_language', 'doc_description', 'source_description', 'last_updated_description', 'translation_target', 'widget_config']
+        allowed_fields = ['name', 'intro_message', 'system_persona', 'rag_prompt_template', 'doc_language', 'translation_target', 'widget_config']
         tenant_update_data = {k: v for k, v in data.items() if k in allowed_fields}
         if tenant_update_data:
             supabase.table('tenants').update(tenant_update_data).eq('id', tenant_id_str).execute()
