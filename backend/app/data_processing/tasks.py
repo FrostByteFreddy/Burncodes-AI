@@ -336,11 +336,15 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         depth = task_details['depth']
         max_depth = job['max_depth']
         excluded_urls = job.get('excluded_urls', [])
+        
+        # 1. Normalize the URL that is being crawled
+        normalized_url = url.strip().rstrip('/')
 
-        # Check if the current URL is in the exclusion list. This is important because
-        # the crawler's exclude_patterns only applies to discovered links, not the
-        # initial URL of the task.
-        if any(url.startswith(excluded_url) for excluded_url in excluded_urls):
+        # 2. Normalize the list of URLs to exclude
+        normalized_excluded_list = [str(ex_url).strip().rstrip('/') for ex_url in excluded_urls]
+
+        # 3. Perform the check with the normalized values
+        if any(normalized_url.startswith(excluded) for excluded in normalized_excluded_list):
             print(f"🚫 Skipping excluded URL: {url}")
             supabase.table('crawling_tasks').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', task_id).execute()
             return

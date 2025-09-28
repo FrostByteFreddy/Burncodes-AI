@@ -20,7 +20,8 @@
                 <div class="max-w-xl lg:max-w-2xl px-5 py-3 shadow-md"
                     :class="message.isUser ? 'user-message' : 'bot-message'">
                     <div v-if="message.isUser" class="whitespace-pre-wrap">{{ message.text }}</div>
-                    <div v-else class="prose prose-sm prose-neutral max-w-none bot-message-prose" v-html="message.html">
+                    <!-- Use a function to process the HTML and add target="_blank" to links -->
+                    <div v-else class="prose prose-sm prose-neutral max-w-none bot-message-prose" v-html="processBotMessage(message.html)">
                     </div>
                 </div>
             </div>
@@ -75,6 +76,31 @@ const props = defineProps({
 defineEmits(['update:userMessage', 'sendMessage', 'reset']);
 
 const chatContainer = ref(null);
+
+/**
+ * Processes the bot's HTML message to make all links open in a new tab.
+ * @param {string} html - The HTML content from the bot.
+ * @returns {string} The modified HTML string.
+ */
+const processBotMessage = (html) => {
+    if (!html) return '';
+    // Use the browser's DOM parser to safely manipulate the HTML
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    // Find all anchor tags
+    const links = doc.querySelectorAll('a');
+
+    // Add target="_blank" and rel="noopener noreferrer" for security and functionality
+    links.forEach(link => {
+        link.setAttribute('target', '_blank');
+        link.setAttribute('rel', 'noopener noreferrer');
+    });
+
+    // Return the modified HTML from the body of the parsed document
+    return doc.body.innerHTML;
+};
+
 
 const scrollToBottom = async () => {
     await nextTick();
