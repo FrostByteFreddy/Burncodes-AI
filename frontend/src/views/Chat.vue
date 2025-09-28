@@ -6,7 +6,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 import { processBotMessage } from '@/utils/chatProcessor.js';
@@ -21,7 +21,6 @@ const tenant = ref(null);
 const chatHistory = ref([]);
 const userMessage = ref('');
 const isThinking = ref(false);
-const isStreaming = ref(false);
 const chatContainer = ref(null);
 const conversationId = ref(uuidv4());
 
@@ -60,13 +59,6 @@ const loadChatFromCookie = () => {
     return null;
 };
 
-watch(chatHistory, (newHistory) => {
-    if (!isStreaming.value) {
-        saveChatToCookie(newHistory, conversationId.value);
-    }
-}, { deep: true });
-
-
 const scrollToBottom = async () => {
     await nextTick();
     if (chatContainer.value) {
@@ -92,10 +84,12 @@ const fetchIntroMessage = async () => {
         const response = await axios.get(`${API_BASE_URL}/chat/${tenantId.value}/intro`);
         const { text, html } = processBotMessage(response.data.intro_message);
         chatHistory.value.push({ text, html, isUser: false });
+        saveChatToCookie(chatHistory.value, conversationId.value);
     } catch (error) {
         const errorMsg = `Error: ${error.response?.data?.error || 'Could not get initial message.'}`;
         const { text, html } = processBotMessage(errorMsg);
         chatHistory.value.push({ text, html, isUser: false });
+        saveChatToCookie(chatHistory.value, conversationId.value);
     } finally {
         isThinking.value = false;
         await scrollToBottom();
@@ -133,7 +127,6 @@ const pollTaskStatus = (taskId) => {
                     const wordsAndSpaces = fullBotResponseText.split(/(\s+)/);
                     const currentBotMessage = chatHistory.value[chatHistory.value.length - 1];
 
-                    isStreaming.value = true;
                     for (const part of wordsAndSpaces) {
                         currentBotMessage.text += part;
                         currentBotMessage.html = processBotMessage(currentBotMessage.text).html;
@@ -143,7 +136,6 @@ const pollTaskStatus = (taskId) => {
                         const delay = Math.random() * (10 - 5);
                         await new Promise(resolve => setTimeout(resolve, delay));
                     }
-                    isStreaming.value = false;
                     saveChatToCookie(chatHistory.value, conversationId.value);
                 } else {
                     chatHistory.value = fullHistory.map(msg => {
@@ -153,6 +145,7 @@ const pollTaskStatus = (taskId) => {
                         }
                         return { text: msg.content, html: null, isUser: true };
                     });
+                    saveChatToCookie(chatHistory.value, conversationId.value);
                     await scrollToBottom();
                 }
             } else if (task_status === 'FAILURE') {
@@ -160,6 +153,7 @@ const pollTaskStatus = (taskId) => {
                 const errorMsg = `Error: Processing failed. ${task_result?.exc_message || ''}`;
                 const { text, html } = processBotMessage(errorMsg);
                 chatHistory.value.push({ text, html, isUser: false });
+                saveChatToCookie(chatHistory.value, conversationId.value);
                 isThinking.value = false;
                 await scrollToBottom();
             }
@@ -168,6 +162,7 @@ const pollTaskStatus = (taskId) => {
             const errorMsg = `Error: Could not get task status.`;
             const { text, html } = processBotMessage(errorMsg);
             chatHistory.value.push({ text, html, isUser: false });
+            saveChatToCookie(chatHistory.value, conversationId.value);
             isThinking.value = false;
             await scrollToBottom();
         }
@@ -184,6 +179,7 @@ const sendMessage = async () => {
     }));
 
     chatHistory.value.push({ text: currentMessage, html: null, isUser: true });
+    saveChatToCookie(chatHistory.value, conversationId.value);
     userMessage.value = '';
     isThinking.value = true;
     await scrollToBottom();
@@ -205,6 +201,7 @@ const sendMessage = async () => {
         const errorMsg = `Error: ${error.response?.data?.error || 'Could not send message.'}`;
         const { text, html } = processBotMessage(errorMsg);
         chatHistory.value.push({ text, html, isUser: false });
+        saveChatToCookie(chatHistory.value, conversationId.value);
         isThinking.value = false;
         await scrollToBottom();
     }
