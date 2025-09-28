@@ -2,7 +2,6 @@ import os
 import re
 import chromadb
 from uuid import UUID
-from flask import current_app
 from supabase import Client
 from app.database.supabase_client import supabase
 
@@ -62,19 +61,21 @@ from langchain_core.embeddings import Embeddings
 def get_vectorstore(tenant_id: UUID, embeddings: Embeddings):
     """Initializes and returns a tenant-specific Chroma vector store instance."""
     tenant_id_str = str(tenant_id)
-    vector_store_path_base = current_app.config['CRAWL4_AI_BASE_DIRECTORY']
+    vector_store_path_base = os.getenv('CRAWL4_AI_BASE_DIRECTORY')
+    if not vector_store_path_base:
+        raise ValueError("CRAWL4_AI_BASE_DIRECTORY environment variable not set.")
+
     tenant_db_path = os.path.join(vector_store_path_base, tenant_id_str)
 
-    client_settings = chromadb.Settings(
-        is_persistent=True,
-        persist_directory=tenant_db_path,
-        anonymized_telemetry=False
-    )
+    # Ensure the directory exists
+    os.makedirs(tenant_db_path, exist_ok=True)
+
+    client = chromadb.PersistentClient(path=tenant_db_path)
+
     vectorstore = Chroma(
+        client=client,
         collection_name=f"content_gemini_{tenant_id_str}",
         embedding_function=embeddings,
-        client_settings=client_settings,
-        persist_directory=tenant_db_path
     )
     print(f"✅ ChromaDB vector store initialized for tenant: {tenant_id_str}")
     return vectorstore
