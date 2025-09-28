@@ -21,6 +21,7 @@ const tenant = ref(null);
 const chatHistory = ref([]);
 const userMessage = ref('');
 const isThinking = ref(false);
+const isStreaming = ref(false);
 const chatContainer = ref(null);
 const conversationId = ref(uuidv4());
 
@@ -60,7 +61,9 @@ const loadChatFromCookie = () => {
 };
 
 watch(chatHistory, (newHistory) => {
-    saveChatToCookie(newHistory, conversationId.value);
+    if (!isStreaming.value) {
+        saveChatToCookie(newHistory, conversationId.value);
+    }
 }, { deep: true });
 
 
@@ -130,6 +133,7 @@ const pollTaskStatus = (taskId) => {
                     const wordsAndSpaces = fullBotResponseText.split(/(\s+)/);
                     const currentBotMessage = chatHistory.value[chatHistory.value.length - 1];
 
+                    isStreaming.value = true;
                     for (const part of wordsAndSpaces) {
                         currentBotMessage.text += part;
                         currentBotMessage.html = processBotMessage(currentBotMessage.text).html;
@@ -139,6 +143,8 @@ const pollTaskStatus = (taskId) => {
                         const delay = Math.random() * (10 - 5);
                         await new Promise(resolve => setTimeout(resolve, delay));
                     }
+                    isStreaming.value = false;
+                    saveChatToCookie(chatHistory.value, conversationId.value);
                 } else {
                     chatHistory.value = fullHistory.map(msg => {
                         if (msg.type === 'ai') {
