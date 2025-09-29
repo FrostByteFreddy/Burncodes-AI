@@ -53,7 +53,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
             ("human", "{input}"),
         ])
 
-        retriever = db.as_retriever(search_type="mmr", search_kwargs={'k': 7, 'fetch_k': 25})
+        retriever = db.as_retriever(search_type="mmr", search_kwargs={'k': 4, 'fetch_k': 20})
         history_aware_retriever_chain = create_history_aware_retriever(query_rewrite_llm, retriever, history_aware_prompt)
 
         fine_tune_rules = tenant_config.get('tenant_fine_tune', [])
