@@ -63,6 +63,12 @@ from langchain_core.embeddings import Embeddings
 
 def get_vectorstore(tenant_id: UUID, embeddings: Embeddings):
     """Initializes and returns a tenant-specific Chroma vector store instance."""
+    
+    # If Vectorstore is already in cache, return it
+    if tenant_id in vectorstore_cache:
+        print(f"✅ Returning cached ChromaDB instance for tenant: {tenant_id}")
+        return vectorstore_cache[tenant_id]
+    
     tenant_id_str = str(tenant_id)
     vector_store_path_base = os.getenv('CRAWL4_AI_BASE_DIRECTORY')
     if not vector_store_path_base:
