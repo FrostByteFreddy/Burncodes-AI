@@ -134,7 +134,7 @@ const widgetCssVariables = computed(() => {
         '--chat-input-text-color': findColor(styles.input_text_color, '#1F2937'),
         '--chat-input-focus-ring-color': findColor(styles.input_focus_ring_color, '#A855F7'),
         '--chat-background-color': findColor(styles.chat_background_color, '#FFFFFF'),
-        '--chat-border-radius': '24px',
+        '--chat-border-radius': '32px',
     };
 });
 </script>
