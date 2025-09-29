@@ -16,15 +16,17 @@ from app.prompts import REPHRASE_PROMPTS, FINE_TUNE_RULE_PROMPTS
 GEMINI_MODEL = os.getenv("GEMINI_MODEL")
 QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
 
+# --- Pre-initialized clients ---
+embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+answer_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.2)
+query_rewrite_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0)
+
 @shared_task(bind=True)
 def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
     """
     Celery task to handle the chat logic synchronously.
     """
     try:
-        # --- Create embeddings ---
-        embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
-
         # --- Get Tenant Info ---
         tenant_response = supabase.table('tenants').select("*, tenant_fine_tune(*)").eq('id', str(tenant_id)).single().execute()
         if not tenant_response.data:
@@ -42,9 +44,6 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
 
         # --- Build Chains ---
         chat_history = [HumanMessage(content=msg['content']) if msg['type'] == 'human' else AIMessage(content=msg['content']) for msg in chat_history_json]
-
-        answer_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.2)
-        query_rewrite_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0)
 
         # Select the rephrase prompt based on the translation target
         rephrase_prompt_tuple = REPHRASE_PROMPTS.get(translation_target, REPHRASE_PROMPTS['en'])
