@@ -104,13 +104,13 @@ CLEANUP_PROMPT_TEMPLATES = {
 }
 
 REPHRASE_PROMPTS = {
-    'en': ("system", "Given a chat history and a follow up question, rephrase the follow up question to be a standalone question."),
-    'de': ("system", "Formulieren Sie anhand eines Chat-Verlaufs und einer Folgefrage die Folgefrage so um, dass sie als eigenständige Frage stehen kann."),
-    'fr': ("system", "Étant donné un historique de discussion et une question de suivi, reformulez la question de suivi pour qu'elle soit une question autonome.")
+    'en': ("system", "Given a chat history and a follow up question, rephrase the follow up question to be a standalone question. Preserve important user information (e.g their Hometown, their Job-Title etc.)"),
+    'de': ("system", "Formulieren Sie anhand eines Chat-Verlaufs und einer Folgefrage die Folgefrage so um, dass sie als eigenständige Frage stehen kann. Bewahre wichtige Benutzerinformationen (z. B. Heimatort, Berufsbezeichnung usw.) auf."),
+    'fr': ("system", "Étant donné un historique de discussion et une question de suivi, reformulez la question de suivi pour qu'elle soit une question autonome. Conservez les informations importantes concernant les utilisateurs (par exemple, leur ville natale, leur fonction, etc.).")
 }
 
 FINE_TUNE_RULE_PROMPTS = {
-    'en': "ABSOLUTE RULE: If the user's question is about '{trigger}', IGNORE all other context and answer EXCLUSIVELY with: '{instruction}'",
-    'de': "ABSOLUTE ANWEISUNG: Wenn die Frage des Benutzers sich auf '{trigger}' bezieht, IGNORIERE allen anderen Kontext und antworte AUSSCHLIESSLICH mit: '{instruction}'",
-    'fr': "RÈGLE ABSOLUE : Si la question de l'utilisateur concerne '{trigger}', IGNOREZ tout autre contexte et répondez EXCLUSIVEMENT avec : '{instruction}'"
+    'en': "ABSOLUTE RULE: If the user's question is in some way related to '{trigger}', answer with: '{instruction}'",
+    'de': "ABSOLUTE ANWEISUNG: Wenn die Frage des Benutzers sich in irgend einer Weise auf '{trigger}' bezieht, antworte mit: '{instruction}'",
+    'fr': "RÈGLE ABSOLUE : Si la question de l'utilisateur se rapporte d'une manière ou d'une autre à '{trigger}', répondez avec : '{instruction}'"
 }
