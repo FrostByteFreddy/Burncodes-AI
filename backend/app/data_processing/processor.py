@@ -17,6 +17,9 @@ from icalendar import Calendar
 # --- CONFIGURATION ---
 SUPPORTED_FILE_EXTENSIONS = ['.pdf', '.docx', '.txt', '.csv', '.ics']
 
+# In-memory cache to store initialized vector stores (On god I hope this does not break my 4gb limit lol)
+vectorstore_cache = {}
+
 # --- DOCUMENT LOADERS ---
 class ICSExtensionLoader(BaseLoader):
     """A simple loader for .ics files."""
@@ -77,6 +80,10 @@ def get_vectorstore(tenant_id: UUID, embeddings: Embeddings):
         collection_name=f"content_gemini_{tenant_id_str}",
         embedding_function=embeddings,
     )
+    
+    # Cache the vectorstore for future use
+    vectorstore_cache[tenant_id] = vectorstore
+    
     print(f"✅ ChromaDB vector store initialized for tenant: {tenant_id_str}")
     return vectorstore
 
