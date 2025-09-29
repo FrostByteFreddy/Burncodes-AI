@@ -199,6 +199,8 @@ const widgetCssVariables = computed(() => {
 .thinking-dot {
     background-color: var(--chat-bot-message-text-color);
     opacity: .75;
+    position: relative;
+    top: 3px;
 }
 
 .chat-footer {
