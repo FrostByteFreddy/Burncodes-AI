@@ -13,6 +13,9 @@ from langchain_community.vectorstores import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_core.documents import Document
 from icalendar import Calendar
+from typing import List
+from app.models.database import TenantFineTune
+
 
 # --- CONFIGURATION ---
 SUPPORTED_FILE_EXTENSIONS = ['.pdf', '.docx', '.txt', '.csv', '.ics']
@@ -114,3 +117,47 @@ def process_documents(docs: list[Document], tenant_id: UUID, embeddings: Embeddi
         if source_ids:
             supabase_client.table('tenant_sources').update({"status": "ERROR"}).in_('id', source_ids).execute()
             print(f"🔥 Marked sources {source_ids} as ERROR.")
+
+def process_fine_tune_rules(rules: List[TenantFineTune], tenant_id: UUID, embeddings: Embeddings, supabase_client: Client = supabase):
+    """
+    Processes fine-tuning rules, creates documents, and adds them to the vector store.
+    Returns the vector IDs of the newly created documents.
+    """
+    if not rules:
+        print("No fine-tune rules to process.")
+        return []
+
+    docs = [
+        Document(
+            page_content=f"Trigger: {rule.trigger}\nInstruction: {rule.instruction}",
+            metadata={"rule_id": str(rule.id), "tenant_id": str(tenant_id)}
+        ) for rule in rules
+    ]
+
+    try:
+        db = get_vectorstore(tenant_id, embeddings)
+        # Assuming `add_documents` returns the IDs of the added documents.
+        # This might need to be adjusted based on the actual return value of `db.add_documents`.
+        # According to LangChain docs, the `add_documents` method in Chroma returns a list of IDs.
+        vector_ids = db.add_documents(docs)
+        print(f"✅ Added {len(docs)} fine-tune rule vectors to ChromaDB for tenant: {tenant_id}.")
+        return vector_ids
+    except Exception as e:
+        print(f"❌ Error processing fine-tune rules for tenant {tenant_id}: {e}")
+        # Optionally, handle the error more gracefully
+        return []
+
+def delete_fine_tune_vectors(vector_ids: List[str], tenant_id: UUID, embeddings: Embeddings):
+    """
+    Deletes fine-tuning rule vectors from the vector store based on their IDs.
+    """
+    if not vector_ids:
+        print("No vector IDs provided for deletion.")
+        return
+
+    try:
+        db = get_vectorstore(tenant_id, embeddings)
+        db.delete(ids=vector_ids)
+        print(f"✅ Deleted {len(vector_ids)} fine-tune rule vectors from ChromaDB for tenant: {tenant_id}.")
+    except Exception as e:
+        print(f"❌ Error deleting fine-tune vectors for tenant {tenant_id}: {e}")
