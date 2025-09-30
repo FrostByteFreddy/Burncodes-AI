@@ -63,6 +63,42 @@
     </div>
 
     <Transition name="fade">
+        <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
+            @click="closeModal">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 sm:p-8 m-4" @click.stop>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Add New Rule</h3>
+                    <button @click="closeModal"
+                        class="p-2 text-slate-500 rounded-full hover:bg-slate-200 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500">
+                        <font-awesome-icon :icon="['fas', 'xmark']" class="h-5 w-5" />
+                    </button>
+                </div>
+                <form @submit.prevent="addRule" class="space-y-4">
+                    <div>
+                        <label for="new-trigger" class="block text-sm font-medium text-gray-700 mb-1">Trigger</label>
+                        <input v-model="newRule.trigger" type="text" id="new-trigger" placeholder="e.g., 'summarize:'"
+                            class="w-full p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+                    </div>
+                    <div>
+                        <label for="new-instruction"
+                            class="block text-sm font-medium text-gray-700 mb-1">Instruction</label>
+                        <AutoGrowTextarea v-model="newRule.instruction" id="new-instruction" rows="3"
+                            placeholder="e.g., 'Summarize the following text concisely.'"
+                            class="w-full p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
+                    </div>
+                    <div class="flex justify-end pt-4 space-x-3">
+                        <button type="button" @click="closeModal"
+                            class="px-4 py-2 rounded-lg font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                            class="px-4 py-2 rounded-lg font-semibold text-white bg-purple-500 hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                            Add Rule
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </Transition>
 </template>
 
