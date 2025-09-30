@@ -18,7 +18,7 @@ from icalendar import Calendar
 SUPPORTED_FILE_EXTENSIONS = ['.pdf', '.docx', '.txt', '.csv', '.ics']
 
 # In-memory cache to store initialized vector stores (On god I hope this does not break my 4gb limit lol)
-vectorstore_cache = {}
+# vectorstore_cache = {}
 
 # --- DOCUMENT LOADERS ---
 class ICSExtensionLoader(BaseLoader):
@@ -65,9 +65,9 @@ def get_vectorstore(tenant_id: UUID, embeddings: Embeddings):
     """Initializes and returns a tenant-specific Chroma vector store instance."""
     
     # If Vectorstore is already in cache, return it
-    if tenant_id in vectorstore_cache:
-        print(f"✅ Returning cached ChromaDB instance for tenant: {tenant_id}")
-        return vectorstore_cache[tenant_id]
+    # if tenant_id in vectorstore_cache:
+    #     print(f"✅ Returning cached ChromaDB instance for tenant: {tenant_id}")
+    #     return vectorstore_cache[tenant_id]
     
     tenant_id_str = str(tenant_id)
     vector_store_path_base = os.getenv('CRAWL4_AI_BASE_DIRECTORY')
@@ -88,7 +88,7 @@ def get_vectorstore(tenant_id: UUID, embeddings: Embeddings):
     )
     
     # Cache the vectorstore for future use
-    vectorstore_cache[tenant_id] = vectorstore
+    # vectorstore_cache[tenant_id] = vectorstore
     
     print(f"✅ ChromaDB vector store initialized for tenant: {tenant_id_str}")
     return vectorstore
