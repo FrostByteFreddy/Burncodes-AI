@@ -172,6 +172,7 @@ const widgetCssVariables = computed(() => {
 .user-message {
     background-color: var(--chat-user-message-background-color);
     border-radius: var(--chat-border-radius);
+    font-size: .875rem; /* Same as .prose */
 }
 
 .bot-message {
