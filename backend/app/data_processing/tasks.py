@@ -26,7 +26,7 @@ from app.prompts import CLEANUP_PROMPT_TEMPLATES
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
 
-async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_language: str = 'en') -> str:
+async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_language: str = 'en', source_id: int = None) -> str:
     """Uses an LLM to clean, optimize, and chunk raw markdown asynchronously."""
     print(f"🤖 Calling LLM to clean and chunk markdown ({len(markdown_text)} chars) with language '{doc_language}'...")
 
@@ -39,6 +39,11 @@ async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_langua
     cleanup_chain = cleanup_prompt | cleanup_llm
     response = await cleanup_chain.ainvoke({"raw_markdown": markdown_text})
     print("✅ Markdown cleaned and chunked successfully.")
+    
+    # Write the processed markdown to the "readme" column in tenant_sources
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"readme": response.content}).eq('id', source_id).execute())
+
     return response.content
 
 async def async_create_document_chunks_with_metadata(content: str, source: str, source_id: int, tenant_id: UUID) -> list[Document]:
@@ -53,7 +58,7 @@ async def async_create_document_chunks_with_metadata(content: str, source: str, 
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "PROCESSING"}).eq('id', source_id).execute())
 
         # The LLM now returns a single string with chunks separated by a specific token.
-        cleaned_and_chunked_content = await async_clean_and_chunk_markdown_with_llm(content, doc_language)
+        cleaned_and_chunked_content = await async_clean_and_chunk_markdown_with_llm(content, doc_language, source_id)
         chunks = [chunk.strip() for chunk in cleaned_and_chunked_content.split("---CHUNK_SEPARATOR---") if chunk.strip()]
 
         if DEBUG:
