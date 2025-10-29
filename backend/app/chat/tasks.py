@@ -6,9 +6,8 @@ import os
 
 # --- LangChain Core Imports ---
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from langchain.chains import create_retrieval_chain
+from langchain.chains import create_retrieval_chain, create_stuff_documents_chain
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain.chains import create_history_aware_retriever
 from langchain.retrievers import EnsembleRetriever
@@ -88,7 +87,11 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
         conversational_rag_chain = create_retrieval_chain(history_aware_retriever_chain, document_chain)
 
         # --- Invoke Chain ---
-        response = conversational_rag_chain.invoke({"chat_history": chat_history, "input": query})
+        response = conversational_rag_chain.invoke({
+            "chat_history": chat_history,
+            "input": query,
+            "fine_tune_instructions": tenant_config.get('fine_tune_instructions', '')
+        })
         ai_message = response["answer"]
 
         # --- Log Chat to Database ---
