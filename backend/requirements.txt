@@ -1,7 +1,7 @@
 flask
 flask-cors
 langchain==0.1.0
-langchain-community==0.0.13
+langchain-community
 langchain-google-genai
 python-dotenv
 nest_asyncio
