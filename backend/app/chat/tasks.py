@@ -11,7 +11,7 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.history_aware_retriever import create_history_aware_retriever
 
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, PromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain.retrievers import EnsembleRetriever
 from app.prompts import REPHRASE_PROMPTS, FINE_TUNE_RULE_PROMPTS
@@ -52,7 +52,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
         rephrase_prompt_tuple = REPHRASE_PROMPTS.get(translation_target, REPHRASE_PROMPTS['en'])
         history_aware_prompt = ChatPromptTemplate.from_messages([
             rephrase_prompt_tuple,
-            ("placeholder", "{chat_history}"),
+            MessagesPlaceholder(variable_name="chat_history"),
             ("human", "{input}"),
         ])
 
