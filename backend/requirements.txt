@@ -1,7 +1,6 @@
 flask
 flask-cors
 langchain==0.1.0
-langchain-core==0.1.0
 langchain-community==0.0.13
 langchain-google-genai
 python-dotenv
