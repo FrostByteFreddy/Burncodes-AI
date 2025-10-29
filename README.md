@@ -68,9 +68,13 @@ This project is built with a Vue.js frontend and a Flask backend.
     ```
 3.  **Create a `.env` file** in the `frontend` directory and add the following environment variable:
     ```env
-    VITE_API_BASE_URL=[http://127.0.0.1:5000/api](http://127.0.0.1:5000/api)
+    VITE_API_BASE_URL=http://127.0.0.1:5000/api
+    VITE_SUPABASE_URL=https://{someId}.supabase.co
+    VITE_SUPABASE_ANON_KEY={someKey}
     ```
     * `VITE_API_BASE_URL`: The URL of the backend API.
+    * `VITE_SUPABASE_URL`: Supabase URL
+    * `VITE_API_BASE_URL`: Supabase anon key
 
 ---
 
