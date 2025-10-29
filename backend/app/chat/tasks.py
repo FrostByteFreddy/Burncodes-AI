@@ -8,14 +8,14 @@ import os
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from langchain.chains.retrieval import create_retrieval_chain
+from langchain.chains import create_retrieval_chain
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain.chains.history_aware_retriever import create_history_aware_retriever
+from langchain.chains import create_history_aware_retriever
 from langchain.retrievers import EnsembleRetriever
 from app.prompts import REPHRASE_PROMPTS, FINE_TUNE_RULE_PROMPTS
 
 GEMINI_MODEL = os.getenv("GEMINI_MODEL")
-QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-2.5-flash")
+QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
 
 # --- Pre-initialized clients ---
 embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
@@ -88,11 +88,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
         conversational_rag_chain = create_retrieval_chain(history_aware_retriever_chain, document_chain)
 
         # --- Invoke Chain ---
-        response = conversational_rag_chain.invoke({
-            "chat_history": chat_history,
-            "input": query,
-            "fine_tune_instructions": tenant_config.get('fine_tune_instructions', '')
-        })
+        response = conversational_rag_chain.invoke({"chat_history": chat_history, "input": query})
         ai_message = response["answer"]
 
         # --- Log Chat to Database ---
