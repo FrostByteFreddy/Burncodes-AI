@@ -6,7 +6,7 @@ import os
 
 # --- LangChain Core Imports ---
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain.chains import create_retrieval_chain
 from langchain_core.messages import HumanMessage, AIMessage
@@ -14,6 +14,7 @@ from langchain.chains import create_history_aware_retriever
 from langchain.retrievers import EnsembleRetriever
 from app.prompts import REPHRASE_PROMPTS, FINE_TUNE_RULE_PROMPTS
 from langchain_core.runnables import RunnablePassthrough
+
 
 GEMINI_MODEL = os.getenv("GEMINI_MODEL")
 QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
