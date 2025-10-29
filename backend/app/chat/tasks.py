@@ -13,6 +13,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langchain.chains import create_history_aware_retriever
 from langchain.retrievers import EnsembleRetriever
 from app.prompts import REPHRASE_PROMPTS, FINE_TUNE_RULE_PROMPTS
+from langchain_core.runnables import RunnablePassthrough
 
 GEMINI_MODEL = os.getenv("GEMINI_MODEL")
 QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
@@ -57,11 +58,11 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
         # Create two retrievers for the ensemble
         similarity_retriever = db.as_retriever(
             search_type="similarity",
-            search_kwargs={'k': 3} # Gets the 3 most similar results
+            search_kwargs={'k': 5} # Gets the 3 most similar results
         )
         mmr_retriever = db.as_retriever(
             search_type="mmr",
-            search_kwargs={'k': 3, 'fetch_k': 20} # Gets 3 diverse results
+            search_kwargs={'k': 5, 'fetch_k': 20} # Gets 3 diverse results
         )
 
         # Initialize the Ensemble Retriever
@@ -72,12 +73,14 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
             weights=[0.6, 0.4]
         )
         
-        # --- MODIFIED: Use the new ensemble_retriever in the chain ---
         history_aware_retriever_chain = create_history_aware_retriever(
             query_rewrite_llm, 
             ensemble_retriever, # Use the combined retriever
             history_aware_prompt
         )
+        
+        # Get the fine-tune rules string from the imported prompts
+        formatted_fine_tune_rules = FINE_TUNE_RULE_PROMPTS.get(translation_target, FINE_TUNE_RULE_PROMPTS.get('en', ''))
 
         rag_prompt_template = PromptTemplate.from_template(tenant_config['rag_prompt_template'])
         final_rag_prompt = rag_prompt_template.partial(
@@ -85,7 +88,15 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
         )
 
         document_chain = create_stuff_documents_chain(answer_llm, final_rag_prompt)
-        conversational_rag_chain = create_retrieval_chain(history_aware_retriever_chain, document_chain)
+        
+        # Manually construct the full chain to inject fine_tune_instructions
+        conversational_rag_chain = (
+            history_aware_retriever_chain
+            | RunnablePassthrough.assign(
+                fine_tune_instructions=lambda x: formatted_fine_tune_rules
+              )
+            | document_chain
+        )
 
         # --- Invoke Chain ---
         response = conversational_rag_chain.invoke({"chat_history": chat_history, "input": query})
