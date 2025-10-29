@@ -104,9 +104,9 @@ CLEANUP_PROMPT_TEMPLATES = {
 }
 
 REPHRASE_PROMPTS = {
-    'en': ("system", "Given a chat history and a follow up question, rephrase the follow up question to be a standalone question. Preserve important user information (e.g their Hometown, their Job-Title etc.)"),
-    'de': ("system", "Formulieren Sie anhand eines Chat-Verlaufs und einer Folgefrage die Folgefrage so um, dass sie als eigenständige Frage stehen kann. Bewahre wichtige Benutzerinformationen (z. B. Heimatort, Berufsbezeichnung usw.) auf."),
-    'fr': ("system", "Étant donné un historique de discussion et une question de suivi, reformulez la question de suivi pour qu'elle soit une question autonome. Conservez les informations importantes concernant les utilisateurs (par exemple, leur ville natale, leur fonction, etc.).")
+    'en': ("human", "Given a chat history and a follow up question, rephrase the follow up question to be a standalone question. Preserve important user information (e.g their Hometown, their Job-Title etc.)"),
+    'de': ("human", "Formulieren Sie anhand eines Chat-Verlaufs und einer Folgefrage die Folgefrage so um, dass sie als eigenständige Frage stehen kann. Bewahre wichtige Benutzerinformationen (z. B. Heimatort, Berufsbezeichnung usw.) auf."),
+    'fr': ("human", "Étant donné un historique de discussion et une question de suivi, reformulez la question de suivi pour qu'elle soit une question autonome. Conservez les informations importantes concernant les utilisateurs (par exemple, leur ville natale, leur fonction, etc.).")
 }
 
 FINE_TUNE_RULE_PROMPTS = {
