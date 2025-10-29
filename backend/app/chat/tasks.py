@@ -15,7 +15,7 @@ from langchain.retrievers import EnsembleRetriever
 from app.prompts import REPHRASE_PROMPTS, FINE_TUNE_RULE_PROMPTS
 
 GEMINI_MODEL = os.getenv("GEMINI_MODEL")
-QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
+QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-2.5-flash")
 
 # --- Pre-initialized clients ---
 embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
