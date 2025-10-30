@@ -13,7 +13,6 @@ from langchain.chains.history_aware_retriever import create_history_aware_retrie
 
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain.retrievers import EnsembleRetriever
 from app.prompts import REPHRASE_PROMPTS, FINE_TUNE_RULE_PROMPTS
 
 GEMINI_MODEL = os.getenv("GEMINI_MODEL")
@@ -67,28 +66,15 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
             ("human", "{input}"),
         ])
 
-        # Create two retrievers for the ensemble
-        similarity_retriever = db.as_retriever(
-            search_type="similarity",
-            search_kwargs={'k': 3} # Gets the 3 most similar results
-        )
-        mmr_retriever = db.as_retriever(
+        # --- Use a single, efficient MMR retriever ---
+        retriever = db.as_retriever(
             search_type="mmr",
-            search_kwargs={'k': 3, 'fetch_k': 20} # Gets 3 diverse results
-        )
-
-        # Initialize the Ensemble Retriever
-        # It runs both retrievers and combines the results.
-        # We give more weight to the similarity search for factual precision.
-        ensemble_retriever = EnsembleRetriever(
-            retrievers=[similarity_retriever, mmr_retriever],
-            weights=[0.6, 0.4]
+            search_kwargs={'k': 5, 'fetch_k': 15} 
         )
         
-        # --- MODIFIED: Use the new ensemble_retriever in the chain ---
         history_aware_retriever_chain = create_history_aware_retriever(
             query_rewrite_llm, 
-            ensemble_retriever, # Use the combined retriever
+            retriever, # Use the single MMR retriever
             history_aware_prompt
         )
 
