@@ -36,9 +36,20 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
             raise Exception(f"Tenant '{tenant_id}' not found")
         tenant_config = tenant_response.data
 
+        # --- Get Fine-Tuning Rules ---
+        fine_tune_response = supabase.table('tenant_fine_tune').select("*").eq('tenant_id', str(tenant_id)).execute()
+        fine_tune_rules = fine_tune_response.data or []
+
         # Determine the language for translation, defaulting to 'en'
         translation_target = tenant_config.get('translation_target', 'en')
         print(f"📄 Using translation_target: {translation_target}")
+
+        # --- Construct Fine-Tuning Instructions String ---
+        fine_tune_prompt_template = FINE_TUNE_RULE_PROMPTS.get(translation_target, FINE_TUNE_RULE_PROMPTS['en'])
+        fine_tune_instructions = "\n".join([
+            fine_tune_prompt_template.format(trigger=rule['trigger'], instruction=rule['instruction'])
+            for rule in fine_tune_rules
+        ])
 
         # --- Get Vector Store ---
         db = get_vectorstore(tenant_id, embeddings)
@@ -84,6 +95,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
         rag_prompt_template = PromptTemplate.from_template(tenant_config['rag_prompt_template'])
         final_rag_prompt = rag_prompt_template.partial(
             persona=tenant_config.get('system_persona', ''),
+            fine_tune_instructions=fine_tune_instructions,
         )
 
         document_chain = create_stuff_documents_chain(answer_llm, final_rag_prompt)
