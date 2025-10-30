@@ -90,6 +90,18 @@
                                     <label for="show_reset_button" class="ml-2 block text-sm">Show "Reset Chat"
                                         Button</label>
                                 </div>
+                                <div>
+                                    <label for="input_placeholder" class="block text-sm font-medium">Input Placeholder</label>
+                                    <input v-model="formData.widget_config.input_placeholder" type="text"
+                                        id="input_placeholder"
+                                        class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
+                                </div>
+                                <div>
+                                    <label for="thinking_messages" class="block text-sm font-medium">"Thinking" Messages</label>
+                                    <textarea v-model="thinkingMessages" id="thinking_messages"
+                                        class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                                        rows="3" placeholder="One message per line..."></textarea>
+                                </div>
                             </div>
                         </div>
 
@@ -161,7 +173,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useTenantsStore } from '../../stores/tenants'
 import { useToast } from '../../composables/useToast'
 import AutoGrowTextarea from '../AutoGrowTextarea.vue'
@@ -182,6 +194,8 @@ const defaultWidgetConfig = () => ({
     chatbot_title: '',
     logo: null,
     show_reset_button: true,
+    input_placeholder: 'Send a message...',
+    thinking_messages: ['Thinking...', 'Just a moment...', 'Let me check that for you...'],
     color_palette: [
         { id: 'c_white', name: 'White', value: '#FFFFFF' },
         { id: 'c_black', name: 'Black', value: '#1F2937' },
@@ -253,6 +267,13 @@ watch(() => tenantsStore.currentTenant, (newTenant) => {
         }
     }
 }, { immediate: true, deep: true })
+
+const thinkingMessages = computed({
+    get: () => formData.value.widget_config.thinking_messages.join('\n'),
+    set: (value) => {
+        formData.value.widget_config.thinking_messages = value.split('\n').map(s => s.trim()).filter(Boolean);
+    }
+});
 
 const addColor = () => {
     formData.value.widget_config.color_palette.push({

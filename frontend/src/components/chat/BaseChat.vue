@@ -28,20 +28,17 @@
 
             <div v-if="isThinking" class="flex justify-start">
                 <div class="max-w-xl lg:max-w-2xl px-5 py-3 shadow-md flex items-center space-x-2 bot-message">
-                    <span class="w-3 h-3 bg-current/50 rounded-full animate-bounce thinking-dot"></span>
-                    <span class="w-3 h-3 bg-current/50 rounded-full animate-bounce thinking-dot"
-                        style="animation-delay: 150ms;"></span>
-                    <span class="w-3 h-3 bg-current/50 rounded-full animate-bounce thinking-dot"
-                        style="animation-delay: 300ms;"></span>
+                    <font-awesome-icon :icon="['fas', 'spinner']" class="animate-spin mr-2" />
+                    <span>{{ currentThinkingMessage }}</span>
                 </div>
             </div>
         </main>
 
         <footer class="chat-footer">
-            <div class="flex gap-1">
-                <input type="text" :value="userMessage" @input="$emit('update:userMessage', $event.target.value)"
-                    @keyup.enter="$emit('sendMessage')" placeholder="Ask a question..."
-                    class="chat-input flex-grow border px-5 py-3 text-sm focus:outline-none focus:ring-2 rounded-full">
+            <div class="flex items-end gap-1">
+                <AutoGrowTextarea :value="userMessage" @input="$emit('update:userMessage', $event.target.value)"
+                    @keyup.enter.exact.prevent="$emit('sendMessage')" :placeholder="config.input_placeholder || 'Ask a question...'"
+                    class="chat-input flex-grow border px-5 py-3 text-sm focus:outline-none focus:ring-2 rounded-full" />
                 <button @click="$emit('sendMessage')" :disabled="!userMessage.trim() || isThinking"
                     class="send-button font-bold py-2 px-4 btn-secondary btn-square rounded-full aspect-square">
                     <font-awesome-icon :icon="['fas', 'paper-plane']" />
@@ -53,6 +50,7 @@
 
 <script setup>
 import { computed, ref, watch, nextTick } from 'vue';
+import AutoGrowTextarea from '../AutoGrowTextarea.vue';
 
 const props = defineProps({
     config: {
@@ -76,6 +74,31 @@ const props = defineProps({
 defineEmits(['update:userMessage', 'sendMessage', 'reset']);
 
 const chatContainer = ref(null);
+const currentThinkingMessage = ref('');
+let thinkingInterval = null;
+
+const startThinkingMessages = () => {
+    const messages = props.config.thinking_messages || ['Thinking...'];
+    if (messages.length === 0) {
+        currentThinkingMessage.value = 'Thinking...';
+        return;
+    }
+    let index = 0;
+    currentThinkingMessage.value = messages[index];
+    if (messages.length > 1) {
+        thinkingInterval = setInterval(() => {
+            index = (index + 1) % messages.length;
+            currentThinkingMessage.value = messages[index];
+        }, 2000);
+    }
+};
+
+const stopThinkingMessages = () => {
+    if (thinkingInterval) {
+        clearInterval(thinkingInterval);
+        thinkingInterval = null;
+    }
+};
 
 /**
  * Processes the bot's HTML message to make all links open in a new tab.
@@ -110,7 +133,14 @@ const scrollToBottom = async () => {
 };
 
 watch(() => props.chatHistory, scrollToBottom, { deep: true });
-watch(() => props.isThinking, scrollToBottom);
+watch(() => props.isThinking, (isThinking) => {
+    scrollToBottom();
+    if (isThinking) {
+        startThinkingMessages();
+    } else {
+        stopThinkingMessages();
+    }
+});
 
 
 const widgetCssVariables = computed(() => {
