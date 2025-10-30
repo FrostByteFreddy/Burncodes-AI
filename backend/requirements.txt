@@ -20,4 +20,4 @@ icalendar==6.3.1
 celery==5.5.3
 redis==7.0.1
 gunicorn==23.0.0
-simsimd==4.2.0
+simsimd
