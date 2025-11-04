@@ -63,7 +63,7 @@
                 </div>
             </div>
 
-            <div v-show="activeTab === 'appearance'" @focusout="handleUpdate">
+            <div v-show="activeTab === 'appearance'" @change="handleUpdate">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
                     <div class="space-y-8">
@@ -91,17 +91,18 @@
                                         Button</label>
                                 </div>
                                 <div>
-                                    <label for="input_placeholder" class="block text-sm font-medium">Input Placeholder</label>
+                                    <label for="input_placeholder" class="block text-sm font-medium">Input
+                                        Placeholder</label>
                                     <input v-model="formData.widget_config.input_placeholder" type="text"
                                         id="input_placeholder"
                                         class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
                                 </div>
                                 <div>
-                                    <label for="thinking_messages" class="block text-sm font-medium">"Thinking" Messages</label>
-                                    <textarea v-model="thinkingMessages" id="thinking_messages"
+                                    <label for="thinking_messages" class="block text-sm font-medium">"Thinking"
+                                        Messages</label>
+                                    <AutoGrowTextarea v-model="thinkingMessages" id="thinking_messages"
                                         class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                                        rows="3" placeholder="One message per line..."></textarea>
-                                </div>
+                                        rows="3" placeholder="One message per line..." /></div>
                             </div>
                         </div>
 
@@ -297,12 +298,12 @@ const removeColor = (idToRemove) => {
 
 // Encodes a file as a base64 string
 const encodeFileAsBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
-    reader.readAsDataURL(file);
-  });
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (error) => reject(error);
+        reader.readAsDataURL(file);
+    });
 };
 
 const handleFileUpload = async (event, field) => {

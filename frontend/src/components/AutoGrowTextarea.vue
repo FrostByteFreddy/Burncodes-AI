@@ -4,6 +4,8 @@
     :value="modelValue"
     @input="handleInput"
     class="resize-none overflow-hidden"
+    :rows="props.rows"
+    :placeholder="props.placeholder"
   ></textarea>
 </template>
 
@@ -12,6 +14,8 @@ import { ref, onMounted, watch, nextTick } from 'vue';
 
 const props = defineProps({
   modelValue: String,
+  rows: [String, Number],
+  placeholder: String,
 });
 
 const emit = defineEmits(['update:modelValue']);
