@@ -197,7 +197,7 @@ const widgetCssVariables = computed(() => {
         '--chat-input-text-color': findColor(styles.input_text_color, '#1F2937'),
         '--chat-input-focus-ring-color': findColor(styles.input_focus_ring_color, '#A855F7'),
         '--chat-background-color': findColor(styles.chat_background_color, '#FFFFFF'),
-        '--chat-reset-button-background-color': findColor(styles.reset_button_background_color, '#FFFFFF'),
+        '--chat-reset-button-background-color': findColor(styles.reset_button_color, '#FFFFFF'),
         '--chat-border-radius': '32px',
         '--chat-custom-radius': '22px',
     };
@@ -299,7 +299,7 @@ const widgetCssVariables = computed(() => {
 }
 
 .reset-button {
-    background-color: var(--chat-reset-button-background-color);
-    color: var(--chat-header-text-color);
+    background-color: var(--chat-reset-button-background-color) !important;
+    color: var(--chat-header-text-color) !important;
 }
 </style>
