@@ -8,7 +8,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 export default defineConfig({
   plugins: [
     vue(),
-    vueDevTools(),
+    isDevelopment && vueDevTools(), // Prevents build error on render (because no browser API exists)
   ],
   resolve: {
     alias: {
