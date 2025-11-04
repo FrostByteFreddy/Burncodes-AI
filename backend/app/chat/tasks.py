@@ -15,13 +15,12 @@ from langchain_core.prompts import ChatPromptTemplate, PromptTemplate, MessagesP
 from langchain_core.messages import HumanMessage, AIMessage
 from app.prompts import REPHRASE_PROMPTS, FINE_TUNE_RULE_PROMPTS
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL")
-QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
 
 # --- Pre-initialized clients ---
 embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
 answer_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.2, convert_system_message_to_human=True)
-query_rewrite_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0, convert_system_message_to_human=True)
+query_rewrite_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0, convert_system_message_to_human=True)
 
 @shared_task(bind=True)
 def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
