@@ -8,7 +8,7 @@
             </h1>
             <div class="w-1/4 flex justify-end">
                 <button v-if="config.show_reset_button" @click="$emit('reset')"
-                    class="btn btn-secondary btn-xs btn-square rounded-custom aspect-square">
+                    class="reset-button btn btn-secondary btn-xs btn-square rounded-custom aspect-square">
                     <font-awesome-icon :icon="['fas', 'arrows-rotate']" />
                 </button>
             </div>
@@ -83,11 +83,12 @@ const currentThinkingMessage = ref('');
 let thinkingInterval = null;
 
 const startThinkingMessages = () => {
-    const messages = props.config.thinking_messages || ['Thinking...'];
-    if (messages.length === 0) {
+    const messages = props.config.thinking_messages;
+    if (!messages || messages.length === 0) {
         currentThinkingMessage.value = 'Thinking...';
         return;
     }
+
     let index = 0;
     currentThinkingMessage.value = messages[index];
     if (messages.length > 1) {
@@ -196,6 +197,7 @@ const widgetCssVariables = computed(() => {
         '--chat-input-text-color': findColor(styles.input_text_color, '#1F2937'),
         '--chat-input-focus-ring-color': findColor(styles.input_focus_ring_color, '#A855F7'),
         '--chat-background-color': findColor(styles.chat_background_color, '#FFFFFF'),
+        '--chat-reset-button-background-color': findColor(styles.reset_button_background_color, '#FFFFFF'),
         '--chat-border-radius': '32px',
         '--chat-custom-radius': '22px',
     };
@@ -294,5 +296,10 @@ const widgetCssVariables = computed(() => {
 .send-button {
     background-color: var(--chat-send-button-background-color);
     color: var(--chat-send-button-text-color);
+}
+
+.reset-button {
+    background-color: var(--chat-reset-button-background-color);
+    color: var(--chat-header-text-color);
 }
 </style>
