@@ -1,5 +1,5 @@
 <template>
-    <iframe :src="`/chat/${tenantId}`" class="w-full h-[600px] py-5 bg-base-200"
+    <iframe :src="`/chat/${tenantId}`" class="w-full h-screen max-h-[80svh] py-5 bg-base-200"
         title="Chat Preview"></iframe>
 </template>
 
