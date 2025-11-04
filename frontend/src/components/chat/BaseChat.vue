@@ -27,8 +27,10 @@
 
             <div v-if="isThinking" class="flex justify-start">
                 <div class="max-w-xl lg:max-w-2xl px-5 py-3 shadow-md flex items-center space-x-2 bot-message">
-                    <font-awesome-icon :icon="['fas', 'spinner']" class="animate-spin mr-2" />
-                    <span>{{ currentThinkingMessage }}</span>
+                    <font-awesome-icon :icon="['fas', 'spinner']" class="animate-spin mr-1" />
+                    <Transition name="fade-text" mode="out-in">
+                        <span :key="currentThinkingMessage">{{ currentThinkingMessage }}</span>
+                    </Transition>
                 </div>
             </div>
         </main>
@@ -82,6 +84,7 @@ const textareaRef = ref(null); // Ref for the textarea
 const currentThinkingMessage = ref('');
 let thinkingInterval = null;
 
+// ADJUSTED: Randomized messages without extra fading logic
 const startThinkingMessages = () => {
     const messages = props.config.thinking_messages;
     if (!messages || messages.length === 0) {
@@ -89,16 +92,24 @@ const startThinkingMessages = () => {
         return;
     }
 
-    let index = 0;
-    currentThinkingMessage.value = messages[index];
+    // Pick a random starting message
+    let currentIndex = Math.floor(Math.random() * messages.length);
+    currentThinkingMessage.value = messages[currentIndex];
+
     if (messages.length > 1) {
         thinkingInterval = setInterval(() => {
-            index = (index + 1) % messages.length;
-            currentThinkingMessage.value = messages[index];
+            // Pick a new, different random index
+            let newIndex = currentIndex;
+            while (newIndex === currentIndex) {
+                newIndex = Math.floor(Math.random() * messages.length);
+            }
+            currentIndex = newIndex;
+            currentThinkingMessage.value = messages[currentIndex];
         }, 2000);
     }
 };
 
+// ADJUSTED: Simplified stop function
 const stopThinkingMessages = () => {
     if (thinkingInterval) {
         clearInterval(thinkingInterval);
