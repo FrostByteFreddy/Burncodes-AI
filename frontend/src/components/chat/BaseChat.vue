@@ -8,7 +8,7 @@
             </h1>
             <div class="w-1/4 flex justify-end">
                 <button v-if="config.show_reset_button" @click="$emit('reset')"
-                    class="btn btn-secondary btn-xs btn-square rounded-full aspect-square">
+                    class="btn btn-secondary btn-xs btn-square rounded-custom aspect-square">
                     <font-awesome-icon :icon="['fas', 'arrows-rotate']" />
                 </button>
             </div>
@@ -20,7 +20,6 @@
                 <div class="max-w-xl lg:max-w-2xl px-5 py-3 shadow-md"
                     :class="message.isUser ? 'user-message' : 'bot-message'">
                     <div v-if="message.isUser" class="whitespace-pre-wrap">{{ message.text }}</div>
-                    <!-- Use a function to process the HTML and add target="_blank" to links -->
                     <div v-else class="prose prose-sm prose-neutral max-w-none bot-message-prose" v-html="processBotMessage(message.html)">
                     </div>
                 </div>
@@ -35,12 +34,18 @@
         </main>
 
         <footer class="chat-footer">
-            <div class="flex items-end gap-1">
-                <AutoGrowTextarea :value="userMessage" @input="$emit('update:userMessage', $event.target.value)"
-                    @keyup.enter.exact.prevent="$emit('sendMessage')" :placeholder="config.input_placeholder || 'Ask a question...'"
-                    class="chat-input flex-grow border px-5 py-3 text-sm focus:outline-none focus:ring-2 rounded-full" />
+            <div class="flex items-end gap-3">
+                <textarea ref="textareaRef"
+                    :value="userMessage"
+                    @input="onInput"
+                    @keyup.enter.exact.prevent="$emit('sendMessage')"
+                    :placeholder="config.input_placeholder || 'Stell mir eine Frage...'"
+                    class="chat-input outline-none flex-grow border p-4 text-sm focus:outline-none focus:ring-1 rounded-custom transition-all"
+                    rows="1"
+                    style="resize: none; overflow-y: hidden;"
+                ></textarea>
                 <button @click="$emit('sendMessage')" :disabled="!userMessage.trim() || isThinking"
-                    class="send-button font-bold py-2 px-4 btn-secondary btn-square rounded-full aspect-square">
+                    class="send-button font-bold py-2 px-4 btn-secondary btn-square rounded-custom aspect-square transition-all">
                     <font-awesome-icon :icon="['fas', 'paper-plane']" />
                 </button>
             </div>
@@ -50,7 +55,6 @@
 
 <script setup>
 import { computed, ref, watch, nextTick } from 'vue';
-import AutoGrowTextarea from '../AutoGrowTextarea.vue';
 
 const props = defineProps({
     config: {
@@ -71,9 +75,10 @@ const props = defineProps({
     }
 });
 
-defineEmits(['update:userMessage', 'sendMessage', 'reset']);
+const emit = defineEmits(['update:userMessage', 'sendMessage', 'reset']);
 
 const chatContainer = ref(null);
+const textareaRef = ref(null); // Ref for the textarea
 const currentThinkingMessage = ref('');
 let thinkingInterval = null;
 
@@ -98,6 +103,26 @@ const stopThinkingMessages = () => {
         clearInterval(thinkingInterval);
         thinkingInterval = null;
     }
+};
+
+/**
+ * Resizes the textarea to fit its content.
+ */
+const resizeTextarea = () => {
+    const textarea = textareaRef.value;
+    if (textarea) {
+        textarea.style.height = 'auto'; // Reset height to calculate new scrollHeight
+        textarea.style.height = `${textarea.scrollHeight}px`; // Set to content height
+    }
+};
+
+/**
+ * Handles the input event, emits the value, and resizes the textarea.
+ */
+const onInput = (event) => {
+    emit('update:userMessage', event.target.value);
+    // Wait for the DOM to update with the new value before resizing
+    nextTick(resizeTextarea);
 };
 
 /**
@@ -142,6 +167,13 @@ watch(() => props.isThinking, (isThinking) => {
     }
 });
 
+watch(() => props.userMessage, (newValue) => {
+    // Reset textarea height when message is cleared
+    if (newValue === '' && textareaRef.value) {
+        textareaRef.value.style.height = 'auto';
+    }
+});
+
 
 const widgetCssVariables = computed(() => {
     const config = props.config;
@@ -165,6 +197,7 @@ const widgetCssVariables = computed(() => {
         '--chat-input-focus-ring-color': findColor(styles.input_focus_ring_color, '#A855F7'),
         '--chat-background-color': findColor(styles.chat_background_color, '#FFFFFF'),
         '--chat-border-radius': '32px',
+        '--chat-custom-radius': '22px',
     };
 });
 </script>
@@ -253,6 +286,11 @@ const widgetCssVariables = computed(() => {
     opacity: 0.8;
 }
 
+
+.rounded-custom {
+
+    border-radius: var(--chat-custom-radius);
+}
 .send-button {
     background-color: var(--chat-send-button-background-color);
     color: var(--chat-send-button-text-color);
