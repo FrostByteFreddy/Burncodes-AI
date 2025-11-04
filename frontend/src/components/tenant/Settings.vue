@@ -63,7 +63,7 @@
                 </div>
             </div>
 
-            <div v-show="activeTab === 'appearance'">
+            <div v-show="activeTab === 'appearance'" @focusout="handleUpdate">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
                     <div class="space-y-8">
@@ -150,7 +150,7 @@
                     <div>
                         <div class="lg:sticky top-8">
                             <h3 class="text-lg font-bold mb-4">Live Preview</h3>
-                            <ChatPreview :config="formData.widget_config" />
+                            <ChatPreview :tenantId="tenantsStore.currentTenant.id" :key="previewKey" />
                         </div>
                     </div>
                 </div>
@@ -183,6 +183,7 @@ import ChatPreview from './ChatPreview.vue'
 const tenantsStore = useTenantsStore()
 const { addToast } = useToast()
 const activeTab = ref('behavior')
+const previewKey = ref(0)
 
 const languageOptions = ref([
     { value: 'de', text: 'German' },
@@ -215,6 +216,7 @@ const defaultWidgetConfig = () => ({
         input_text_color: 'c_black',
         input_focus_ring_color: 'c_primary',
         chat_background_color: 'c_white',
+        reset_button_color: 'c_primary',
     }
 });
 
@@ -241,6 +243,7 @@ const componentStyleLabels = {
     input_text_color: 'Input Field Text',
     input_focus_ring_color: 'Input Field Focus Ring',
     chat_background_color: 'Chat Area Background',
+    reset_button_color: 'Reset Button',
 };
 
 watch(() => tenantsStore.currentTenant, (newTenant) => {
@@ -317,10 +320,11 @@ const handleFileUpload = async (event, field) => {
 };
 
 const handleUpdate = async () => {
-    if (tenantsStore.currentTenant) {
+    if (tenantsStore.currentTenant && !tenantsStore.loading) {
         try {
             await tenantsStore.updateTenant(tenantsStore.currentTenant.id, formData.value)
             addToast('Settings saved successfully!', 'success')
+            previewKey.value++
         } catch (error) {
             addToast('Failed to save settings.', 'error')
         }
