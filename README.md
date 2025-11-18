@@ -24,6 +24,11 @@
 
 *   **Chat functionality:** The frontend provides a clean, real-time chat interface for end-users. It maintains a history of the conversation, allowing the AI to understand context and follow-up questions.
 
+*   **UI Customization:** The appearance of the chat widget is highly customizable to match a company's branding. Through a tenant-specific configuration, you can control:
+    *   **Colors:** Customize the colors of the header, user and bot messages, buttons, and input fields.
+    *   **Logo:** Display a custom logo in the chat header.
+    *   **Text:** Change the chatbot's title and the input placeholder text.
+
 ## How it Works
 
 ### Data Indexing Pipeline
@@ -63,21 +68,3 @@
 *   **Framework:** Vue.js
 *   **UI components:** Tailwind CSS
 *   **State management:** Pinia
-
-## Getting Started
-
-### Prerequisites
-
-*   **Software:** Docker, Node.js, Python 3.10+
-*   **Environment variables:** You will need to create `.env` files for both the `frontend` and `backend` directories. The required variables are listed in the respective `README.md` files in those directories.
-
-### Installation
-
-1.  **Clone the repository:** `git clone <repository-url>`
-2.  **Backend setup:** `pip install -r backend/requirements.txt`
-3.  **Frontend setup:** `npm install --prefix frontend`
-
-### Running the Application
-
-1.  **Start backend services:** The backend requires several services to be running concurrently: Redis, a Celery worker, and the Flask application. Refer to the `backend/README.md` for detailed instructions.
-2.  **Start frontend services:** `npm run dev --prefix frontend`
