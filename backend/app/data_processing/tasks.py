@@ -34,7 +34,7 @@ async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_langua
     template = CLEANUP_PROMPT_TEMPLATES.get(doc_language, CLEANUP_PROMPT_TEMPLATES['en'])
     print(f"📄 Using doc_language: {doc_language}")
 
-    cleanup_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0.0)
+    cleanup_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0.0, timeout=600)
     cleanup_prompt = PromptTemplate.from_template(template)
     cleanup_chain = cleanup_prompt | cleanup_llm
     response = await cleanup_chain.ainvoke({"raw_markdown": markdown_text})
@@ -324,7 +324,7 @@ def crawl_links_task(self, tenant_id: UUID, start_url: str, single_page_only: bo
         self.update_state(state='FAILURE', meta={'status': error_message})
         raise e
 
-@shared_task(bind=True, time_limit=300) # 5-minute hard time limit
+@shared_task(bind=True, time_limit=600) # 5-minute hard time limit
 def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str = None):
     """
     Worker Celery task to crawl a single URL, process its content, and discover new links.

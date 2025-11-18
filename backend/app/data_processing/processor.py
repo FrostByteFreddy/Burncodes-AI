@@ -1,5 +1,7 @@
 import os
 import re
+import time
+import random
 import chromadb
 from uuid import UUID
 from supabase import Client
@@ -105,7 +107,18 @@ def process_documents(docs: list[Document], tenant_id: UUID, embeddings: Embeddi
 
     try:
         db = get_vectorstore(tenant_id, embeddings)
-        db.add_documents(docs)
+        
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                db.add_documents(docs)
+                break  # Success, exit loop
+            except Exception as e:
+                if "readonly database" in str(e) and attempt < max_retries - 1:
+                    time.sleep(random.uniform(0.5, 2.0))  # Wait before retrying
+                    continue
+                raise e
+            
         print(f"✅ Added {len(docs)} document chunks to ChromaDB for tenant: {tenant_id}.")
 
         if source_ids:
