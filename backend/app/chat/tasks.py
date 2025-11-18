@@ -17,17 +17,18 @@ from app.prompts import REPHRASE_PROMPTS, FINE_TUNE_RULE_PROMPTS
 
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
 
-# --- Pre-initialized clients ---
-embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
-answer_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.2, convert_system_message_to_human=True)
-query_rewrite_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0, convert_system_message_to_human=True)
-
 @shared_task(bind=True)
 def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
     """
     Celery task to handle the chat logic synchronously.
     """
     try:
+        
+        # --- Init client ---
+        embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+        answer_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.2, convert_system_message_to_human=True)
+        query_rewrite_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0, convert_system_message_to_human=True)
+
         # --- Get Tenant Info ---
         tenant_response = supabase.table('tenants').select("*").eq('id', str(tenant_id)).single().execute()
         if not tenant_response.data:
