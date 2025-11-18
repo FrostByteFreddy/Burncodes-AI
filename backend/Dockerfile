@@ -17,6 +17,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 2. Install Playwright browsers and dependencies (as root)
+ENV GRPC_ENABLE_FORK_SUPPORT=False
 ENV PLAYWRIGHT_BROWSERS_PATH=0
 RUN playwright install-deps
 RUN playwright install
