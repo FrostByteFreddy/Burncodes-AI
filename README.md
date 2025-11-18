@@ -1,136 +1,83 @@
-# BurnCodes AI
+# Custom-Branded RAG Chatbot Platform
 
-BurnCodes AI is a Retrieval-Augmented Generation (RAG) application that allows you to create a personalized question-answering system based on your own documents and websites. You can upload files (PDFs, DOCX, TXT, CSV) or provide a URL, and BurnCodes AI will process and index the content. Once your sources are added, you can ask questions in a chat interface and get answers based on the information in your documents.
+## Project Overview
 
-This project is built with a Vue.js frontend and a Flask backend.
+*   **High-level description:** This project is a multi-tenant, Retrieval-Augmented Generation (RAG) application that allows businesses to create and deploy custom-branded chatbots. These chatbots are trained on a company's specific knowledge base, such as websites, documentation, and internal files.
 
----
+*   **Problem it solves:** Many businesses struggle to provide immediate, accurate, and scalable customer support. This platform addresses that by enabling companies to build their own AI-powered chatbots that can answer user questions based on their own data, reducing the load on human support agents and improving customer satisfaction.
 
-## What it Does
+*   **Key features:**
+    *   **Multi-Tenant Architecture:** Securely manage multiple client accounts, each with its own isolated data, configuration, and branding.
+    *   **Flexible Data Ingestion:** Index data from public websites via a powerful web crawler or by uploading local files (PDF, TXT, CSV, etc.).
+    *   **Customizable AI Persona:** Tailor the chatbot's personality and response style to match a company's brand voice.
+    *   **History-Aware Conversations:** The chatbot remembers previous turns in the conversation to provide more contextually relevant answers.
 
--   **File Upload:** Upload your documents to be included in the knowledge base.
--   **Web Crawling:** Provide a URL, and the application will crawl the website, find all internal links, and add the content of all pages to the knowledge base.
--   **Chat Interface:** Ask questions in a natural language chat interface and get answers based on the indexed documents.
--   **Tenant System:** The application supports a multi-tenant system, where each tenant has their own isolated knowledge base. The tenant is specified via a URL parameter (`?tenant=your_tenant_id`).
+## Features
 
----
+*   **Multi-tenancy:** Each tenant operates in a logically isolated environment. Data sources, chat history, fine-tuning rules, and UI configurations are unique to each tenant, ensuring data privacy and security.
 
-## Setup and Installation
+*   **Data ingestion:**
+    *   **Web Crawler:** A sophisticated, distributed web crawler can index an entire website or a specific section. It handles dynamic content, respects `robots.txt`, and can be configured to exclude specific paths.
+    *   **File Upload:** Supports a wide range of file formats, including PDF, TXT, CSV, and more. Uploaded files are processed, chunked, and added to the tenant's knowledge base.
+
+*   **RAG pipeline:** The core of the application is a state-of-the-art RAG pipeline built with LangChain. It uses a vector store for efficient similarity searches and leverages powerful language models to generate human-like responses.
+
+*   **Chat functionality:** The frontend provides a clean, real-time chat interface for end-users. It maintains a history of the conversation, allowing the AI to understand context and follow-up questions.
+
+## How it Works
+
+### Data Indexing Pipeline
+
+1.  **Crawling:** When a new website is submitted, a Celery task is initiated to crawl the site. The crawler fetches the content of the pages and extracts the raw text. For file uploads, the content is extracted directly from the file.
+
+2.  **Processing:** The raw text is then processed to remove any unnecessary HTML tags, navigation menus, and other boilerplate content. This ensures that only the most relevant information is indexed.
+
+3.  **Chunking:** The cleaned text is divided into smaller, semantically meaningful chunks. This is a crucial step for the RAG pipeline, as it allows the retriever to find the most relevant pieces of information to answer a user's query.
+
+4.  **Embedding and Storage:** Each chunk of text is then passed through an embedding model (Google's `gemini-embedding-001`) to create a vector representation. These vectors, along with the original text, are stored in a ChromaDB vector store, which is specific to each tenant.
+
+### Chat Pipeline (RAG)
+
+1.  **Query:** A user enters a query into the chat interface.
+
+2.  **History-aware query rewriting:** The user's query and the chat history are passed to a language model to generate a new, standalone query. This is important for follow-up questions, as it provides the necessary context for the retrieval step.
+
+3.  **Retrieval:** The rewritten query is used to search the tenant's vector store. The retriever finds the most relevant chunks of text (documents) from the knowledge base using a Maximal Marginal Relevance (MMR) search.
+
+4.  **Generation:** The retrieved documents, the original query, and the chat history are passed to the final language model (Gemini). The model uses this information to generate a comprehensive and contextually accurate answer.
+
+5.  **Response:** The generated answer is streamed back to the user in the chat interface. The conversation history is updated, and the chat log is stored in the database for future reference.
+
+## Technical Stack
 
 ### Backend
 
-1.  **Navigate to the backend directory:**
-    ```sh
-    cd backend
-    ```
-2.  **Create a virtual environment:**
-    ```sh
-    python -m venv venv
-    ```
-3.  **Activate the virtual environment:**
-    -   **Windows:**
-        ```sh
-        .\venv\Scripts\activate
-        ```
-    -   **macOS/Linux:**
-        ```sh
-        source venv/bin/activate
-        ```
-4.  **Install the required Python packages:**
-    ```sh
-    pip install -r requirements.txt
-    ```
-5.  **Create a `.env` file** in the `backend` directory and add the following environment variables:
-    ```env
-    GOOGLE_API_KEY="YOUR_GOOGLE_API_KEY"
-    GEMINI_MODEL="gemini-pro"
-    QUERY_GEMINI_MODEL="gemini-1.5-flash"
-    FLASK_DEBUG=True
-    CELERY_BROKER_URL="redis://127.0.0.1:6379/0"
-    CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"
-    ```
-    * `GOOGLE_API_KEY`: Your API key for Google Generative AI.
-    * `GEMINI_MODEL`: The Gemini model to use for generating answers.
-    * `QUERY_GEMINI_MODEL`: The Gemini model to use for query rewriting and other internal tasks.
-    * `FLASK_DEBUG`: Set to `True` for development mode.
-    * `CELERY_BROKER_URL`: The connection URL for the Redis message broker.
-    * `CELERY_RESULT_BACKEND`: The connection URL for the Redis result backend.
+*   **Framework:** Flask
+*   **Asynchronous tasks:** Celery and Redis
+*   **Database:** Supabase (PostgreSQL)
+*   **Vector store:** ChromaDB
+*   **LLM and embeddings:** Google Gemini and LangChain
 
 ### Frontend
 
-1.  **Navigate to the frontend directory:**
-    ```sh
-    cd frontend
-    ```
-2.  **Install the required npm packages:**
-    ```sh
-    npm install
-    ```
-3.  **Create a `.env` file** in the `frontend` directory and add the following environment variable:
-    ```env
-    VITE_API_BASE_URL=http://127.0.0.1:5000/api
-    VITE_SUPABASE_URL=https://{someId}.supabase.co
-    VITE_SUPABASE_ANON_KEY={someKey}
-    ```
-    * `VITE_API_BASE_URL`: The URL of the backend API.
-    * `VITE_SUPABASE_URL`: Supabase URL
-    * `VITE_API_BASE_URL`: Supabase anon key
+*   **Framework:** Vue.js
+*   **UI components:** Tailwind CSS
+*   **State management:** Pinia
 
----
+## Getting Started
 
-## How to Run the Application
+### Prerequisites
 
-The backend relies on Redis for message broking and Celery for background task processing. These services must be running before you start the Flask application.
+*   **Software:** Docker, Node.js, Python 3.10+
+*   **Environment variables:** You will need to create `.env` files for both the `frontend` and `backend` directories. The required variables are listed in the respective `README.md` files in those directories.
 
-### 1. Start Redis
+### Installation
 
-First, you need to have Redis installed and running.
+1.  **Clone the repository:** `git clone <repository-url>`
+2.  **Backend setup:** `pip install -r backend/requirements.txt`
+3.  **Frontend setup:** `npm install --prefix frontend`
 
--   **Installation (macOS with Homebrew):**
-    ```sh
-    brew install redis
-    ```
--   **Installation (Debian/Ubuntu):**
-    ```sh
-    sudo apt-get update
-    sudo apt-get install redis-server
-    ```
+### Running the Application
 
--   **Start the Redis server (in a separate terminal):**
-    ```sh
-    redis-server
-    ```
-
-### 2. Start the Celery Worker
-
-1.  **Open a new terminal window.**
-2.  **Navigate to the `backend` directory and activate the virtual environment:**
-    ```sh
-    cd backend
-    source venv/bin/activate
-    ```
-3.  **Start the Celery worker:**
-    ```sh
-    celery -A celery_worker.celery worker --loglevel=info
-    ```
-    This worker will listen for and execute tasks from the queue. Keep this terminal running.
-
-### 3. Start the Flask Application
-
-1.  **Open a third terminal window.**
-2.  **Navigate to the `backend` directory and activate the virtual environment.**
-3.  **Run the Flask application:**
-    ```sh
-    python run.py
-    ```
-    The backend server will start on `http://127.0.0.1:5000`.
-
-### 4. Start the Frontend
-
-1.  **From the `frontend` directory, run the development server:**
-    ```sh
-    npm run dev
-    ```
-    The frontend application will be available at `http://localhost:5173`.
-
-2.  **Open your browser** and navigate to `http://localhost:5173` to start using the application.
+1.  **Start backend services:** The backend requires several services to be running concurrently: Redis, a Celery worker, and the Flask application. Refer to the `backend/README.md` for detailed instructions.
+2.  **Start frontend services:** `npm run dev --prefix frontend`
