@@ -219,5 +219,34 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================================================
+-- Stripe Billing Setup
+-- ============================================================================
+
+-- Create user_billing table
+CREATE TABLE IF NOT EXISTS user_billing (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    balance_chf DECIMAL(10, 4) DEFAULT 0.0000,
+    stripe_customer_id TEXT,
+    stripe_subscription_id TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS on user_billing
+ALTER TABLE user_billing ENABLE ROW LEVEL SECURITY;
+
+-- Create policy for users to view their own billing info
+CREATE POLICY "Users can view their own billing" ON user_billing
+    FOR SELECT USING (auth.uid() = user_id);
+
+-- Modify chat_logs table to add usage stats
+ALTER TABLE chat_logs
+ADD COLUMN IF NOT EXISTS model_used TEXT,
+ADD COLUMN IF NOT EXISTS input_tokens INTEGER,
+ADD COLUMN IF NOT EXISTS output_tokens INTEGER,
+ADD COLUMN IF NOT EXISTS cost_chf DECIMAL(10, 6);
+
+
+-- ============================================================================
 -- Setup Complete
 -- ============================================================================

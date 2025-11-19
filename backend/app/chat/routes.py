@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from app.database.supabase_client import supabase
 from app.logging_config import error_logger
 from app.chat.tasks import chat_task
+from app.billing.services import BillingService
 from celery.result import AsyncResult
 import uuid
 
@@ -26,7 +27,23 @@ def handle_chat(tenant_id):
         except ValueError:
             return jsonify({"error": "Invalid conversation_id format"}), 400
 
-        task = chat_task.delay(str(tenant_id), query, chat_history_json, str(conversation_id))
+        # Check tenant owner's balance
+        try:
+            tenant_response = supabase.table('tenants').select('user_id').eq('id', str(tenant_id)).single().execute()
+            if not tenant_response.data:
+                return jsonify({"error": "Tenant not found"}), 404
+            
+            user_id = tenant_response.data['user_id']
+            balance = BillingService.check_balance(user_id)
+            
+            if balance <= 0:
+                return jsonify({"error": "Insufficient balance. Please recharge."}), 402
+                
+        except Exception as e:
+            error_logger.error(f"Error checking balance for tenant {tenant_id}: {e}")
+            return jsonify({"error": "Error checking billing status"}), 500
+
+        task = chat_task.delay(str(tenant_id), query, chat_history_json, str(conversation_id), str(user_id))
 
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
