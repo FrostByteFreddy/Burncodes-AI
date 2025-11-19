@@ -149,7 +149,7 @@ class BillingService:
         RATES = {
             "gpt-4o": {"input": 4.5, "output": 13.5},
             "gpt-4o-mini": {"input": 0.135, "output": 0.54},
-            # Default to gpt-4o if unknown
+            "gemini-2.5-flash-lite": {"input": 0.75, "output": 1.5}, # Base: $0.10/$0.40 * 2 markup * 0.9 CHF
             "default": {"input": 4.5, "output": 13.5}
         }
         
