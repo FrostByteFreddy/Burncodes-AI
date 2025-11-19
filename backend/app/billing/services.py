@@ -147,10 +147,7 @@ class BillingService:
         
         # Rates per 1M tokens in CHF
         RATES = {
-            "gpt-4o": {"input": 4.5, "output": 13.5},
-            "gpt-4o-mini": {"input": 0.135, "output": 0.54},
-            "gemini-2.5-flash-lite": {"input": 0.75, "output": 1.5}, # Base: $0.10/$0.40 * 2 markup * 0.9 CHF
-            "default": {"input": 4.5, "output": 13.5}
+            "default": {"input": 8.0, "output": 17.5}
         }
         
         rate = RATES.get(model, RATES["default"])
