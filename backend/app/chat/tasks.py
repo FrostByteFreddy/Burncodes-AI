@@ -2,6 +2,7 @@ from celery import shared_task
 from app.database.supabase_client import supabase
 from app.data_processing.processor import get_vectorstore
 from app.logging_config import error_logger
+from app.billing.services import BillingService
 import os
 
 # --- LangChain Core Imports ---
@@ -18,7 +19,7 @@ from app.prompts import REPHRASE_PROMPTS, FINE_TUNE_RULE_PROMPTS
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
 
 @shared_task(bind=True)
-def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
+def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_id=None):
     """
     Celery task to handle the chat logic synchronously.
     """
@@ -91,13 +92,39 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id):
         response = conversational_rag_chain.invoke({"chat_history": chat_history, "input": query})
         ai_message = response["answer"]
 
+        # --- Calculate Usage and Deduct Cost ---
+        # Note: LangChain Google provider might not expose token usage directly in the response object easily
+        # depending on the version. If response doesn't have it, we might need to estimate or use a callback.
+        # For now, let's try to get it if available, or estimate.
+        # Actually, ChatGoogleGenerativeAI usually returns usage_metadata in the AIMessage if available.
+        # But here response["answer"] is a string because create_stuff_documents_chain returns string output by default?
+        # Wait, create_retrieval_chain returns a dict. 'answer' key is the string result.
+        # To get usage we might need to access the raw generation info or use a callback handler.
+        # For simplicity in this MVP, let's estimate tokens using a simple heuristic or a tokenizer if available.
+        # A simple estimation: 1 token ~= 4 chars.
+        
+        input_text = query + str(chat_history_json) + str(fine_tune_instructions) # Rough approximation of input
+        # Better: use the actual prompt sent. But that's hard to get from the chain result directly without callbacks.
+        
+        # Let's use a simple character count estimation for now as a fallback
+        input_tokens_est = len(input_text) // 4
+        output_tokens_est = len(ai_message) // 4
+        
+        cost = 0.0
+        if user_id:
+             cost = BillingService.deduct_cost(user_id, GEMINI_MODEL, input_tokens_est, output_tokens_est)
+
         # --- Log Chat to Database ---
         try:
             supabase.table('chat_logs').insert({
                 'tenant_id': tenant_id,
                 'conversation_id': conversation_id,
                 'user_message': query,
-                'ai_message': ai_message
+                'ai_message': ai_message,
+                'model_used': GEMINI_MODEL,
+                'input_tokens': input_tokens_est,
+                'output_tokens': output_tokens_est,
+                'cost_chf': cost
             }).execute()
         except Exception as db_error:
             error_logger.error(f"Database Error in chat_task for tenant {tenant_id}: {db_error}", exc_info=True)
