@@ -9,43 +9,79 @@ FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip('/
 
 class BillingService:
     @staticmethod
-    def create_checkout_session(user_id, email, amount=20.0):
+    def get_or_create_customer(user_id, email):
         try:
             # Check if user already has a customer ID
             response = supabase.table("user_billing").select("stripe_customer_id").eq("user_id", user_id).execute()
-            customer_id = None
-            if response.data:
-                customer_id = response.data[0].get("stripe_customer_id")
+            
+            if response.data and response.data[0].get("stripe_customer_id"):
+                return response.data[0].get("stripe_customer_id")
+            
+            # Create new customer in Stripe
+            customer = stripe.Customer.create(
+                email=email,
+                metadata={"user_id": str(user_id)}
+            )
+            
+            # Save to DB
+            # We use upsert to handle case where user_billing row exists but stripe_customer_id is null
+            # or if row doesn't exist at all
+            data = {
+                "user_id": user_id,
+                "stripe_customer_id": customer.id,
+                "updated_at": "now()"
+            }
+            supabase.table("user_billing").upsert(data).execute()
+            
+            return customer.id
+        except Exception as e:
+            error_logger.error(f"Error getting/creating customer: {e}")
+            raise e
+
+    @staticmethod
+    def create_checkout_session(user_id, email, amount=20.0, is_recurring=False):
+        try:
+            customer_id = BillingService.get_or_create_customer(user_id, email)
 
             # Convert amount to cents
             amount_cents = int(amount * 100)
 
+            price_data = {
+                "currency": "chf",
+                "product_data": {
+                    "name": "Monthly Subscription" if is_recurring else "Balance Recharge",
+                    "description": f"Add {amount:.2f} CHF to your balance monthly" if is_recurring else f"Add {amount:.2f} CHF to your balance",
+                },
+                "unit_amount": amount_cents,
+            }
+
+            if is_recurring:
+                price_data["recurring"] = {"interval": "month"}
+
             checkout_session_kwargs = {
                 "payment_method_types": ["card"],
+                "customer": customer_id,
                 "line_items": [
                     {
-                        "price_data": {
-                            "currency": "chf",
-                            "product_data": {
-                                "name": "Balance Recharge",
-                                "description": f"Add {amount:.2f} CHF to your balance",
-                            },
-                            "unit_amount": amount_cents,
-                        },
+                        "price_data": price_data,
                         "quantity": 1,
                     },
                 ],
-                "mode": "payment",
+                "mode": "subscription" if is_recurring else "payment",
                 "success_url": f"{FRONTEND_URL}/subscription?success=true&session_id={{CHECKOUT_SESSION_ID}}",
                 "cancel_url": f"{FRONTEND_URL}/subscription?canceled=true",
                 "client_reference_id": str(user_id),
                 "metadata": {"user_id": str(user_id)},
             }
 
-            if customer_id:
-                checkout_session_kwargs["customer"] = customer_id
-            else:
-                checkout_session_kwargs["customer_email"] = email
+            if not is_recurring:
+                checkout_session_kwargs["invoice_creation"] = {"enabled": True}
+            
+            # Customer is already set above
+            # if customer_id:
+            #     checkout_session_kwargs["customer"] = customer_id
+            # else:
+            #     checkout_session_kwargs["customer_email"] = email
 
             checkout_session = stripe.checkout.Session.create(**checkout_session_kwargs)
             return checkout_session.url
@@ -183,3 +219,39 @@ class BillingService:
         except Exception as e:
             error_logger.error(f"Error verifying session {session_id}: {e}")
             raise e
+
+    @staticmethod
+    def get_billing_history(user_id):
+        try:
+            # We can't easily get email here without fetching user profile, 
+            # but usually get_billing_history is called for logged in users who should have a record.
+            # If they don't have a record, they probably don't have history.
+            # But to be safe and consistent, we could try to fetch or create if we had the email.
+            # For now, let's just check the DB.
+            
+            response = supabase.table("user_billing").select("stripe_customer_id").eq("user_id", user_id).execute()
+            if not response.data or not response.data[0].get("stripe_customer_id"):
+                return []
+
+            customer_id = response.data[0].get("stripe_customer_id")
+            
+            # Fetch invoices and sessions to build a history
+            # For simplicity, we'll just list invoices which cover both one-time (if finalized) and recurring
+            invoices = stripe.Invoice.list(customer=customer_id, limit=20)
+            
+            history = []
+            for invoice in invoices.data:
+                history.append({
+                    "id": invoice.id,
+                    "date": invoice.created,
+                    "amount": invoice.total / 100.0,
+                    "currency": invoice.currency.upper(),
+                    "status": invoice.status,
+                    "pdf_url": invoice.invoice_pdf,
+                    "number": invoice.number
+                })
+                
+            return history
+        except Exception as e:
+            error_logger.error(f"Error fetching billing history: {e}")
+            return []

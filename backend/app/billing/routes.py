@@ -23,10 +23,20 @@ def create_checkout_session(current_user):
         except ValueError:
             return jsonify({'error': 'Invalid amount'}), 400
             
-        checkout_url = BillingService.create_checkout_session(user_id, email, amount)
+        checkout_url = BillingService.create_checkout_session(user_id, email, amount, data.get('is_recurring', False))
         return jsonify({'url': checkout_url})
     except Exception as e:
         error_logger.error(f"Error in create_checkout_session route: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@billing_bp.route('/history', methods=['GET'])
+@token_required
+def get_history(current_user):
+    try:
+        history = BillingService.get_billing_history(current_user.id)
+        return jsonify({'history': history})
+    except Exception as e:
+        error_logger.error(f"Error getting history: {e}")
         return jsonify({'error': str(e)}), 500
 
 @billing_bp.route('/portal', methods=['POST'])

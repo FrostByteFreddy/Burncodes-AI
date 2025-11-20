@@ -53,11 +53,39 @@
               Add Funds
             </h3>
 
+            <!-- Payment Type Toggle -->
+            <div
+              class="flex gap-2 mb-6 p-1 bg-base-100 rounded-lg border border-base-200 w-fit"
+            >
+              <button
+                @click="isRecurring = false"
+                class="px-4 py-2 rounded-md text-sm font-medium transition-all"
+                :class="
+                  !isRecurring
+                    ? 'bg-primary text-primary-content shadow-sm'
+                    : 'text-base-content/70 hover:bg-base-200'
+                "
+              >
+                One-time
+              </button>
+              <button
+                @click="isRecurring = true"
+                class="px-4 py-2 rounded-md text-sm font-medium transition-all"
+                :class="
+                  isRecurring
+                    ? 'bg-primary text-primary-content shadow-sm'
+                    : 'text-base-content/70 hover:bg-base-200'
+                "
+              >
+                Monthly Subscription
+              </button>
+            </div>
+
             <div class="space-y-5">
               <div>
                 <label
                   class="text-sm font-medium text-base-content/70 mb-3 block"
-                  >Select Amount</label
+                  >Select Amount {{ isRecurring ? "(Monthly)" : "" }}</label
                 >
                 <div class="grid grid-cols-3 gap-3">
                   <button
@@ -118,9 +146,12 @@
                   class="loading loading-spinner loading-sm"
                 ></span>
                 <span v-else class="flex items-center gap-2">
-                  <font-awesome-icon :icon="['fas', 'bolt']" />
-                  Add CHF
+                  <font-awesome-icon
+                    :icon="['fas', isRecurring ? 'sync' : 'bolt']"
+                  />
+                  {{ isRecurring ? "Subscribe" : "Add" }} CHF
                   {{ rechargeAmount ? rechargeAmount.toFixed(2) : "0.00" }}
+                  {{ isRecurring ? "/ month" : "" }}
                 </span>
               </button>
             </div>
@@ -216,6 +247,83 @@
           </div>
         </div>
       </div>
+
+      <!-- Billing History -->
+      <div
+        class="card bg-base-100 shadow-xl border border-base-200 lg:col-span-3"
+      >
+        <div class="card-body">
+          <h2 class="card-title text-lg mb-4 flex items-center gap-2">
+            <font-awesome-icon
+              :icon="['fas', 'history']"
+              class="text-primary"
+            />
+            Billing History
+          </h2>
+
+          <div class="overflow-x-auto">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Invoice</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="billingStore.loading && !billingStore.history.length">
+                  <td colspan="5" class="text-center py-4">
+                    <span class="loading loading-spinner loading-sm"></span>
+                  </td>
+                </tr>
+                <tr v-else-if="!billingStore.history.length">
+                  <td colspan="5" class="text-center py-8 text-base-content/50">
+                    No billing history found
+                  </td>
+                </tr>
+                <tr
+                  v-for="item in billingStore.history"
+                  :key="item.id"
+                  class="hover"
+                >
+                  <td>{{ new Date(item.date * 1000).toLocaleDateString() }}</td>
+                  <td>{{ item.number || "One-time Payment" }}</td>
+                  <td class="font-mono">
+                    {{ item.currency }} {{ item.amount.toFixed(2) }}
+                  </td>
+                  <td>
+                    <div
+                      class="badge badge-sm gap-1"
+                      :class="{
+                        'badge-success': item.status === 'paid',
+                        'badge-warning': item.status === 'open',
+                        'badge-error':
+                          item.status === 'void' ||
+                          item.status === 'uncollectible',
+                      }"
+                    >
+                      {{ item.status }}
+                    </div>
+                  </td>
+                  <td>
+                    <a
+                      v-if="item.pdf_url"
+                      :href="item.pdf_url"
+                      target="_blank"
+                      class="btn btn-ghost btn-xs gap-1"
+                    >
+                      <font-awesome-icon :icon="['fas', 'file-invoice']" />
+                      PDF
+                    </a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -229,6 +337,7 @@ const billingStore = useBillingStore();
 const { addToast } = useToast();
 
 const rechargeAmount = ref(20);
+const isRecurring = ref(false);
 
 const amountError = computed(() => {
   if (!rechargeAmount.value) return "Amount is required";
@@ -261,14 +370,21 @@ onMounted(async () => {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  await Promise.all([billingStore.fetchBalance(), billingStore.fetchUsage()]);
+  await Promise.all([
+    billingStore.fetchBalance(),
+    billingStore.fetchUsage(),
+    billingStore.fetchHistory(),
+  ]);
 });
 
 const handleRecharge = async () => {
   if (amountError.value) return;
 
   try {
-    const url = await billingStore.createCheckoutSession(rechargeAmount.value);
+    const url = await billingStore.createCheckoutSession(
+      rechargeAmount.value,
+      isRecurring.value
+    );
     if (url) {
       window.location.href = url;
     }
