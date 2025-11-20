@@ -1,17 +1,19 @@
 <template>
-  <div class="container mx-auto px-4 py-4 sm:px-6 sm:py-8">
-    <div class="flex items-center gap-3 mb-8">
-      <div class="p-3 bg-primary/10 rounded-xl">
+  <div class="container mx-auto px-4 py-4 sm:px-6 sm:py-8 max-w-7xl">
+    <div
+      class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8"
+    >
+      <div class="p-3 bg-primary/10 rounded-xl shrink-0">
         <font-awesome-icon
           :icon="['fas', 'credit-card']"
           class="text-2xl text-primary"
         />
       </div>
       <div>
-        <h1 class="text-3xl font-bold text-base-content">
+        <h1 class="text-2xl sm:text-3xl font-bold text-base-content">
           Billing & Subscription
         </h1>
-        <p class="text-base-content/60">
+        <p class="text-base-content/60 text-sm sm:text-base">
           Manage your balance and view usage statistics
         </p>
       </div>
@@ -29,22 +31,29 @@
       <div
         class="card bg-base-100 shadow-xl border border-base-200 lg:col-span-2"
       >
-        <div class="card-body">
-          <div class="flex justify-between items-start">
+        <div class="card-body p-4 sm:p-6">
+          <div
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+          >
             <div>
               <h2 class="card-title text-lg opacity-70">Current Balance</h2>
-              <div class="text-5xl font-bold text-primary mt-2">
+              <div class="text-4xl sm:text-5xl font-bold text-primary mt-2">
                 CHF {{ billingStore.balance?.toFixed(2) }}
               </div>
             </div>
-            <button @click="handleManageBilling" class="btn btn-ghost btn-sm">
+            <button
+              @click="handleManageBilling"
+              class="btn btn-ghost btn-sm w-full sm:w-auto"
+            >
               Manage Billing
             </button>
           </div>
 
           <div class="divider my-6"></div>
 
-          <div class="bg-base-200/50 rounded-xl p-6 border border-base-200">
+          <div
+            class="bg-base-200/50 rounded-xl p-4 sm:p-6 border border-base-200"
+          >
             <h3 class="font-semibold text-lg mb-4 flex items-center gap-2">
               <font-awesome-icon
                 :icon="['fas', 'wallet']"
@@ -55,11 +64,11 @@
 
             <!-- Payment Type Toggle -->
             <div
-              class="flex gap-2 mb-6 p-1 bg-base-100 rounded-lg border border-base-200 w-fit"
+              class="flex flex-wrap gap-2 mb-6 p-1 bg-base-100 rounded-lg border border-base-200 w-full sm:w-fit"
             >
               <button
                 @click="isRecurring = false"
-                class="px-4 py-2 rounded-md text-sm font-medium transition-all"
+                class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap"
                 :class="
                   !isRecurring
                     ? 'bg-primary text-primary-content shadow-sm'
@@ -70,7 +79,7 @@
               </button>
               <button
                 @click="isRecurring = true"
-                class="px-4 py-2 rounded-md text-sm font-medium transition-all"
+                class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap"
                 :class="
                   isRecurring
                     ? 'bg-primary text-primary-content shadow-sm'
@@ -92,7 +101,7 @@
                     v-for="amount in [20, 50, 100]"
                     :key="amount"
                     @click="rechargeAmount = amount"
-                    class="btn transition-all duration-200"
+                    class="btn transition-all duration-200 min-h-[3rem] h-auto py-2"
                     :class="
                       rechargeAmount === amount
                         ? 'btn-primary shadow-md scale-105'
@@ -161,7 +170,7 @@
 
       <!-- Usage Card -->
       <div class="card bg-base-100 shadow-xl border border-base-200 h-fit">
-        <div class="card-body">
+        <div class="card-body p-4 sm:p-6">
           <h2 class="card-title text-lg mb-6 flex items-center gap-2">
             <font-awesome-icon
               :icon="['fas', 'chart-pie']"
@@ -252,7 +261,7 @@
       <div
         class="card bg-base-100 shadow-xl border border-base-200 lg:col-span-3"
       >
-        <div class="card-body">
+        <div class="card-body p-4 sm:p-6">
           <h2 class="card-title text-lg mb-4 flex items-center gap-2">
             <font-awesome-icon
               :icon="['fas', 'history']"
@@ -261,9 +270,12 @@
             Billing History
           </h2>
 
-          <div class="overflow-x-auto">
-            <table class="table">
-              <thead>
+          <!-- Desktop Table View -->
+          <div
+            class="hidden md:block overflow-x-auto rounded-lg border border-base-200"
+          >
+            <table class="table table-zebra w-full">
+              <thead class="bg-base-200/50">
                 <tr>
                   <th>Date</th>
                   <th>Description</th>
@@ -274,13 +286,24 @@
               </thead>
               <tbody>
                 <tr v-if="billingStore.loading && !billingStore.history.length">
-                  <td colspan="5" class="text-center py-4">
-                    <span class="loading loading-spinner loading-sm"></span>
+                  <td colspan="5" class="text-center py-8">
+                    <span
+                      class="loading loading-spinner loading-md text-primary"
+                    ></span>
                   </td>
                 </tr>
                 <tr v-else-if="!billingStore.history.length">
-                  <td colspan="5" class="text-center py-8 text-base-content/50">
-                    No billing history found
+                  <td
+                    colspan="5"
+                    class="text-center py-12 text-base-content/50"
+                  >
+                    <div class="flex flex-col items-center gap-2">
+                      <font-awesome-icon
+                        :icon="['fas', 'receipt']"
+                        class="text-2xl opacity-20"
+                      />
+                      <p>No billing history found</p>
+                    </div>
                   </td>
                 </tr>
                 <tr
@@ -288,18 +311,22 @@
                   :key="item.id"
                   class="hover"
                 >
-                  <td>{{ new Date(item.date * 1000).toLocaleDateString() }}</td>
+                  <td class="font-medium">
+                    {{ new Date(item.date * 1000).toLocaleDateString() }}
+                  </td>
                   <td>{{ item.number || "One-time Payment" }}</td>
-                  <td class="font-mono">
+                  <td class="font-mono font-semibold">
                     {{ item.currency }} {{ item.amount.toFixed(2) }}
                   </td>
                   <td>
                     <div
-                      class="badge badge-sm gap-1"
+                      class="badge badge-sm gap-1 font-medium"
                       :class="{
-                        'badge-success': item.status === 'paid',
-                        'badge-warning': item.status === 'open',
-                        'badge-error':
+                        'badge-success text-success-content':
+                          item.status === 'paid',
+                        'badge-warning text-warning-content':
+                          item.status === 'open',
+                        'badge-error text-error-content':
                           item.status === 'void' ||
                           item.status === 'uncollectible',
                       }"
@@ -312,7 +339,7 @@
                       v-if="item.pdf_url"
                       :href="item.pdf_url"
                       target="_blank"
-                      class="btn btn-ghost btn-xs gap-1"
+                      class="btn btn-ghost btn-xs gap-1 text-primary"
                     >
                       <font-awesome-icon :icon="['fas', 'file-invoice']" />
                       PDF
@@ -321,6 +348,76 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Mobile Card View -->
+          <div class="md:hidden space-y-4">
+            <div
+              v-if="billingStore.loading && !billingStore.history.length"
+              class="flex justify-center py-8"
+            >
+              <span
+                class="loading loading-spinner loading-md text-primary"
+              ></span>
+            </div>
+            <div
+              v-else-if="!billingStore.history.length"
+              class="text-center py-12 text-base-content/50 border border-dashed border-base-300 rounded-xl"
+            >
+              <div class="flex flex-col items-center gap-2">
+                <font-awesome-icon
+                  :icon="['fas', 'receipt']"
+                  class="text-2xl opacity-20"
+                />
+                <p>No billing history found</p>
+              </div>
+            </div>
+            <div
+              v-for="item in billingStore.history"
+              :key="item.id"
+              class="p-4 rounded-xl border border-base-200 bg-base-100 shadow-sm"
+            >
+              <div class="flex justify-between items-start mb-3">
+                <div>
+                  <p class="text-xs text-base-content/60 mb-1">
+                    {{ new Date(item.date * 1000).toLocaleDateString() }}
+                  </p>
+                  <p class="font-medium text-sm">
+                    {{ item.number || "One-time Payment" }}
+                  </p>
+                </div>
+                <div
+                  class="badge badge-sm gap-1 font-medium"
+                  :class="{
+                    'badge-success text-success-content':
+                      item.status === 'paid',
+                    'badge-warning text-warning-content':
+                      item.status === 'open',
+                    'badge-error text-error-content':
+                      item.status === 'void' || item.status === 'uncollectible',
+                  }"
+                >
+                  {{ item.status }}
+                </div>
+              </div>
+
+              <div
+                class="flex justify-between items-center pt-3 border-t border-base-200"
+              >
+                <span class="font-mono font-bold text-lg">
+                  {{ item.currency }} {{ item.amount.toFixed(2) }}
+                </span>
+                <a
+                  v-if="item.pdf_url"
+                  :href="item.pdf_url"
+                  target="_blank"
+                  class="btn btn-ghost btn-sm gap-2 text-primary"
+                >
+                  <font-awesome-icon :icon="['fas', 'file-invoice']" />
+                  PDF
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
