@@ -6,6 +6,7 @@ import { useAuthStore } from "./auth";
 export const useBillingStore = defineStore("billing", () => {
   const balance = ref(0.0);
   const usage = ref({ total_cost: 0.0, input_tokens: 0, output_tokens: 0 });
+  const history = ref([]);
   const loading = ref(false);
   const error = ref(null);
 
@@ -48,18 +49,34 @@ export const useBillingStore = defineStore("billing", () => {
     }
   }
 
-  async function createCheckoutSession(amount = 20) {
+  async function fetchHistory() {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.get("/billing/history", {
+        headers: getAuthHeaders(),
+      });
+      history.value = response.data.history;
+    } catch (e) {
+      error.value = e.response?.data?.error || "Failed to fetch history";
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function createCheckoutSession(amount = 20, isRecurring = false) {
     loading.value = true;
     error.value = null;
     try {
       const response = await apiClient.post(
         "/billing/create-checkout-session",
-        { amount },
+        { amount, is_recurring: isRecurring },
         { headers: getAuthHeaders() }
       );
       return response.data.url;
     } catch (e) {
-      error.value = e.response?.data?.error || "Failed to create checkout session";
+      error.value =
+        e.response?.data?.error || "Failed to create checkout session";
       throw e;
     } finally {
       loading.value = false;
@@ -106,10 +123,12 @@ export const useBillingStore = defineStore("billing", () => {
   return {
     balance,
     usage,
+    history,
     loading,
     error,
     fetchBalance,
     fetchUsage,
+    fetchHistory,
     createCheckoutSession,
     getPortalUrl,
     verifySession,
