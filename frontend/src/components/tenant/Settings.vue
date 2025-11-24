@@ -142,7 +142,7 @@
             <div class="relative">
               <pre
                 class="bg-base-300 p-4 rounded-lg overflow-x-auto text-sm font-mono text-base-content"
-              ><code>&lt;script src="{{ apiUrl }}/api/tenants/widget.js" data-tenant-id="{{ tenantsStore.currentTenant?.id }}"&gt;&lt;/script&gt;</code></pre>
+              ><code>&lt;script src="{{ apiUrl }}/tenants/widget.js" data-tenant-id="{{ tenantsStore.currentTenant?.id }}"&gt;&lt;/script&gt;</code></pre>
               <button
                 @click.prevent="copyScript"
                 class="absolute top-2 right-2 btn btn-sm btn-ghost text-primary hover:bg-base-200"
@@ -608,7 +608,7 @@ const getPaletteColor = (colorId) => {
 };
 
 const copyScript = () => {
-  const script = `<script src="${apiUrl}/api/tenants/widget.js" data-tenant-id="${tenantsStore.currentTenant?.id}"><\/script>`;
+  const script = `<script src="${apiUrl}/tenants/widget.js" data-tenant-id="${tenantsStore.currentTenant?.id}"><\/script>`;
   navigator.clipboard
     .writeText(script)
     .then(() => {
