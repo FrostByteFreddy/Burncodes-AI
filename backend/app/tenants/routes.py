@@ -425,7 +425,7 @@ def get_widget_script():
 
     // Create Iframe
     const iframe = document.createElement('iframe');
-    iframe.src = `${{frontendUrl}}/chat/${{tenantId}}`;
+    iframe.src = `${{frontendUrl}}/chat/${{tenantId}}?widget`;
     iframe.style.width = '400px';
     iframe.style.height = '600px';
     iframe.style.border = 'none';
