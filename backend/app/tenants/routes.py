@@ -403,8 +403,8 @@ def get_widget_script():
 (function() {{
     const scriptTag = document.currentScript;
     const tenantId = scriptTag.getAttribute('data-tenant-id');
-    const apiBaseUrl = "{api_base_url}";
-    const frontendUrl = "{frontend_url}";
+    const apiBaseUrl = "{api_base_url}".replace(/\/$/, "");
+    const frontendUrl = "{frontend_url}".replace(/\/$/, "");
 
     if (!tenantId) {{
         console.error('SwiftAnswer Widget: data-tenant-id attribute is missing.');
