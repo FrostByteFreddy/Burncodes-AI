@@ -306,6 +306,7 @@ const widgetCssVariables = computed(() => {
   border: none;
   box-shadow: none;
   width: 100%;
+  height: 100vh;
 }
 
 .chat-header {

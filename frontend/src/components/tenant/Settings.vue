@@ -126,7 +126,6 @@
 
       <div v-show="activeTab === 'appearance'" @change="handleUpdate">
         <div class="space-y-8">
-          <!-- Installation Section -->
           <div class="p-6 border border-base-300 rounded-lg bg-base-100">
             <h3 class="text-lg font-bold mb-4 flex items-center">
               <font-awesome-icon
@@ -153,7 +152,6 @@
             </div>
           </div>
 
-          <!-- Color Palette (Full Width) -->
           <div class="p-4 border border-base-300 rounded-lg">
             <h3 class="text-lg font-bold mb-4">Color Palette</h3>
             <p class="text-sm text-base-content/70 mb-4">
@@ -197,9 +195,7 @@
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Left Column: Configuration -->
             <div class="space-y-8">
-              <!-- Chat Window Configuration -->
               <div class="p-4 border border-base-300 rounded-lg">
                 <h3 class="text-lg font-bold mb-4">
                   Chat Window Configuration
@@ -220,13 +216,23 @@
                     <label for="logo" class="block text-sm font-medium"
                       >Logo</label
                     >
-                    <input
-                      @change="handleFileUpload($event, 'logo')"
-                      type="file"
-                      id="logo"
-                      class="w-full p-2 mt-1 bg-base-200 border border-base-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-                      accept="image/*"
-                    />
+                    <div class="flex items-center space-x-2 mt-1">
+                      <input
+                        @change="handleFileUpload($event, 'logo')"
+                        type="file"
+                        id="logo"
+                        class="w-full p-2 bg-base-200 border border-base-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                        accept="image/*,.svg"
+                      />
+                      <button
+                        v-if="formData.widget_config.logo"
+                        @click.prevent="removeFile('logo')"
+                        class="btn btn-square btn-ghost text-error"
+                        title="Remove Logo"
+                      >
+                        <font-awesome-icon :icon="['fas', 'trash']" />
+                      </button>
+                    </div>
                     <img
                       v-if="formData.widget_config.logo"
                       :src="formData.widget_config.logo"
@@ -274,7 +280,6 @@
                 </div>
               </div>
 
-              <!-- Component Styles -->
               <div class="p-4 border border-base-300 rounded-lg">
                 <h3 class="text-lg font-bold mb-4">Component Styles</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
@@ -302,7 +307,6 @@
                 </div>
               </div>
 
-              <!-- Launcher Configuration -->
               <div class="p-4 border border-base-300 rounded-lg">
                 <h3 class="text-lg font-bold mb-4">Launcher Configuration</h3>
                 <div class="space-y-6">
@@ -310,13 +314,35 @@
                     <label for="launcher_icon" class="block text-sm font-medium"
                       >Launcher Icon</label
                     >
-                    <input
-                      @change="handleFileUpload($event, 'launcher_icon')"
-                      type="file"
-                      id="launcher_icon"
-                      class="w-full p-2 mt-1 bg-base-200 border border-base-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-                      accept="image/*"
-                    />
+                    <div class="flex items-center space-x-2 mt-1">
+                      <input
+                        @change="handleFileUpload($event, 'launcher_icon')"
+                        type="file"
+                        id="launcher_icon"
+                        class="w-full p-2 bg-base-200 border border-base-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                        accept="image/*,.svg"
+                      />
+                      <button
+                        v-if="formData.widget_config.launcher_icon"
+                        @click.prevent="removeFile('launcher_icon')"
+                        class="btn btn-square btn-ghost text-error"
+                        title="Remove Icon"
+                      >
+                        <font-awesome-icon :icon="['fas', 'trash']" />
+                      </button>
+                    </div>
+                    <div
+                      v-if="formData.widget_config.launcher_icon"
+                      class="mt-2"
+                    >
+                      <p class="text-xs text-base-content/50 mb-1">
+                        Current Icon:
+                      </p>
+                      <img
+                        :src="formData.widget_config.launcher_icon"
+                        class="w-12 h-12 rounded-full object-cover border border-base-300"
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -346,13 +372,11 @@
               </div>
             </div>
 
-            <!-- Right Column: Previews (Sticky) -->
             <div>
               <div class="lg:sticky top-8 space-y-6">
                 <div>
                   <h3 class="text-lg font-bold mb-4">Live Preview</h3>
 
-                  <!-- Chat Preview -->
                   <div>
                     <h4 class="text-sm font-medium text-base-content/70 mb-2">
                       Chat Window
@@ -363,7 +387,6 @@
                     />
                   </div>
 
-                  <!-- Launcher Preview -->
                   <div class="mb-4">
                     <h4 class="text-sm font-medium text-base-content/70 mb-2">
                       Launcher
@@ -502,10 +525,10 @@ const filteredComponentStyleLabels = computed(() => {
 });
 
 watch(
-  () => tenantsStore.currentTenant,
-  (newTenant) => {
-    if (newTenant) {
-      // Deep merge the tenant's config with the default to prevent errors if the structure is old
+  () => tenantsStore.currentTenant?.id,
+  (newId) => {
+    const newTenant = tenantsStore.currentTenant;
+    if (newId && newTenant) {
       const newConfig = {
         ...defaultWidgetConfig(),
         ...(newTenant.widget_config || {}),
@@ -529,7 +552,7 @@ watch(
       };
     }
   },
-  { immediate: true, deep: true }
+  { immediate: true } // Removed deep: true
 );
 
 const thinkingMessages = computed({
@@ -561,6 +584,15 @@ const removeColor = (idToRemove) => {
   );
 };
 
+// New function to clear images
+const removeFile = (field) => {
+  formData.value.widget_config[field] = null;
+  // Reset the HTML input value so the same file can be selected again if needed
+  const inputEl = document.getElementById(field);
+  if (inputEl) inputEl.value = "";
+  addToast("Image removed.", "success");
+};
+
 // Encodes a file as a base64 string
 const encodeFileAsBase64 = (file) => {
   return new Promise((resolve, reject) => {
@@ -578,7 +610,7 @@ const handleFileUpload = async (event, field) => {
   try {
     const base64String = await encodeFileAsBase64(file);
     formData.value.widget_config[field] = base64String;
-    addToast("Logo preview updated!", "success");
+    addToast("Image updated!", "success");
   } catch (error) {
     console.error("File reading error:", error);
     addToast("Failed to read file. Please try a different image.", "error");
