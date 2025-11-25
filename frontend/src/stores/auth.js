@@ -69,30 +69,46 @@ export const useAuthStore = defineStore("auth", () => {
   async function logout() {
     sessionExpired.value = false; // Also reset on logout
 
-    // Attempt to sign out from Supabase, but don't let it block local cleanup
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      // Log the error but continue with cleanup, as the session might already be invalid
-      // Ignore "session_not_found" as it means we are already logged out on the server
-      if (error.code !== "session_not_found") {
-        console.error("Error signing out from Supabase:", error.message);
+    try {
+      // Attempt to sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        // Ignore "session_not_found" and "Auth session missing!"
+        if (
+          error.code !== "session_not_found" &&
+          error.message !== "Auth session missing!"
+        ) {
+          console.error("Error signing out from Supabase:", error.message);
+        }
       }
-    }
+    } catch (err) {
+      console.error("Unexpected error during logout:", err);
+    } finally {
+      // Force cleanup regardless of server errors
 
-    // Clear local state
-    user.value = null;
-    session.value = null;
+      // Clear local state
+      user.value = null;
+      session.value = null;
 
-    // Dynamically import tenants store to clear its state and avoid circular deps
-    const { useTenantsStore } = await import("./tenants");
-    const tenantsStore = useTenantsStore();
-    tenantsStore.selectTenant(null); // This clears currentTenant and localStorage key via watcher
+      // Clear all Supabase tokens from localStorage
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("sb-") && key.endsWith("-auth-token")) {
+          localStorage.removeItem(key);
+        }
+      }
 
-    localStorage.removeItem("lastVisitedRoute");
+      // Dynamically import tenants store to clear its state and avoid circular deps
+      const { useTenantsStore } = await import("./tenants");
+      const tenantsStore = useTenantsStore();
+      tenantsStore.selectTenant(null); // This clears currentTenant and localStorage key via watcher
 
-    // Redirect to login page if not already there
-    if (router.currentRoute.value.name !== "Login") {
-      router.push("/login");
+      localStorage.removeItem("lastVisitedRoute");
+
+      // Redirect to login page if not already there
+      if (router.currentRoute.value.name !== "Login") {
+        router.push("/login");
+      }
     }
   }
 
