@@ -168,7 +168,7 @@ async def async_process_s3_file(s3_path: str, source_filename: str, source_id: i
         full_cleaned_markdown = ""
         
         # Batch processing configuration
-        BATCH_SIZE = 5
+        BATCH_SIZE = 10
         OVERLAP = 1
         
         total_pages = len(docs_from_loader)
@@ -264,7 +264,7 @@ async def async_process_s3_file(s3_path: str, source_filename: str, source_id: i
         # except Exception as e:
         #     print(f"Failed to remove S3 file {s3_path} after processing: {e}")
 
-@shared_task
+@shared_task(time_limit=1800)
 def process_urls(urls: list[tuple[str, int]], tenant_id: UUID):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
     docs = asyncio.run(process_urls_concurrently(urls, tenant_id))
@@ -413,7 +413,7 @@ def crawl_links_task(self, tenant_id: UUID, start_url: str, single_page_only: bo
         self.update_state(state='FAILURE', meta={'status': error_message})
         raise e
 
-@shared_task(bind=True, time_limit=600) # 5-minute hard time limit
+@shared_task(bind=True, time_limit=1800) # 30-minute hard time limit
 def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str = None):
     """
     Worker Celery task to crawl a single URL, process its content, and discover new links.
