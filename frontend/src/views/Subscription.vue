@@ -11,10 +11,10 @@
       </div>
       <div>
         <h1 class="text-2xl sm:text-3xl font-bold text-base-content">
-          Billing & Subscription
+          {{ $t("subscription.title") }}
         </h1>
         <p class="text-base-content/60 text-sm sm:text-base">
-          Manage your balance and view usage statistics
+          {{ $t("subscription.subtitle") }}
         </p>
       </div>
     </div>
@@ -36,7 +36,9 @@
             class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
           >
             <div>
-              <h2 class="card-title text-lg opacity-70">Current Balance</h2>
+              <h2 class="card-title text-lg opacity-70">
+                {{ $t("subscription.balance") }}
+              </h2>
               <div class="text-4xl sm:text-5xl font-bold text-primary mt-2">
                 CHF {{ billingStore.balance?.toFixed(2) }}
               </div>
@@ -45,7 +47,7 @@
               @click="handleManageBilling"
               class="btn btn-ghost btn-sm w-full sm:w-auto"
             >
-              Manage Billing
+              {{ $t("subscription.manageBilling") }}
             </button>
           </div>
 
@@ -59,7 +61,7 @@
                 :icon="['fas', 'wallet']"
                 class="text-primary"
               />
-              Add Funds
+              {{ $t("subscription.addFunds") }}
             </h3>
 
             <!-- Payment Type Toggle -->
@@ -75,7 +77,7 @@
                     : 'text-base-content/70 hover:bg-base-200'
                 "
               >
-                One-time
+                {{ $t("subscription.oneTime") }}
               </button>
               <button
                 @click="isRecurring = true"
@@ -86,7 +88,7 @@
                     : 'text-base-content/70 hover:bg-base-200'
                 "
               >
-                Monthly Subscription
+                {{ $t("subscription.monthly") }}
               </button>
             </div>
 
@@ -94,7 +96,10 @@
               <div>
                 <label
                   class="text-sm font-medium text-base-content/70 mb-3 block"
-                  >Select Amount {{ isRecurring ? "(Monthly)" : "" }}</label
+                  >{{ $t("subscription.selectAmount") }}
+                  {{
+                    isRecurring ? $t("subscription.monthlySuffix") : ""
+                  }}</label
                 >
                 <div class="grid grid-cols-3 gap-3">
                   <button
@@ -116,7 +121,7 @@
               <div>
                 <label
                   class="text-sm font-medium text-base-content/70 mb-2 block"
-                  >Custom Amount</label
+                  >{{ $t("subscription.customAmount") }}</label
                 >
                 <div class="relative">
                   <div
@@ -132,16 +137,16 @@
                     min="5"
                     step="5"
                     class="input input-bordered w-full pl-16 pr-4 h-14 text-lg font-semibold bg-base-100 border-2 hover:border-primary/50 focus:border-primary focus:outline-none transition-all"
-                    placeholder="Enter amount"
+                    :placeholder="$t('subscription.enterAmount')"
                   />
                 </div>
                 <div class="label pb-0">
                   <span class="label-text-alt text-error" v-if="amountError">{{
                     amountError
                   }}</span>
-                  <span class="label-text-alt text-base-content/50" v-else
-                    >Minimum deposit is 5 CHF</span
-                  >
+                  <span class="label-text-alt text-base-content/50" v-else>{{
+                    $t("subscription.minDeposit")
+                  }}</span>
                 </div>
               </div>
 
@@ -158,9 +163,14 @@
                   <font-awesome-icon
                     :icon="['fas', isRecurring ? 'sync' : 'bolt']"
                   />
-                  {{ isRecurring ? "Subscribe" : "Add" }} CHF
+                  {{
+                    isRecurring
+                      ? $t("subscription.subscribe")
+                      : $t("subscription.add")
+                  }}
+                  CHF
                   {{ rechargeAmount ? rechargeAmount.toFixed(2) : "0.00" }}
-                  {{ isRecurring ? "/ month" : "" }}
+                  {{ isRecurring ? $t("subscription.perMonth") : "" }}
                 </span>
               </button>
             </div>
@@ -176,7 +186,7 @@
               :icon="['fas', 'chart-pie']"
               class="text-primary"
             />
-            Usage Statistics
+            {{ $t("subscription.usageStats") }}
           </h2>
 
           <div class="space-y-4">
@@ -186,7 +196,7 @@
             >
               <div>
                 <p class="text-sm font-medium text-base-content/70">
-                  Total Spent
+                  {{ $t("subscription.totalSpent") }}
                 </p>
                 <p class="text-2xl font-bold text-base-content mt-1">
                   CHF {{ billingStore.usage?.total_cost?.toFixed(2) }}
@@ -205,7 +215,7 @@
             >
               <div>
                 <p class="text-sm font-medium text-base-content/70">
-                  Tokens Used
+                  {{ $t("subscription.tokensUsed") }}
                 </p>
                 <p class="text-2xl font-bold text-base-content mt-1">
                   {{
@@ -217,14 +227,14 @@
                 </p>
                 <div class="flex gap-2 text-xs text-base-content/50 mt-1">
                   <span
-                    >In:
+                    >{{ $t("subscription.in") }}
                     {{
                       billingStore.usage?.input_tokens?.toLocaleString()
                     }}</span
                   >
                   <span>•</span>
                   <span
-                    >Out:
+                    >{{ $t("subscription.out") }}
                     {{
                       billingStore.usage?.output_tokens?.toLocaleString()
                     }}</span
@@ -246,10 +256,11 @@
                 class="mt-1 text-info"
               />
               <div>
-                <p class="font-medium text-base-content">How billing works</p>
+                <p class="font-medium text-base-content">
+                  {{ $t("subscription.howItWorks.title") }}
+                </p>
                 <p class="mt-1 text-xs opacity-80">
-                  You pay a fixed amount to recharge your balance. Each chat
-                  message consumes tokens which are deducted from your balance.
+                  {{ $t("subscription.howItWorks.description") }}
                 </p>
               </div>
             </div>
@@ -267,7 +278,7 @@
               :icon="['fas', 'history']"
               class="text-primary"
             />
-            Billing History
+            {{ $t("subscription.history.title") }}
           </h2>
 
           <!-- Desktop Table View -->
@@ -277,11 +288,11 @@
             <table class="table table-zebra w-full">
               <thead class="bg-base-200/50">
                 <tr>
-                  <th>Date</th>
-                  <th>Description</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Invoice</th>
+                  <th>{{ $t("subscription.history.date") }}</th>
+                  <th>{{ $t("subscription.history.description") }}</th>
+                  <th>{{ $t("subscription.history.amount") }}</th>
+                  <th>{{ $t("subscription.history.status") }}</th>
+                  <th>{{ $t("subscription.history.invoice") }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -302,7 +313,7 @@
                         :icon="['fas', 'receipt']"
                         class="text-2xl opacity-20"
                       />
-                      <p>No billing history found</p>
+                      <p>{{ $t("subscription.history.noHistory") }}</p>
                     </div>
                   </td>
                 </tr>
@@ -314,7 +325,11 @@
                   <td class="font-medium">
                     {{ new Date(item.date * 1000).toLocaleDateString() }}
                   </td>
-                  <td>{{ item.number || "One-time Payment" }}</td>
+                  <td>
+                    {{
+                      item.number || $t("subscription.history.oneTimePayment")
+                    }}
+                  </td>
                   <td class="font-mono font-semibold">
                     {{ item.currency }} {{ item.amount.toFixed(2) }}
                   </td>
@@ -369,7 +384,7 @@
                   :icon="['fas', 'receipt']"
                   class="text-2xl opacity-20"
                 />
-                <p>No billing history found</p>
+                <p>{{ $t("subscription.history.noHistory") }}</p>
               </div>
             </div>
             <div
@@ -383,7 +398,9 @@
                     {{ new Date(item.date * 1000).toLocaleDateString() }}
                   </p>
                   <p class="font-medium text-sm">
-                    {{ item.number || "One-time Payment" }}
+                    {{
+                      item.number || $t("subscription.history.oneTimePayment")
+                    }}
                   </p>
                 </div>
                 <div
@@ -429,7 +446,9 @@
 import { onMounted, ref, computed } from "vue";
 import { useBillingStore } from "../stores/billing";
 import { useToast } from "../composables/useToast";
+import { useI18n } from "vue-i18n";
 
+const { t } = useI18n();
 const billingStore = useBillingStore();
 const { addToast } = useToast();
 
@@ -437,8 +456,8 @@ const rechargeAmount = ref(20);
 const isRecurring = ref(false);
 
 const amountError = computed(() => {
-  if (!rechargeAmount.value) return "Amount is required";
-  if (rechargeAmount.value < 5) return "Minimum amount is 5 CHF";
+  if (!rechargeAmount.value) return t("subscription.errors.amountRequired");
+  if (rechargeAmount.value < 5) return t("subscription.errors.minAmount");
   return "";
 });
 
@@ -450,20 +469,14 @@ onMounted(async () => {
   if (urlParams.get("success") && sessionId) {
     try {
       await billingStore.verifySession(sessionId);
-      addToast(
-        "Recharge successful! Your balance has been updated.",
-        "success"
-      );
+      addToast(t("subscription.errors.rechargeSuccess"), "success");
     } catch (e) {
-      addToast(
-        "Payment verification failed. Please contact support if you were charged.",
-        "error"
-      );
+      addToast(t("subscription.errors.verificationFailed"), "error");
     }
     // Remove query params
     window.history.replaceState({}, document.title, window.location.pathname);
   } else if (urlParams.get("canceled")) {
-    addToast("Recharge canceled.", "info");
+    addToast(t("subscription.errors.rechargeCanceled"), "info");
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
@@ -486,7 +499,7 @@ const handleRecharge = async () => {
       window.location.href = url;
     }
   } catch (error) {
-    addToast("Failed to initiate recharge.", "error");
+    addToast(t("subscription.errors.initiateFailed"), "error");
   }
 };
 
@@ -497,10 +510,7 @@ const handleManageBilling = async () => {
       window.location.href = url;
     }
   } catch (error) {
-    addToast(
-      "Failed to open billing portal. You may not have a billing account yet.",
-      "error"
-    );
+    addToast(t("subscription.errors.portalFailed"), "error");
   }
 };
 </script>

@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { supabase } from "../supabase";
 import router from "../router";
 import { useToast } from "../composables/useToast";
+import i18n from "../i18n";
 
 export const useAuthStore = defineStore("auth", () => {
   const user = ref(null);
@@ -20,10 +21,13 @@ export const useAuthStore = defineStore("auth", () => {
     } else {
       session.value = data.session;
       user.value = data.session?.user ?? null;
+      if (user.value?.user_metadata?.language) {
+        i18n.global.locale.value = user.value.user_metadata.language;
+      }
     }
   }
 
-  async function signUp(email, password, firstName, lastName) {
+  async function signUp(email, password, firstName, lastName, language) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -31,6 +35,7 @@ export const useAuthStore = defineStore("auth", () => {
         data: {
           first_name: firstName,
           last_name: lastName,
+          language: language,
         },
       },
     });
@@ -48,6 +53,9 @@ export const useAuthStore = defineStore("auth", () => {
 
     session.value = data.session;
     user.value = data.user;
+    if (user.value?.user_metadata?.language) {
+      i18n.global.locale.value = user.value.user_metadata.language;
+    }
     sessionExpired.value = false; // Reset on new login
 
     const lastRoute = localStorage.getItem("lastVisitedRoute");
@@ -61,27 +69,46 @@ export const useAuthStore = defineStore("auth", () => {
   async function logout() {
     sessionExpired.value = false; // Also reset on logout
 
-    // Attempt to sign out from Supabase, but don't let it block local cleanup
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      // Log the error but continue with cleanup, as the session might already be invalid
-      console.error("Error signing out from Supabase:", error.message);
-    }
+    try {
+      // Attempt to sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        // Ignore "session_not_found" and "Auth session missing!"
+        if (
+          error.code !== "session_not_found" &&
+          error.message !== "Auth session missing!"
+        ) {
+          console.error("Error signing out from Supabase:", error.message);
+        }
+      }
+    } catch (err) {
+      console.error("Unexpected error during logout:", err);
+    } finally {
+      // Force cleanup regardless of server errors
 
-    // Clear local state
-    user.value = null;
-    session.value = null;
+      // Clear local state
+      user.value = null;
+      session.value = null;
 
-    // Dynamically import tenants store to clear its state and avoid circular deps
-    const { useTenantsStore } = await import("./tenants");
-    const tenantsStore = useTenantsStore();
-    tenantsStore.selectTenant(null); // This clears currentTenant and localStorage key via watcher
+      // Clear all Supabase tokens from localStorage
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("sb-") && key.endsWith("-auth-token")) {
+          localStorage.removeItem(key);
+        }
+      }
 
-    localStorage.removeItem("lastVisitedRoute");
+      // Dynamically import tenants store to clear its state and avoid circular deps
+      const { useTenantsStore } = await import("./tenants");
+      const tenantsStore = useTenantsStore();
+      tenantsStore.selectTenant(null); // This clears currentTenant and localStorage key via watcher
 
-    // Redirect to login page if not already there
-    if (router.currentRoute.value.name !== "Login") {
-      router.push("/login");
+      localStorage.removeItem("lastVisitedRoute");
+
+      // Redirect to login page if not already there
+      if (router.currentRoute.value.name !== "Login") {
+        router.push("/login");
+      }
     }
   }
 
@@ -90,6 +117,9 @@ export const useAuthStore = defineStore("auth", () => {
     if (event === "SIGNED_IN") {
       session.value = _session;
       user.value = _session.user;
+      if (user.value?.user_metadata?.language) {
+        i18n.global.locale.value = user.value.user_metadata.language;
+      }
       sessionExpired.value = false;
     } else if (event === "SIGNED_OUT") {
       user.value = null;

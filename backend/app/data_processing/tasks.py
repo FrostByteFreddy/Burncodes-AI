@@ -26,7 +26,7 @@ from app.prompts import CLEANUP_PROMPT_TEMPLATES
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
 
-async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_language: str = 'en', source_id: int = None) -> str:
+async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_language: str = 'en', source_id: int = None, update_db: bool = True) -> str:
     """Uses an LLM to clean, optimize, and chunk raw markdown asynchronously."""
     print(f"🤖 Calling LLM to clean and chunk markdown ({len(markdown_text)} chars) with language '{doc_language}'...")
 
@@ -41,8 +41,9 @@ async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_langua
     print("✅ Markdown cleaned and chunked successfully.")
     
     # Write the processed markdown to the "readme" column in tenant_sources
-    loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"readme": response.content}).eq('id', source_id).execute())
+    if update_db and source_id:
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"readme": response.content}).eq('id', source_id).execute())
 
     return response.content
 
@@ -120,7 +121,7 @@ async def _get_document_chunks_from_content(content: str, source: str, source_id
         # Use the LLM cleaning path for unstructured data
         return await async_create_document_chunks_with_metadata(content, source, source_id, tenant_id)
 
-@shared_task
+@shared_task(time_limit=1800) # 30-minute hard time limit for large files
 def process_s3_file(s3_path: str, source_filename: str, source_id: int, tenant_id: UUID):
     """Celery task to process a file stored in Supabase S3."""
     embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
@@ -131,9 +132,12 @@ def process_s3_file(s3_path: str, source_filename: str, source_id: int, tenant_i
 async def async_process_s3_file(s3_path: str, source_filename: str, source_id: int, tenant_id: UUID) -> list[Document]:
     """
     Downloads a file from S3, processes it into document chunks, and cleans up the temporary file.
+    Supports batch processing for PDFs to handle large documents.
     """
     ext = os.path.splitext(source_filename)[1].lower()
     tmp_filepath = None
+    loop = asyncio.get_running_loop()
+    
     try:
         # Download file from S3
         file_content = supabase.storage.from_(bucket_name).download(s3_path)
@@ -156,8 +160,93 @@ async def async_process_s3_file(s3_path: str, source_filename: str, source_id: i
         if not docs_from_loader:
             return []
 
-        content = docs_from_loader[0].page_content
-        return await _get_document_chunks_from_content(content, source_filename, source_id, ext, tenant_id)
+        # Fetch tenant to get doc_language
+        tenant_response = await loop.run_in_executor(None, lambda: supabase.table('tenants').select('doc_language').eq('id', str(tenant_id)).single().execute())
+        doc_language = tenant_response.data.get('doc_language', 'en') if tenant_response.data else 'en'
+
+        all_chunks = []
+        full_cleaned_markdown = ""
+        
+        # Batch processing configuration
+        BATCH_SIZE = 10
+        OVERLAP = 1
+        
+        total_pages = len(docs_from_loader)
+        
+        # If it's a PDF or DOCX (paginated or splitable), we batch it.
+        # Text files might be loaded as one big doc, so this logic handles list of docs.
+        
+        if total_pages > 1:
+            print(f"📚 Processing {total_pages} pages in batches of {BATCH_SIZE} with overlap {OVERLAP}...")
+            
+            for i in range(0, total_pages, BATCH_SIZE - OVERLAP):
+                # Calculate batch slice
+                start_idx = i
+                end_idx = min(i + BATCH_SIZE, total_pages)
+                
+                # If we've already processed the last page in a previous batch (due to overlap logic), stop.
+                # But with (BATCH_SIZE - OVERLAP) step, we naturally progress.
+                # Just need to ensure we don't process a tiny tail if it's fully covered? 
+                # Actually, range step handles start_idx.
+                
+                batch_docs = docs_from_loader[start_idx:end_idx]
+                if not batch_docs:
+                    break
+                    
+                print(f"   Processing batch: pages {start_idx+1} to {end_idx}...")
+                
+                batch_content = "\n\n".join([doc.page_content for doc in batch_docs])
+                
+                # Process batch with LLM
+                # We do NOT update the DB for each batch, only at the end.
+                cleaned_batch = await async_clean_and_chunk_markdown_with_llm(
+                    batch_content, 
+                    doc_language, 
+                    source_id, 
+                    update_db=False
+                )
+                
+                full_cleaned_markdown += cleaned_batch + "\n\n"
+                
+                # Split batch into chunks
+                batch_chunks = [chunk.strip() for chunk in cleaned_batch.split("---CHUNK_SEPARATOR---") if chunk.strip()]
+                
+                timestamp = datetime.now(timezone.utc).isoformat()
+                for k, chunk in enumerate(batch_chunks):
+                    # We need a unique chunk index across the whole file. 
+                    # But since we are appending to a list, we can re-index later or just append.
+                    # Let's just create documents now.
+                    doc = Document(
+                        page_content=chunk,
+                        metadata={
+                            "source": source_filename, 
+                            "source_id": source_id, 
+                            # "chunk": k, # We will re-index at the end to ensure sequential numbering
+                            "last_updated": timestamp,
+                            "batch_start_page": start_idx + 1,
+                            "batch_end_page": end_idx
+                        }
+                    )
+                    all_chunks.append(doc)
+                
+                # Prevent infinite loop if batch size is smaller than overlap (unlikely but safe)
+                if end_idx == total_pages:
+                    break
+        else:
+            # Single page or non-paginated file
+            content = docs_from_loader[0].page_content
+            return await _get_document_chunks_from_content(content, source_filename, source_id, ext, tenant_id)
+
+        # After processing all batches
+        # 1. Update the database with the full cleaned markdown
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"readme": full_cleaned_markdown}).eq('id', source_id).execute())
+        
+        # 2. Re-index chunks sequentially
+        for i, doc in enumerate(all_chunks):
+            doc.metadata['chunk'] = i
+            
+        print(f"✅ Completed processing {source_filename}. Total chunks: {len(all_chunks)}")
+        return all_chunks
 
     except Exception as e:
         print(f"❌ Error processing S3 file {s3_path}: {e}")

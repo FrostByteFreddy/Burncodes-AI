@@ -1,0 +1,335 @@
+{
+  "common": {
+    "loading": "Laden...",
+    "error": "Fehler",
+    "success": "Erfolg"
+  },
+  "auth": {
+    "signup": {
+      "title": "Konto erstellen",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "submit": "Registrieren",
+      "submitting": "Erstelle...",
+      "alreadyHaveAccount": "Haben Sie bereits ein Konto?",
+      "loginLink": "Anmelden",
+      "successMessage": "Registrierung erfolgreich! Bitte überprüfen Sie Ihre E-Mails, um Ihr Konto zu bestätigen.",
+      "language": "Sprache"
+    },
+    "login": {
+      "title": "Willkommen zurück",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "submit": "Anmelden",
+      "submitting": "Anmelden...",
+      "noAccount": "Haben Sie noch kein Konto?",
+      "signupLink": "Registrieren"
+    }
+  },
+  "manageTenants": {
+    "title": "Mandanten verwalten",
+    "newTenant": "Neuer Mandant",
+    "noTenants": "Noch keine Mandanten",
+    "startMessage": "Erstellen Sie Ihren ersten Mandanten, um zu beginnen.",
+    "createTenant": "Mandant erstellen",
+    "delete": "Löschen",
+    "deleteModal": {
+      "title": "Mandant löschen",
+      "message": "Sind Sie sicher, dass Sie den Mandanten '{name}' löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+      "confirm": "Löschen"
+    },
+    "toast": {
+      "createSuccess": "Mandant erfolgreich erstellt!",
+      "createError": "Fehler beim Erstellen des Mandanten.",
+      "deleteSuccess": "Mandant erfolgreich gelöscht!",
+      "deleteError": "Fehler beim Löschen des Mandanten."
+    }
+  },
+  "analytics": {
+    "title": "Chat-Analysen",
+    "timeframes": {
+      "lastHour": "Letzte Stunde",
+      "last4Hours": "Letzte 4 Stunden",
+      "last12Hours": "Letzte 12 Stunden",
+      "last24Hours": "Letzte 24 Stunden",
+      "last7Days": "Letzte 7 Tage"
+    },
+    "intervals": {
+      "perMinute": "Pro Minute",
+      "per5Minutes": "Alle 5 Minuten",
+      "perHour": "Pro Stunde",
+      "perDay": "Pro Tag"
+    },
+    "error": "Laden der Chat-Analysen fehlgeschlagen. Bitte versuchen Sie es später erneut.",
+    "chartLabel": "Anzahl der Nachrichten"
+  },
+  "chat": {
+    "inputPlaceholder": "Stell mir eine Frage...",
+    "thinking": "Denke nach...",
+    "errors": {
+      "initialMessage": "Fehler: Konnte Anfangsnachricht nicht laden.",
+      "processingFailed": "Fehler: Verarbeitung fehlgeschlagen.",
+      "taskStatus": "Fehler: Konnte Task-Status nicht abrufen.",
+      "sendMessage": "Fehler: Konnte Nachricht nicht senden."
+    }
+  },
+  "subscription": {
+    "title": "Abrechnung & Abonnement",
+    "subtitle": "Verwalten Sie Ihr Guthaben und sehen Sie Nutzungsstatistiken ein",
+    "balance": "Aktuelles Guthaben",
+    "manageBilling": "Abrechnung verwalten",
+    "addFunds": "Guthaben aufladen",
+    "oneTime": "Einmalig",
+    "monthly": "Monatliches Abonnement",
+    "selectAmount": "Betrag wählen",
+    "monthlySuffix": "(Monatlich)",
+    "customAmount": "Benutzerdefinierter Betrag",
+    "enterAmount": "Betrag eingeben",
+    "minDeposit": "Mindesteinzahlung beträgt 5 CHF",
+    "subscribe": "Abonnieren",
+    "add": "Hinzufügen",
+    "perMonth": "/ Monat",
+    "usageStats": "Nutzungsstatistiken",
+    "totalSpent": "Gesamtausgaben",
+    "tokensUsed": "Verwendete Token",
+    "in": "Eing:",
+    "out": "Ausg:",
+    "howItWorks": {
+      "title": "Wie die Abrechnung funktioniert",
+      "description": "Sie zahlen einen festen Betrag, um Ihr Guthaben aufzuladen. Jede Chat-Nachricht verbraucht Token, die von Ihrem Guthaben abgezogen werden."
+    },
+    "history": {
+      "title": "Rechnungsverlauf",
+      "date": "Datum",
+      "description": "Beschreibung",
+      "amount": "Betrag",
+      "status": "Status",
+      "invoice": "Rechnung",
+      "noHistory": "Kein Rechnungsverlauf gefunden",
+      "oneTimePayment": "Einmalzahlung"
+    },
+    "errors": {
+      "amountRequired": "Betrag ist erforderlich",
+      "minAmount": "Mindestbetrag ist 5 CHF",
+      "rechargeSuccess": "Aufladung erfolgreich! Ihr Guthaben wurde aktualisiert.",
+      "verificationFailed": "Zahlungsüberprüfung fehlgeschlagen. Bitte kontaktieren Sie den Support, falls Sie belastet wurden.",
+      "rechargeCanceled": "Aufladung abgebrochen.",
+      "initiateFailed": "Fehler beim Starten der Aufladung.",
+      "portalFailed": "Fehler beim Öffnen des Abrechnungsportals. Möglicherweise haben Sie noch kein Abrechnungskonto."
+    }
+  },
+  "tenant": {
+    "subtitle": "Verwalten Sie Ihre Mandanteneinstellungen, Quellen und erweiterten Konfigurationen.",
+    "loading": "Lade Mandant...",
+    "settings": {
+      "tabs": {
+        "behavior": "Verhalten",
+        "appearance": "Erscheinungsbild"
+      },
+      "behavior": {
+        "name": "Mandantenname",
+        "introMessage": "Begrüßungsnachricht",
+        "systemPersona": "System-Persona",
+        "ragPromptTemplate": "RAG-Prompt-Vorlage",
+        "docLanguage": "Dokumentsprache",
+        "translationTarget": "Übersetzungsziel"
+      },
+      "appearance": {
+        "installation": {
+          "title": "Installation",
+          "instruction": "Kopieren Sie diesen Code-Schnipsel und fügen Sie ihn in das HTML Ihrer Website ein, direkt vor dem schließenden </body>-Tag.",
+          "copy": "Kopieren"
+        },
+        "colorPalette": {
+          "title": "Farbpalette",
+          "description": "Definieren Sie hier Ihre Markenfarben. Diese Farben werden sowohl für den Launcher als auch für das Chat-Fenster verwendet.",
+          "placeholder": "Farbname (z. B. Marken-Lila)",
+          "addColor": "Farbe hinzufügen",
+          "removeBaseColorError": "Basisfarben können nicht entfernt werden."
+        },
+        "chatWindow": {
+          "title": "Chat-Fenster-Konfiguration",
+          "chatbotTitle": "Chatbot-Titel",
+          "logo": "Logo",
+          "removeLogo": "Logo entfernen",
+          "showResetButton": "\"Chat zurücksetzen\"-Button anzeigen",
+          "inputPlaceholder": "Eingabe-Platzhalter",
+          "thinkingMessages": "\"Denk\"-Nachrichten",
+          "thinkingPlaceholder": "Eine Nachricht pro Zeile..."
+        },
+        "componentStyles": {
+          "title": "Komponenten-Stile",
+          "labels": {
+            "header_background_color": "Header-Hintergrund",
+            "header_text_color": "Header-Text",
+            "user_message_background_color": "Benutzernachricht-Hintergrund",
+            "user_message_text_color": "Benutzernachricht-Text",
+            "bot_message_background_color": "Bot-Nachricht-Hintergrund",
+            "bot_message_text_color": "Bot-Nachricht-Text",
+            "send_button_background_color": "Senden-Button-Hintergrund",
+            "send_button_text_color": "Senden-Button-Text",
+            "input_background_color": "Eingabefeld-Hintergrund",
+            "input_text_color": "Eingabefeld-Text",
+            "input_focus_ring_color": "Eingabefeld-Fokusring",
+            "chat_background_color": "Chat-Bereich-Hintergrund",
+            "reset_button_color": "Zurücksetzen-Button",
+            "launcher_background_color": "Launcher-Button-Hintergrund"
+          }
+        },
+        "launcher": {
+          "title": "Launcher-Konfiguration",
+          "icon": "Launcher-Icon",
+          "removeIcon": "Icon entfernen",
+          "currentIcon": "Aktuelles Icon:",
+          "backgroundColor": "Launcher-Hintergrundfarbe"
+        },
+        "preview": {
+          "title": "Live-Vorschau",
+          "chatWindow": "Chat-Fenster",
+          "launcher": "Launcher"
+        }
+      },
+      "actions": {
+        "saving": "Speichern...",
+        "saveChanges": "Änderungen speichern",
+        "savedSuccess": "Einstellungen erfolgreich gespeichert!",
+        "saveFailed": "Fehler beim Speichern der Einstellungen.",
+        "imageRemoved": "Bild entfernt.",
+        "imageUpdated": "Bild aktualisiert!",
+        "readFailed": "Fehler beim Lesen der Datei. Bitte versuchen Sie ein anderes Bild.",
+        "scriptCopied": "Skript in die Zwischenablage kopiert!",
+        "copyFailed": "Fehler beim Kopieren des Skripts."
+      },
+      "defaults": {
+        "newColor": "Neue Farbe",
+        "white": "Weiß",
+        "black": "Schwarz",
+        "primary": "Primär",
+        "secondary": "Sekundär"
+      }
+    },
+    "sources": {
+      "addNew": "Neue Quelle hinzufügen",
+      "uploadFile": "Datei hochladen",
+      "uploading": "Wird hochgeladen...",
+      "crawlWebsite": "Website crawlen",
+      "crawling": "Crawling...",
+      "invalidUrl": "Bitte geben Sie eine gültige URL ein (z. B. https://example.com).",
+      "crawlSinglePage": "Nur diese Seite crawlen",
+      "excludeUrls": "URLs ausschließen (eine pro Zeile)",
+      "excludePlaceholder": "z. B. https://example.com/fr/...",
+      "activity": {
+        "title": "Crawling-Aktivität",
+        "noActivity": "Noch keine Crawling-Aktivität",
+        "instruction": "Verwenden Sie die Funktion \"Website crawlen\", um einen neuen Crawl zu starten.",
+        "status": "Status:"
+      },
+      "existing": {
+        "title": "Vorhandene Quellen",
+        "noSources": "Noch keine Quellen",
+        "instruction": "Fügen Sie eine Quelle hinzu, um die Wissensbasis Ihres Chatbots aufzubauen.",
+        "crawledUrls": "Gecrawlte URLs",
+        "noCrawledUrls": "Es wurden noch keine URLs gecrawlt.",
+        "uploadedFiles": "Hochgeladene Dateien",
+        "noUploadedFiles": "Es wurden noch keine Dateien hochgeladen."
+      },
+      "deleteModal": {
+        "title": "Quelle löschen",
+        "message": "Sind Sie sicher, dass Sie die Quelle '{source}' löschen möchten?",
+        "confirm": "Löschen"
+      },
+      "actions": {
+        "crawlStarted": "Crawling-Job erfolgreich gestartet!",
+        "crawlFailed": "Fehler beim Starten des Crawls:",
+        "uploadSuccess": "Datei erfolgreich hochgeladen!",
+        "uploadFailed": "Fehler beim Hochladen der Datei:",
+        "deleteSuccess": "Quelle erfolgreich gelöscht!",
+        "deleteFailed": "Fehler beim Löschen der Quelle:",
+        "crawlCompleted": "Crawl-Job abgeschlossen! Quellen werden aktualisiert...",
+        "fetchFailed": "Fehler beim Abrufen der Crawling-Aktivität."
+      }
+    },
+    "fineTune": {
+      "title": "Feinabstimmungsregeln",
+      "noRules": "Noch keine Feinabstimmungsregeln definiert.",
+      "addRule": "Neue Regel hinzufügen",
+      "trigger": {
+        "label": "Auslöser",
+        "placeholder": "Auslöser",
+        "example": "z. B. 'zusammenfassen:'"
+      },
+      "instruction": {
+        "label": "Anweisung",
+        "placeholder": "Anweisung",
+        "example": "z. B. 'Fasse den folgenden Text prägnant zusammen.'"
+      },
+      "actions": {
+        "cancel": "Abbrechen",
+        "add": "Regel hinzufügen",
+        "saveSuccess": "Feinabstimmungsregeln erfolgreich gespeichert!",
+        "saveFailed": "Fehler beim Speichern der Feinabstimmungsregeln."
+      }
+    }
+  },
+  "chatLogs": {
+    "title": "Chat-Protokolle",
+    "back": "Zurück",
+    "conversations": "Unterhaltungen",
+    "errors": {
+      "loadConversations": "Fehler beim Laden der Unterhaltungen. Bitte versuchen Sie es später erneut.",
+      "loadLogs": "Fehler beim Laden der Chat-Protokolle. Bitte versuchen Sie es später erneut."
+    }
+  },
+  "profile": {
+    "title": "Mein Profil",
+    "email": "E-Mail",
+    "firstName": "Vorname",
+    "lastName": "Nachname",
+    "phoneNumber": "Telefonnummer",
+    "language": "Sprache",
+    "saving": "Speichern...",
+    "saveChanges": "Änderungen speichern",
+    "success": "Profil erfolgreich aktualisiert!",
+    "error": "Fehler beim Aktualisieren des Profils."
+  },
+  "sidebar": {
+    "selectTenant": "Mandanten wählen",
+    "sources": "Quellen",
+    "configuration": "Konfiguration",
+    "fineTune": "Feinabstimmung",
+    "analytics": "Analysen",
+    "chatLogs": "Chat-Protokolle",
+    "chatbot": "Chatbot",
+    "noTenantSelected": "Wählen Sie einen Mandanten, um Verwaltungsoptionen zu sehen.",
+    "settings": "Einstellungen",
+    "profile": "Profil",
+    "manageTenants": "Mandanten verwalten",
+    "subscription": "Abonnement",
+    "logout": "Abmelden"
+  },
+  "modals": {
+    "createTenant": {
+      "title": "Neuen Mandanten erstellen",
+      "name": "Mandantenname",
+      "introMessage": "Begrüßungsnachricht",
+      "systemPersona": "System-Persona",
+      "ragPromptTemplate": "RAG-Prompt-Vorlage",
+      "docLanguage": "Dokumentsprache",
+      "translationTarget": "Übersetzungsziel",
+      "cancel": "Abbrechen",
+      "create": "Erstellen"
+    },
+    "confirmation": {
+      "cancel": "Abbrechen",
+      "confirm": "Bestätigen",
+      "typeToConfirm": "Zur Bestätigung geben Sie bitte \"{text}\" unten ein:"
+    },
+    "sessionExpired": {
+      "title": "Sitzung abgelaufen",
+      "message": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
+      "logout": "Abmelden"
+    }
+  }
+}
