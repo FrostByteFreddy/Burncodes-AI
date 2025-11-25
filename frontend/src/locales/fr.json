@@ -1,0 +1,335 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès"
+  },
+  "auth": {
+    "signup": {
+      "title": "Créer un compte",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "submit": "S'inscrire",
+      "submitting": "Création...",
+      "alreadyHaveAccount": "Vous avez déjà un compte ?",
+      "loginLink": "Se connecter",
+      "successMessage": "Inscription réussie ! Veuillez vérifier votre e-mail pour confirmer votre compte.",
+      "language": "Langue"
+    },
+    "login": {
+      "title": "Bon retour",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "submit": "Se connecter",
+      "submitting": "Connexion...",
+      "noAccount": "Vous n'avez pas de compte ?",
+      "signupLink": "S'inscrire"
+    }
+  },
+  "manageTenants": {
+    "title": "Gérer les locataires",
+    "newTenant": "Nouveau locataire",
+    "noTenants": "Pas encore de locataires",
+    "startMessage": "Créez votre premier locataire pour commencer.",
+    "createTenant": "Créer un locataire",
+    "delete": "Supprimer",
+    "deleteModal": {
+      "title": "Supprimer le locataire",
+      "message": "Êtes-vous sûr de vouloir supprimer le locataire '{name}' ? Cette action est irréversible.",
+      "confirm": "Supprimer"
+    },
+    "toast": {
+      "createSuccess": "Locataire créé avec succès !",
+      "createError": "Échec de la création du locataire.",
+      "deleteSuccess": "Locataire supprimé avec succès !",
+      "deleteError": "Échec de la suppression du locataire."
+    }
+  },
+  "analytics": {
+    "title": "Analyses de chat",
+    "timeframes": {
+      "lastHour": "Dernière heure",
+      "last4Hours": "Dernières 4 heures",
+      "last12Hours": "Dernières 12 heures",
+      "last24Hours": "Dernières 24 heures",
+      "last7Days": "Derniers 7 jours"
+    },
+    "intervals": {
+      "perMinute": "Par minute",
+      "per5Minutes": "Toutes les 5 minutes",
+      "perHour": "Par heure",
+      "perDay": "Par jour"
+    },
+    "error": "Échec du chargement des analyses. Veuillez réessayer plus tard.",
+    "chartLabel": "Nombre de messages"
+  },
+  "chat": {
+    "inputPlaceholder": "Posez-moi une question...",
+    "thinking": "Je réfléchis...",
+    "errors": {
+      "initialMessage": "Erreur : Impossible de récupérer le message initial.",
+      "processingFailed": "Erreur : Échec du traitement.",
+      "taskStatus": "Erreur : Impossible de récupérer le statut de la tâche.",
+      "sendMessage": "Erreur : Impossible d'envoyer le message."
+    }
+  },
+  "subscription": {
+    "title": "Facturation et abonnement",
+    "subtitle": "Gérez votre solde et consultez les statistiques d'utilisation",
+    "balance": "Solde actuel",
+    "manageBilling": "Gérer la facturation",
+    "addFunds": "Ajouter des fonds",
+    "oneTime": "Unique",
+    "monthly": "Abonnement mensuel",
+    "selectAmount": "Sélectionner le montant",
+    "monthlySuffix": "(Mensuel)",
+    "customAmount": "Montant personnalisé",
+    "enterAmount": "Entrer le montant",
+    "minDeposit": "Le dépôt minimum est de 5 CHF",
+    "subscribe": "S'abonner",
+    "add": "Ajouter",
+    "perMonth": "/ mois",
+    "usageStats": "Statistiques d'utilisation",
+    "totalSpent": "Total dépensé",
+    "tokensUsed": "Jetons utilisés",
+    "in": "Entrée :",
+    "out": "Sortie :",
+    "howItWorks": {
+      "title": "Comment fonctionne la facturation",
+      "description": "Vous payez un montant fixe pour recharger votre solde. Chaque message de chat consomme des jetons qui sont déduits de votre solde."
+    },
+    "history": {
+      "title": "Historique de facturation",
+      "date": "Date",
+      "description": "Description",
+      "amount": "Montant",
+      "status": "Statut",
+      "invoice": "Facture",
+      "noHistory": "Aucun historique de facturation trouvé",
+      "oneTimePayment": "Paiement unique"
+    },
+    "errors": {
+      "amountRequired": "Le montant est requis",
+      "minAmount": "Le montant minimum est de 5 CHF",
+      "rechargeSuccess": "Recharge réussie ! Votre solde a été mis à jour.",
+      "verificationFailed": "Échec de la vérification du paiement. Veuillez contacter le support si vous avez été débité.",
+      "rechargeCanceled": "Recharge annulée.",
+      "initiateFailed": "Échec du lancement de la recharge.",
+      "portalFailed": "Échec de l'ouverture du portail de facturation. Vous n'avez peut-être pas encore de compte de facturation."
+    }
+  },
+  "tenant": {
+    "subtitle": "Gérez les paramètres de votre locataire, les sources et les configurations avancées.",
+    "loading": "Chargement du locataire...",
+    "settings": {
+      "tabs": {
+        "behavior": "Comportement",
+        "appearance": "Apparence"
+      },
+      "behavior": {
+        "name": "Nom du locataire",
+        "introMessage": "Message d'introduction",
+        "systemPersona": "Persona du système",
+        "ragPromptTemplate": "Modèle de prompt RAG",
+        "docLanguage": "Langue du document",
+        "translationTarget": "Cible de traduction"
+      },
+      "appearance": {
+        "installation": {
+          "title": "Installation",
+          "instruction": "Copiez et collez cet extrait de code dans le HTML de votre site web, juste avant la balise fermante </body>.",
+          "copy": "Copier"
+        },
+        "colorPalette": {
+          "title": "Palette de couleurs",
+          "description": "Définissez les couleurs de votre marque ici. Ces couleurs sont utilisées à la fois pour le lanceur et la fenêtre de chat.",
+          "placeholder": "Nom de la couleur (par ex. Violet Marque)",
+          "addColor": "Ajouter une couleur",
+          "removeBaseColorError": "Impossible de supprimer les couleurs de base."
+        },
+        "chatWindow": {
+          "title": "Configuration de la fenêtre de chat",
+          "chatbotTitle": "Titre du chatbot",
+          "logo": "Logo",
+          "removeLogo": "Supprimer le logo",
+          "showResetButton": "Afficher le bouton \"Réinitialiser le chat\"",
+          "inputPlaceholder": "Espace réservé de l'entrée",
+          "thinkingMessages": "Messages \"Je réfléchis\"",
+          "thinkingPlaceholder": "Un message par ligne..."
+        },
+        "componentStyles": {
+          "title": "Styles des composants",
+          "labels": {
+            "header_background_color": "Arrière-plan de l'en-tête",
+            "header_text_color": "Texte de l'en-tête",
+            "user_message_background_color": "Arrière-plan du message utilisateur",
+            "user_message_text_color": "Texte du message utilisateur",
+            "bot_message_background_color": "Arrière-plan du message bot",
+            "bot_message_text_color": "Texte du message bot",
+            "send_button_background_color": "Arrière-plan du bouton envoyer",
+            "send_button_text_color": "Texte du bouton envoyer",
+            "input_background_color": "Arrière-plan du champ de saisie",
+            "input_text_color": "Texte du champ de saisie",
+            "input_focus_ring_color": "Anneau de focus du champ de saisie",
+            "chat_background_color": "Arrière-plan de la zone de chat",
+            "reset_button_color": "Bouton de réinitialisation",
+            "launcher_background_color": "Arrière-plan du bouton lanceur"
+          }
+        },
+        "launcher": {
+          "title": "Configuration du lanceur",
+          "icon": "Icône du lanceur",
+          "removeIcon": "Supprimer l'icône",
+          "currentIcon": "Icône actuelle :",
+          "backgroundColor": "Couleur d'arrière-plan du lanceur"
+        },
+        "preview": {
+          "title": "Aperçu en direct",
+          "chatWindow": "Fenêtre de chat",
+          "launcher": "Lanceur"
+        }
+      },
+      "actions": {
+        "saving": "Enregistrement...",
+        "saveChanges": "Enregistrer les modifications",
+        "savedSuccess": "Paramètres enregistrés avec succès !",
+        "saveFailed": "Échec de l'enregistrement des paramètres.",
+        "imageRemoved": "Image supprimée.",
+        "imageUpdated": "Image mise à jour !",
+        "readFailed": "Échec de la lecture du fichier. Veuillez essayer une autre image.",
+        "scriptCopied": "Script copié dans le presse-papiers !",
+        "copyFailed": "Échec de la copie du script."
+      },
+      "defaults": {
+        "newColor": "Nouvelle couleur",
+        "white": "Blanc",
+        "black": "Noir",
+        "primary": "Primaire",
+        "secondary": "Secondaire"
+      }
+    },
+    "sources": {
+      "addNew": "Ajouter une nouvelle source",
+      "uploadFile": "Télécharger un fichier",
+      "uploading": "Téléchargement...",
+      "crawlWebsite": "Crawler le site web",
+      "crawling": "Crawling...",
+      "invalidUrl": "Veuillez entrer une URL valide (par ex. https://example.com).",
+      "crawlSinglePage": "Crawler uniquement cette page",
+      "excludeUrls": "Exclure les URL (une par ligne)",
+      "excludePlaceholder": "par ex. https://example.com/fr/...",
+      "activity": {
+        "title": "Activité de crawling",
+        "noActivity": "Aucune activité de crawling pour le moment",
+        "instruction": "Utilisez la fonctionnalité \"Crawler le site web\" pour démarrer un nouveau crawl.",
+        "status": "Statut :"
+      },
+      "existing": {
+        "title": "Sources existantes",
+        "noSources": "Aucune source pour le moment",
+        "instruction": "Ajoutez une source pour commencer à construire la base de connaissances de votre chatbot.",
+        "crawledUrls": "URL crawlées",
+        "noCrawledUrls": "Aucune URL n'a encore été crawlée.",
+        "uploadedFiles": "Fichiers téléchargés",
+        "noUploadedFiles": "Aucun fichier n'a encore été téléchargé."
+      },
+      "deleteModal": {
+        "title": "Supprimer la source",
+        "message": "Êtes-vous sûr de vouloir supprimer la source '{source}' ?",
+        "confirm": "Supprimer"
+      },
+      "actions": {
+        "crawlStarted": "Tâche de crawling démarrée avec succès !",
+        "crawlFailed": "Échec du démarrage du crawl :",
+        "uploadSuccess": "Fichier téléchargé avec succès !",
+        "uploadFailed": "Échec du téléchargement du fichier :",
+        "deleteSuccess": "Source supprimée avec succès !",
+        "deleteFailed": "Échec de la suppression de la source :",
+        "crawlCompleted": "Tâche de crawling terminée ! Actualisation des sources...",
+        "fetchFailed": "Échec de la récupération de l'activité de crawling."
+      }
+    },
+    "fineTune": {
+      "title": "Règles d'ajustement",
+      "noRules": "Aucune règle d'ajustement définie pour le moment.",
+      "addRule": "Ajouter une nouvelle règle",
+      "trigger": {
+        "label": "Déclencheur",
+        "placeholder": "Déclencheur",
+        "example": "par ex. 'résumer :'"
+      },
+      "instruction": {
+        "label": "Instruction",
+        "placeholder": "Instruction",
+        "example": "par ex. 'Résumez le texte suivant de manière concise.'"
+      },
+      "actions": {
+        "cancel": "Annuler",
+        "add": "Ajouter une règle",
+        "saveSuccess": "Règles d'ajustement enregistrées avec succès !",
+        "saveFailed": "Échec de l'enregistrement des règles d'ajustement."
+      }
+    }
+  },
+  "chatLogs": {
+    "title": "Journaux de chat",
+    "back": "Retour",
+    "conversations": "Conversations",
+    "errors": {
+      "loadConversations": "Échec du chargement des conversations. Veuillez réessayer plus tard.",
+      "loadLogs": "Échec du chargement des journaux de chat. Veuillez réessayer plus tard."
+    }
+  },
+  "profile": {
+    "title": "Mon profil",
+    "email": "E-mail",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "phoneNumber": "Numéro de téléphone",
+    "language": "Langue",
+    "saving": "Enregistrement...",
+    "saveChanges": "Enregistrer les modifications",
+    "success": "Profil mis à jour avec succès !",
+    "error": "Échec de la mise à jour du profil."
+  },
+  "sidebar": {
+    "selectTenant": "Sélectionner un locataire",
+    "sources": "Sources",
+    "configuration": "Configuration",
+    "fineTune": "Ajustement",
+    "analytics": "Analytique",
+    "chatLogs": "Journaux de chat",
+    "chatbot": "Chatbot",
+    "noTenantSelected": "Sélectionnez un locataire pour voir les options de gestion.",
+    "settings": "Paramètres",
+    "profile": "Profil",
+    "manageTenants": "Gérer les locataires",
+    "subscription": "Abonnement",
+    "logout": "Se déconnecter"
+  },
+  "modals": {
+    "createTenant": {
+      "title": "Créer un nouveau locataire",
+      "name": "Nom du locataire",
+      "introMessage": "Message d'introduction",
+      "systemPersona": "Persona système",
+      "ragPromptTemplate": "Modèle de prompt RAG",
+      "docLanguage": "Langue du document",
+      "translationTarget": "Cible de traduction",
+      "cancel": "Annuler",
+      "create": "Créer"
+    },
+    "confirmation": {
+      "cancel": "Annuler",
+      "confirm": "Confirmer",
+      "typeToConfirm": "Pour confirmer, veuillez taper \"{text}\" ci-dessous :"
+    },
+    "sessionExpired": {
+      "title": "Session expirée",
+      "message": "Votre session a expiré. Veuillez vous reconnecter.",
+      "logout": "Se déconnecter"
+    }
+  }
+}

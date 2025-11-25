@@ -1,0 +1,335 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "auth": {
+    "signup": {
+      "title": "Create Account",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign Up",
+      "submitting": "Creating...",
+      "alreadyHaveAccount": "Already have an account?",
+      "loginLink": "Log in",
+      "successMessage": "Signup successful! Please check your email to confirm your account.",
+      "language": "Language"
+    },
+    "login": {
+      "title": "Welcome Back",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Log In",
+      "submitting": "Logging in...",
+      "noAccount": "Don't have an account?",
+      "signupLink": "Sign up"
+    }
+  },
+  "manageTenants": {
+    "title": "Manage Tenants",
+    "newTenant": "New Tenant",
+    "noTenants": "No tenants yet",
+    "startMessage": "Create your first tenant to get started.",
+    "createTenant": "Create a Tenant",
+    "delete": "Delete",
+    "deleteModal": {
+      "title": "Delete Tenant",
+      "message": "Are you sure you want to delete the tenant '{name}'? This action cannot be undone.",
+      "confirm": "Delete"
+    },
+    "toast": {
+      "createSuccess": "Tenant created successfully!",
+      "createError": "Failed to create tenant.",
+      "deleteSuccess": "Tenant deleted successfully!",
+      "deleteError": "Failed to delete tenant."
+    }
+  },
+  "analytics": {
+    "title": "Chat Analytics",
+    "timeframes": {
+      "lastHour": "Last Hour",
+      "last4Hours": "Last 4 Hours",
+      "last12Hours": "Last 12 Hours",
+      "last24Hours": "Last 24 Hours",
+      "last7Days": "Last 7 Days"
+    },
+    "intervals": {
+      "perMinute": "Per Minute",
+      "per5Minutes": "Per 5 Minutes",
+      "perHour": "Per Hour",
+      "perDay": "Per Day"
+    },
+    "error": "Failed to load chat analytics. Please try again later.",
+    "chartLabel": "Number of Messages"
+  },
+  "chat": {
+    "inputPlaceholder": "Ask me a question...",
+    "thinking": "Thinking...",
+    "errors": {
+      "initialMessage": "Error: Could not get initial message.",
+      "processingFailed": "Error: Processing failed.",
+      "taskStatus": "Error: Could not get task status.",
+      "sendMessage": "Error: Could not send message."
+    }
+  },
+  "subscription": {
+    "title": "Billing & Subscription",
+    "subtitle": "Manage your balance and view usage statistics",
+    "balance": "Current Balance",
+    "manageBilling": "Manage Billing",
+    "addFunds": "Add Funds",
+    "oneTime": "One-time",
+    "monthly": "Monthly Subscription",
+    "selectAmount": "Select Amount",
+    "monthlySuffix": "(Monthly)",
+    "customAmount": "Custom Amount",
+    "enterAmount": "Enter amount",
+    "minDeposit": "Minimum deposit is 5 CHF",
+    "subscribe": "Subscribe",
+    "add": "Add",
+    "perMonth": "/ month",
+    "usageStats": "Usage Statistics",
+    "totalSpent": "Total Spent",
+    "tokensUsed": "Tokens Used",
+    "in": "In:",
+    "out": "Out:",
+    "howItWorks": {
+      "title": "How billing works",
+      "description": "You pay a fixed amount to recharge your balance. Each chat message consumes tokens which are deducted from your balance."
+    },
+    "history": {
+      "title": "Billing History",
+      "date": "Date",
+      "description": "Description",
+      "amount": "Amount",
+      "status": "Status",
+      "invoice": "Invoice",
+      "noHistory": "No billing history found",
+      "oneTimePayment": "One-time Payment"
+    },
+    "errors": {
+      "amountRequired": "Amount is required",
+      "minAmount": "Minimum amount is 5 CHF",
+      "rechargeSuccess": "Recharge successful! Your balance has been updated.",
+      "verificationFailed": "Payment verification failed. Please contact support if you were charged.",
+      "rechargeCanceled": "Recharge canceled.",
+      "initiateFailed": "Failed to initiate recharge.",
+      "portalFailed": "Failed to open billing portal. You may not have a billing account yet."
+    }
+  },
+  "tenant": {
+    "subtitle": "Manage your tenant settings, sources, and advanced configurations.",
+    "loading": "Loading tenant...",
+    "settings": {
+      "tabs": {
+        "behavior": "Behavior",
+        "appearance": "Appearance"
+      },
+      "behavior": {
+        "name": "Tenant Name",
+        "introMessage": "Intro Message",
+        "systemPersona": "System Persona",
+        "ragPromptTemplate": "RAG Prompt Template",
+        "docLanguage": "Document Language",
+        "translationTarget": "Translation Target"
+      },
+      "appearance": {
+        "installation": {
+          "title": "Installation",
+          "instruction": "Copy and paste this code snippet into your website's HTML, just before the closing </body> tag.",
+          "copy": "Copy"
+        },
+        "colorPalette": {
+          "title": "Color Palette",
+          "description": "Define your brand colors here. These colors are used for both the launcher and the chat window.",
+          "placeholder": "Color Name (e.g., Brand Purple)",
+          "addColor": "Add Color",
+          "removeBaseColorError": "Cannot remove base colors."
+        },
+        "chatWindow": {
+          "title": "Chat Window Configuration",
+          "chatbotTitle": "Chatbot Title",
+          "logo": "Logo",
+          "removeLogo": "Remove Logo",
+          "showResetButton": "Show \"Reset Chat\" Button",
+          "inputPlaceholder": "Input Placeholder",
+          "thinkingMessages": "\"Thinking\" Messages",
+          "thinkingPlaceholder": "One message per line..."
+        },
+        "componentStyles": {
+          "title": "Component Styles",
+          "labels": {
+            "header_background_color": "Header Background",
+            "header_text_color": "Header Text",
+            "user_message_background_color": "User Message Background",
+            "user_message_text_color": "User Message Text",
+            "bot_message_background_color": "Bot Message Background",
+            "bot_message_text_color": "Bot Message Text",
+            "send_button_background_color": "Send Button Background",
+            "send_button_text_color": "Send Button Text",
+            "input_background_color": "Input Field Background",
+            "input_text_color": "Input Field Text",
+            "input_focus_ring_color": "Input Field Focus Ring",
+            "chat_background_color": "Chat Area Background",
+            "reset_button_color": "Reset Button",
+            "launcher_background_color": "Launcher Button Background"
+          }
+        },
+        "launcher": {
+          "title": "Launcher Configuration",
+          "icon": "Launcher Icon",
+          "removeIcon": "Remove Icon",
+          "currentIcon": "Current Icon:",
+          "backgroundColor": "Launcher Background Color"
+        },
+        "preview": {
+          "title": "Live Preview",
+          "chatWindow": "Chat Window",
+          "launcher": "Launcher"
+        }
+      },
+      "actions": {
+        "saving": "Saving...",
+        "saveChanges": "Save Changes",
+        "savedSuccess": "Settings saved successfully!",
+        "saveFailed": "Failed to save settings.",
+        "imageRemoved": "Image removed.",
+        "imageUpdated": "Image updated!",
+        "readFailed": "Failed to read file. Please try a different image.",
+        "scriptCopied": "Script copied to clipboard!",
+        "copyFailed": "Failed to copy script."
+      },
+      "defaults": {
+        "newColor": "New Color",
+        "white": "White",
+        "black": "Black",
+        "primary": "Primary",
+        "secondary": "Secondary"
+      }
+    },
+    "sources": {
+      "addNew": "Add New Source",
+      "uploadFile": "Upload File",
+      "uploading": "Uploading...",
+      "crawlWebsite": "Crawl Website",
+      "crawling": "Crawling...",
+      "invalidUrl": "Please enter a valid URL (e.g., https://example.com).",
+      "crawlSinglePage": "Crawl only this page",
+      "excludeUrls": "Exclude URLs (one per line)",
+      "excludePlaceholder": "e.g., https://example.com/fr/...",
+      "activity": {
+        "title": "Crawling Activity",
+        "noActivity": "No crawling activity yet",
+        "instruction": "Use the \"Crawl Website\" feature to start a new crawl.",
+        "status": "Status:"
+      },
+      "existing": {
+        "title": "Existing Sources",
+        "noSources": "No sources yet",
+        "instruction": "Add a source to start building your chatbot's knowledge base.",
+        "crawledUrls": "Crawled URLs",
+        "noCrawledUrls": "No URLs have been crawled yet.",
+        "uploadedFiles": "Uploaded Files",
+        "noUploadedFiles": "No files have been uploaded yet."
+      },
+      "deleteModal": {
+        "title": "Delete Source",
+        "message": "Are you sure you want to delete the source '{source}'?",
+        "confirm": "Delete"
+      },
+      "actions": {
+        "crawlStarted": "Crawling job started successfully!",
+        "crawlFailed": "Failed to start crawl:",
+        "uploadSuccess": "File uploaded successfully!",
+        "uploadFailed": "File upload failed:",
+        "deleteSuccess": "Source deleted successfully!",
+        "deleteFailed": "Failed to delete source:",
+        "crawlCompleted": "Crawl job completed! Refreshing sources...",
+        "fetchFailed": "Failed to fetch crawling activity."
+      }
+    },
+    "fineTune": {
+      "title": "Fine-Tuning Rules",
+      "noRules": "No fine-tuning rules defined yet.",
+      "addRule": "Add New Rule",
+      "trigger": {
+        "label": "Trigger",
+        "placeholder": "Trigger",
+        "example": "e.g., 'summarize:'"
+      },
+      "instruction": {
+        "label": "Instruction",
+        "placeholder": "Instruction",
+        "example": "e.g., 'Summarize the following text concisely.'"
+      },
+      "actions": {
+        "cancel": "Cancel",
+        "add": "Add Rule",
+        "saveSuccess": "Fine-tuning rules saved successfully!",
+        "saveFailed": "Failed to save fine-tuning rules."
+      }
+    }
+  },
+  "chatLogs": {
+    "title": "Chat Logs",
+    "back": "Back",
+    "conversations": "Conversations",
+    "errors": {
+      "loadConversations": "Failed to load conversations. Please try again later.",
+      "loadLogs": "Failed to load conversation logs. Please try again later."
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "email": "Email",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "phoneNumber": "Phone Number",
+    "language": "Language",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes",
+    "success": "Profile updated successfully!",
+    "error": "Failed to update profile."
+  },
+  "sidebar": {
+    "selectTenant": "Select a Tenant",
+    "sources": "Sources",
+    "configuration": "Configuration",
+    "fineTune": "Fine Tune",
+    "analytics": "Analytics",
+    "chatLogs": "Chat Logs",
+    "chatbot": "Chatbot",
+    "noTenantSelected": "Select a tenant to see management options.",
+    "settings": "Settings",
+    "profile": "Profile",
+    "manageTenants": "Manage Tenants",
+    "subscription": "Subscription",
+    "logout": "Logout"
+  },
+  "modals": {
+    "createTenant": {
+      "title": "Create New Tenant",
+      "name": "Tenant Name",
+      "introMessage": "Intro Message",
+      "systemPersona": "System Persona",
+      "ragPromptTemplate": "RAG Prompt Template",
+      "docLanguage": "Document Language",
+      "translationTarget": "Translation Target",
+      "cancel": "Cancel",
+      "create": "Create"
+    },
+    "confirmation": {
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "typeToConfirm": "To confirm, please type \"{text}\" below:"
+    },
+    "sessionExpired": {
+      "title": "Session Expired",
+      "message": "Your session has expired. Please log in again.",
+      "logout": "Log Out"
+    }
+  }
+}

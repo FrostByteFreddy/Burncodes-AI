@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { supabase } from "../supabase";
 import router from "../router";
 import { useToast } from "../composables/useToast";
+import i18n from "../i18n";
 
 export const useAuthStore = defineStore("auth", () => {
   const user = ref(null);
@@ -20,10 +21,13 @@ export const useAuthStore = defineStore("auth", () => {
     } else {
       session.value = data.session;
       user.value = data.session?.user ?? null;
+      if (user.value?.user_metadata?.language) {
+        i18n.global.locale.value = user.value.user_metadata.language;
+      }
     }
   }
 
-  async function signUp(email, password, firstName, lastName) {
+  async function signUp(email, password, firstName, lastName, language) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -31,6 +35,7 @@ export const useAuthStore = defineStore("auth", () => {
         data: {
           first_name: firstName,
           last_name: lastName,
+          language: language,
         },
       },
     });
@@ -48,6 +53,9 @@ export const useAuthStore = defineStore("auth", () => {
 
     session.value = data.session;
     user.value = data.user;
+    if (user.value?.user_metadata?.language) {
+      i18n.global.locale.value = user.value.user_metadata.language;
+    }
     sessionExpired.value = false; // Reset on new login
 
     const lastRoute = localStorage.getItem("lastVisitedRoute");
@@ -90,6 +98,9 @@ export const useAuthStore = defineStore("auth", () => {
     if (event === "SIGNED_IN") {
       session.value = _session;
       user.value = _session.user;
+      if (user.value?.user_metadata?.language) {
+        i18n.global.locale.value = user.value.user_metadata.language;
+      }
       sessionExpired.value = false;
     } else if (event === "SIGNED_OUT") {
       user.value = null;

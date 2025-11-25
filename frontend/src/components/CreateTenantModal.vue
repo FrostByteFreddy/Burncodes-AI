@@ -11,12 +11,14 @@
           :icon="['fas', 'plus-square']"
           class="mr-3 text-primary"
         />
-        Create New Tenant
+        {{ $t("modals.createTenant.title") }}
       </h2>
       <form @submit.prevent="handleSubmit" class="space-y-4">
         <div>
-          <label for="name" class="block text-sm font-medium text-base-content"
-            >Tenant Name</label
+          <label
+            for="name"
+            class="block text-sm font-medium text-base-content"
+            >{{ $t("modals.createTenant.name") }}</label
           >
           <input
             v-model="formData.name"
@@ -30,7 +32,7 @@
           <label
             for="intro_message"
             class="block text-sm font-medium text-base-content"
-            >Intro Message</label
+            >{{ $t("modals.createTenant.introMessage") }}</label
           >
           <textarea
             v-model="formData.intro_message"
@@ -43,7 +45,7 @@
           <label
             for="system_persona"
             class="block text-sm font-medium text-base-content"
-            >System Persona</label
+            >{{ $t("modals.createTenant.systemPersona") }}</label
           >
           <textarea
             v-model="formData.system_persona"
@@ -56,7 +58,7 @@
           <label
             for="rag_prompt_template"
             class="block text-sm font-medium text-base-content"
-            >RAG Prompt Template</label
+            >{{ $t("modals.createTenant.ragPromptTemplate") }}</label
           >
           <textarea
             v-model="formData.rag_prompt_template"
@@ -70,7 +72,7 @@
             <label
               for="doc_language"
               class="block text-sm font-medium text-base-content"
-              >Document Language</label
+              >{{ $t("modals.createTenant.docLanguage") }}</label
             >
             <select
               v-model="formData.doc_language"
@@ -90,7 +92,7 @@
             <label
               for="translation_target"
               class="block text-sm font-medium text-base-content"
-              >Translation Target</label
+              >{{ $t("modals.createTenant.translationTarget") }}</label
             >
             <select
               v-model="formData.translation_target"
@@ -114,11 +116,11 @@
             class="btn btn-secondary"
           >
             <font-awesome-icon :icon="['fas', 'times']" class="mr-2" />
-            Cancel
+            {{ $t("modals.createTenant.cancel") }}
           </button>
           <button type="submit" class="btn btn-primary">
             <font-awesome-icon :icon="['fas', 'check']" class="mr-2" />
-            Create
+            {{ $t("modals.createTenant.create") }}
           </button>
         </div>
       </form>

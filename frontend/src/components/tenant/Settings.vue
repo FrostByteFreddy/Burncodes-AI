@@ -11,7 +11,7 @@
         @click="activeTab = 'behavior'"
       >
         <font-awesome-icon :icon="['fas', 'fa-brain']" />
-        <span>Behavior</span>
+        <span>{{ $t("tenant.settings.tabs.behavior") }}</span>
       </a>
       <a
         class="btn border-0 rounded-full transition-all duration-300 hover:cursor-pointer space-x-2"
@@ -23,15 +23,17 @@
         @click="activeTab = 'appearance'"
       >
         <font-awesome-icon :icon="['fas', 'fa-palette']" />
-        <span>Appearance</span>
+        <span>{{ $t("tenant.settings.tabs.appearance") }}</span>
       </a>
     </div>
 
     <form @submit.prevent="handleUpdate" class="space-y-6 mt-6">
       <div v-show="activeTab === 'behavior'" class="space-y-6">
         <div>
-          <label for="name" class="block text-sm font-medium text-base-content"
-            >Tenant Name</label
+          <label
+            for="name"
+            class="block text-sm font-medium text-base-content"
+            >{{ $t("tenant.settings.behavior.name") }}</label
           >
           <input
             v-model="formData.name"
@@ -45,7 +47,7 @@
           <label
             for="intro_message"
             class="block text-sm font-medium text-base-content"
-            >Intro Message</label
+            >{{ $t("tenant.settings.behavior.introMessage") }}</label
           >
           <AutoGrowTextarea
             v-model="formData.intro_message"
@@ -58,7 +60,7 @@
           <label
             for="system_persona"
             class="block text-sm font-medium text-base-content"
-            >System Persona</label
+            >{{ $t("tenant.settings.behavior.systemPersona") }}</label
           >
           <AutoGrowTextarea
             v-model="formData.system_persona"
@@ -71,7 +73,7 @@
           <label
             for="rag_prompt_template"
             class="block text-sm font-medium text-base-content"
-            >RAG Prompt Template</label
+            >{{ $t("tenant.settings.behavior.ragPromptTemplate") }}</label
           >
           <AutoGrowTextarea
             v-model="formData.rag_prompt_template"
@@ -85,7 +87,7 @@
             <label
               for="doc_language"
               class="block text-sm font-medium text-base-content"
-              >Document Language</label
+              >{{ $t("tenant.settings.behavior.docLanguage") }}</label
             >
             <select
               v-model="formData.doc_language"
@@ -105,7 +107,7 @@
             <label
               for="translation_target"
               class="block text-sm font-medium text-base-content"
-              >Translation Target</label
+              >{{ $t("tenant.settings.behavior.translationTarget") }}</label
             >
             <select
               v-model="formData.translation_target"
@@ -132,11 +134,10 @@
                 :icon="['fas', 'code']"
                 class="mr-2 text-primary"
               />
-              Installation
+              {{ $t("tenant.settings.appearance.installation.title") }}
             </h3>
             <p class="text-sm text-base-content/70 mb-4">
-              Copy and paste this code snippet into your website's HTML, just
-              before the closing <code>&lt;/body&gt;</code> tag.
+              {{ $t("tenant.settings.appearance.installation.instruction") }}
             </p>
             <div class="relative">
               <pre
@@ -147,16 +148,19 @@
                 class="absolute top-2 right-2 btn btn-sm btn-ghost text-primary hover:bg-base-200"
               >
                 <font-awesome-icon :icon="['fas', 'copy']" />
-                <span class="ml-1">Copy</span>
+                <span class="ml-1">{{
+                  $t("tenant.settings.appearance.installation.copy")
+                }}</span>
               </button>
             </div>
           </div>
 
           <div class="p-4 border border-base-300 rounded-lg">
-            <h3 class="text-lg font-bold mb-4">Color Palette</h3>
+            <h3 class="text-lg font-bold mb-4">
+              {{ $t("tenant.settings.appearance.colorPalette.title") }}
+            </h3>
             <p class="text-sm text-base-content/70 mb-4">
-              Define your brand colors here. These colors are used for both the
-              launcher and the chat window.
+              {{ $t("tenant.settings.appearance.colorPalette.description") }}
             </p>
             <div class="space-y-3">
               <div
@@ -172,7 +176,9 @@
                 <input
                   v-model="color.name"
                   type="text"
-                  placeholder="Color Name (e.g., Brand Purple)"
+                  :placeholder="
+                    $t('tenant.settings.appearance.colorPalette.placeholder')
+                  "
                   :disabled="index < 2"
                   class="flex-grow p-2 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-base-300/50"
                 />
@@ -190,7 +196,7 @@
               class="btn btn-secondary btn-sm mt-4"
             >
               <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
-              Add Color
+              {{ $t("tenant.settings.appearance.colorPalette.addColor") }}
             </button>
           </div>
 
@@ -198,12 +204,16 @@
             <div class="space-y-8">
               <div class="p-4 border border-base-300 rounded-lg">
                 <h3 class="text-lg font-bold mb-4">
-                  Chat Window Configuration
+                  {{ $t("tenant.settings.appearance.chatWindow.title") }}
                 </h3>
                 <div class="space-y-4">
                   <div>
-                    <label for="chatbot_title" class="block text-sm font-medium"
-                      >Chatbot Title</label
+                    <label
+                      for="chatbot_title"
+                      class="block text-sm font-medium"
+                      >{{
+                        $t("tenant.settings.appearance.chatWindow.chatbotTitle")
+                      }}</label
                     >
                     <input
                       v-model="formData.widget_config.chatbot_title"
@@ -213,9 +223,9 @@
                     />
                   </div>
                   <div>
-                    <label for="logo" class="block text-sm font-medium"
-                      >Logo</label
-                    >
+                    <label for="logo" class="block text-sm font-medium">{{
+                      $t("tenant.settings.appearance.chatWindow.logo")
+                    }}</label>
                     <div class="flex items-center space-x-2 mt-1">
                       <input
                         @change="handleFileUpload($event, 'logo')"
@@ -228,7 +238,9 @@
                         v-if="formData.widget_config.logo"
                         @click.prevent="removeFile('logo')"
                         class="btn btn-square btn-ghost text-error"
-                        title="Remove Logo"
+                        :title="
+                          $t('tenant.settings.appearance.chatWindow.removeLogo')
+                        "
                       >
                         <font-awesome-icon :icon="['fas', 'trash']" />
                       </button>
@@ -246,15 +258,21 @@
                       id="show_reset_button"
                       class="h-4 w-4 rounded border-base-300 text-primary focus:ring-primary"
                     />
-                    <label for="show_reset_button" class="ml-2 block text-sm"
-                      >Show "Reset Chat" Button</label
-                    >
+                    <label for="show_reset_button" class="ml-2 block text-sm">{{
+                      $t(
+                        "tenant.settings.appearance.chatWindow.showResetButton"
+                      )
+                    }}</label>
                   </div>
                   <div>
                     <label
                       for="input_placeholder"
                       class="block text-sm font-medium"
-                      >Input Placeholder</label
+                      >{{
+                        $t(
+                          "tenant.settings.appearance.chatWindow.inputPlaceholder"
+                        )
+                      }}</label
                     >
                     <input
                       v-model="formData.widget_config.input_placeholder"
@@ -267,21 +285,31 @@
                     <label
                       for="thinking_messages"
                       class="block text-sm font-medium"
-                      >"Thinking" Messages</label
+                      >{{
+                        $t(
+                          "tenant.settings.appearance.chatWindow.thinkingMessages"
+                        )
+                      }}</label
                     >
                     <AutoGrowTextarea
                       v-model="thinkingMessages"
                       id="thinking_messages"
                       class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                       rows="3"
-                      placeholder="One message per line..."
+                      :placeholder="
+                        $t(
+                          'tenant.settings.appearance.chatWindow.thinkingPlaceholder'
+                        )
+                      "
                     />
                   </div>
                 </div>
               </div>
 
               <div class="p-4 border border-base-300 rounded-lg">
-                <h3 class="text-lg font-bold mb-4">Component Styles</h3>
+                <h3 class="text-lg font-bold mb-4">
+                  {{ $t("tenant.settings.appearance.componentStyles.title") }}
+                </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                   <div
                     v-for="(label, key) in filteredComponentStyleLabels"
@@ -308,11 +336,17 @@
               </div>
 
               <div class="p-4 border border-base-300 rounded-lg">
-                <h3 class="text-lg font-bold mb-4">Launcher Configuration</h3>
+                <h3 class="text-lg font-bold mb-4">
+                  {{ $t("tenant.settings.appearance.launcher.title") }}
+                </h3>
                 <div class="space-y-6">
                   <div>
-                    <label for="launcher_icon" class="block text-sm font-medium"
-                      >Launcher Icon</label
+                    <label
+                      for="launcher_icon"
+                      class="block text-sm font-medium"
+                      >{{
+                        $t("tenant.settings.appearance.launcher.icon")
+                      }}</label
                     >
                     <div class="flex items-center space-x-2 mt-1">
                       <input
@@ -326,7 +360,9 @@
                         v-if="formData.widget_config.launcher_icon"
                         @click.prevent="removeFile('launcher_icon')"
                         class="btn btn-square btn-ghost text-error"
-                        title="Remove Icon"
+                        :title="
+                          $t('tenant.settings.appearance.launcher.removeIcon')
+                        "
                       >
                         <font-awesome-icon :icon="['fas', 'trash']" />
                       </button>
@@ -336,7 +372,9 @@
                       class="mt-2"
                     >
                       <p class="text-xs text-base-content/50 mb-1">
-                        Current Icon:
+                        {{
+                          $t("tenant.settings.appearance.launcher.currentIcon")
+                        }}
                       </p>
                       <img
                         :src="formData.widget_config.launcher_icon"
@@ -349,7 +387,11 @@
                     <label
                       for="launcher_background_color"
                       class="block text-sm font-medium"
-                      >Launcher Background Color</label
+                      >{{
+                        $t(
+                          "tenant.settings.appearance.launcher.backgroundColor"
+                        )
+                      }}</label
                     >
                     <select
                       v-model="
@@ -375,11 +417,13 @@
             <div>
               <div class="lg:sticky top-8 space-y-6">
                 <div>
-                  <h3 class="text-lg font-bold mb-4">Live Preview</h3>
+                  <h3 class="text-lg font-bold mb-4">
+                    {{ $t("tenant.settings.appearance.preview.title") }}
+                  </h3>
 
                   <div>
                     <h4 class="text-sm font-medium text-base-content/70 mb-2">
-                      Chat Window
+                      {{ $t("tenant.settings.appearance.preview.chatWindow") }}
                     </h4>
                     <ChatPreview
                       :tenantId="tenantsStore.currentTenant.id"
@@ -389,7 +433,7 @@
 
                   <div class="mb-4">
                     <h4 class="text-sm font-medium text-base-content/70 mb-2">
-                      Launcher
+                      {{ $t("tenant.settings.appearance.preview.launcher") }}
                     </h4>
                     <LauncherPreview
                       :icon="formData.widget_config.launcher_icon"
@@ -422,11 +466,11 @@
               :icon="['fas', 'spinner']"
               class="w-5 h-5 mr-3 animate-spin"
             />
-            Saving...
+            {{ $t("tenant.settings.actions.saving") }}
           </span>
           <span v-else class="flex items-center">
             <font-awesome-icon :icon="['fas', 'save']" class="mr-2" />
-            Save Changes
+            {{ $t("tenant.settings.actions.saveChanges") }}
           </span>
         </button>
       </div>
@@ -442,7 +486,9 @@ import AutoGrowTextarea from "../AutoGrowTextarea.vue";
 import { v4 as uuidv4 } from "uuid";
 import ChatPreview from "./ChatPreview.vue";
 import LauncherPreview from "./LauncherPreview.vue";
+import { useI18n } from "vue-i18n";
 
+const { t } = useI18n();
 const tenantsStore = useTenantsStore();
 const { addToast } = useToast();
 const activeTab = ref("behavior");
@@ -450,10 +496,10 @@ const previewKey = ref(0);
 
 const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-const languageOptions = ref([
-  { value: "de", text: "German" },
+const languageOptions = computed(() => [
+  { value: "de", text: "Deutsch" },
   { value: "en", text: "English" },
-  { value: "fr", text: "French" },
+  { value: "fr", text: "Français" },
 ]);
 
 const defaultWidgetConfig = () => ({
@@ -468,10 +514,26 @@ const defaultWidgetConfig = () => ({
     "Let me check that for you...",
   ],
   color_palette: [
-    { id: "c_white", name: "White", value: "#FFFFFF" },
-    { id: "c_black", name: "Black", value: "#1F2937" },
-    { id: "c_primary", name: "Primary", value: "#A855F7" },
-    { id: "c_secondary", name: "Secondary", value: "#F3F4F6" },
+    {
+      id: "c_white",
+      name: t("tenant.settings.defaults.white"),
+      value: "#FFFFFF",
+    },
+    {
+      id: "c_black",
+      name: t("tenant.settings.defaults.black"),
+      value: "#1F2937",
+    },
+    {
+      id: "c_primary",
+      name: t("tenant.settings.defaults.primary"),
+      value: "#A855F7",
+    },
+    {
+      id: "c_secondary",
+      name: t("tenant.settings.defaults.secondary"),
+      value: "#F3F4F6",
+    },
   ],
   component_styles: {
     header_background_color: "c_secondary",
@@ -501,25 +563,53 @@ const formData = ref({
   widget_config: defaultWidgetConfig(),
 });
 
-const componentStyleLabels = {
-  header_background_color: "Header Background",
-  header_text_color: "Header Text",
-  user_message_background_color: "User Message Background",
-  user_message_text_color: "User Message Text",
-  bot_message_background_color: "Bot Message Background",
-  bot_message_text_color: "Bot Message Text",
-  send_button_background_color: "Send Button Background",
-  send_button_text_color: "Send Button Text",
-  input_background_color: "Input Field Background",
-  input_text_color: "Input Field Text",
-  input_focus_ring_color: "Input Field Focus Ring",
-  chat_background_color: "Chat Area Background",
-  reset_button_color: "Reset Button",
-  launcher_background_color: "Launcher Button Background",
-};
+const componentStyleLabels = computed(() => ({
+  header_background_color: t(
+    "tenant.settings.appearance.componentStyles.labels.header_background_color"
+  ),
+  header_text_color: t(
+    "tenant.settings.appearance.componentStyles.labels.header_text_color"
+  ),
+  user_message_background_color: t(
+    "tenant.settings.appearance.componentStyles.labels.user_message_background_color"
+  ),
+  user_message_text_color: t(
+    "tenant.settings.appearance.componentStyles.labels.user_message_text_color"
+  ),
+  bot_message_background_color: t(
+    "tenant.settings.appearance.componentStyles.labels.bot_message_background_color"
+  ),
+  bot_message_text_color: t(
+    "tenant.settings.appearance.componentStyles.labels.bot_message_text_color"
+  ),
+  send_button_background_color: t(
+    "tenant.settings.appearance.componentStyles.labels.send_button_background_color"
+  ),
+  send_button_text_color: t(
+    "tenant.settings.appearance.componentStyles.labels.send_button_text_color"
+  ),
+  input_background_color: t(
+    "tenant.settings.appearance.componentStyles.labels.input_background_color"
+  ),
+  input_text_color: t(
+    "tenant.settings.appearance.componentStyles.labels.input_text_color"
+  ),
+  input_focus_ring_color: t(
+    "tenant.settings.appearance.componentStyles.labels.input_focus_ring_color"
+  ),
+  chat_background_color: t(
+    "tenant.settings.appearance.componentStyles.labels.chat_background_color"
+  ),
+  reset_button_color: t(
+    "tenant.settings.appearance.componentStyles.labels.reset_button_color"
+  ),
+  launcher_background_color: t(
+    "tenant.settings.appearance.componentStyles.labels.launcher_background_color"
+  ),
+}));
 
 const filteredComponentStyleLabels = computed(() => {
-  const labels = { ...componentStyleLabels };
+  const labels = { ...componentStyleLabels.value };
   delete labels.launcher_background_color;
   return labels;
 });
@@ -568,7 +658,7 @@ const thinkingMessages = computed({
 const addColor = () => {
   formData.value.widget_config.color_palette.push({
     id: uuidv4(),
-    name: "New Color",
+    name: t("tenant.settings.defaults.newColor"),
     value: "#000000",
   });
 };
@@ -576,7 +666,10 @@ const addColor = () => {
 const removeColor = (idToRemove) => {
   const palette = formData.value.widget_config.color_palette;
   if (palette.length <= 2) {
-    addToast("Cannot remove base colors.", "warning");
+    addToast(
+      t("tenant.settings.appearance.colorPalette.removeBaseColorError"),
+      "warning"
+    );
     return;
   }
   formData.value.widget_config.color_palette = palette.filter(
@@ -590,7 +683,7 @@ const removeFile = (field) => {
   // Reset the HTML input value so the same file can be selected again if needed
   const inputEl = document.getElementById(field);
   if (inputEl) inputEl.value = "";
-  addToast("Image removed.", "success");
+  addToast(t("tenant.settings.actions.imageRemoved"), "success");
 };
 
 // Encodes a file as a base64 string
@@ -610,10 +703,10 @@ const handleFileUpload = async (event, field) => {
   try {
     const base64String = await encodeFileAsBase64(file);
     formData.value.widget_config[field] = base64String;
-    addToast("Image updated!", "success");
+    addToast(t("tenant.settings.actions.imageUpdated"), "success");
   } catch (error) {
     console.error("File reading error:", error);
-    addToast("Failed to read file. Please try a different image.", "error");
+    addToast(t("tenant.settings.actions.readFailed"), "error");
   }
 };
 
@@ -624,10 +717,10 @@ const handleUpdate = async () => {
         tenantsStore.currentTenant.id,
         formData.value
       );
-      addToast("Settings saved successfully!", "success");
+      addToast(t("tenant.settings.actions.savedSuccess"), "success");
       previewKey.value++;
     } catch (error) {
-      addToast("Failed to save settings.", "error");
+      addToast(t("tenant.settings.actions.saveFailed"), "error");
     }
   }
 };
@@ -644,10 +737,10 @@ const copyScript = () => {
   navigator.clipboard
     .writeText(script)
     .then(() => {
-      addToast("Script copied to clipboard!", "success");
+      addToast(t("tenant.settings.actions.scriptCopied"), "success");
     })
     .catch(() => {
-      addToast("Failed to copy script.", "error");
+      addToast(t("tenant.settings.actions.copyFailed"), "error");
     });
 };
 </script>

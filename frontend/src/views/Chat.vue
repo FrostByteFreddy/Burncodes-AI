@@ -34,6 +34,9 @@ import axios from "axios";
 import { processBotMessage } from "@/utils/chatProcessor.js";
 import { v4 as uuidv4 } from "uuid";
 import BaseChat from "@/components/chat/BaseChat.vue";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
@@ -119,7 +122,7 @@ const fetchIntroMessage = async () => {
     saveChatToCookie(chatHistory.value, conversationId.value);
   } catch (error) {
     const errorMsg = `Error: ${
-      error.response?.data?.error || "Could not get initial message."
+      error.response?.data?.error || t("chat.errors.initialMessage")
     }`;
     const { text, html } = processBotMessage(errorMsg);
     chatHistory.value.push({ text, html, isUser: false });
@@ -189,7 +192,7 @@ const pollTaskStatus = (taskId) => {
         }
       } else if (task_status === "FAILURE") {
         clearInterval(interval);
-        const errorMsg = `Error: Processing failed. ${
+        const errorMsg = `${t("chat.errors.processingFailed")} ${
           task_result?.exc_message || ""
         }`;
         const { text, html } = processBotMessage(errorMsg);
@@ -200,7 +203,7 @@ const pollTaskStatus = (taskId) => {
       }
     } catch (error) {
       clearInterval(interval);
-      const errorMsg = `Error: Could not get task status.`;
+      const errorMsg = t("chat.errors.taskStatus");
       const { text, html } = processBotMessage(errorMsg);
       chatHistory.value.push({ text, html, isUser: false });
       saveChatToCookie(chatHistory.value, conversationId.value);
@@ -243,7 +246,7 @@ const sendMessage = async () => {
     }
   } catch (error) {
     const errorMsg = `Error: ${
-      error.response?.data?.error || "Could not send message."
+      error.response?.data?.error || t("chat.errors.sendMessage")
     }`;
     const { text, html } = processBotMessage(errorMsg);
     chatHistory.value.push({ text, html, isUser: false });

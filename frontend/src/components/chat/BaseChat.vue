@@ -71,7 +71,7 @@
           :value="userMessage"
           @input="onInput"
           @keyup.enter.exact.prevent="$emit('sendMessage')"
-          :placeholder="config.input_placeholder || 'Stell mir eine Frage...'"
+          :placeholder="config.input_placeholder || $t('chat.inputPlaceholder')"
           class="chat-input outline-none flex-grow border p-4 text-sm focus:outline-none focus:ring-1 rounded-custom transition-all"
           rows="1"
           style="resize: none; overflow-y: hidden"
@@ -90,6 +90,9 @@
 
 <script setup>
 import { computed, ref, watch, nextTick } from "vue";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 const props = defineProps({
   config: {
@@ -125,7 +128,7 @@ let thinkingInterval = null;
 const startThinkingMessages = () => {
   const messages = props.config.thinking_messages;
   if (!messages || messages.length === 0) {
-    currentThinkingMessage.value = "Thinking...";
+    currentThinkingMessage.value = t("chat.thinking");
     return;
   }
 
