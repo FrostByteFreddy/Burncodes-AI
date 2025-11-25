@@ -73,7 +73,10 @@ export const useAuthStore = defineStore("auth", () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       // Log the error but continue with cleanup, as the session might already be invalid
-      console.error("Error signing out from Supabase:", error.message);
+      // Ignore "session_not_found" as it means we are already logged out on the server
+      if (error.code !== "session_not_found") {
+        console.error("Error signing out from Supabase:", error.message);
+      }
     }
 
     // Clear local state
