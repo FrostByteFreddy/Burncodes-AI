@@ -34,7 +34,7 @@ async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_langua
     template = CLEANUP_PROMPT_TEMPLATES.get(doc_language, CLEANUP_PROMPT_TEMPLATES['en'])
     print(f"📄 Using doc_language: {doc_language}")
 
-    cleanup_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0.0, timeout=600)
+    cleanup_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0.0, timeout=1200, max_retries=6)
     cleanup_prompt = PromptTemplate.from_template(template)
     cleanup_chain = cleanup_prompt | cleanup_llm
     response = await cleanup_chain.ainvoke({"raw_markdown": markdown_text})
@@ -168,7 +168,7 @@ async def async_process_s3_file(s3_path: str, source_filename: str, source_id: i
         full_cleaned_markdown = ""
         
         # Batch processing configuration
-        BATCH_SIZE = 10
+        BATCH_SIZE = 5
         OVERLAP = 1
         
         total_pages = len(docs_from_loader)
