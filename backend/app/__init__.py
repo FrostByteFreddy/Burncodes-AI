@@ -68,12 +68,13 @@ def create_app():
 
     celery.conf.beat_schedule = {
         'job-scheduler-every-30-seconds': {
-            'task': 'app.data_processing.tasks.job_scheduler_task',
+            'task': 'app.data_processing.crawling_tasks.job_scheduler_task',
             'schedule': 30.0,
         },
     }
 
-    celery.autodiscover_tasks(['app.chat', 'app.data_processing'])
+    celery.conf.update(include=['app.data_processing.crawling_tasks', 'app.data_processing.document_tasks'])
+    celery.autodiscover_tasks(['app.chat'])
 
 
     class ContextTask(celery.Task):
