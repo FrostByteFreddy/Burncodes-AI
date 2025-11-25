@@ -156,7 +156,8 @@ async def async_process_s3_file(s3_path: str, source_filename: str, source_id: i
         if not docs_from_loader:
             return []
 
-        content = docs_from_loader[0].page_content
+        # Concatenate content from all pages
+        content = "\n\n".join([doc.page_content for doc in docs_from_loader])
         return await _get_document_chunks_from_content(content, source_filename, source_id, ext, tenant_id)
 
     except Exception as e:
