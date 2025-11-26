@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify, Response
 from app.database.supabase_client import supabase, bucket_name
 from app.auth.decorators import token_required
 from app.models.database import Tenant, TenantFineTune, SourceType
-from app.data_processing.tasks import process_s3_file, process_urls, crawl_links_task
+from app.data_processing.file_tasks import process_s3_file
+from app.data_processing.website_tasks import process_urls, crawl_links_task
 from app.data_processing.processor import process_fine_tune_rules, delete_fine_tune_vectors
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from app.logging_config import error_logger
