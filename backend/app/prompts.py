@@ -103,16 +103,21 @@ CLEANUP_PROMPT_TEMPLATES = {
 
 PDF_CLEANUP_PROMPT_TEMPLATES = {
     'en': """
-    You are an expert document cleaner. Your task is to take raw text extracted from a PDF and reconstruct it into clean, readable Markdown.
+    You are an expert document cleaner and structurer. Your task is to take raw text extracted from a PDF, clean it, and split it into logical chunks.
 
     The content's primary language is **English**.
 
     **Instructions:**
-    1.  **Remove Artifacts:** Delete headers, footers, page numbers (e.g., "Page 1 of 5"), and repetitive legal disclaimers that appear on every page.
-    2.  **Fix Broken Text:** Join sentences that were split across page breaks. Fix hyphenated words that were split at the end of a line (e.g., "infor- mation" -> "information").
-    3.  **Structure:** Use Markdown headers (#, ##, ###) to structure the document based on the text's hierarchy. Use bullet points for lists.
-    4.  **Preserve Content:** Do not summarize. Keep all factual information, numbers, and names exactly as they are.
-    5.  **Output:** Return ONLY the cleaned Markdown text. Do not add any conversational filler.
+    1.  **Clean & Reconstruct:**
+        *   Remove headers, footers, page numbers (e.g., "Page 1 of 5"), and repetitive legal disclaimers.
+        *   Join sentences split across page breaks. Fix hyphenated words (e.g., "infor- mation" -> "information").
+        *   Use Markdown headers (#, ##, ###) to structure the document.
+    2.  **Chunking:**
+        *   Split the text into logical, self-contained chunks based on topics or sections.
+        *   **CRITICAL:** Insert the separator `---CHUNK_SEPARATOR---` between each chunk.
+        *   Keep related information (e.g., a person's bio, a specific clause) in the same chunk.
+    3.  **Preserve Content:** Do not summarize. Keep all factual information, numbers, and names exactly as they are.
+    4.  **Output:** Return ONLY the cleaned, chunked Markdown text.
 
     **Raw Text:**
     ---
@@ -121,16 +126,21 @@ PDF_CLEANUP_PROMPT_TEMPLATES = {
     """,
 
     'de': """
-    Sie sind ein Experte für Dokumentenbereinigung. Ihre Aufgabe ist es, rohen Text, der aus einem PDF extrahiert wurde, in sauberes, lesbares Markdown umzuwandeln.
+    Sie sind ein Experte für Dokumentenbereinigung und -strukturierung. Ihre Aufgabe ist es, rohen Text aus einem PDF zu bereinigen und in logische Abschnitte (Chunks) zu unterteilen.
 
     Die Hauptsprache des Inhalts ist **Deutsch**.
 
     **Anweisungen:**
-    1.  **Artefakte entfernen:** Löschen Sie Kopfzeilen, Fußzeilen, Seitenzahlen (z. B. "Seite 1 von 5") und wiederkehrende rechtliche Hinweise.
-    2.  **Gebrochenen Text reparieren:** Fügen Sie Sätze zusammen, die durch Seitenumbrüche getrennt wurden. Korrigieren Sie Wörter, die am Zeilenende getrennt wurden (z. B. "Infor- mation" -> "Information").
-    3.  **Struktur:** Verwenden Sie Markdown-Überschriften (#, ##, ###), um das Dokument basierend auf der Hierarchie des Textes zu strukturieren. Verwenden Sie Aufzählungszeichen für Listen.
-    4.  **Inhalt bewahren:** Fassen Sie nicht zusammen. Behalten Sie alle sachlichen Informationen, Zahlen und Namen genau so bei, wie sie sind.
-    5.  **Ausgabe:** Geben Sie NUR den bereinigten Markdown-Text zurück. Fügen Sie keine konversationellen Füllwörter hinzu.
+    1.  **Bereinigen & Rekonstruieren:**
+        *   Entfernen Sie Kopfzeilen, Fußzeilen, Seitenzahlen und wiederkehrende rechtliche Hinweise.
+        *   Fügen Sie Sätze zusammen, die durch Seitenumbrüche getrennt wurden. Korrigieren Sie Trennfehler.
+        *   Verwenden Sie Markdown-Überschriften (#, ##, ###) zur Strukturierung.
+    2.  **Chunking (Aufteilung):**
+        *   Teilen Sie den Text in logische, in sich geschlossene Abschnitte basierend auf Themen.
+        *   **WICHTIG:** Fügen Sie das Trennzeichen `---CHUNK_SEPARATOR---` zwischen jedem Abschnitt ein.
+        *   Halten Sie zusammengehörige Informationen im selben Chunk.
+    3.  **Inhalt bewahren:** Fassen Sie nicht zusammen. Behalten Sie alle Fakten bei.
+    4.  **Ausgabe:** Geben Sie NUR den bereinigten, in Chunks unterteilten Markdown-Text zurück.
 
     **Roher Text:**
     ---
@@ -139,16 +149,21 @@ PDF_CLEANUP_PROMPT_TEMPLATES = {
     """,
 
     'fr': """
-    Vous êtes un expert en nettoyage de documents. Votre tâche est de prendre du texte brut extrait d'un PDF et de le reconstruire en Markdown propre et lisible.
+    Vous êtes un expert en nettoyage et structuration de documents. Votre tâche est de nettoyer le texte brut d'un PDF et de le diviser en segments logiques.
 
     La langue principale du contenu est le **Français**.
 
     **Instructions :**
-    1.  **Supprimer les artefacts :** Supprimez les en-têtes, les pieds de page, les numéros de page (par exemple, "Page 1 sur 5") et les mentions légales répétitives.
-    2.  **Réparer le texte cassé :** Joignez les phrases qui ont été coupées par des sauts de page. Corrigez les mots coupés en fin de ligne (par exemple, "infor- mation" -> "information").
-    3.  **Structure :** Utilisez des en-têtes Markdown (#, ##, ###) pour structurer le document en fonction de la hiérarchie du texte. Utilisez des puces pour les listes.
-    4.  **Préserver le contenu :** Ne résumez pas. Gardez toutes les informations factuelles, les chiffres et les noms exactement tels qu'ils sont.
-    5.  **Sortie :** Retournez UNIQUEMENT le texte Markdown nettoyé. N'ajoutez pas de remplissage conversationnel.
+    1.  **Nettoyer & Reconstruire :**
+        *   Supprimez les en-têtes, pieds de page, numéros de page et mentions légales répétitives.
+        *   Joignez les phrases coupées par des sauts de page. Corrigez les mots coupés.
+        *   Utilisez des en-têtes Markdown (#, ##, ###) pour la structure.
+    2.  **Segmentation (Chunking) :**
+        *   Divisez le texte en segments logiques et autonomes basés sur des sujets.
+        *   **CRITIQUE :** Insérez le séparateur `---CHUNK_SEPARATOR---` entre chaque segment.
+        *   Gardez les informations connexes ensemble.
+    3.  **Préserver le contenu :** Ne résumez pas. Gardez tous les faits exacts.
+    4.  **Sortie :** Retournez UNIQUEMENT le texte Markdown nettoyé et segmenté.
 
     **Texte brut :**
     ---

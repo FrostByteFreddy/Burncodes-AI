@@ -160,19 +160,14 @@ async def async_create_document_chunks_for_pdf(content: str, source: str, source
             cleaned_chunk = await async_clean_pdf_text_with_llm(chunk, doc_language)
             cleaned_chunks.append(cleaned_chunk)
         
-        full_cleaned_content = "\n\n".join(cleaned_chunks)
+        full_cleaned_content = "\n\n---CHUNK_SEPARATOR---\n\n".join(cleaned_chunks)
 
         # 3. Update readme with full CLEANED content
+        # The LLM has already inserted separators, so we just save it.
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"readme": full_cleaned_content}).eq('id', source_id).execute())
 
-        # 4. Split the CLEANED content into smaller chunks for indexing
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
-            length_function=len,
-            is_separator_regex=False,
-        )
-        chunks = text_splitter.split_text(full_cleaned_content)
+        # 4. Split the CLEANED content into chunks using the separator
+        chunks = [chunk.strip() for chunk in full_cleaned_content.split("---CHUNK_SEPARATOR---") if chunk.strip()]
 
         timestamp = datetime.now(timezone.utc).isoformat()
         for i, chunk in enumerate(chunks):
