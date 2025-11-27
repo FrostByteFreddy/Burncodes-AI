@@ -148,6 +148,32 @@ export const useAuthStore = defineStore("auth", () => {
     await logout();
   }
 
+  async function changePassword(currentPassword, newPassword) {
+    if (!session.value?.access_token) throw new Error("User not logged in.");
+
+    const API_BASE_URL =
+      import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
+    const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.value.access_token}`,
+      },
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to change password");
+    }
+
+    return await response.json();
+  }
+
   return {
     user,
     session,
@@ -158,5 +184,6 @@ export const useAuthStore = defineStore("auth", () => {
     logout,
     updateProfile,
     handleSessionExpired,
+    changePassword,
   };
 });

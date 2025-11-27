@@ -1,9 +1,22 @@
 <template>
-  <div class="p-6">
-    <div class="flex justify-between items-center mb-8">
-      <h1 class="text-4xl font-bold text-base-content">
-        {{ $t("manageTenants.title") }}
-      </h1>
+  <div class="container mx-auto px-4 py-4 sm:px-6 sm:py-8 max-w-7xl">
+    <div class="flex justify-between items-start mb-8">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div class="p-3 bg-primary/10 rounded-xl shrink-0">
+          <font-awesome-icon
+            :icon="['fas', 'layer-group']"
+            class="text-2xl text-primary"
+          />
+        </div>
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-base-content">
+            {{ $t("manageTenants.title") }}
+          </h1>
+          <p class="text-base-content/60 text-sm sm:text-base">
+            {{ $t("manageTenants.subtitle") }}
+          </p>
+        </div>
+      </div>
       <div v-if="tenantsStore.tenants.length !== 0">
         <button @click="showCreateModal = true" class="btn btn-primary">
           <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />

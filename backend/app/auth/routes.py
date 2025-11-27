@@ -91,3 +91,32 @@ def logout(current_user):
     except Exception as e:
         error_logger.error(f"Error during logout for user {current_user.id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Logout failed", "details": str(e)}), 500
+@auth_bp.route('/change-password', methods=['POST'])
+@token_required
+def change_password(current_user):
+    try:
+        data = request.get_json()
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+
+        if not current_password or not new_password:
+            return jsonify({"error": "Current and new passwords are required"}), 400
+
+        # Verify current password by attempting to sign in
+        try:
+            supabase.auth.sign_in_with_password({
+                "email": current_user.email,
+                "password": current_password
+            })
+        except Exception as e:
+            error_logger.warning(f"Password verification failed for user {current_user.id}: {e}")
+            return jsonify({"error": "Incorrect current password"}), 401
+
+        # Update to new password
+        token = request.headers['Authorization'].split(" ")[1]
+        supabase.auth.update_user({"password": new_password}, jwt=token)
+        
+        return jsonify({"message": "Password updated successfully"}), 200
+    except Exception as e:
+        error_logger.error(f"Error changing password for user {current_user.id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to update password", "details": str(e)}), 500
