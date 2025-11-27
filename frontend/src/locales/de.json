@@ -118,6 +118,17 @@
       "rechargeCanceled": "Aufladung abgebrochen.",
       "initiateFailed": "Fehler beim Starten der Aufladung.",
       "portalFailed": "Fehler beim Öffnen des Abrechnungsportals. Möglicherweise haben Sie noch kein Abrechnungskonto."
+    },
+    "tabs": {
+      "addFunds": "Guthaben aufladen",
+      "transactions": "Transaktionen",
+      "costOverview": "Kostenübersicht"
+    },
+    "costOverview": {
+      "title": "Kostenaufschlüsselung",
+      "totalCost": "Gesamtkosten",
+      "chatCost": "Chat-Kosten",
+      "sourcesCost": "Quellen-Kosten"
     }
   },
   "tenant": {
@@ -249,7 +260,12 @@
         "deleteFailed": "Fehler beim Löschen der Quelle:",
         "crawlCompleted": "Crawl-Job abgeschlossen! Quellen werden aktualisiert...",
         "fetchFailed": "Fehler beim Abrufen der Crawling-Aktivität."
-      }
+      },
+      "tabs": {
+        "website": "Website-Indexierung",
+        "files": "Datei-Indexierung"
+      },
+      "cost": "Kosten"
     },
     "fineTune": {
       "title": "Feinabstimmungsregeln",

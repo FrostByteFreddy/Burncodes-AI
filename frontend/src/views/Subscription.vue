@@ -26,11 +26,9 @@
       <span class="loading loading-spinner loading-lg text-primary"></span>
     </div>
 
-    <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Balance Card -->
-      <div
-        class="card bg-base-100 shadow-xl border border-base-200 lg:col-span-2"
-      >
+    <div v-else>
+      <!-- Balance Card (Always Visible) -->
+      <div class="card bg-base-100 shadow-xl border border-base-200 mb-8">
         <div class="card-body p-4 sm:p-6">
           <div
             class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
@@ -50,227 +48,173 @@
               {{ $t("subscription.manageBilling") }}
             </button>
           </div>
-
-          <div class="divider my-6"></div>
-
-          <div
-            class="bg-base-200/50 rounded-xl p-4 sm:p-6 border border-base-200"
-          >
-            <h3 class="font-semibold text-lg mb-4 flex items-center gap-2">
-              <font-awesome-icon
-                :icon="['fas', 'wallet']"
-                class="text-primary"
-              />
-              {{ $t("subscription.addFunds") }}
-            </h3>
-
-            <!-- Payment Type Toggle -->
-            <div
-              class="flex flex-wrap gap-2 mb-6 p-1 bg-base-100 rounded-lg border border-base-200 w-full sm:w-fit"
-            >
-              <button
-                @click="isRecurring = false"
-                class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap"
-                :class="
-                  !isRecurring
-                    ? 'bg-primary text-primary-content shadow-sm'
-                    : 'text-base-content/70 hover:bg-base-200'
-                "
-              >
-                {{ $t("subscription.oneTime") }}
-              </button>
-              <button
-                @click="isRecurring = true"
-                class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap"
-                :class="
-                  isRecurring
-                    ? 'bg-primary text-primary-content shadow-sm'
-                    : 'text-base-content/70 hover:bg-base-200'
-                "
-              >
-                {{ $t("subscription.monthly") }}
-              </button>
-            </div>
-
-            <div class="space-y-5">
-              <div>
-                <label
-                  class="text-sm font-medium text-base-content/70 mb-3 block"
-                  >{{ $t("subscription.selectAmount") }}
-                  {{
-                    isRecurring ? $t("subscription.monthlySuffix") : ""
-                  }}</label
-                >
-                <div class="grid grid-cols-3 gap-3">
-                  <button
-                    v-for="amount in [20, 50, 100]"
-                    :key="amount"
-                    @click="rechargeAmount = amount"
-                    class="btn transition-all duration-200 min-h-[3rem] h-auto py-2"
-                    :class="
-                      rechargeAmount === amount
-                        ? 'btn-primary shadow-md scale-105'
-                        : 'btn-outline border-base-300 hover:border-primary hover:bg-primary/5 text-base-content'
-                    "
-                  >
-                    CHF {{ amount }}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label
-                  class="text-sm font-medium text-base-content/70 mb-2 block"
-                  >{{ $t("subscription.customAmount") }}</label
-                >
-                <div class="relative">
-                  <div
-                    class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"
-                  >
-                    <span class="text-base-content/50 font-semibold text-lg"
-                      >CHF</span
-                    >
-                  </div>
-                  <input
-                    v-model.number="rechargeAmount"
-                    type="number"
-                    min="5"
-                    step="5"
-                    class="input input-bordered w-full pl-16 pr-4 h-14 text-lg font-semibold bg-base-100 border-2 hover:border-primary/50 focus:border-primary focus:outline-none transition-all"
-                    :placeholder="$t('subscription.enterAmount')"
-                  />
-                </div>
-                <div class="label pb-0">
-                  <span class="label-text-alt text-error" v-if="amountError">{{
-                    amountError
-                  }}</span>
-                  <span class="label-text-alt text-base-content/50" v-else>{{
-                    $t("subscription.minDeposit")
-                  }}</span>
-                </div>
-              </div>
-
-              <button
-                @click="handleRecharge"
-                class="btn btn-primary w-full shadow-lg shadow-primary/20 mt-2"
-                :disabled="!!amountError || billingStore.loading"
-              >
-                <span
-                  v-if="billingStore.loading"
-                  class="loading loading-spinner loading-sm"
-                ></span>
-                <span v-else class="flex items-center gap-2">
-                  <font-awesome-icon
-                    :icon="['fas', isRecurring ? 'sync' : 'bolt']"
-                  />
-                  {{
-                    isRecurring
-                      ? $t("subscription.subscribe")
-                      : $t("subscription.add")
-                  }}
-                  CHF
-                  {{ rechargeAmount ? rechargeAmount.toFixed(2) : "0.00" }}
-                  {{ isRecurring ? $t("subscription.perMonth") : "" }}
-                </span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
-      <!-- Usage Card -->
-      <div class="card bg-base-100 shadow-xl border border-base-200 h-fit">
-        <div class="card-body p-4 sm:p-6">
-          <h2 class="card-title text-lg mb-6 flex items-center gap-2">
-            <font-awesome-icon
-              :icon="['fas', 'chart-pie']"
-              class="text-primary"
-            />
-            {{ $t("subscription.usageStats") }}
-          </h2>
-
-          <div class="space-y-4">
-            <!-- Total Spent -->
-            <div
-              class="flex items-center justify-between p-4 bg-base-200/50 rounded-xl border border-base-200"
-            >
-              <div>
-                <p class="text-sm font-medium text-base-content/70">
-                  {{ $t("subscription.totalSpent") }}
-                </p>
-                <p class="text-2xl font-bold text-base-content mt-1">
-                  CHF {{ billingStore.usage?.total_cost?.toFixed(2) }}
-                </p>
-              </div>
-              <div
-                class="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-lg text-primary"
-              >
-                <font-awesome-icon :icon="['fas', 'coins']" />
-              </div>
-            </div>
-
-            <!-- Tokens Used -->
-            <div
-              class="flex items-center justify-between p-4 bg-base-200/50 rounded-xl border border-base-200"
-            >
-              <div>
-                <p class="text-sm font-medium text-base-content/70">
-                  {{ $t("subscription.tokensUsed") }}
-                </p>
-                <p class="text-2xl font-bold text-base-content mt-1">
-                  {{
-                    (
-                      billingStore.usage?.input_tokens +
-                      billingStore.usage?.output_tokens
-                    ).toLocaleString()
-                  }}
-                </p>
-                <div class="flex gap-2 text-xs text-base-content/50 mt-1">
-                  <span
-                    >{{ $t("subscription.in") }}
-                    {{
-                      billingStore.usage?.input_tokens?.toLocaleString()
-                    }}</span
-                  >
-                  <span>•</span>
-                  <span
-                    >{{ $t("subscription.out") }}
-                    {{
-                      billingStore.usage?.output_tokens?.toLocaleString()
-                    }}</span
-                  >
-                </div>
-              </div>
-              <div
-                class="w-10 h-10 flex items-center justify-center bg-secondary/10 rounded-lg text-secondary"
-              >
-                <font-awesome-icon :icon="['fas', 'robot']" />
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-6 pt-6 border-t border-base-200">
-            <div class="flex gap-3 text-sm text-base-content/70">
-              <font-awesome-icon
-                :icon="['fas', 'info-circle']"
-                class="mt-1 text-info"
-              />
-              <div>
-                <p class="font-medium text-base-content">
-                  {{ $t("subscription.howItWorks.title") }}
-                </p>
-                <p class="mt-1 text-xs opacity-80">
-                  {{ $t("subscription.howItWorks.description") }}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- Tabs -->
+      <div class="inline-flex p-1 space-x-1 bg-primary/10 rounded-full mb-6">
+        <a
+          class="btn border-0 rounded-full transition-all duration-300 hover:cursor-pointer space-x-2"
+          :class="{
+            '!bg-primary text-primary-content shadow': activeTab === 'addFunds',
+            'btn-ghost text-base-content': activeTab !== 'addFunds',
+          }"
+          @click="activeTab = 'addFunds'"
+        >
+          <font-awesome-icon :icon="['fas', 'wallet']" />
+          <span>{{ $t("subscription.tabs.addFunds") }}</span>
+        </a>
+        <a
+          class="btn border-0 rounded-full transition-all duration-300 hover:cursor-pointer space-x-2"
+          :class="{
+            '!bg-primary text-primary-content shadow':
+              activeTab === 'transactions',
+            'btn-ghost text-base-content': activeTab !== 'transactions',
+          }"
+          @click="activeTab = 'transactions'"
+        >
+          <font-awesome-icon :icon="['fas', 'history']" />
+          <span>{{ $t("subscription.tabs.transactions") }}</span>
+        </a>
+        <a
+          class="btn border-0 rounded-full transition-all duration-300 hover:cursor-pointer space-x-2"
+          :class="{
+            '!bg-primary text-primary-content shadow':
+              activeTab === 'costOverview',
+            'btn-ghost text-base-content': activeTab !== 'costOverview',
+          }"
+          @click="activeTab = 'costOverview'"
+        >
+          <font-awesome-icon :icon="['fas', 'chart-pie']" />
+          <span>{{ $t("subscription.tabs.costOverview") }}</span>
+        </a>
       </div>
 
-      <!-- Billing History -->
+      <!-- Add Funds Tab -->
       <div
-        class="card bg-base-100 shadow-xl border border-base-200 lg:col-span-3"
+        v-if="activeTab === 'addFunds'"
+        class="card bg-base-100 shadow-xl border border-base-200"
+      >
+        <div class="card-body p-4 sm:p-6">
+          <h3 class="font-semibold text-lg mb-4 flex items-center gap-2">
+            <font-awesome-icon :icon="['fas', 'wallet']" class="text-primary" />
+            {{ $t("subscription.addFunds") }}
+          </h3>
+
+          <!-- Payment Type Toggle -->
+          <div
+            class="flex flex-wrap gap-2 mb-6 p-1 bg-base-100 rounded-lg border border-base-200 w-full sm:w-fit"
+          >
+            <button
+              @click="isRecurring = false"
+              class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap"
+              :class="
+                !isRecurring
+                  ? 'bg-primary text-primary-content shadow-sm'
+                  : 'text-base-content/70 hover:bg-base-200'
+              "
+            >
+              {{ $t("subscription.oneTime") }}
+            </button>
+            <button
+              @click="isRecurring = true"
+              class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap"
+              :class="
+                isRecurring
+                  ? 'bg-primary text-primary-content shadow-sm'
+                  : 'text-base-content/70 hover:bg-base-200'
+              "
+            >
+              {{ $t("subscription.monthly") }}
+            </button>
+          </div>
+
+          <div class="space-y-5 max-w-md">
+            <div>
+              <label class="text-sm font-medium text-base-content/70 mb-3 block"
+                >{{ $t("subscription.selectAmount") }}
+                {{ isRecurring ? $t("subscription.monthlySuffix") : "" }}</label
+              >
+              <div class="grid grid-cols-3 gap-3">
+                <button
+                  v-for="amount in [20, 50, 100]"
+                  :key="amount"
+                  @click="rechargeAmount = amount"
+                  class="btn transition-all duration-200 min-h-[3rem] h-auto py-2"
+                  :class="
+                    rechargeAmount === amount
+                      ? 'btn-primary shadow-md scale-105'
+                      : 'btn-outline border-base-300 hover:border-primary hover:bg-primary/5 text-base-content'
+                  "
+                >
+                  CHF {{ amount }}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label
+                class="text-sm font-medium text-base-content/70 mb-2 block"
+                >{{ $t("subscription.customAmount") }}</label
+              >
+              <div class="relative">
+                <div
+                  class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"
+                >
+                  <span class="text-base-content/50 font-semibold text-lg"
+                    >CHF</span
+                  >
+                </div>
+                <input
+                  v-model.number="rechargeAmount"
+                  type="number"
+                  min="5"
+                  step="5"
+                  class="input input-bordered w-full pl-16 pr-4 h-14 text-lg font-semibold bg-base-100 border-2 hover:border-primary/50 focus:border-primary focus:outline-none transition-all"
+                  :placeholder="$t('subscription.enterAmount')"
+                />
+              </div>
+              <div class="label pb-0">
+                <span class="label-text-alt text-error" v-if="amountError">{{
+                  amountError
+                }}</span>
+                <span class="label-text-alt text-base-content/50" v-else>{{
+                  $t("subscription.minDeposit")
+                }}</span>
+              </div>
+            </div>
+
+            <button
+              @click="handleRecharge"
+              class="btn btn-primary w-full shadow-lg shadow-primary/20 mt-2"
+              :disabled="!!amountError || billingStore.loading"
+            >
+              <span
+                v-if="billingStore.loading"
+                class="loading loading-spinner loading-sm"
+              ></span>
+              <span v-else class="flex items-center gap-2">
+                <font-awesome-icon
+                  :icon="['fas', isRecurring ? 'sync' : 'bolt']"
+                />
+                {{
+                  isRecurring
+                    ? $t("subscription.subscribe")
+                    : $t("subscription.add")
+                }}
+                CHF
+                {{ rechargeAmount ? rechargeAmount.toFixed(2) : "0.00" }}
+                {{ isRecurring ? $t("subscription.perMonth") : "" }}
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transactions Tab -->
+      <div
+        v-if="activeTab === 'transactions'"
+        class="card bg-base-100 shadow-xl border border-base-200"
       >
         <div class="card-body p-4 sm:p-6">
           <h2 class="card-title text-lg mb-4 flex items-center gap-2">
@@ -438,6 +382,139 @@
           </div>
         </div>
       </div>
+
+      <!-- Cost Overview Tab -->
+      <div
+        v-if="activeTab === 'costOverview'"
+        class="card bg-base-100 shadow-xl border border-base-200"
+      >
+        <div class="card-body p-4 sm:p-6">
+          <h2 class="card-title text-lg mb-6 flex items-center gap-2">
+            <font-awesome-icon
+              :icon="['fas', 'chart-pie']"
+              class="text-primary"
+            />
+            {{ $t("subscription.costOverview.title") }}
+          </h2>
+
+          <div class="space-y-4">
+            <!-- Total Spent -->
+            <div
+              class="flex items-center justify-between p-4 bg-base-200/50 rounded-xl border border-base-200"
+            >
+              <div>
+                <p class="text-sm font-medium text-base-content/70">
+                  {{ $t("subscription.costOverview.totalCost") }}
+                </p>
+                <p class="text-2xl font-bold text-base-content mt-1">
+                  CHF {{ billingStore.usage?.total_cost?.toFixed(2) }}
+                </p>
+              </div>
+              <div
+                class="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-lg text-primary"
+              >
+                <font-awesome-icon :icon="['fas', 'coins']" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Chat Cost -->
+              <div
+                class="flex items-center justify-between p-4 bg-base-200/50 rounded-xl border border-base-200"
+              >
+                <div>
+                  <p class="text-sm font-medium text-base-content/70">
+                    {{ $t("subscription.costOverview.chatCost") }}
+                  </p>
+                  <p class="text-xl font-bold text-base-content mt-1">
+                    CHF {{ (billingStore.usage?.chat_cost || 0).toFixed(2) }}
+                  </p>
+                </div>
+                <div
+                  class="w-10 h-10 flex items-center justify-center bg-secondary/10 rounded-lg text-secondary"
+                >
+                  <font-awesome-icon :icon="['fas', 'comments']" />
+                </div>
+              </div>
+
+              <!-- Sources Cost -->
+              <div
+                class="flex items-center justify-between p-4 bg-base-200/50 rounded-xl border border-base-200"
+              >
+                <div>
+                  <p class="text-sm font-medium text-base-content/70">
+                    {{ $t("subscription.costOverview.sourcesCost") }}
+                  </p>
+                  <p class="text-xl font-bold text-base-content mt-1">
+                    CHF {{ (billingStore.usage?.sources_cost || 0).toFixed(2) }}
+                  </p>
+                </div>
+                <div
+                  class="w-10 h-10 flex items-center justify-center bg-accent/10 rounded-lg text-accent"
+                >
+                  <font-awesome-icon :icon="['fas', 'database']" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Tokens Used -->
+            <div
+              class="flex items-center justify-between p-4 bg-base-200/50 rounded-xl border border-base-200"
+            >
+              <div>
+                <p class="text-sm font-medium text-base-content/70">
+                  {{ $t("subscription.tokensUsed") }}
+                </p>
+                <p class="text-2xl font-bold text-base-content mt-1">
+                  {{
+                    (
+                      billingStore.usage?.input_tokens +
+                      billingStore.usage?.output_tokens
+                    ).toLocaleString()
+                  }}
+                </p>
+                <div class="flex gap-2 text-xs text-base-content/50 mt-1">
+                  <span
+                    >{{ $t("subscription.in") }}
+                    {{
+                      billingStore.usage?.input_tokens?.toLocaleString()
+                    }}</span
+                  >
+                  <span>•</span>
+                  <span
+                    >{{ $t("subscription.out") }}
+                    {{
+                      billingStore.usage?.output_tokens?.toLocaleString()
+                    }}</span
+                  >
+                </div>
+              </div>
+              <div
+                class="w-10 h-10 flex items-center justify-center bg-secondary/10 rounded-lg text-secondary"
+              >
+                <font-awesome-icon :icon="['fas', 'robot']" />
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 pt-6 border-t border-base-200">
+            <div class="flex gap-3 text-sm text-base-content/70">
+              <font-awesome-icon
+                :icon="['fas', 'info-circle']"
+                class="mt-1 text-info"
+              />
+              <div>
+                <p class="font-medium text-base-content">
+                  {{ $t("subscription.howItWorks.title") }}
+                </p>
+                <p class="mt-1 text-xs opacity-80">
+                  {{ $t("subscription.howItWorks.description") }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -452,6 +529,7 @@ const { t } = useI18n();
 const billingStore = useBillingStore();
 const { addToast } = useToast();
 
+const activeTab = ref("addFunds");
 const rechargeAmount = ref(20);
 const isRecurring = ref(false);
 
