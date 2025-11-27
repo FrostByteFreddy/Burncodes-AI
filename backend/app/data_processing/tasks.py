@@ -21,7 +21,9 @@ from crawl4ai import CacheMode, CrawlerRunConfig, LinkPreviewConfig
 from langchain_core.documents import Document
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_core.prompts import PromptTemplate
-from app.prompts import CLEANUP_PROMPT_TEMPLATES
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from app.prompts import CLEANUP_PROMPT_TEMPLATES, PDF_CLEANUP_PROMPT_TEMPLATES
 
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
@@ -110,12 +112,92 @@ async def async_create_document_chunks_for_structured_data(content: str, source:
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
         return []
 
+async def async_clean_pdf_text_with_llm(raw_text: str, doc_language: str = 'en') -> str:
+    """Uses an LLM to clean and reconstruct PDF text into valid markdown."""
+    print(f"🤖 Calling LLM to clean PDF text chunk ({len(raw_text)} chars) with language '{doc_language}'...")
+
+    template = PDF_CLEANUP_PROMPT_TEMPLATES.get(doc_language, PDF_CLEANUP_PROMPT_TEMPLATES['en'])
+    
+    cleanup_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0.0, timeout=600)
+    cleanup_prompt = PromptTemplate.from_template(template)
+    cleanup_chain = cleanup_prompt | cleanup_llm
+    
+    try:
+        response = await cleanup_chain.ainvoke({"raw_text": raw_text})
+        print("✅ PDF text chunk cleaned successfully.")
+        return response.content
+    except Exception as e:
+        print(f"⚠️ Error cleaning PDF text chunk: {e}")
+        return raw_text # Fallback to raw text if cleaning fails
+
+async def async_create_document_chunks_for_pdf(content: str, source: str, source_id: int, tenant_id: UUID) -> list[Document]:
+    """Asynchronously cleans and chunks Document objects for PDF data using LLM and RecursiveCharacterTextSplitter."""
+    documents = []
+    loop = asyncio.get_running_loop()
+    try:
+        # Fetch tenant to get doc_language
+        tenant_response = await loop.run_in_executor(None, lambda: supabase.table('tenants').select('doc_language').eq('id', str(tenant_id)).single().execute())
+        doc_language = tenant_response.data.get('doc_language', 'en') if tenant_response.data else 'en'
+
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "PROCESSING"}).eq('id', source_id).execute())
+
+        # 1. Sanitize null bytes first
+        sanitized_content = content.replace('\x00', '')
+
+        # 2. Split into large chunks for LLM cleaning (e.g., 20k chars)
+        # Gemini 1.5 Flash has a huge context, but we chunk to be safe and manage latency.
+        large_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=20000,
+            chunk_overlap=500,
+            length_function=len,
+            is_separator_regex=False,
+        )
+        large_chunks = large_splitter.split_text(sanitized_content)
+        
+        cleaned_chunks = []
+        for i, chunk in enumerate(large_chunks):
+            print(f"Processing large PDF chunk {i+1}/{len(large_chunks)}...")
+            cleaned_chunk = await async_clean_pdf_text_with_llm(chunk, doc_language)
+            cleaned_chunks.append(cleaned_chunk)
+        
+        full_cleaned_content = "\n\n".join(cleaned_chunks)
+
+        # 3. Update readme with full CLEANED content
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"readme": full_cleaned_content}).eq('id', source_id).execute())
+
+        # 4. Split the CLEANED content into smaller chunks for indexing
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000,
+            chunk_overlap=200,
+            length_function=len,
+            is_separator_regex=False,
+        )
+        chunks = text_splitter.split_text(full_cleaned_content)
+
+        timestamp = datetime.now(timezone.utc).isoformat()
+        for i, chunk in enumerate(chunks):
+            doc = Document(
+                page_content=chunk,
+                metadata={"source": source, "source_id": source_id, "chunk": i, "last_updated": timestamp}
+            )
+            documents.append(doc)
+
+        print(f"✅ Created {len(documents)} document chunks for PDF {source} (source_id: {source_id})")
+        return documents
+    except Exception as e:
+        print(f"Error creating document chunks for PDF source {source_id}: {e}")
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
+        return []
+
 async def _get_document_chunks_from_content(content: str, source: str, source_id: int, ext: str, tenant_id: UUID) -> list[Document]:
     """Internal helper to decide which chunking strategy to use based on file extension."""
     structured_extensions = ['.csv', '.ics']
     if ext in structured_extensions:
         # Use the direct path for structured data
         return await async_create_document_chunks_for_structured_data(content, source, source_id)
+    elif ext == '.pdf':
+        # Use the RecursiveCharacterTextSplitter for PDFs
+        return await async_create_document_chunks_for_pdf(content, source, source_id, tenant_id)
     else:
         # Use the LLM cleaning path for unstructured data
         return await async_create_document_chunks_with_metadata(content, source, source_id, tenant_id)
@@ -263,7 +345,7 @@ async def async_process_file_url(url: str, tenant_id: UUID, source_id: int) -> l
 
         if not docs_from_loader: return []
 
-        content = docs_from_loader[0].page_content
+        content = "\n\n".join([doc.page_content for doc in docs_from_loader])
         return await _get_document_chunks_from_content(content, url, source_id, ext, tenant_id)
 
     except Exception as e:
