@@ -94,14 +94,23 @@ def get_usage(current_user):
         # Note: For production, use an RPC or View for aggregation to avoid fetching all rows.
         logs_response = supabase.table("chat_logs").select("cost_chf, input_tokens, output_tokens").in_("tenant_id", tenant_ids).execute()
         
-        total_cost = sum(float(item.get('cost_chf', 0) or 0) for item in logs_response.data)
-        total_input = sum(int(item.get('input_tokens', 0) or 0) for item in logs_response.data)
-        total_output = sum(int(item.get('output_tokens', 0) or 0) for item in logs_response.data)
+        chat_cost = sum(float(item.get('cost_chf', 0) or 0) for item in logs_response.data)
+        chat_input = sum(int(item.get('input_tokens', 0) or 0) for item in logs_response.data)
+        chat_output = sum(int(item.get('output_tokens', 0) or 0) for item in logs_response.data)
+
+        # Query tenant_sources for these tenants
+        sources_response = supabase.table("tenant_sources").select("cost_chf, input_tokens, output_tokens").in_("tenant_id", tenant_ids).execute()
+
+        sources_cost = sum(float(item.get('cost_chf', 0) or 0) for item in sources_response.data)
+        sources_input = sum(int(item.get('input_tokens', 0) or 0) for item in sources_response.data)
+        sources_output = sum(int(item.get('output_tokens', 0) or 0) for item in sources_response.data)
         
         return jsonify({
-            'total_cost': total_cost,
-            'input_tokens': total_input,
-            'output_tokens': total_output
+            'total_cost': chat_cost + sources_cost,
+            'input_tokens': chat_input + sources_input,
+            'output_tokens': chat_output + sources_output,
+            'chat_cost': chat_cost,
+            'sources_cost': sources_cost
         })
     except Exception as e:
         error_logger.error(f"Error getting usage: {e}")

@@ -118,6 +118,17 @@
       "rechargeCanceled": "Recharge annulée.",
       "initiateFailed": "Échec du lancement de la recharge.",
       "portalFailed": "Échec de l'ouverture du portail de facturation. Vous n'avez peut-être pas encore de compte de facturation."
+    },
+    "tabs": {
+      "addFunds": "Ajouter des fonds",
+      "transactions": "Transactions",
+      "costOverview": "Aperçu des coûts"
+    },
+    "costOverview": {
+      "title": "Détail des coûts",
+      "totalCost": "Coût total",
+      "chatCost": "Coût du chat",
+      "sourcesCost": "Coût des sources"
     }
   },
   "tenant": {
@@ -249,7 +260,12 @@
         "deleteFailed": "Échec de la suppression de la source :",
         "crawlCompleted": "Tâche de crawling terminée ! Actualisation des sources...",
         "fetchFailed": "Échec de la récupération de l'activité de crawling."
-      }
+      },
+      "tabs": {
+        "website": "Indexation de site web",
+        "files": "Indexation de fichiers"
+      },
+      "cost": "Coût"
     },
     "fineTune": {
       "title": "Règles d'ajustement",

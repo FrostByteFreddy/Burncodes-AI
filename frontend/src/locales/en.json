@@ -118,6 +118,17 @@
       "rechargeCanceled": "Recharge canceled.",
       "initiateFailed": "Failed to initiate recharge.",
       "portalFailed": "Failed to open billing portal. You may not have a billing account yet."
+    },
+    "tabs": {
+      "addFunds": "Add Funds",
+      "transactions": "Transactions",
+      "costOverview": "Cost Overview"
+    },
+    "costOverview": {
+      "title": "Cost Breakdown",
+      "totalCost": "Total Cost",
+      "chatCost": "Chat Cost",
+      "sourcesCost": "Sources Cost"
     }
   },
   "tenant": {
@@ -249,7 +260,12 @@
         "deleteFailed": "Failed to delete source:",
         "crawlCompleted": "Crawl job completed! Refreshing sources...",
         "fetchFailed": "Failed to fetch crawling activity."
-      }
+      },
+      "tabs": {
+        "website": "Website Indexing",
+        "files": "File Indexing"
+      },
+      "cost": "Cost"
     },
     "fineTune": {
       "title": "Fine-Tuning Rules",
