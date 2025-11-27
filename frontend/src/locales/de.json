@@ -30,6 +30,7 @@
   },
   "manageTenants": {
     "title": "Mandanten verwalten",
+    "subtitle": "Erstellen und verwalten Sie Ihre Mandanten und deren Konfigurationen.",
     "newTenant": "Neuer Mandant",
     "noTenants": "Noch keine Mandanten",
     "startMessage": "Erstellen Sie Ihren ersten Mandanten, um zu beginnen.",
@@ -293,22 +294,38 @@
     "title": "Chat-Protokolle",
     "back": "Zurück",
     "conversations": "Unterhaltungen",
+    "noMessage": "Kein Nachrichteninhalt",
     "errors": {
       "loadConversations": "Fehler beim Laden der Unterhaltungen. Bitte versuchen Sie es später erneut.",
       "loadLogs": "Fehler beim Laden der Chat-Protokolle. Bitte versuchen Sie es später erneut."
     }
   },
   "profile": {
-    "title": "Mein Profil",
-    "email": "E-Mail",
-    "firstName": "Vorname",
-    "lastName": "Nachname",
-    "phoneNumber": "Telefonnummer",
+    "title": "Benutzerprofil",
+    "subtitle": "Verwalten Sie Ihre persönlichen Informationen und Sicherheitseinstellungen.",
+    "tabs": {
+      "profile": "Profildetails",
+      "security": "Sicherheit"
+    },
+    "email": "E-Mail-Adresse",
+    "first_name": "Vorname",
+    "last_name": "Nachname",
+    "phone_number": "Telefonnummer",
     "language": "Sprache",
-    "saving": "Speichern...",
-    "saveChanges": "Änderungen speichern",
+    "save_changes": "Änderungen speichern",
+    "saving": "Speichern",
     "success": "Profil erfolgreich aktualisiert!",
-    "error": "Fehler beim Aktualisieren des Profils."
+    "error": "Fehler beim Aktualisieren des Profils.",
+    "security": {
+      "currentPassword": "Aktuelles Passwort",
+      "newPassword": "Neues Passwort",
+      "confirmPassword": "Neues Passwort bestätigen",
+      "updatePassword": "Passwort aktualisieren",
+      "updating": "Aktualisiere",
+      "passwordMismatch": "Die neuen Passwörter stimmen nicht überein.",
+      "success": "Passwort erfolgreich geändert!",
+      "error": "Fehler beim Ändern des Passworts."
+    }
   },
   "sidebar": {
     "selectTenant": "Mandanten wählen",

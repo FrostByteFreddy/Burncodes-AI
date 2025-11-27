@@ -1,11 +1,12 @@
 <template>
   <div class="card">
-    <div class="inline-flex p-1 space-x-1 bg-primary-light rounded-full">
+    <div
+      class="inline-flex p-1 space-x-1 bg-primary/10 rounded-full mb-6 w-fit"
+    >
       <a
         class="btn border-0 rounded-full transition-all duration-300 hover:cursor-pointer space-x-2"
         :class="{
-          '!bg-primary-focus text-primary-content shadow':
-            activeTab === 'behavior',
+          '!bg-primary text-primary-content shadow': activeTab === 'behavior',
           'btn-ghost text-base-content': activeTab !== 'behavior',
         }"
         @click="activeTab = 'behavior'"
@@ -16,8 +17,7 @@
       <a
         class="btn border-0 rounded-full transition-all duration-300 hover:cursor-pointer space-x-2"
         :class="{
-          '!bg-primary-focus text-primary-content shadow':
-            activeTab === 'appearance',
+          '!bg-primary text-primary-content shadow': activeTab === 'appearance',
           'btn-ghost text-base-content': activeTab !== 'appearance',
         }"
         @click="activeTab = 'appearance'"
@@ -27,7 +27,7 @@
       </a>
     </div>
 
-    <form @submit.prevent="handleUpdate" class="space-y-6 mt-6">
+    <form @submit.prevent="handleUpdate" class="space-y-6">
       <div v-show="activeTab === 'behavior'" class="space-y-6">
         <div>
           <label

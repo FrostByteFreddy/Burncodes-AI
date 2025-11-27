@@ -30,6 +30,7 @@
   },
   "manageTenants": {
     "title": "Manage Tenants",
+    "subtitle": "Create and manage your tenants and their configurations.",
     "newTenant": "New Tenant",
     "noTenants": "No tenants yet",
     "startMessage": "Create your first tenant to get started.",
@@ -293,22 +294,38 @@
     "title": "Chat Logs",
     "back": "Back",
     "conversations": "Conversations",
+    "noMessage": "No message content",
     "errors": {
       "loadConversations": "Failed to load conversations. Please try again later.",
       "loadLogs": "Failed to load conversation logs. Please try again later."
     }
   },
   "profile": {
-    "title": "My Profile",
-    "email": "Email",
-    "firstName": "First Name",
-    "lastName": "Last Name",
-    "phoneNumber": "Phone Number",
+    "title": "User Profile",
+    "subtitle": "Manage your personal information and security settings.",
+    "tabs": {
+      "profile": "Profile Details",
+      "security": "Security"
+    },
+    "email": "Email Address",
+    "first_name": "First Name",
+    "last_name": "Last Name",
+    "phone_number": "Phone Number",
     "language": "Language",
-    "saving": "Saving...",
-    "saveChanges": "Save Changes",
+    "save_changes": "Save Changes",
+    "saving": "Saving",
     "success": "Profile updated successfully!",
-    "error": "Failed to update profile."
+    "error": "Failed to update profile.",
+    "security": {
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm New Password",
+      "updatePassword": "Update Password",
+      "updating": "Updating",
+      "passwordMismatch": "New passwords do not match.",
+      "success": "Password changed successfully!",
+      "error": "Failed to change password."
+    }
   },
   "sidebar": {
     "selectTenant": "Select a Tenant",

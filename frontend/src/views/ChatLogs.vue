@@ -45,7 +45,7 @@
               class="mr-2 mt-1 hidden sm:flex"
             />
             <div
-              class="chat-bubble chat-bubble-secondary prose"
+              class="chat-bubble chat-bubble-secondary prose max-w-none"
               v-html="processBotMessage(log.ai_message).html"
             ></div>
           </div>
@@ -54,17 +54,30 @@
     </div>
 
     <div v-else>
-      <h2 class="text-xl font-bold mb-4">{{ $t("chatLogs.conversations") }}</h2>
       <div
         v-for="convo in conversations"
         :key="convo.conversation_id"
         @click="selectConversation(convo.conversation_id)"
-        class="p-4 mb-2 rounded-lg hover:bg-base-200 cursor-pointer"
+        class="p-4 mb-2 rounded-lg hover:bg-base-200 cursor-pointer border border-base-200 transition-colors"
       >
-        <p class="font-semibold">
-          {{ new Date(convo.created_at).toLocaleString() }}
-        </p>
-        <p class="text-sm text-base-content/70">{{ convo.conversation_id }}</p>
+        <div class="flex justify-between items-start mb-2">
+          <p class="font-semibold text-lg truncate pr-4">
+            {{ convo.first_message || $t("chatLogs.noMessage") }}
+          </p>
+          <span class="text-xs text-base-content/50 whitespace-nowrap">
+            {{ new Date(convo.last_active).toLocaleString() }}
+          </span>
+        </div>
+        <div class="flex gap-4 text-sm text-base-content/70">
+          <span class="flex items-center gap-1">
+            <font-awesome-icon :icon="['fas', 'comments']" />
+            {{ convo.message_count }}
+          </span>
+          <span class="flex items-center gap-1">
+            <font-awesome-icon :icon="['fas', 'coins']" />
+            CHF {{ (convo.total_cost || 0).toFixed(4) }}
+          </span>
+        </div>
       </div>
     </div>
   </div>
@@ -75,6 +88,7 @@ import { ref, onMounted, nextTick } from "vue";
 import { useRoute } from "vue-router";
 import axios from "axios";
 import { useAuthStore } from "@/stores/auth";
+import { useToast } from "@/composables/useToast";
 import { processBotMessage } from "@/utils/chatProcessor.js";
 import { useI18n } from "vue-i18n";
 
@@ -83,6 +97,7 @@ const API_BASE_URL =
 
 const route = useRoute();
 const authStore = useAuthStore();
+const { addToast } = useToast();
 const { t } = useI18n();
 const tenantId = ref(route.params.tenantId);
 const conversations = ref([]);
@@ -136,7 +151,7 @@ const selectConversation = async (conversationId) => {
       chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
     }
   } catch (err) {
-    error.value = t("chatLogs.errors.loadLogs");
+    addToast(t("chatLogs.errors.loadLogs"), "error");
     console.error(err);
     selectedConversation.value = null; // Go back if loading fails
   } finally {

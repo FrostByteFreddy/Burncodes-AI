@@ -30,6 +30,7 @@
   },
   "manageTenants": {
     "title": "Gérer les locataires",
+    "subtitle": "Créez et gérez vos locataires et leurs configurations.",
     "newTenant": "Nouveau locataire",
     "noTenants": "Pas encore de locataires",
     "startMessage": "Créez votre premier locataire pour commencer.",
@@ -293,22 +294,38 @@
     "title": "Journaux de chat",
     "back": "Retour",
     "conversations": "Conversations",
+    "noMessage": "Aucun contenu de message",
     "errors": {
       "loadConversations": "Échec du chargement des conversations. Veuillez réessayer plus tard.",
       "loadLogs": "Échec du chargement des journaux de chat. Veuillez réessayer plus tard."
     }
   },
   "profile": {
-    "title": "Mon profil",
-    "email": "E-mail",
-    "firstName": "Prénom",
-    "lastName": "Nom",
-    "phoneNumber": "Numéro de téléphone",
+    "title": "Profil utilisateur",
+    "subtitle": "Gérez vos informations personnelles et vos paramètres de sécurité.",
+    "tabs": {
+      "profile": "Détails du profil",
+      "security": "Sécurité"
+    },
+    "email": "Adresse e-mail",
+    "first_name": "Prénom",
+    "last_name": "Nom",
+    "phone_number": "Numéro de téléphone",
     "language": "Langue",
-    "saving": "Enregistrement...",
-    "saveChanges": "Enregistrer les modifications",
+    "save_changes": "Enregistrer les modifications",
+    "saving": "Enregistrement",
     "success": "Profil mis à jour avec succès !",
-    "error": "Échec de la mise à jour du profil."
+    "error": "Échec de la mise à jour du profil.",
+    "security": {
+      "currentPassword": "Mot de passe actuel",
+      "newPassword": "Nouveau mot de passe",
+      "confirmPassword": "Confirmer le nouveau mot de passe",
+      "updatePassword": "Mettre à jour le mot de passe",
+      "updating": "Mise à jour",
+      "passwordMismatch": "Les nouveaux mots de passe ne correspondent pas.",
+      "success": "Mot de passe modifié avec succès !",
+      "error": "Échec du changement de mot de passe."
+    }
   },
   "sidebar": {
     "selectTenant": "Sélectionner un locataire",
