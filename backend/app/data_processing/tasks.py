@@ -144,10 +144,10 @@ async def async_create_document_chunks_for_pdf(content: str, source: str, source
         # 1. Sanitize null bytes first
         sanitized_content = content.replace('\x00', '')
 
-        # 2. Split into large chunks for LLM cleaning (e.g., 20k chars)
+        # 2. Split into large chunks for LLM cleaning (e.g., 10k chars)
         # Gemini 1.5 Flash has a huge context, but we chunk to be safe and manage latency.
         large_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=20000,
+            chunk_size=10000,
             chunk_overlap=500,
             length_function=len,
             is_separator_regex=False,
