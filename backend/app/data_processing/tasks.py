@@ -162,9 +162,17 @@ async def async_create_document_chunks_for_pdf(content: str, source: str, source
         
         full_cleaned_content = "\n\n---CHUNK_SEPARATOR---\n\n".join(cleaned_chunks)
 
-        # 3. Update readme with full CLEANED content
-        # The LLM has already inserted separators, so we just save it.
-        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"readme": full_cleaned_content}).eq('id', source_id).execute())
+        # 3. Upload readme to S3 (instead of DB)
+        # Path: /tenant-id/readme_output/filename.md
+        filename_stem = os.path.splitext(os.path.basename(source))[0]
+        s3_readme_path = f"{tenant_id}/readme_output/{filename_stem}.md"
+        
+        print(f"📤 Uploading cleaned readme to S3: {s3_readme_path}")
+        await loop.run_in_executor(None, lambda: supabase.storage.from_(bucket_name).upload(
+            path=s3_readme_path,
+            file=full_cleaned_content.encode('utf-8'),
+            file_options={"content-type": "text/markdown", "upsert": "true"}
+        ))
 
         # 4. Split the CLEANED content into chunks using the separator
         chunks = [chunk.strip() for chunk in full_cleaned_content.split("---CHUNK_SEPARATOR---") if chunk.strip()]
