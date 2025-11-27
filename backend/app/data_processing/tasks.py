@@ -13,6 +13,7 @@ from app.database.supabase_client import supabase, bucket_name
 from app.data_processing.processor import get_vectorstore, get_loader, process_documents, SUPPORTED_FILE_EXTENSIONS
 from app.data_processing.crawler import get_crawler
 from app.data_processing.config import MAX_CONCURRENT_CRAWLS_PER_JOB
+from app.billing.services import BillingService
 
 # --- Crawl4AI Imports ---
 from crawl4ai import CacheMode, CrawlerRunConfig, LinkPreviewConfig
@@ -28,8 +29,8 @@ from app.prompts import CLEANUP_PROMPT_TEMPLATES, PDF_CLEANUP_PROMPT_TEMPLATES
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
 
-async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_language: str = 'en', source_id: int = None) -> str:
-    """Uses an LLM to clean, optimize, and chunk raw markdown asynchronously."""
+async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_language: str = 'en', source_id: int = None) -> tuple[str, int, int]:
+    """Uses an LLM to clean, optimize, and chunk raw markdown asynchronously. Returns content and token usage."""
     print(f"🤖 Calling LLM to clean and chunk markdown ({len(markdown_text)} chars) with language '{doc_language}'...")
 
     # Select the appropriate prompt template based on the document language
@@ -39,14 +40,21 @@ async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_langua
     cleanup_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0.0, timeout=600)
     cleanup_prompt = PromptTemplate.from_template(template)
     cleanup_chain = cleanup_prompt | cleanup_llm
+    
+    # Estimate input tokens (approx 4 chars per token)
+    input_tokens = len(markdown_text) // 4
+    
     response = await cleanup_chain.ainvoke({"raw_markdown": markdown_text})
     print("✅ Markdown cleaned and chunked successfully.")
+    
+    # Estimate output tokens
+    output_tokens = len(response.content) // 4
     
     # Write the processed markdown to the "readme" column in tenant_sources
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"readme": response.content}).eq('id', source_id).execute())
 
-    return response.content
+    return response.content, input_tokens, output_tokens
 
 async def async_create_document_chunks_with_metadata(content: str, source: str, source_id: int, tenant_id: UUID) -> list[Document]:
     """Asynchronously cleans, chunks, and creates Document objects with metadata."""
@@ -60,7 +68,22 @@ async def async_create_document_chunks_with_metadata(content: str, source: str, 
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "PROCESSING"}).eq('id', source_id).execute())
 
         # The LLM now returns a single string with chunks separated by a specific token.
-        cleaned_and_chunked_content = await async_clean_and_chunk_markdown_with_llm(content, doc_language, source_id)
+        cleaned_and_chunked_content, input_tokens, output_tokens = await async_clean_and_chunk_markdown_with_llm(content, doc_language, source_id)
+        
+        # Calculate and deduct cost
+        # Fetch user_id from tenant
+        user_response = await loop.run_in_executor(None, lambda: supabase.table('tenants').select('user_id').eq('id', str(tenant_id)).single().execute())
+        if user_response.data:
+            user_id = user_response.data['user_id']
+            cost = BillingService.deduct_cost(user_id, QUERY_GEMINI_MODEL, input_tokens, output_tokens)
+            
+            # Update tenant_sources with usage stats
+            await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "cost_chf": cost
+            }).eq('id', source_id).execute())
+            
         chunks = [chunk.strip() for chunk in cleaned_and_chunked_content.split("---CHUNK_SEPARATOR---") if chunk.strip()]
 
         if DEBUG:
@@ -112,8 +135,8 @@ async def async_create_document_chunks_for_structured_data(content: str, source:
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
         return []
 
-async def async_clean_pdf_text_with_llm(raw_text: str, doc_language: str = 'en') -> str:
-    """Uses an LLM to clean and reconstruct PDF text into valid markdown."""
+async def async_clean_pdf_text_with_llm(raw_text: str, doc_language: str = 'en') -> tuple[str, int, int]:
+    """Uses an LLM to clean and reconstruct PDF text into valid markdown. Returns content and token usage."""
     print(f"🤖 Calling LLM to clean PDF text chunk ({len(raw_text)} chars) with language '{doc_language}'...")
 
     template = PDF_CLEANUP_PROMPT_TEMPLATES.get(doc_language, PDF_CLEANUP_PROMPT_TEMPLATES['en'])
@@ -122,13 +145,16 @@ async def async_clean_pdf_text_with_llm(raw_text: str, doc_language: str = 'en')
     cleanup_prompt = PromptTemplate.from_template(template)
     cleanup_chain = cleanup_prompt | cleanup_llm
     
+    input_tokens = len(raw_text) // 4
+    
     try:
         response = await cleanup_chain.ainvoke({"raw_text": raw_text})
         print("✅ PDF text chunk cleaned successfully.")
-        return response.content
+        output_tokens = len(response.content) // 4
+        return response.content, input_tokens, output_tokens
     except Exception as e:
         print(f"⚠️ Error cleaning PDF text chunk: {e}")
-        return raw_text # Fallback to raw text if cleaning fails
+        return raw_text, input_tokens, 0 # Fallback to raw text if cleaning fails
 
 async def async_create_document_chunks_for_pdf(content: str, source: str, source_id: int, tenant_id: UUID) -> list[Document]:
     """Asynchronously cleans and chunks Document objects for PDF data using LLM and RecursiveCharacterTextSplitter."""
@@ -155,10 +181,29 @@ async def async_create_document_chunks_for_pdf(content: str, source: str, source
         large_chunks = large_splitter.split_text(sanitized_content)
         
         cleaned_chunks = []
+        total_input_tokens = 0
+        total_output_tokens = 0
+        
         for i, chunk in enumerate(large_chunks):
             print(f"Processing large PDF chunk {i+1}/{len(large_chunks)}...")
-            cleaned_chunk = await async_clean_pdf_text_with_llm(chunk, doc_language)
+            cleaned_chunk, input_tokens, output_tokens = await async_clean_pdf_text_with_llm(chunk, doc_language)
             cleaned_chunks.append(cleaned_chunk)
+            total_input_tokens += input_tokens
+            total_output_tokens += output_tokens
+            
+        # Calculate and deduct cost
+        # Fetch user_id from tenant
+        user_response = await loop.run_in_executor(None, lambda: supabase.table('tenants').select('user_id').eq('id', str(tenant_id)).single().execute())
+        if user_response.data:
+            user_id = user_response.data['user_id']
+            cost = BillingService.deduct_cost(user_id, QUERY_GEMINI_MODEL, total_input_tokens, total_output_tokens)
+            
+            # Update tenant_sources with usage stats
+            await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({
+                "input_tokens": total_input_tokens,
+                "output_tokens": total_output_tokens,
+                "cost_chf": cost
+            }).eq('id', source_id).execute())
         
         full_cleaned_content = "\n\n---CHUNK_SEPARATOR---\n\n".join(cleaned_chunks)
 
