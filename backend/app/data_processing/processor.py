@@ -18,12 +18,8 @@ from icalendar import Calendar
 from typing import List
 from app.models.database import TenantFineTune
 
-
 # --- CONFIGURATION ---
 SUPPORTED_FILE_EXTENSIONS = ['.pdf', '.docx', '.txt', '.csv', '.ics']
-
-# In-memory cache to store initialized vector stores (On god I hope this does not break my 4gb limit lol)
-# vectorstore_cache = {}
 
 # --- DOCUMENT LOADERS ---
 class ICSExtensionLoader(BaseLoader):

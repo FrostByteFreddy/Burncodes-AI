@@ -98,7 +98,61 @@ CLEANUP_PROMPT_TEMPLATES = {
 
     Voici le texte Markdown brut :
     ---
-    {raw_markdown}
+    """
+}
+
+PDF_CLEANUP_PROMPT_TEMPLATES = {
+    'en': """
+    You are an expert document cleaner. Your task is to take raw text extracted from a PDF and reconstruct it into clean, readable Markdown.
+
+    The content's primary language is **English**.
+
+    **Instructions:**
+    1.  **Remove Artifacts:** Delete headers, footers, page numbers (e.g., "Page 1 of 5"), and repetitive legal disclaimers that appear on every page.
+    2.  **Fix Broken Text:** Join sentences that were split across page breaks. Fix hyphenated words that were split at the end of a line (e.g., "infor- mation" -> "information").
+    3.  **Structure:** Use Markdown headers (#, ##, ###) to structure the document based on the text's hierarchy. Use bullet points for lists.
+    4.  **Preserve Content:** Do not summarize. Keep all factual information, numbers, and names exactly as they are.
+    5.  **Output:** Return ONLY the cleaned Markdown text. Do not add any conversational filler.
+
+    **Raw Text:**
+    ---
+    {raw_text}
+    ---
+    """,
+
+    'de': """
+    Sie sind ein Experte für Dokumentenbereinigung. Ihre Aufgabe ist es, rohen Text, der aus einem PDF extrahiert wurde, in sauberes, lesbares Markdown umzuwandeln.
+
+    Die Hauptsprache des Inhalts ist **Deutsch**.
+
+    **Anweisungen:**
+    1.  **Artefakte entfernen:** Löschen Sie Kopfzeilen, Fußzeilen, Seitenzahlen (z. B. "Seite 1 von 5") und wiederkehrende rechtliche Hinweise.
+    2.  **Gebrochenen Text reparieren:** Fügen Sie Sätze zusammen, die durch Seitenumbrüche getrennt wurden. Korrigieren Sie Wörter, die am Zeilenende getrennt wurden (z. B. "Infor- mation" -> "Information").
+    3.  **Struktur:** Verwenden Sie Markdown-Überschriften (#, ##, ###), um das Dokument basierend auf der Hierarchie des Textes zu strukturieren. Verwenden Sie Aufzählungszeichen für Listen.
+    4.  **Inhalt bewahren:** Fassen Sie nicht zusammen. Behalten Sie alle sachlichen Informationen, Zahlen und Namen genau so bei, wie sie sind.
+    5.  **Ausgabe:** Geben Sie NUR den bereinigten Markdown-Text zurück. Fügen Sie keine konversationellen Füllwörter hinzu.
+
+    **Roher Text:**
+    ---
+    {raw_text}
+    ---
+    """,
+
+    'fr': """
+    Vous êtes un expert en nettoyage de documents. Votre tâche est de prendre du texte brut extrait d'un PDF et de le reconstruire en Markdown propre et lisible.
+
+    La langue principale du contenu est le **Français**.
+
+    **Instructions :**
+    1.  **Supprimer les artefacts :** Supprimez les en-têtes, les pieds de page, les numéros de page (par exemple, "Page 1 sur 5") et les mentions légales répétitives.
+    2.  **Réparer le texte cassé :** Joignez les phrases qui ont été coupées par des sauts de page. Corrigez les mots coupés en fin de ligne (par exemple, "infor- mation" -> "information").
+    3.  **Structure :** Utilisez des en-têtes Markdown (#, ##, ###) pour structurer le document en fonction de la hiérarchie du texte. Utilisez des puces pour les listes.
+    4.  **Préserver le contenu :** Ne résumez pas. Gardez toutes les informations factuelles, les chiffres et les noms exactement tels qu'ils sont.
+    5.  **Sortie :** Retournez UNIQUEMENT le texte Markdown nettoyé. N'ajoutez pas de remplissage conversationnel.
+
+    **Texte brut :**
+    ---
+    {raw_text}
     ---
     """
 }
