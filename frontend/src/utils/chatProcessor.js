@@ -1,4 +1,17 @@
-import { marked } from "marked";
+import { Marked } from "marked";
+import { markedHighlight } from "marked-highlight";
+import hljs from "highlight.js";
+
+// Configure marked with highlight.js
+const marked = new Marked(
+  markedHighlight({
+    langPrefix: "hljs language-",
+    highlight(code, lang) {
+      const language = hljs.getLanguage(lang) ? lang : "plaintext";
+      return hljs.highlight(code, { language }).value;
+    },
+  })
+);
 
 /**
  * Processes a bot's message content, cleaning it and converting markdown to HTML.
@@ -13,7 +26,7 @@ export const processBotMessage = (content) => {
     }
     // This regex removes the specific Kramdown attribute list for target="_blank"
     const cleanedText = content.replace(/{:target="_blank"}/g, "");
-    const html = marked(cleanedText);
+    const html = marked.parse(cleanedText);
     return { text: cleanedText, html };
   } catch (e) {
     console.error("Error parsing content with marked.js:", e);
