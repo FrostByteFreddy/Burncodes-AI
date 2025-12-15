@@ -474,13 +474,21 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         excluded_urls = job.get('excluded_urls', [])
         
         # 1. Normalize the URL that is being crawled
-        normalized_url = url.strip().rstrip('/')
+        normalized_url = normalize_url(url)
 
         # 2. Normalize the list of URLs to exclude
-        normalized_excluded_list = [str(ex_url).strip().rstrip('/') for ex_url in excluded_urls]
+        normalized_excluded_list = [normalize_url(str(ex_url)) for ex_url in excluded_urls]
+        
+        print(f"🔍 Checking exclusion for {normalized_url} against {normalized_excluded_list}")
 
         # 3. Perform the check with the normalized values
-        if any(normalized_url.startswith(excluded) for excluded in normalized_excluded_list):
+        is_excluded = False
+        for excluded in normalized_excluded_list:
+            if normalized_url == excluded or normalized_url.startswith(excluded + '/'):
+                is_excluded = True
+                break
+
+        if is_excluded:
             print(f"🚫 Skipping excluded URL: {url}")
             supabase.table('crawling_tasks').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', task_id).execute()
             return
@@ -497,7 +505,11 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         # --- Step 1: Configure and crawl the page ---
         # Create a dynamic crawler config to handle exclusions per job.
         # We add a wildcard to the end of each excluded URL to match any sub-paths.
-        wildcard_excluded_urls = [f"{u}*" for u in excluded_urls]
+        wildcard_excluded_urls = []
+        for u in excluded_urls:
+            norm = normalize_url(u)
+            wildcard_excluded_urls.append(norm)
+            wildcard_excluded_urls.append(f"{norm}/*")
 
         # Add common image extensions to the exclusion list
         image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp']
@@ -550,7 +562,16 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             # crawl4ai with the configured exclude_patterns will handle not following the excluded links.
             # We can directly use the internal links it returns.
             for link in crawl_result.links.get("internal", []):
-                found_links.add(normalize_url(link["href"]))
+                href = normalize_url(link["href"])
+                # Check exclusion again to be safe
+                is_excluded_link = False
+                for excluded in normalized_excluded_list:
+                     if href == excluded or href.startswith(excluded + '/'):
+                        is_excluded_link = True
+                        break
+                
+                if not is_excluded_link:
+                    found_links.add(href)
 
         # --- Step 3: Discover and save new links ---
         if depth < max_depth:
