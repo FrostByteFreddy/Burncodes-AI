@@ -349,7 +349,28 @@ const widgetCssVariables = computed(() => {
 }
 
 .bot-message,
-.bot-message * {
+.bot-message
+  :is(
+    p,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    ul,
+    ol,
+    li,
+    blockquote,
+    table,
+    thead,
+    tbody,
+    tr,
+    th,
+    td,
+    strong,
+    em
+  ) {
   color: var(--chat-bot-message-text-color) !important;
 }
 
