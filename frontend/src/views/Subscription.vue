@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto px-4 py-4 sm:px-6 sm:py-8 max-w-7xl">
+  <div>
     <div
       class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8"
     >
@@ -26,12 +26,10 @@
       <span class="loading loading-spinner loading-lg text-primary"></span>
     </div>
 
-    <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Balance Card -->
-      <div
-        class="card bg-base-100 shadow-xl border border-base-200 lg:col-span-2"
-      >
-        <div class="card-body p-4 sm:p-6">
+    <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Balance Section -->
+      <div class="lg:col-span-2 pb-8 border-b border-base-200 lg:border-b-0 lg:border-r lg:pr-8">
+        <div>
           <div
             class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
           >
@@ -178,9 +176,9 @@
         </div>
       </div>
 
-      <!-- Usage Card -->
-      <div class="card bg-base-100 shadow-xl border border-base-200 h-fit">
-        <div class="card-body p-4 sm:p-6">
+      <!-- Usage Section -->
+      <div class="pb-8 border-b border-base-200">
+        <div>
           <h2 class="card-title text-lg mb-6 flex items-center gap-2">
             <font-awesome-icon
               :icon="['fas', 'chart-pie']"
@@ -269,10 +267,8 @@
       </div>
 
       <!-- Billing History -->
-      <div
-        class="card bg-base-100 shadow-xl border border-base-200 lg:col-span-3"
-      >
-        <div class="card-body p-4 sm:p-6">
+      <div class="lg:col-span-3">
+        <div>
           <h2 class="card-title text-lg mb-4 flex items-center gap-2">
             <font-awesome-icon
               :icon="['fas', 'history']"

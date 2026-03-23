@@ -1,40 +1,38 @@
 <template>
   <h1 class="text-2xl font-bold mb-6">{{ $t("analytics.title") }}</h1>
-  <div class="bg-base-100 p-6 rounded-lg shadow-lg">
-    <div class="flex justify-end gap-4 mb-4">
-      <select
-        v-model="selectedInterval"
-        @change="updateChart"
-        class="select select-bordered"
+  <div class="flex justify-end gap-4 mb-4">
+    <select
+      v-model="selectedInterval"
+      @change="updateChart"
+      class="select select-bordered"
+    >
+      <option v-for="item in intervals" :key="item.value" :value="item.value">
+        {{ item.label }}
+      </option>
+    </select>
+    <select
+      v-model="selectedTimeframe"
+      @change="updateChart"
+      class="select select-bordered"
+    >
+      <option
+        v-for="frame in timeframes"
+        :key="frame.value"
+        :value="frame.value"
       >
-        <option v-for="item in intervals" :key="item.value" :value="item.value">
-          {{ item.label }}
-        </option>
-      </select>
-      <select
-        v-model="selectedTimeframe"
-        @change="updateChart"
-        class="select select-bordered"
-      >
-        <option
-          v-for="frame in timeframes"
-          :key="frame.value"
-          :value="frame.value"
-        >
-          {{ frame.label }}
-        </option>
-      </select>
-    </div>
-    <div v-if="isLoading" class="flex justify-center items-center h-64">
-      <span class="loading loading-spinner loading-lg"></span>
-    </div>
-    <div v-else-if="error" class="text-error">
-      {{ $t("analytics.error") }}
-    </div>
-    <div v-else>
-      <div class="chart-container">
-        <Line :data="chartData" :options="chartOptions" />
-      </div>
+        {{ frame.label }}
+      </option>
+    </select>
+  </div>
+  <div v-if="isLoading" class="flex justify-center items-center h-64">
+    <span class="loading loading-spinner loading-lg"></span>
+  </div>
+  <div v-else-if="error" class="text-error">
+    {{ $t("analytics.error") }}
+  </div>
+  <div v-else>
+    <div class="chart-container">
+      <Line :data="chartData" :options="chartOptions" />
     </div>
   </div>
 </template>

@@ -1,16 +1,16 @@
 <template>
-  <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
+  <div>
     <div class="flex justify-between items-center mb-6">
-      <h3 class="text-xl font-bold text-gray-800 flex items-center">
+      <h3 class="text-xl font-bold text-base-content flex items-center">
         <font-awesome-icon
           :icon="['fas', 'wand-magic-sparkles']"
-          class="mr-3 text-purple-500"
+          class="mr-3 text-primary"
         />
         {{ $t("tenant.fineTune.title") }}
       </h3>
       <button
         @click="isModalOpen = true"
-        class="inline-flex items-center p-3 rounded-full font-semibold text-white bg-purple-500 shadow-sm hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+        class="btn btn-primary btn-sm btn-circle"
       >
         <font-awesome-icon :icon="['fas', 'plus']" class="h-4 w-4" />
       </button>
@@ -21,10 +21,10 @@
         v-for="(rule, index) in rules"
         :key="index"
         :class="[
-          'p-4 rounded-xl flex flex-col transition-all duration-300',
+          'p-4 rounded-xl flex flex-col transition-all duration-300 border',
           rule.isEditing
-            ? 'bg-white ring-2 ring-purple-500 shadow-xl'
-            : 'bg-slate-50 border border-slate-200',
+            ? 'bg-base-100 ring-2 ring-primary shadow-xl border-transparent'
+            : 'bg-base-200 border-base-300',
         ]"
       >
         <div class="flex-grow space-y-3">
@@ -37,8 +37,8 @@
             :class="[
               'w-full p-2 mt-1 rounded-lg text-lg font-semibold focus:outline-none',
               rule.isEditing
-                ? 'bg-white border-slate-300 border focus:ring-2 focus:ring-purple-400'
-                : 'bg-transparent border-transparent text-slate-800',
+                ? 'bg-base-100 border-base-300 border focus:ring-2 focus:ring-primary'
+                : 'bg-transparent border-transparent text-base-content',
             ]"
           />
 
@@ -52,8 +52,8 @@
               :class="[
                 'w-full p-2 mt-1 rounded-lg focus:outline-none',
                 rule.isEditing
-                  ? 'bg-white border-slate-300 border focus:ring-2 focus:ring-purple-400'
-                  : 'bg-transparent border-transparent text-slate-600',
+                  ? 'bg-base-100 border-base-300 border focus:ring-2 focus:ring-primary'
+                  : 'bg-transparent border-transparent text-base-content/70',
               ]"
             />
           </div>
@@ -63,13 +63,13 @@
           <template v-if="rule.isEditing">
             <button
               @click="saveEditedRule(rule)"
-              class="p-2 text-slate-600 rounded-full hover:bg-green-100 hover:text-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+              class="btn btn-ghost btn-xs text-success"
             >
               <font-awesome-icon :icon="['fas', 'check']" class="h-4 w-4" />
             </button>
             <button
               @click="cancelEditing(index)"
-              class="p-2 text-slate-600 rounded-full hover:bg-slate-200 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500"
+              class="btn btn-ghost btn-xs"
             >
               <font-awesome-icon :icon="['fas', 'xmark']" class="h-4 w-4" />
             </button>
@@ -77,13 +77,13 @@
           <template v-else>
             <button
               @click="startEditing(rule, index)"
-              class="p-2 text-slate-500 rounded-full hover:bg-slate-200 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500"
+              class="btn btn-ghost btn-xs"
             >
               <font-awesome-icon :icon="['fas', 'pen']" class="h-4 w-4" />
             </button>
             <button
               @click="removeRule(index)"
-              class="p-2 text-slate-500 rounded-full hover:bg-red-100 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+              class="btn btn-ghost btn-xs text-error"
             >
               <font-awesome-icon :icon="['fas', 'trash']" class="h-4 w-4" />
             </button>
@@ -92,7 +92,7 @@
       </div>
     </div>
 
-    <p v-if="rules.length === 0" class="text-gray-500 text-center py-8">
+    <p v-if="rules.length === 0" class="text-base-content/50 text-center py-8">
       {{ $t("tenant.fineTune.noRules") }}
     </p>
   </div>

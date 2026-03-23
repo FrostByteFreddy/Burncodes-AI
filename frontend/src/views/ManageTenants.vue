@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div>
     <div class="flex justify-between items-center mb-8">
       <h1 class="text-4xl font-bold text-base-content">
         {{ $t("manageTenants.title") }}
@@ -27,7 +27,7 @@
     <!-- Empty State -->
     <div
       v-else-if="!tenantsStore.loading && tenantsStore.tenants.length === 0"
-      class="text-center bg-base-100 p-12 rounded-lg shadow-md"
+      class="text-center py-16"
     >
       <font-awesome-icon
         :icon="['fas', 'folder-open']"
@@ -48,11 +48,11 @@
     </div>
 
     <!-- Tenant List -->
-    <div v-else class="space-y-4">
+    <div v-else class="border-t border-base-200">
       <div
         v-for="tenant in tenantsStore.tenants"
         :key="tenant.id"
-        class="bg-base-100 p-6 rounded-lg flex justify-between items-center shadow-md"
+        class="flex justify-between items-center py-4 border-b border-base-200"
       >
         <div>
           <h2 class="text-xl font-bold">{{ tenant.name }}</h2>
