@@ -1,6 +1,6 @@
 <template>
   <header class="sticky top-0 z-50 bg-base-100/95 backdrop-blur border-b border-base-300">
-    <div class="flex items-center justify-between px-4 md:px-6 h-14">
+    <div class="flex items-center justify-between px-4 md:px-8 h-16">
 
       <!-- Left: Logo + Tenant Switcher -->
       <div class="flex items-center gap-4">
@@ -50,14 +50,12 @@
         </span>
       </div>
 
-      <!-- Center: Tenant nav links (desktop) -->
-      <nav v-if="activeTenant" class="hidden lg:flex items-center gap-1">
+      <nav v-if="activeTenant" class="hidden lg:flex items-center gap-2">
         <router-link
           :to="{ name: 'TenantSources', params: { tenantId: activeTenant.id } }"
           class="nav-link"
           active-class="nav-link-active"
         >
-          <font-awesome-icon :icon="['fas', 'database']" class="w-3.5 h-3.5" />
           {{ $t('sidebar.sources') }}
         </router-link>
         <router-link
@@ -65,7 +63,6 @@
           class="nav-link"
           active-class="nav-link-active"
         >
-          <font-awesome-icon :icon="['fas', 'sliders']" class="w-3.5 h-3.5" />
           {{ $t('sidebar.configuration') }}
         </router-link>
         <router-link
@@ -73,7 +70,6 @@
           class="nav-link"
           active-class="nav-link-active"
         >
-          <font-awesome-icon :icon="['fas', 'flask-vial']" class="w-3.5 h-3.5" />
           {{ $t('sidebar.fineTune') }}
         </router-link>
         <router-link
@@ -81,7 +77,6 @@
           class="nav-link"
           active-class="nav-link-active"
         >
-          <font-awesome-icon :icon="['fas', 'chart-line']" class="w-3.5 h-3.5" />
           {{ $t('sidebar.analytics') }}
         </router-link>
         <router-link
@@ -89,7 +84,6 @@
           class="nav-link"
           active-class="nav-link-active"
         >
-          <font-awesome-icon :icon="['fas', 'history']" class="w-3.5 h-3.5" />
           {{ $t('sidebar.chatLogs') }}
         </router-link>
         <a
@@ -97,9 +91,8 @@
           target="_blank"
           class="nav-link"
         >
-          <font-awesome-icon :icon="['fas', 'comments']" class="w-3.5 h-3.5" />
           {{ $t('sidebar.chatbot') }}
-          <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" class="w-2.5 h-2.5 opacity-50" />
+          <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" class="w-2.5 h-2.5 opacity-40" />
         </a>
       </nav>
 
@@ -286,12 +279,13 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.375rem 0.75rem;
+  padding: 0.5rem 1rem;
   font-size: 0.875rem;
   font-weight: 500;
   border-radius: 0.375rem;
   transition: background-color 0.15s, color 0.15s;
-  color: oklch(var(--bc) / 0.7);
+  color: oklch(var(--bc) / 0.65);
+  letter-spacing: 0.01em;
 }
 .nav-link:hover {
   background-color: oklch(var(--b2));
