@@ -72,7 +72,8 @@ const emit = defineEmits(["confirm", "cancel"]);
 const userInput = ref("");
 
 const isConfirmDisabled = computed(() => {
-  return props.confirmationText && userInput.value !== props.confirmationText;
+  if (!props.confirmationText) return false;
+  return userInput.value !== props.confirmationText;
 });
 
 const onConfirm = () => {

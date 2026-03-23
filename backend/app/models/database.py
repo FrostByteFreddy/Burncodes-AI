@@ -24,6 +24,9 @@ class TenantSource(BaseModel):
     source_type: SourceType
     source_location: str
     status: SourceStatus
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cost_chf: float = 0.0
 
 class Tenant(BaseModel):
     id: UUID = Field(default_factory=uuid4)

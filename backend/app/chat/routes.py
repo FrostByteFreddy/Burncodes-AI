@@ -108,19 +108,32 @@ def get_chat_analytics(tenant_id):
 @chat_bp.route('/<uuid:tenant_id>/conversations', methods=['GET'])
 def get_conversations(tenant_id):
     try:
-        response = supabase.table('chat_logs').select('conversation_id, created_at').eq('tenant_id', str(tenant_id)).order('created_at', desc=True).execute()
+        response = supabase.table('chat_logs').select('conversation_id, created_at, user_message, cost_chf').eq('tenant_id', str(tenant_id)).order('created_at', desc=True).execute()
 
         if not hasattr(response, 'data'):
             error_logger.error(f"Supabase response for tenant {tenant_id} is missing 'data' attribute: {response}")
             return jsonify({"error": "Invalid response from database"}), 500
 
-        # Get unique conversations
+        # Aggregate conversation data
         conversations = {}
         for log in response.data:
-            if log['conversation_id'] not in conversations:
-                conversations[log['conversation_id']] = log['created_at']
+            c_id = log['conversation_id']
+            if c_id not in conversations:
+                conversations[c_id] = {
+                    'conversation_id': c_id,
+                    'last_active': log['created_at'],
+                    'message_count': 0,
+                    'total_cost': 0.0,
+                    'first_message': log['user_message']
+                }
+            
+            conversations[c_id]['message_count'] += 1
+            conversations[c_id]['total_cost'] += (log.get('cost_chf') or 0)
+            # Since we iterate in descending order, the last assignment will be the first message
+            if log['user_message']:
+                conversations[c_id]['first_message'] = log['user_message']
 
-        return jsonify([{'conversation_id': k, 'created_at': v} for k, v in conversations.items()])
+        return jsonify(list(conversations.values()))
 
     except Exception as e:
         error_logger.error(f"Error in get_conversations for tenant {tenant_id}: {e}", exc_info=True)

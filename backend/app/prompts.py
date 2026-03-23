@@ -98,7 +98,76 @@ CLEANUP_PROMPT_TEMPLATES = {
 
     Voici le texte Markdown brut :
     ---
-    {raw_markdown}
+    """
+}
+
+PDF_CLEANUP_PROMPT_TEMPLATES = {
+    'en': """
+    You are an expert document cleaner and structurer. Your task is to take raw text extracted from a PDF, clean it, and split it into logical chunks.
+
+    The content's primary language is **English**.
+
+    **Instructions:**
+    1.  **Clean & Reconstruct:**
+        *   Remove headers, footers, page numbers (e.g., "Page 1 of 5"), and repetitive legal disclaimers.
+        *   Join sentences split across page breaks. Fix hyphenated words (e.g., "infor- mation" -> "information").
+        *   Use Markdown headers (#, ##, ###) to structure the document.
+    2.  **Chunking:**
+        *   Split the text into logical, self-contained chunks based on topics or sections.
+        *   **CRITICAL:** Insert the separator `---CHUNK_SEPARATOR---` between each chunk.
+        *   Keep related information (e.g., a person's bio, a specific clause) in the same chunk.
+    3.  **Preserve Content:** Do not summarize. Keep all factual information, numbers, and names exactly as they are.
+    4.  **Output:** Return ONLY the cleaned, chunked Markdown text.
+
+    **Raw Text:**
+    ---
+    {raw_text}
+    ---
+    """,
+
+    'de': """
+    Sie sind ein Experte für Dokumentenbereinigung und -strukturierung. Ihre Aufgabe ist es, rohen Text aus einem PDF zu bereinigen und in logische Abschnitte (Chunks) zu unterteilen.
+
+    Die Hauptsprache des Inhalts ist **Deutsch**.
+
+    **Anweisungen:**
+    1.  **Bereinigen & Rekonstruieren:**
+        *   Entfernen Sie Kopfzeilen, Fußzeilen, Seitenzahlen und wiederkehrende rechtliche Hinweise.
+        *   Fügen Sie Sätze zusammen, die durch Seitenumbrüche getrennt wurden. Korrigieren Sie Trennfehler.
+        *   Verwenden Sie Markdown-Überschriften (#, ##, ###) zur Strukturierung.
+    2.  **Chunking (Aufteilung):**
+        *   Teilen Sie den Text in logische, in sich geschlossene Abschnitte basierend auf Themen.
+        *   **WICHTIG:** Fügen Sie das Trennzeichen `---CHUNK_SEPARATOR---` zwischen jedem Abschnitt ein.
+        *   Halten Sie zusammengehörige Informationen im selben Chunk.
+    3.  **Inhalt bewahren:** Fassen Sie nicht zusammen. Behalten Sie alle Fakten bei.
+    4.  **Ausgabe:** Geben Sie NUR den bereinigten, in Chunks unterteilten Markdown-Text zurück.
+
+    **Roher Text:**
+    ---
+    {raw_text}
+    ---
+    """,
+
+    'fr': """
+    Vous êtes un expert en nettoyage et structuration de documents. Votre tâche est de nettoyer le texte brut d'un PDF et de le diviser en segments logiques.
+
+    La langue principale du contenu est le **Français**.
+
+    **Instructions :**
+    1.  **Nettoyer & Reconstruire :**
+        *   Supprimez les en-têtes, pieds de page, numéros de page et mentions légales répétitives.
+        *   Joignez les phrases coupées par des sauts de page. Corrigez les mots coupés.
+        *   Utilisez des en-têtes Markdown (#, ##, ###) pour la structure.
+    2.  **Segmentation (Chunking) :**
+        *   Divisez le texte en segments logiques et autonomes basés sur des sujets.
+        *   **CRITIQUE :** Insérez le séparateur `---CHUNK_SEPARATOR---` entre chaque segment.
+        *   Gardez les informations connexes ensemble.
+    3.  **Préserver le contenu :** Ne résumez pas. Gardez tous les faits exacts.
+    4.  **Sortie :** Retournez UNIQUEMENT le texte Markdown nettoyé et segmenté.
+
+    **Texte brut :**
+    ---
+    {raw_text}
     ---
     """
 }

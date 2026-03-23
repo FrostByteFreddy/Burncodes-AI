@@ -173,36 +173,33 @@ class BillingService:
             return 0.0
 
     @staticmethod
-    def deduct_cost(user_id, model, input_tokens, output_tokens):
-        # Calculate cost based on model
-        # Pricing (example values, should be configured somewhere)
-        # GPT-4o: Input $5/1M, Output $15/1M
-        # GPT-3.5-turbo: Input $0.5/1M, Output $1.5/1M
-        # Let's assume some default rates or fetch from config.
-        # For now I will hardcode some approximate CHF rates (1 USD ~= 0.9 CHF)
-        
+    def calculate_cost(model, input_tokens, output_tokens):
+        """
+        Calculates the cost in CHF for the given model and token usage.
+        """
         # Rates per 1M tokens in CHF
+        # TODO: Move these to a configuration file or database
         RATES = {
-            "default": {"input": 8.0, "output": 17.5}
+            "default": {"input": 8.0, "output": 17.5},
+            "gemini-1.5-flash": {"input": 0.315, "output": 0.945}, # Example rates, adjust as needed
+            "gemini-2.5-flash-lite": {"input": 0.315, "output": 0.945}, # Example rates
         }
         
         rate = RATES.get(model, RATES["default"])
         cost = (input_tokens / 1_000_000 * rate["input"]) + (output_tokens / 1_000_000 * rate["output"])
+        return cost
+
+    @staticmethod
+    def deduct_cost(user_id, model, input_tokens, output_tokens):
+        cost = BillingService.calculate_cost(model, input_tokens, output_tokens)
         
         try:
             # Deduct from balance
-            # We need to fetch current balance first to ensure we don't go negative (though we check before chat)
-            # Or just decrement.
-            
-            # It's better to do this in a transaction or RPC, but with Supabase client we might just do read-then-write
-            # for simplicity in this MVP.
-            
             current_balance = BillingService.check_balance(user_id)
             new_balance = current_balance - cost
             
             supabase.table("user_billing").update({"balance_chf": new_balance, "updated_at": "now()"}).eq("user_id", user_id).execute()
             
-            return cost
             return cost
         except Exception as e:
             error_logger.error(f"Error deducting cost: {e}")
