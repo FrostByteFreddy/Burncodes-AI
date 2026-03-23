@@ -2,22 +2,18 @@
 <template>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
     <!-- Left side: Add new sources -->
-    <div class="space-y-6">
-      <h3 class="text-xl font-bold text-base-content flex items-center">
-        <font-awesome-icon
-          :icon="['fas', 'plus-circle']"
-          class="mr-3 text-primary"
-        />
+    <div class="space-y-0">
+      <h3 class="text-xl font-bold text-base-content flex items-center mb-6">
+        <font-awesome-icon :icon="['fas', 'plus-circle']" class="mr-3 text-primary" />
         {{ $t("tenant.sources.addNew") }}
       </h3>
 
-      <!-- File Upload -->
-      <div>
-        <label
-          for="file-upload"
-          class="block text-sm font-medium text-base-content mb-2"
-          >{{ $t("tenant.sources.uploadFile") }}</label
-        >
+      <!-- File Upload Section -->
+      <div class="pb-6 border-b border-base-200">
+        <h4 class="text-sm font-semibold text-base-content flex items-center gap-2 mb-4">
+          <font-awesome-icon :icon="['fas', 'file-arrow-up']" class="text-primary" />
+          {{ $t("tenant.sources.uploadFile") }}
+        </h4>
         <input
           id="file-upload"
           type="file"
@@ -27,24 +23,26 @@
         <button
           @click="handleUpload"
           :disabled="!selectedFile || loading"
-          class="mt-2 w-full btn btn-primary"
+          class="mt-3 w-full btn btn-primary"
         >
           <font-awesome-icon :icon="['fas', 'upload']" class="mr-2" />
-          {{
-            loading
-              ? $t("tenant.sources.uploading")
-              : $t("tenant.sources.uploadFile")
-          }}
+          {{ loading ? $t("tenant.sources.uploading") : $t("tenant.sources.uploadFile") }}
         </button>
       </div>
 
-      <!-- URL Crawl -->
-      <div>
-        <label
-          for="url-input"
-          class="block text-sm font-medium text-base-content mb-2 mt-5"
-          >{{ $t("tenant.sources.crawlWebsite") }}</label
-        >
+      <!-- Divider -->
+      <div class="flex items-center gap-4 py-4">
+        <div class="flex-1 h-px bg-base-200"></div>
+        <span class="text-xs text-base-content/40 font-medium uppercase tracking-widest">or</span>
+        <div class="flex-1 h-px bg-base-200"></div>
+      </div>
+
+      <!-- URL Crawl Section -->
+      <div class="pt-2">
+        <h4 class="text-sm font-semibold text-base-content flex items-center gap-2 mb-4">
+          <font-awesome-icon :icon="['fas', 'globe']" class="text-primary" />
+          {{ $t("tenant.sources.crawlWebsite") }}
+        </h4>
         <input
           v-model="startUrl"
           id="url-input"
@@ -55,33 +53,25 @@
           aria-invalid="!isUrlValid && startUrl"
           aria-describedby="url-error"
         />
-        <p
-          v-if="!isUrlValid && startUrl"
-          id="url-error"
-          class="text-error text-sm mt-1"
-        >
+        <p v-if="!isUrlValid && startUrl" id="url-error" class="text-error text-sm mt-1">
           {{ $t("tenant.sources.invalidUrl") }}
         </p>
-        <div class="form-control mt-4">
-          <div class="flex items-center">
-            <input
-              type="checkbox"
-              v-model="crawlSinglePageOnly"
-              class="h-4 w-4 rounded border-base-300 text-primary focus:ring-primary"
-              id="single_crawl_only"
-            />
-            <label for="single_crawl_only" class="ml-2 block text-sm"
-              >Crawl only this page</label
-            >
-          </div>
+        <div class="flex items-center mt-3">
+          <input
+            type="checkbox"
+            v-model="crawlSinglePageOnly"
+            class="h-4 w-4 rounded border-base-300 text-primary focus:ring-primary"
+            id="single_crawl_only"
+          />
+          <label for="single_crawl_only" class="ml-2 block text-sm text-base-content/70">
+            Crawl only this page
+          </label>
         </div>
 
         <div v-if="!crawlSinglePageOnly" class="mt-4">
-          <label
-            for="excluded-urls-input"
-            class="block text-sm font-medium text-base-content mb-2"
-            >{{ $t("tenant.sources.excludeUrls") }}</label
-          >
+          <label for="excluded-urls-input" class="block text-sm font-medium text-base-content mb-2">
+            {{ $t("tenant.sources.excludeUrls") }}
+          </label>
           <textarea
             v-model="excludedUrls"
             id="excluded-urls-input"
@@ -97,14 +87,11 @@
           class="mt-4 w-full btn btn-primary"
         >
           <font-awesome-icon :icon="['fas', 'globe']" class="mr-2" />
-          {{
-            loading
-              ? $t("tenant.sources.crawling")
-              : $t("tenant.sources.crawlWebsite")
-          }}
+          {{ loading ? $t("tenant.sources.crawling") : $t("tenant.sources.crawlWebsite") }}
         </button>
       </div>
     </div>
+
 
     <!-- Right side: List of existing sources -->
     <div>
