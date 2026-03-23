@@ -1,6 +1,6 @@
 <template>
-  <div class="card">
-    <div class="inline-flex p-1 space-x-1 bg-primary-light rounded-full">
+  <div>
+    <div class="inline-flex p-1 space-x-1 bg-base-200 rounded-full mb-6">
       <a
         class="btn border-0 rounded-full transition-all duration-300 hover:cursor-pointer space-x-2"
         :class="{
@@ -128,7 +128,7 @@
 
       <div v-show="activeTab === 'appearance'" @change="handleUpdate">
         <div class="space-y-8">
-          <div class="p-6 border border-base-300 rounded-lg bg-base-100">
+          <div class="pb-8 mb-8 border-b border-base-200">
             <h3 class="text-lg font-bold mb-4 flex items-center">
               <font-awesome-icon
                 :icon="['fas', 'code']"
@@ -155,7 +155,7 @@
             </div>
           </div>
 
-          <div class="p-4 border border-base-300 rounded-lg">
+          <div class="pb-8 mb-8 border-b border-base-200">
             <h3 class="text-lg font-bold mb-4">
               {{ $t("tenant.settings.appearance.colorPalette.title") }}
             </h3>
@@ -202,7 +202,7 @@
 
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div class="space-y-8">
-              <div class="p-4 border border-base-300 rounded-lg">
+              <div class="pb-8 mb-8 border-b border-base-200">
                 <h3 class="text-lg font-bold mb-4">
                   {{ $t("tenant.settings.appearance.chatWindow.title") }}
                 </h3>
@@ -306,7 +306,7 @@
                 </div>
               </div>
 
-              <div class="p-4 border border-base-300 rounded-lg">
+              <div class="pb-8 mb-8 border-b border-base-200">
                 <h3 class="text-lg font-bold mb-4">
                   {{ $t("tenant.settings.appearance.componentStyles.title") }}
                 </h3>
@@ -335,7 +335,7 @@
                 </div>
               </div>
 
-              <div class="p-4 border border-base-300 rounded-lg">
+              <div class="pb-8">
                 <h3 class="text-lg font-bold mb-4">
                   {{ $t("tenant.settings.appearance.launcher.title") }}
                 </h3>

@@ -8,42 +8,24 @@
     {{ error }}
   </div>
 
-  <div v-else class="bg-base-100 p-6 rounded-lg shadow-lg">
+  <div v-else>
     <div v-if="selectedConversation">
       <button
         @click="selectedConversation = null"
-        class="btn btn-secondary mb-4"
+        class="btn btn-ghost btn-sm mb-4 -ml-2"
       >
         <font-awesome-icon :icon="['fas', 'arrow-left']" class="mr-2" />
         {{ $t("chatLogs.back") }}
       </button>
 
-      <div
-        ref="chatContainer"
-        class="max-h-[70vh] overflow-y-auto p-4 rounded-lg bg-base-200/50 space-y-4"
-      >
+      <div ref="chatContainer" class="max-h-[70vh] overflow-y-auto space-y-4">
         <div v-for="log in conversationLogs" :key="log.id">
-          <div
-            v-if="log.user_message"
-            class="chat chat-end flex bg-primary-light p-4 rounded-lg"
-          >
-            <font-awesome-icon
-              :icon="['fas', 'fa-user']"
-              class="mr-2 mt-1 hidden sm:flex"
-            />
+          <div v-if="log.user_message" class="chat chat-end">
             <div class="chat-bubble chat-bubble-primary">
               {{ log.user_message }}
             </div>
           </div>
-
-          <div
-            v-if="log.ai_message"
-            class="chat chat-start flex mt-4 p-4 rounded-lg"
-          >
-            <font-awesome-icon
-              :icon="['fas', 'fa-robot']"
-              class="mr-2 mt-1 hidden sm:flex"
-            />
+          <div v-if="log.ai_message" class="chat chat-start">
             <div
               class="chat-bubble chat-bubble-secondary prose"
               v-html="processBotMessage(log.ai_message).html"
@@ -55,19 +37,25 @@
 
     <div v-else>
       <h2 class="text-xl font-bold mb-4">{{ $t("chatLogs.conversations") }}</h2>
-      <div
-        v-for="convo in conversations"
-        :key="convo.conversation_id"
-        @click="selectConversation(convo.conversation_id)"
-        class="p-4 mb-2 rounded-lg hover:bg-base-200 cursor-pointer"
-      >
-        <p class="font-semibold">
-          {{ new Date(convo.created_at).toLocaleString() }}
-        </p>
-        <p class="text-sm text-base-content/70">{{ convo.conversation_id }}</p>
+      <div class="border-t border-base-200">
+        <div
+          v-for="convo in conversations"
+          :key="convo.conversation_id"
+          @click="selectConversation(convo.conversation_id)"
+          class="flex items-center justify-between py-4 border-b border-base-200 cursor-pointer hover:bg-base-200/50 px-2 rounded transition-colors"
+        >
+          <div>
+            <p class="font-semibold">
+              {{ new Date(convo.created_at).toLocaleString() }}
+            </p>
+            <p class="text-sm text-base-content/70">{{ convo.conversation_id }}</p>
+          </div>
+          <font-awesome-icon :icon="['fas', 'chevron-right']" class="text-base-content/30 w-4 h-4" />
+        </div>
       </div>
     </div>
   </div>
+
 </template>
 
 <script setup>

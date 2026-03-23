@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto px-4 py-4 sm:px-6 sm:py-8">
+  <div>
     <div
       v-if="tenantsStore.currentTenant"
       class="mb-8 pb-4 border-b border-base-300"
@@ -42,12 +42,3 @@ watch(
 );
 </script>
 
-<style scoped>
-.tenant-nav-link {
-  @apply py-2 px-4 rounded-lg text-base-content hover:bg-base-200 transition-colors;
-}
-
-.router-link-exact-active {
-  @apply bg-primary/10 text-primary font-semibold;
-}
-</style>
