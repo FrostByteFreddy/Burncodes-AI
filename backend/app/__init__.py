@@ -109,4 +109,18 @@ def create_app():
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
     app.register_blueprint(billing_bp, url_prefix='/api/billing')
 
+    # --- Health Check ---
+    @app.route('/api/health')
+    def health_check():
+        from flask import jsonify as _jsonify
+        status = {"status": "ok", "service": "swiftanswer-api"}
+        try:
+            from app.database.supabase_client import supabase
+            supabase.table('tenants').select("id").limit(1).execute()
+            status["database"] = "ok"
+        except Exception:
+            status["database"] = "error"
+            status["status"] = "degraded"
+        return _jsonify(status), 200 if status["status"] == "ok" else 503
+
     return app
