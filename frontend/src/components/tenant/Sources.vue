@@ -329,8 +329,12 @@ const crawlingJobs = ref([]);
 
 const isUrlValid = computed(() => {
   if (!startUrl.value) return true;
+  let urlString = startUrl.value.trim();
+  if (!urlString.startsWith('http://') && !urlString.startsWith('https://')) {
+    urlString = 'https://' + urlString;
+  }
   try {
-    const url = new URL(startUrl.value);
+    const url = new URL(urlString);
     return url.protocol === "http:" || url.protocol === "https:";
   } catch (_) {
     return false;
@@ -361,8 +365,13 @@ const startCrawl = async () => {
   if (!startUrl.value.trim() || !tenantsStore.currentTenant) return;
   loading.value = true;
 
+  let finalUrl = startUrl.value.trim();
+  if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+    finalUrl = 'https://' + finalUrl;
+  }
+
   const payload = {
-    url: startUrl.value,
+    url: finalUrl,
     single_page_only: crawlSinglePageOnly.value,
     excluded_urls: crawlSinglePageOnly.value
       ? []
