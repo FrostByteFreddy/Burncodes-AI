@@ -19,6 +19,7 @@ export const useTenantsStore = defineStore("tenants", () => {
   };
 
   async function restoreTenant() {
+    if (!authStore.session?.access_token) return; // Skip on public pages
     const tenantId = localStorage.getItem("currentTenantId");
     if (tenantId) {
       await fetchTenant(tenantId);
