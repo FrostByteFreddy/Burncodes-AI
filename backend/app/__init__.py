@@ -34,9 +34,12 @@ def create_app():
     CORS(app, resources={r"/api/*": {"origins": cors_origins}}, supports_credentials=True)
     limiter.init_app(app)
 
-    # --- Configuration ---
     # --- Configuration and Directory Setup ---
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a_default_secret_key')
+    secret_key = os.environ.get('SECRET_KEY')
+    if not secret_key:
+        error_logger.warning("SECRET_KEY not set — using insecure default. Set SECRET_KEY in production!")
+        secret_key = 'insecure-dev-only-key-change-me'
+    app.config['SECRET_KEY'] = secret_key
     
     # Define base paths for persistent data
     upload_folder = os.getenv("UPLOAD_FOLDER_BASE", "/data/uploads")
