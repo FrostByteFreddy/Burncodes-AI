@@ -9,7 +9,7 @@ from urllib.parse import urlparse, urldefrag
 from uuid import UUID
 
 from celery import shared_task
-from app.database.supabase_client import supabase, bucket_name
+from app.database.supabase_client import supabase
 from app.data_processing.processor import get_vectorstore, get_loader, process_documents, SUPPORTED_FILE_EXTENSIONS
 from app.data_processing.crawler import get_crawler
 from app.data_processing.config import MAX_CONCURRENT_CRAWLS_PER_JOB
@@ -207,17 +207,16 @@ async def async_create_document_chunks_for_pdf(content: str, source: str, source
         
         full_cleaned_content = "\n\n---CHUNK_SEPARATOR---\n\n".join(cleaned_chunks)
 
-        # 3. Upload readme to S3 (instead of DB)
-        # Path: /tenant-id/readme_output/filename.md
+        # 3. Save readme to local storage
+        # Path: /app/data/uploads/{tenant-id}/readme_output/filename.md
         filename_stem = os.path.splitext(os.path.basename(source))[0]
-        s3_readme_path = f"{tenant_id}/readme_output/{filename_stem}.md"
+        readme_dir = os.path.join(os.environ.get("UPLOADS_DIR", "/app/data/uploads"), str(tenant_id), "readme_output")
+        os.makedirs(readme_dir, exist_ok=True)
+        readme_path = os.path.join(readme_dir, f"{filename_stem}.md")
         
-        error_logger.info("Uploading cleaned readme to S3: %s", s3_readme_path)
-        await loop.run_in_executor(None, lambda: supabase.storage.from_(bucket_name).upload(
-            path=s3_readme_path,
-            file=full_cleaned_content.encode('utf-8'),
-            file_options={"content-type": "text/markdown", "upsert": "true"}
-        ))
+        error_logger.info("Saving cleaned readme to: %s", readme_path)
+        with open(readme_path, 'w', encoding='utf-8') as f:
+            f.write(full_cleaned_content)
 
         # 4. Split the CLEANED content into chunks using the separator
         chunks = [chunk.strip() for chunk in full_cleaned_content.split("---CHUNK_SEPARATOR---") if chunk.strip()]
@@ -251,32 +250,23 @@ async def _get_document_chunks_from_content(content: str, source: str, source_id
         return await async_create_document_chunks_with_metadata(content, source, source_id, tenant_id)
 
 @shared_task
-def process_s3_file(s3_path: str, source_filename: str, source_id: int, tenant_id: UUID):
-    """Celery task to process a file stored in Supabase S3."""
+def process_local_file(file_path: str, source_filename: str, source_id: int, tenant_id: UUID):
+    """Celery task to process a file stored on the local filesystem."""
     embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
-    docs = asyncio.run(async_process_s3_file(s3_path, source_filename, source_id, tenant_id))
+    docs = asyncio.run(async_process_local_file(file_path, source_filename, source_id, tenant_id))
     process_documents(docs, tenant_id, embeddings)
-    # The temporary file is handled within async_process_s3_file, so no need to remove it here.
 
-async def async_process_s3_file(s3_path: str, source_filename: str, source_id: int, tenant_id: UUID) -> list[Document]:
+async def async_process_local_file(file_path: str, source_filename: str, source_id: int, tenant_id: UUID) -> list[Document]:
     """
-    Downloads a file from S3, processes it into document chunks, and cleans up the temporary file.
+    Reads a file from local storage, processes it into document chunks.
     """
     ext = os.path.splitext(source_filename)[1].lower()
-    tmp_filepath = None
     try:
-        # Download file from S3
-        file_content = supabase.storage.from_(bucket_name).download(s3_path)
-        if file_content is None:
-            raise FileNotFoundError(f"File not found in S3 at path: {s3_path}")
-
-        # Create a temporary file to store the content
-        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp_file:
-            tmp_file.write(file_content)
-            tmp_filepath = tmp_file.name
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found at path: {file_path}")
 
         # Get the appropriate loader for the file extension
-        loader = get_loader(tmp_filepath)
+        loader = get_loader(file_path)
         if not loader:
             error_logger.warning("No loader found for extension %s, skipping file %s", ext, source_filename)
             return []
@@ -291,20 +281,11 @@ async def async_process_s3_file(s3_path: str, source_filename: str, source_id: i
         return await _get_document_chunks_from_content(content, source_filename, source_id, ext, tenant_id)
 
     except Exception as e:
-        error_logger.error("Error processing S3 file %s: %s", s3_path, e, exc_info=True)
+        error_logger.error("Error processing local file %s: %s", file_path, e, exc_info=True)
         # Mark the source as errored
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
         return []
-    finally:
-        # Clean up the temporary file
-        if tmp_filepath and os.path.exists(tmp_filepath):
-            os.remove(tmp_filepath)
-        # Clean up the S3 file after processing, regardless of success or failure
-        # try:
-        #     supabase.storage.from_(bucket_name).remove([s3_path])
-        # except Exception as e:
-        #     print(f"Failed to remove S3 file {s3_path} after processing: {e}")
 
 @shared_task
 def process_urls(urls: list[tuple[str, int]], tenant_id: UUID):
