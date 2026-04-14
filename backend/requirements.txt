@@ -23,3 +23,4 @@ gunicorn==23.0.0
 stripe==11.1.1
 Flask-Limiter==3.12
 limits[redis]
+pytest==8.3.5
