@@ -60,13 +60,12 @@
 <script setup>
 import { ref, onMounted, nextTick } from "vue";
 import { useRoute } from "vue-router";
-import axios from "axios";
-import { useAuthStore } from "@/stores/auth";
+import apiClient from "@/utils/api";
 import { useToast } from "@/composables/useToast";
 import { processBotMessage } from "@/utils/chatProcessor.js";
 import { useI18n } from "vue-i18n";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -84,10 +83,7 @@ const fetchConversations = async () => {
   try {
     isLoading.value = true;
     error.value = null;
-    const token = authStore.session.access_token;
-    const response = await axios.get(`${API_BASE_URL}/chat/${tenantId.value}/conversations`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await apiClient.get(`/chat/${tenantId.value}/conversations`);
     conversations.value = response.data;
   } catch (err) {
     error.value = t("chatLogs.errors.loadConversations");
@@ -102,10 +98,8 @@ const selectConversation = async (conversationId) => {
     isLoading.value = true;
     error.value = null;
     selectedConversation.value = conversationId;
-    const token = authStore.session.access_token;
-    const response = await axios.get(
-      `${API_BASE_URL}/chat/${tenantId.value}/conversation/${conversationId}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+    const response = await apiClient.get(
+      `/chat/${tenantId.value}/conversation/${conversationId}`
     );
     conversationLogs.value = response.data;
     await nextTick();

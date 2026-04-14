@@ -15,8 +15,7 @@
 
 <script setup>
 import { ref, toRefs, onMounted, onUnmounted, computed, defineEmits } from 'vue';
-import axios from 'axios';
-import { useAuthStore } from '../../stores/auth';
+import apiClient from '@/utils/api';
 import { useToast } from '../../composables/useToast';
 
 const props = defineProps({
@@ -32,9 +31,7 @@ const props = defineProps({
 
 const { job, tenantId } = toRefs(props);
 const emit = defineEmits(['job-completed']);
-const authStore = useAuthStore();
-const { addToast } = useToast();
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
 
 const progress = ref({
     total: 0,
@@ -50,17 +47,12 @@ const progressPercentage = computed(() => {
     return (progress.value.completed / progress.value.total) * 100;
 });
 
-const getAuthHeaders = () => {
-    if (!authStore.session?.access_token) {
-        throw new Error('User is not authenticated.');
-    }
-    return { Authorization: `Bearer ${authStore.session.access_token}` };
-};
+
 
 const fetchProgress = async () => {
     if (!tenantId.value || !job.value.id) return;
     try {
-        const response = await axios.get(`${API_BASE_URL}/tenants/${tenantId.value}/crawling_jobs/${job.value.id}/progress`, { headers: getAuthHeaders() });
+        const response = await apiClient.get(`/tenants/${tenantId.value}/crawling_jobs/${job.value.id}/progress`);
         progress.value = response.data;
 
         // If the job is completed or failed, stop polling

@@ -307,12 +307,9 @@ import { useAuthStore } from "../../stores/auth";
 import { useToast } from "../../composables/useToast";
 import ConfirmationModal from "../ConfirmationModal.vue";
 import CrawlingJobProgress from "./CrawlingJobProgress.vue";
-import axios from "axios";
+import apiClient from "@/utils/api";
 
 import { useI18n } from "vue-i18n";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 const tenantsStore = useTenantsStore();
 const authStore = useAuthStore();
 const { addToast } = useToast();
@@ -358,12 +355,7 @@ const fileSources = computed(() => {
   return [];
 });
 
-const getAuthHeaders = () => {
-  if (!authStore.session?.access_token) {
-    throw new Error("User is not authenticated.");
-  }
-  return { Authorization: `Bearer ${authStore.session.access_token}` };
-};
+
 
 const startCrawl = async () => {
   if (!startUrl.value.trim() || !tenantsStore.currentTenant) return;
@@ -378,10 +370,9 @@ const startCrawl = async () => {
   };
 
   try {
-    await axios.post(
-      `${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/discover`,
-      payload,
-      { headers: getAuthHeaders() }
+    await apiClient.post(
+      `/tenants/${tenantsStore.currentTenant.id}/sources/discover`,
+      payload
     );
     addToast(t("tenant.sources.actions.crawlStarted"), "success");
     startUrl.value = "";
@@ -410,10 +401,9 @@ const handleUpload = async () => {
   const formData = new FormData();
   formData.append("file", selectedFile.value);
   try {
-    await axios.post(
-      `${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/upload`,
-      formData,
-      { headers: getAuthHeaders() }
+    await apiClient.post(
+      `/tenants/${tenantsStore.currentTenant.id}/sources/upload`,
+      formData
     );
     await tenantsStore.refetch(tenantsStore.currentTenant.id);
     selectedFile.value = null;
@@ -469,9 +459,8 @@ const handleDelete = async () => {
   }
 
   try {
-    await axios.delete(
-      `${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/${sourceIdToDelete}`,
-      { headers: getAuthHeaders() }
+    await apiClient.delete(
+      `/tenants/${tenantsStore.currentTenant.id}/sources/${sourceIdToDelete}`
     );
     addToast(t("tenant.sources.actions.deleteSuccess"), "success");
     // After successful deletion, we can choose to refetch for consistency or trust the optimistic update.
@@ -500,9 +489,8 @@ const handleJobCompletion = async (jobId) => {
 const fetchCrawlingJobs = async () => {
   if (!tenantsStore.currentTenant) return;
   try {
-    const response = await axios.get(
-      `${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/crawling_jobs`,
-      { headers: getAuthHeaders() }
+    const response = await apiClient.get(
+      `/tenants/${tenantsStore.currentTenant.id}/crawling_jobs`
     );
     crawlingJobs.value = response.data;
   } catch (error) {
