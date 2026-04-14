@@ -121,6 +121,32 @@
             </div>
           </div>
 
+          <!-- Failed Crawls & Errors -->
+          <div v-if="failedSources.length > 0" class="mt-10">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-error/70 mb-4 flex items-center gap-2">
+              <font-awesome-icon :icon="['fas', 'circle-exclamation']" />
+              Failed Crawls & Errors
+            </h4>
+            <div class="space-y-2">
+              <div v-for="source in failedSources" :key="source.id" class="group bg-error/5 hover:bg-error/10 border border-error/20 p-4 rounded-2xl flex justify-between items-center transition-all duration-300">
+                <div class="min-w-0 pr-4">
+                  <p class="font-semibold text-sm truncate text-base-content flex items-center gap-3">
+                    <font-awesome-icon :icon="['fas', 'link-slash']" class="text-error/60" v-if="source.source_type === 'URL'" />
+                    <font-awesome-icon :icon="['fas', 'file-circle-xmark']" class="text-error/60" v-else />
+                    <span class="line-through opacity-70">{{ source.source_location }}</span>
+                  </p>
+                  <p class="text-xs text-error/80 mt-1.5 flex items-center gap-2 font-medium">
+                     <span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                     ERROR {{ source.status_code ? `(${source.status_code})` : '' }}
+                  </p>
+                </div>
+                <button @click="confirmDelete(source)" class="btn btn-ghost btn-sm btn-circle text-error/50 hover:text-error hover:bg-error/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <font-awesome-icon :icon="['fas', 'times']" />
+                </button>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -263,7 +289,7 @@ const isUrlValid = computed(() => {
 const urlSources = computed(() => {
   if (tenantsStore.currentTenant && tenantsStore.currentTenant.tenant_sources) {
     return tenantsStore.currentTenant.tenant_sources.filter(
-      (s) => s.source_type === "URL"
+      (s) => s.source_type === "URL" && s.status !== "ERROR"
     );
   }
   return [];
@@ -272,7 +298,16 @@ const urlSources = computed(() => {
 const fileSources = computed(() => {
   if (tenantsStore.currentTenant && tenantsStore.currentTenant.tenant_sources) {
     return tenantsStore.currentTenant.tenant_sources.filter(
-      (s) => s.source_type === "FILE"
+      (s) => s.source_type === "FILE" && s.status !== "ERROR"
+    );
+  }
+  return [];
+});
+
+const failedSources = computed(() => {
+  if (tenantsStore.currentTenant && tenantsStore.currentTenant.tenant_sources) {
+    return tenantsStore.currentTenant.tenant_sources.filter(
+      (s) => s.status === "ERROR"
     );
   }
   return [];

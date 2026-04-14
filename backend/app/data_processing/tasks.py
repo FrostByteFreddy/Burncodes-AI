@@ -329,8 +329,19 @@ async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]], t
     try:
         async def process_single_result(result, source_id, tenant_id):
             async with semaphore:
+                status_code = getattr(result, 'status_code', None)
                 if result.success and result.markdown:
+                    # Update status_code for successful fetches
+                    loop = asyncio.get_running_loop()
+                    await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status_code": status_code}).eq('id', source_id).execute())
                     return await async_create_document_chunks_with_metadata(result.markdown, result.url, source_id, tenant_id)
+                else:
+                    # Mark as error immediately without hitting LLM
+                    loop = asyncio.get_running_loop()
+                    await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({
+                        "status": "ERROR",
+                        "status_code": status_code if status_code else 500
+                    }).eq('id', source_id).execute())
             return []
 
         url_to_source_id = {url: source_id for url, source_id in urls_to_process}
@@ -457,15 +468,20 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         # 1. Normalize the URL that is being crawled
         normalized_url = normalize_url(url)
 
-        # 2. Normalize the list of URLs to exclude
-        normalized_excluded_list = [normalize_url(str(ex_url)) for ex_url in excluded_urls]
+        # 2. Normalize the list of URLs to exclude (handling stray spaces, newlines, and \r)
+        normalized_excluded_list = [normalize_url(str(ex_url).strip()) for ex_url in excluded_urls]
         
-        error_logger.debug("Checking exclusion for %s", normalized_url)
+        error_logger.debug("Checking exclusion for %s against %s", normalized_url, normalized_excluded_list)
 
-        # 3. Perform the check with the normalized values
+        # 3. Perform the check with the normalized values (and be highly permissive about matches)
         is_excluded = False
         for excluded in normalized_excluded_list:
-            if normalized_url == excluded or normalized_url.startswith(excluded + '/'):
+            if not excluded:
+                continue
+            # Strip protocols for a bulletproof substring check (covers subdomains nicely)
+            stripped_ex = excluded.replace('https://', '').replace('http://', '').strip('/')
+            stripped_url = normalized_url.replace('https://', '').replace('http://', '').strip('/')
+            if stripped_ex and (stripped_ex == stripped_url or stripped_url.startswith(stripped_ex + '/')):
                 is_excluded = True
                 break
 
@@ -476,6 +492,28 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
 
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.IN_PROGRESS.value}).eq('id', task_id).execute()
         error_logger.info("Crawling URL: %s at depth %s", url, depth)
+
+        # FAST FAIL CHECK: Check if the URL is broken before spinning up the headless browser
+        try:
+            # Quick lightweight check to see if page actually exists
+            with httpx.Client(timeout=10.0, follow_redirects=True) as client:
+                fast_check = client.get(url, headers={"User-Agent": "Mozilla/5.0 (compatible; SwiftAnswerBot/1.0)"})
+                # if the page clearly 404s or 500s, we fail immediately to save tokens and browser time.
+                # Note: We give 403s the benefit of the doubt, as the headless browser might bypass cloudflare.
+                if fast_check.status_code == 404 or fast_check.status_code >= 500:
+                    error_logger.info(f"Fast fail for {url} with status {fast_check.status_code}")
+                    supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
+                    source_data = {
+                        "tenant_id": str(tenant_id),
+                        "source_type": "URL",
+                        "source_location": url,
+                        "status": "ERROR",
+                        "status_code": fast_check.status_code
+                    }
+                    supabase.table('tenant_sources').insert(source_data).execute()
+                    return
+        except Exception as e:
+            error_logger.warning("Fast check failed for %s, falling back to crawler: %s", url, e)
 
         # The user agent is randomized by the BrowserConfig.
         # We dynamically add the Referer header for each request if a parent URL exists.
@@ -522,16 +560,27 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         except asyncio.TimeoutError:
             error_logger.error("Timeout loading page %s", url)
             supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
+            source_data = {
+                "tenant_id": str(tenant_id),
+                "source_type": "URL",
+                "source_location": url,
+                "status": "ERROR",
+                "status_code": 408
+            }
+            supabase.table('tenant_sources').insert(source_data).execute()
             return
 
         # --- Step 2: Process the content ---
         found_links = set()
+        status_code = getattr(crawl_result, 'status_code', None) if crawl_result else None
+
         if crawl_result and crawl_result.success and crawl_result.markdown:
             source_data = {
                 "tenant_id": str(tenant_id),
                 "source_type": "URL",
                 "source_location": url,
-                "status": "PROCESSING"
+                "status": "PROCESSING",
+                "status_code": status_code
             }
             source_response = supabase.table('tenant_sources').insert(source_data).execute()
             source_id = source_response.data[0]['id']
@@ -547,12 +596,25 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
                 # Check exclusion again to be safe
                 is_excluded_link = False
                 for excluded in normalized_excluded_list:
-                     if href == excluded or href.startswith(excluded + '/'):
+                     if not excluded:
+                         continue
+                     stripped_ex = excluded.replace('https://', '').replace('http://', '').strip('/')
+                     stripped_url = href.replace('https://', '').replace('http://', '').strip('/')
+                     if stripped_ex and (stripped_ex == stripped_url or stripped_url.startswith(stripped_ex + '/')):
                         is_excluded_link = True
                         break
                 
                 if not is_excluded_link:
                     found_links.add(href)
+        else:
+            source_data = {
+                "tenant_id": str(tenant_id),
+                "source_type": "URL",
+                "source_location": url,
+                "status": "ERROR",
+                "status_code": status_code if status_code else 500
+            }
+            supabase.table('tenant_sources').insert(source_data).execute()
 
         # --- Step 3: Discover and save new links ---
         if depth < max_depth:
