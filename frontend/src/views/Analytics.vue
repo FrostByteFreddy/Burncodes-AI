@@ -40,7 +40,7 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { useRoute } from "vue-router";
-import axios from "axios";
+import apiClient from "@/utils/api";
 import { Line } from "vue-chartjs";
 import {
   Chart as ChartJS,
@@ -69,8 +69,7 @@ ChartJS.register(
 
 const { t } = useI18n();
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -100,12 +99,9 @@ const fetchData = async () => {
   try {
     isLoading.value = true;
     const token = authStore.session.access_token;
-    const response = await axios.get(
-      `${API_BASE_URL}/chat/${tenantId.value}/analytics`,
+    const response = await apiClient.get(
+      `/chat/${tenantId.value}/analytics`,
       {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         params: {
           timeframe: selectedTimeframe.value,
           interval: selectedInterval.value,

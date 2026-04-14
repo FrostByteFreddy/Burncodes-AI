@@ -58,21 +58,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from "vue";
-import { useRoute } from "vue-router";
-import axios from "axios";
-import { useAuthStore } from "@/stores/auth";
+import { ref, watch, nextTick } from "vue";
+import apiClient from "@/utils/api";
 import { useToast } from "@/composables/useToast";
 import { processBotMessage } from "@/utils/chatProcessor.js";
 import { useI18n } from "vue-i18n";
+import { useTenantsStore } from "@/stores/tenants";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
-
-const route = useRoute();
-const authStore = useAuthStore();
 const { addToast } = useToast();
 const { t } = useI18n();
-const tenantId = ref(route.params.tenantId);
+const tenantsStore = useTenantsStore();
+
 const conversations = ref([]);
 const conversationLogs = ref([]);
 const selectedConversation = ref(null);
@@ -81,13 +77,11 @@ const error = ref(null);
 const chatContainer = ref(null);
 
 const fetchConversations = async () => {
+  if (!tenantsStore.currentTenant) return;
   try {
     isLoading.value = true;
     error.value = null;
-    const token = authStore.session.access_token;
-    const response = await axios.get(`${API_BASE_URL}/chat/${tenantId.value}/conversations`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await apiClient.get(`/chat/${tenantsStore.currentTenant.id}/conversations`);
     conversations.value = response.data;
   } catch (err) {
     error.value = t("chatLogs.errors.loadConversations");
@@ -102,10 +96,8 @@ const selectConversation = async (conversationId) => {
     isLoading.value = true;
     error.value = null;
     selectedConversation.value = conversationId;
-    const token = authStore.session.access_token;
-    const response = await axios.get(
-      `${API_BASE_URL}/chat/${tenantId.value}/conversation/${conversationId}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+    const response = await apiClient.get(
+      `/chat/${tenantsStore.currentTenant.id}/conversation/${conversationId}`
     );
     conversationLogs.value = response.data;
     await nextTick();
@@ -119,7 +111,20 @@ const selectConversation = async (conversationId) => {
   }
 };
 
-onMounted(() => { fetchConversations(); });
+watch(
+  () => tenantsStore.currentTenant,
+  (newTenant) => {
+    if (newTenant) {
+      selectedConversation.value = null;
+      conversationLogs.value = [];
+      fetchConversations();
+    } else {
+      conversations.value = [];
+      conversationLogs.value = [];
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

@@ -18,7 +18,7 @@
         </p>
         <div class="flex items-center gap-3">
           <div class="w-8 h-px bg-white/40"></div>
-          <span class="text-white/50 text-sm">Powered by SwiftAnswer</span>
+          <span class="text-white/50 text-sm">Powered by Burncodes AI</span>
         </div>
       </div>
     </div>

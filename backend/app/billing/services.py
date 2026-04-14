@@ -114,10 +114,8 @@ class BillingService:
             
             # If it's a one-time payment and successful, credit the balance here
             if session.get("mode") == "payment" and payment_status == "paid":
-                current_balance = BillingService.check_balance(user_id)
                 amount_chf = amount_total / 100.0
-                new_balance = current_balance + amount_chf
-                supabase.table("user_billing").update({"balance_chf": new_balance, "updated_at": "now()"}).eq("user_id", user_id).execute()
+                supabase.rpc("credit_balance", {"p_user_id": user_id, "p_amount": amount_chf}).execute()
                 
         except Exception as e:
             error_logger.error(f"Error handling checkout completed: {e}")
@@ -153,9 +151,7 @@ class BillingService:
             # If we want to credit exactly what was paid:
             amount_chf = amount_paid_cents / 100.0
             
-            new_balance = current_balance + amount_chf
-            
-            supabase.table("user_billing").update({"balance_chf": new_balance, "updated_at": "now()"}).eq("user_id", user_id).execute()
+            supabase.rpc("credit_balance", {"p_user_id": user_id, "p_amount": amount_chf}).execute()
             
         except Exception as e:
             error_logger.error(f"Error handling invoice paid: {e}")
@@ -194,11 +190,13 @@ class BillingService:
         cost = BillingService.calculate_cost(model, input_tokens, output_tokens)
         
         try:
-            # Deduct from balance
-            current_balance = BillingService.check_balance(user_id)
-            new_balance = current_balance - cost
+            # Atomic deduction via Supabase RPC
+            result = supabase.rpc("deduct_balance", {"p_user_id": user_id, "p_amount": cost}).execute()
+            new_balance = result.data
             
-            supabase.table("user_billing").update({"balance_chf": new_balance, "updated_at": "now()"}).eq("user_id", user_id).execute()
+            if new_balance == -1:
+                error_logger.error(f"User {user_id} not found in user_billing during deduction")
+                return 0.0
             
             return cost
         except Exception as e:

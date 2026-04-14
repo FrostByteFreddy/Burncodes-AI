@@ -3,12 +3,14 @@ from app.database.supabase_client import supabase
 from app.logging_config import error_logger
 from app.chat.tasks import chat_task
 from app.billing.services import BillingService
+from app import limiter
 from celery.result import AsyncResult
 import uuid
 
 chat_bp = Blueprint('chat', __name__)
 
 @chat_bp.route('/<uuid:tenant_id>', methods=['POST'])
+@limiter.limit("30 per minute")
 def handle_chat(tenant_id):
     try:
         data = request.get_json()
@@ -72,34 +74,26 @@ from datetime import datetime, timedelta, timezone
 def get_chat_analytics(tenant_id):
     try:
         timeframe_hours = request.args.get('timeframe', 24, type=int)
-        interval = request.args.get('interval', 'hour') # 'minute', 'hour', or 'day'
+        interval = request.args.get('interval', 'hour')  # 'minute', '5-minute', 'hour', or 'day'
         now = datetime.now(timezone.utc)
         start_time = now - timedelta(hours=timeframe_hours)
 
-        response = supabase.table('chat_logs').select('created_at').eq('tenant_id', str(tenant_id)).gte('created_at', start_time.isoformat()).execute()
-
-        if not hasattr(response, 'data'):
-            error_logger.error(f"Supabase response for tenant {tenant_id} is missing 'data' attribute: {response}")
-            return jsonify({"error": "Invalid response from database"}), 500
-
-        time_format_map = {
-            'minute': '%Y-%m-%dT%H:%M:00+00:00',
-            'hour': '%Y-%m-%dT%H:00:00+00:00',
-            'day': '%Y-%m-%dT00:00:00+00:00'
+        # Map frontend interval names to SQL-compatible values
+        interval_map = {
+            'minute': 'minute',
+            '5-minute': '5 minutes',
+            'hour': '1 hour',
+            'day': '1 day',
         }
+        sql_interval = interval_map.get(interval, '1 hour')
 
-        time_format = time_format_map.get(interval, '%Y-%m-%dT%H:00:00+00:00')
+        response = supabase.rpc('analytics_time_buckets', {
+            'p_tenant_id': str(tenant_id),
+            'p_start_time': start_time.isoformat(),
+            'p_interval': sql_interval,
+        }).execute()
 
-        counts = {}
-        for log in response.data:
-            created_at = datetime.fromisoformat(log['created_at'])
-            time_bucket = created_at.strftime(time_format)
-            counts[time_bucket] = counts.get(time_bucket, 0) + 1
-
-        analytics_data = [{"time_bucket": bucket, "message_count": count} for bucket, count in counts.items()]
-        analytics_data.sort(key=lambda x: x['time_bucket'])
-
-        return jsonify(analytics_data)
+        return jsonify(response.data or [])
 
     except Exception as e:
         error_logger.error(f"Error in chat analytics for tenant {tenant_id}: {e}", exc_info=True)

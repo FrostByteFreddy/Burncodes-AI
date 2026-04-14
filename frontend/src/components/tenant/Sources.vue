@@ -50,7 +50,7 @@
           placeholder="https://example.com"
           class="w-full p-3 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           :class="{ 'border-error': !isUrlValid && startUrl }"
-          aria-invalid="!isUrlValid && startUrl"
+          :aria-invalid="!isUrlValid && startUrl"
           aria-describedby="url-error"
         />
         <p v-if="!isUrlValid && startUrl" id="url-error" class="text-error text-sm mt-1">
@@ -165,10 +165,10 @@
         ></div>
       </div>
 
-      <!-- Empty State -->
       <div
         v-else-if="
           !tenantsStore.currentTenant ||
+          !tenantsStore.currentTenant.tenant_sources ||
           tenantsStore.currentTenant.tenant_sources.length === 0
         "
         class="text-center p-8 rounded-lg bg-base-200"
@@ -301,18 +301,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useTenantsStore } from "../../stores/tenants";
 import { useAuthStore } from "../../stores/auth";
 import { useToast } from "../../composables/useToast";
 import ConfirmationModal from "../ConfirmationModal.vue";
 import CrawlingJobProgress from "./CrawlingJobProgress.vue";
-import axios from "axios";
+import apiClient from "@/utils/api";
 
 import { useI18n } from "vue-i18n";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 const tenantsStore = useTenantsStore();
 const authStore = useAuthStore();
 const { addToast } = useToast();
@@ -332,8 +329,12 @@ const crawlingJobs = ref([]);
 
 const isUrlValid = computed(() => {
   if (!startUrl.value) return true;
+  let urlString = startUrl.value.trim();
+  if (!urlString.startsWith('http://') && !urlString.startsWith('https://')) {
+    urlString = 'https://' + urlString;
+  }
   try {
-    const url = new URL(startUrl.value);
+    const url = new URL(urlString);
     return url.protocol === "http:" || url.protocol === "https:";
   } catch (_) {
     return false;
@@ -358,19 +359,19 @@ const fileSources = computed(() => {
   return [];
 });
 
-const getAuthHeaders = () => {
-  if (!authStore.session?.access_token) {
-    throw new Error("User is not authenticated.");
-  }
-  return { Authorization: `Bearer ${authStore.session.access_token}` };
-};
+
 
 const startCrawl = async () => {
   if (!startUrl.value.trim() || !tenantsStore.currentTenant) return;
   loading.value = true;
 
+  let finalUrl = startUrl.value.trim();
+  if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+    finalUrl = 'https://' + finalUrl;
+  }
+
   const payload = {
-    url: startUrl.value,
+    url: finalUrl,
     single_page_only: crawlSinglePageOnly.value,
     excluded_urls: crawlSinglePageOnly.value
       ? []
@@ -378,10 +379,9 @@ const startCrawl = async () => {
   };
 
   try {
-    await axios.post(
-      `${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/discover`,
-      payload,
-      { headers: getAuthHeaders() }
+    await apiClient.post(
+      `/tenants/${tenantsStore.currentTenant.id}/sources/discover`,
+      payload
     );
     addToast(t("tenant.sources.actions.crawlStarted"), "success");
     startUrl.value = "";
@@ -410,10 +410,9 @@ const handleUpload = async () => {
   const formData = new FormData();
   formData.append("file", selectedFile.value);
   try {
-    await axios.post(
-      `${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/upload`,
-      formData,
-      { headers: getAuthHeaders() }
+    await apiClient.post(
+      `/tenants/${tenantsStore.currentTenant.id}/sources/upload`,
+      formData
     );
     await tenantsStore.refetch(tenantsStore.currentTenant.id);
     selectedFile.value = null;
@@ -469,9 +468,8 @@ const handleDelete = async () => {
   }
 
   try {
-    await axios.delete(
-      `${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/sources/${sourceIdToDelete}`,
-      { headers: getAuthHeaders() }
+    await apiClient.delete(
+      `/tenants/${tenantsStore.currentTenant.id}/sources/${sourceIdToDelete}`
     );
     addToast(t("tenant.sources.actions.deleteSuccess"), "success");
     // After successful deletion, we can choose to refetch for consistency or trust the optimistic update.
@@ -500,9 +498,8 @@ const handleJobCompletion = async (jobId) => {
 const fetchCrawlingJobs = async () => {
   if (!tenantsStore.currentTenant) return;
   try {
-    const response = await axios.get(
-      `${API_BASE_URL}/tenants/${tenantsStore.currentTenant.id}/crawling_jobs`,
-      { headers: getAuthHeaders() }
+    const response = await apiClient.get(
+      `/tenants/${tenantsStore.currentTenant.id}/crawling_jobs`
     );
     crawlingJobs.value = response.data;
   } catch (error) {
@@ -511,7 +508,15 @@ const fetchCrawlingJobs = async () => {
   }
 };
 
-onMounted(() => {
-  fetchCrawlingJobs();
-});
+watch(
+  () => tenantsStore.currentTenant,
+  (newTenant) => {
+    if (newTenant) {
+      fetchCrawlingJobs();
+    } else {
+      crawlingJobs.value = [];
+    }
+  },
+  { immediate: true }
+);
 </script>

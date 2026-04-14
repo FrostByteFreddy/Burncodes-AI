@@ -3,11 +3,13 @@ from flask import Blueprint, request, jsonify
 from app.database.supabase_client import supabase
 from app.auth.decorators import token_required
 from app.logging_config import error_logger
+from app import limiter
 from supabase import create_client, Client
 
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/signup', methods=['POST'])
+@limiter.limit("10 per minute")
 def signup():
     try:
         data = request.get_json()
@@ -33,6 +35,7 @@ def signup():
         return jsonify({"error": error_message}), 400
 
 @auth_bp.route('/login', methods=['POST'])
+@limiter.limit("20 per minute")
 def login():
     try:
         data = request.get_json()

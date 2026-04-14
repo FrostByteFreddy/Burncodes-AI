@@ -5,7 +5,6 @@
 
 -- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA extensions;
 
 -- ============================================================================
 -- Create ENUM Types
@@ -198,11 +197,11 @@ RETURNS TABLE(
 BEGIN
   RETURN QUERY
   SELECT
-    time_bucket(
+    date_trunc(
       CASE
-        WHEN p_timeframe_hours > 24 THEN '1 day'
-        ELSE '1 hour'
-      END::INTERVAL,
+        WHEN p_timeframe_hours > 24 THEN 'day'
+        ELSE 'hour'
+      END,
       created_at
     ) AS time_bucket,
     COUNT(*) AS chat_count
@@ -246,6 +245,83 @@ ADD COLUMN IF NOT EXISTS input_tokens INTEGER,
 ADD COLUMN IF NOT EXISTS output_tokens INTEGER,
 ADD COLUMN IF NOT EXISTS cost_chf DECIMAL(10, 6);
 
+
+-- ============================================================================
+-- Atomic Balance Functions (RPC)
+-- ============================================================================
+
+-- Atomically deduct from balance. Returns the new balance.
+-- Returns -1 if the user does not exist.
+CREATE OR REPLACE FUNCTION deduct_balance(p_user_id UUID, p_amount DECIMAL)
+RETURNS DECIMAL AS $$
+DECLARE
+    v_new_balance DECIMAL;
+BEGIN
+    UPDATE user_billing
+    SET balance_chf = balance_chf - p_amount,
+        updated_at = NOW()
+    WHERE user_id = p_user_id
+    RETURNING balance_chf INTO v_new_balance;
+
+    IF NOT FOUND THEN
+        RETURN -1;
+    END IF;
+
+    RETURN v_new_balance;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Atomically credit balance. Returns the new balance.
+-- Creates the row if it doesn't exist (upsert).
+CREATE OR REPLACE FUNCTION credit_balance(p_user_id UUID, p_amount DECIMAL)
+RETURNS DECIMAL AS $$
+DECLARE
+    v_new_balance DECIMAL;
+BEGIN
+    INSERT INTO user_billing (user_id, balance_chf, updated_at)
+    VALUES (p_user_id, p_amount, NOW())
+    ON CONFLICT (user_id) DO UPDATE
+    SET balance_chf = user_billing.balance_chf + p_amount,
+        updated_at = NOW()
+    RETURNING balance_chf INTO v_new_balance;
+
+    RETURN v_new_balance;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================================
+-- Analytics Aggregation Function (RPC)
+-- ============================================================================
+
+-- Aggregate chat_logs into time buckets server-side.
+-- p_interval: 'minute', '5 minutes', '1 hour', '1 day'
+CREATE OR REPLACE FUNCTION analytics_time_buckets(
+    p_tenant_id UUID,
+    p_start_time TIMESTAMPTZ,
+    p_interval TEXT DEFAULT '1 hour'
+)
+RETURNS TABLE(time_bucket TIMESTAMPTZ, message_count BIGINT) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        date_trunc(
+            CASE
+                WHEN p_interval = 'minute' THEN 'minute'
+                WHEN p_interval = '5 minutes' THEN 'hour'
+                WHEN p_interval = '1 hour' THEN 'hour'
+                WHEN p_interval = '1 day' THEN 'day'
+                ELSE 'hour'
+            END,
+            cl.created_at
+        ) AS time_bucket,
+        COUNT(*)::BIGINT AS message_count
+    FROM chat_logs cl
+    WHERE cl.tenant_id = p_tenant_id
+      AND cl.created_at >= p_start_time
+    GROUP BY 1
+    ORDER BY 1;
+END;
+$$ LANGUAGE plpgsql;
 
 -- ============================================================================
 -- Setup Complete
