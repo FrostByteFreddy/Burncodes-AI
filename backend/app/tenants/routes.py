@@ -76,6 +76,10 @@ def get_tenant(current_user, tenant_id):
 
         fine_tune_rules = supabase.table('tenant_fine_tune').select("*").eq('tenant_id', str(tenant_id)).execute()
         tenant.data['fine_tune_rules'] = fine_tune_rules.data
+
+        tenant_sources = supabase.table('tenant_sources').select("*").eq('tenant_id', str(tenant_id)).execute()
+        tenant.data['tenant_sources'] = tenant_sources.data
+
         return jsonify(tenant.data), 200
     except Exception as e:
         error_logger.error(f"Error fetching tenant {tenant_id} for user {current_user.id}: {e}", extra={'user_id': current_user.id}, exc_info=True)

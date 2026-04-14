@@ -8,6 +8,7 @@ class SourceType(str, Enum):
     FILE = "FILE"
 
 class SourceStatus(str, Enum):
+    QUEUED = "QUEUED"
     PROCESSING = "PROCESSING"
     COMPLETED = "COMPLETED"
     ERROR = "ERROR"

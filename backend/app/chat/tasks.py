@@ -17,12 +17,12 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.callbacks import BaseCallbackHandler
 from app.prompts import REPHRASE_PROMPTS, FINE_TUNE_RULE_PROMPTS
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+CHAT_GEMINI_MODEL = os.getenv("CHAT_GEMINI_MODEL")
 
 # --- Shared LLM Clients (reused across Celery tasks) ---
 _embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
-_answer_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.2, convert_system_message_to_human=True)
-_query_rewrite_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0, convert_system_message_to_human=True)
+_answer_llm = ChatGoogleGenerativeAI(model=CHAT_GEMINI_MODEL, temperature=0.2, convert_system_message_to_human=True)
+_query_rewrite_llm = ChatGoogleGenerativeAI(model=CHAT_GEMINI_MODEL, temperature=0, convert_system_message_to_human=True)
 
 
 class TokenUsageCallback(BaseCallbackHandler):
@@ -145,7 +145,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         
         cost = 0.0
         if user_id:
-             cost = BillingService.deduct_cost(user_id, GEMINI_MODEL, input_tokens, output_tokens)
+             cost = BillingService.deduct_cost(user_id, CHAT_GEMINI_MODEL, input_tokens, output_tokens)
 
         # --- Log Chat to Database ---
         try:
@@ -154,7 +154,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
                 'conversation_id': conversation_id,
                 'user_message': query,
                 'ai_message': ai_message,
-                'model_used': GEMINI_MODEL,
+                'model_used': CHAT_GEMINI_MODEL,
                 'input_tokens': input_tokens,
                 'output_tokens': output_tokens,
                 'cost_chf': cost
