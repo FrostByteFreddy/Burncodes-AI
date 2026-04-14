@@ -27,7 +27,11 @@ class CustomJSONEncoder(json.JSONEncoder):
 def create_app():
     app = Flask(__name__)
     app.json_encoder = CustomJSONEncoder
-    CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+
+    # --- CORS Configuration ---
+    cors_origins = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://localhost:3000').split(',')
+    cors_origins = [origin.strip() for origin in cors_origins if origin.strip()]
+    CORS(app, resources={r"/api/*": {"origins": cors_origins}}, supports_credentials=True)
     limiter.init_app(app)
 
     # --- Configuration ---
