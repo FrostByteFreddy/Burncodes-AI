@@ -14,6 +14,7 @@ from app.data_processing.processor import get_vectorstore, get_loader, process_d
 from app.data_processing.crawler import get_crawler
 from app.data_processing.config import MAX_CONCURRENT_CRAWLS_PER_JOB
 from app.billing.services import BillingService
+from app.logging_config import error_logger
 
 # --- Crawl4AI Imports ---
 from crawl4ai import CacheMode, CrawlerRunConfig, LinkPreviewConfig
@@ -26,16 +27,16 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from app.prompts import CLEANUP_PROMPT_TEMPLATES, PDF_CLEANUP_PROMPT_TEMPLATES
 
-DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+# DEBUG flag removed: debug logging is always-on via logging_config.py
 INDEXING_GEMINI_MODEL = os.getenv("INDEXING_GEMINI_MODEL")
 
 async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_language: str = 'en', source_id: int = None) -> tuple[str, int, int]:
     """Uses an LLM to clean, optimize, and chunk raw markdown asynchronously. Returns content and token usage."""
-    print(f"🤖 Calling LLM to clean and chunk markdown ({len(markdown_text)} chars) with language '{doc_language}'...")
+    error_logger.info("Calling LLM to clean and chunk markdown (%d chars) lang='%s' source_id=%s", len(markdown_text), doc_language, source_id)
 
     # Select the appropriate prompt template based on the document language
     template = CLEANUP_PROMPT_TEMPLATES.get(doc_language, CLEANUP_PROMPT_TEMPLATES['en'])
-    print(f"📄 Using doc_language: {doc_language}")
+    error_logger.debug("doc_language resolved to: %s", doc_language)
 
     cleanup_llm = ChatGoogleGenerativeAI(model=INDEXING_GEMINI_MODEL, temperature=0.0, timeout=600)
     cleanup_prompt = PromptTemplate.from_template(template)
@@ -45,7 +46,7 @@ async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_langua
     input_tokens = len(markdown_text) // 4
     
     response = await cleanup_chain.ainvoke({"raw_markdown": markdown_text})
-    print("✅ Markdown cleaned and chunked successfully.")
+    error_logger.info("Markdown cleaned and chunked successfully for source_id=%s", source_id)
     
     # Estimate output tokens
     output_tokens = len(response.content) // 4
@@ -86,17 +87,16 @@ async def async_create_document_chunks_with_metadata(content: str, source: str, 
             
         chunks = [chunk.strip() for chunk in cleaned_and_chunked_content.split("---CHUNK_SEPARATOR---") if chunk.strip()]
 
-        if DEBUG:
-            try:
-                os.makedirs('crawled_markdown', exist_ok=True)
-                safe_filename = re.sub(r'https://?|www\.|\/|\?|\=|\&', '_', source) + ".md"
-                filepath = os.path.join('crawled_markdown', safe_filename)
-                # Save the raw, chunked output for inspection
-                with open(filepath, 'w', encoding='utf-8') as f:
-                    f.write(f"# SOURCE: {source}\n\n{cleaned_and_chunked_content}")
-                print(f"🕵️‍♂️ Saved CLEANED and CHUNKED markdown for {source} to {filepath}")
-            except Exception as e:
-                print(f"❌ Could not save cleaned markdown file for {source}: {e}")
+        try:
+            os.makedirs('crawled_markdown', exist_ok=True)
+            safe_filename = re.sub(r'https://?|www\.|\/|\?|\=|\&', '_', source) + ".md"
+            filepath = os.path.join('crawled_markdown', safe_filename)
+            # Save the raw, chunked output for inspection
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(f"# SOURCE: {source}\n\n{cleaned_and_chunked_content}")
+            error_logger.debug("Saved cleaned+chunked markdown for %s to %s", source, filepath)
+        except Exception as e:
+            error_logger.warning("Could not save cleaned markdown file for %s: %s", source, e)
 
         timestamp = datetime.now(timezone.utc).isoformat()
         for i, chunk in enumerate(chunks):
@@ -108,7 +108,7 @@ async def async_create_document_chunks_with_metadata(content: str, source: str, 
 
         return documents
     except Exception as e:
-        print(f"Error creating document chunks for source {source_id}: {e}")
+        error_logger.error("Error creating document chunks for source %s: %s", source_id, e, exc_info=True)
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
         return []
 
@@ -128,16 +128,16 @@ async def async_create_document_chunks_for_structured_data(content: str, source:
         )
         documents.append(doc)
 
-        print(f"✅ Created 1 document for structured file {source} (source_id: {source_id})")
+        error_logger.info("Created 1 document for structured file %s (source_id: %s)", source, source_id)
         return documents
     except Exception as e:
-        print(f"Error creating document chunks for structured source {source_id}: {e}")
+        error_logger.error("Error creating document chunks for structured source %s: %s", source_id, e, exc_info=True)
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
         return []
 
 async def async_clean_pdf_text_with_llm(raw_text: str, doc_language: str = 'en') -> tuple[str, int, int]:
     """Uses an LLM to clean and reconstruct PDF text into valid markdown. Returns content and token usage."""
-    print(f"🤖 Calling LLM to clean PDF text chunk ({len(raw_text)} chars) with language '{doc_language}'...")
+    error_logger.info("Calling LLM to clean PDF text chunk (%d chars) lang='%s'", len(raw_text), doc_language)
 
     template = PDF_CLEANUP_PROMPT_TEMPLATES.get(doc_language, PDF_CLEANUP_PROMPT_TEMPLATES['en'])
     
@@ -149,11 +149,11 @@ async def async_clean_pdf_text_with_llm(raw_text: str, doc_language: str = 'en')
     
     try:
         response = await cleanup_chain.ainvoke({"raw_text": raw_text})
-        print("✅ PDF text chunk cleaned successfully.")
+        error_logger.debug("PDF text chunk cleaned successfully.")
         output_tokens = len(response.content) // 4
         return response.content, input_tokens, output_tokens
     except Exception as e:
-        print(f"⚠️ Error cleaning PDF text chunk: {e}")
+        error_logger.warning("Error cleaning PDF text chunk (falling back to raw text): %s", e)
         return raw_text, input_tokens, 0 # Fallback to raw text if cleaning fails
 
 async def async_create_document_chunks_for_pdf(content: str, source: str, source_id: int, tenant_id: UUID) -> list[Document]:
@@ -185,7 +185,7 @@ async def async_create_document_chunks_for_pdf(content: str, source: str, source
         total_output_tokens = 0
         
         for i, chunk in enumerate(large_chunks):
-            print(f"Processing large PDF chunk {i+1}/{len(large_chunks)}...")
+            error_logger.debug("Processing large PDF chunk %d/%d for source_id=%s", i + 1, len(large_chunks), source_id)
             cleaned_chunk, input_tokens, output_tokens = await async_clean_pdf_text_with_llm(chunk, doc_language)
             cleaned_chunks.append(cleaned_chunk)
             total_input_tokens += input_tokens
@@ -212,7 +212,7 @@ async def async_create_document_chunks_for_pdf(content: str, source: str, source
         filename_stem = os.path.splitext(os.path.basename(source))[0]
         s3_readme_path = f"{tenant_id}/readme_output/{filename_stem}.md"
         
-        print(f"📤 Uploading cleaned readme to S3: {s3_readme_path}")
+        error_logger.info("Uploading cleaned readme to S3: %s", s3_readme_path)
         await loop.run_in_executor(None, lambda: supabase.storage.from_(bucket_name).upload(
             path=s3_readme_path,
             file=full_cleaned_content.encode('utf-8'),
@@ -230,10 +230,10 @@ async def async_create_document_chunks_for_pdf(content: str, source: str, source
             )
             documents.append(doc)
 
-        print(f"✅ Created {len(documents)} document chunks for PDF {source} (source_id: {source_id})")
+        error_logger.info("Created %d document chunks for PDF %s (source_id: %s)", len(documents), source, source_id)
         return documents
     except Exception as e:
-        print(f"Error creating document chunks for PDF source {source_id}: {e}")
+        error_logger.error("Error creating document chunks for PDF source %s: %s", source_id, e, exc_info=True)
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
         return []
 
@@ -278,7 +278,7 @@ async def async_process_s3_file(s3_path: str, source_filename: str, source_id: i
         # Get the appropriate loader for the file extension
         loader = get_loader(tmp_filepath)
         if not loader:
-            print(f"⚠️ No loader found for extension {ext}, skipping file {source_filename}")
+            error_logger.warning("No loader found for extension %s, skipping file %s", ext, source_filename)
             return []
 
         # Load and process the document
@@ -291,7 +291,7 @@ async def async_process_s3_file(s3_path: str, source_filename: str, source_id: i
         return await _get_document_chunks_from_content(content, source_filename, source_id, ext, tenant_id)
 
     except Exception as e:
-        print(f"❌ Error processing S3 file {s3_path}: {e}")
+        error_logger.error("Error processing S3 file %s: %s", s3_path, e, exc_info=True)
         # Mark the source as errored
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
@@ -341,7 +341,7 @@ async def process_urls_concurrently(urls: list[tuple[str, int]], tenant_id: UUID
 async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]], tenant_id: UUID) -> list[Document]:
     """Crawls URLs and processes their content concurrently using the shared crawler."""
     all_docs = []
-    semaphore = asyncio.Semaphore(10)
+    semaphore = asyncio.Semaphore(30)
     crawler = get_crawler()
     await crawler.start()
 
@@ -366,7 +366,7 @@ async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]], t
 
 async def async_process_file_url(url: str, tenant_id: UUID, source_id: int) -> list[Document]:
     """Downloads a file from a URL and processes its content."""
-    print(f"📄 Downloading and processing file: {url}")
+    error_logger.info("Downloading and processing file: %s", url)
     ext = os.path.splitext(urlparse(url).path)[1].lower()
     if not ext: return []
 
@@ -384,7 +384,7 @@ async def async_process_file_url(url: str, tenant_id: UUID, source_id: int) -> l
 
         loader = get_loader(tmp_filepath)
         if not loader:
-            print(f"⚠️ No loader found for extension {ext}, skipping file {url}")
+            error_logger.warning("No loader found for extension %s, skipping file URL %s", ext, url)
             os.remove(tmp_filepath)
             return []
 
@@ -397,7 +397,7 @@ async def async_process_file_url(url: str, tenant_id: UUID, source_id: int) -> l
         return await _get_document_chunks_from_content(content, url, source_id, ext, tenant_id)
 
     except Exception as e:
-        print(f"❌ Error processing file URL {url}: {e}")
+        error_logger.error("Error processing file URL %s: %s", url, e, exc_info=True)
         if 'tmp_filepath' in locals() and os.path.exists(tmp_filepath):
             os.remove(tmp_filepath)
         return []
@@ -449,7 +449,7 @@ def crawl_links_task(self, tenant_id: UUID, start_url: str, single_page_only: bo
 
     except Exception as e:
         error_message = f"Failed to initiate crawl: {e}"
-        print(error_message)
+        error_logger.error(error_message)
         if 'job_id' in locals():
             supabase.table('crawling_jobs').update({"status": CrawlingStatus.FAILED.value}).eq('id', job_id).execute()
         self.update_state(state='FAILURE', meta={'status': error_message})
@@ -479,7 +479,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         # 2. Normalize the list of URLs to exclude
         normalized_excluded_list = [normalize_url(str(ex_url)) for ex_url in excluded_urls]
         
-        print(f"🔍 Checking exclusion for {normalized_url} against {normalized_excluded_list}")
+        error_logger.debug("Checking exclusion for %s", normalized_url)
 
         # 3. Perform the check with the normalized values
         is_excluded = False
@@ -489,12 +489,12 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
                 break
 
         if is_excluded:
-            print(f"🚫 Skipping excluded URL: {url}")
+            error_logger.info("Skipping excluded URL: %s", url)
             supabase.table('crawling_tasks').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', task_id).execute()
             return
 
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.IN_PROGRESS.value}).eq('id', task_id).execute()
-        print(f"Crawling URL: {url} at depth {depth}")
+        error_logger.info("Crawling URL: %s at depth %s", url, depth)
 
         # The user agent is randomized by the BrowserConfig.
         # We dynamically add the Referer header for each request if a parent URL exists.
@@ -539,7 +539,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             # Use asyncio.wait_for to enforce a timeout on the entire crawl and close operation
             asyncio.run(asyncio.wait_for(crawl_and_close(), timeout=70.0))
         except asyncio.TimeoutError:
-            print(f"❌ Timeout loading page {url}")
+            error_logger.error("Timeout loading page %s", url)
             supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
             return
 
@@ -596,11 +596,11 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
                 supabase.table('crawling_tasks').insert(new_tasks_data).execute()
 
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', task_id).execute()
-        print(f"✅ Completed processing URL: {url}")
+        error_logger.info("Completed processing URL: %s", url)
 
     except Exception as e:
         error_message = f"Error processing URL {task_details.get('url', 'unknown')}: {e}"
-        print(f"❌ {error_message}")
+        error_logger.error(error_message, exc_info=True)
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
 
 @shared_task(bind=True)
@@ -626,7 +626,7 @@ def job_scheduler_task(self):
             if running_tasks_count == 0:
                 pending_tasks_response = supabase.table('crawling_tasks').select('id', count='exact').eq('job_id', job_id).eq('status', CrawlingStatus.PENDING.value).execute()
                 if pending_tasks_response.count == 0:
-                    print(f"🎉 Job {job_id} has no more running or pending tasks. Marking as completed.")
+                    error_logger.info("Job %s complete — no remaining tasks.", job_id)
                     supabase.table('crawling_jobs').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', job_id).execute()
                     continue  # Proceed to the next job
 
@@ -641,7 +641,7 @@ def job_scheduler_task(self):
                 tasks_to_schedule = tasks_to_schedule_response.data
 
                 for task in tasks_to_schedule:
-                    print(f"Scheduler: Enqueuing task {task['id']} for job {job_id}.")
+                    error_logger.debug("Scheduler: Enqueuing task %s for job %s.", task['id'], job_id)
                     process_single_url_task.delay(
                         task_id=task['id'],
                         tenant_id=tenant_id,
@@ -649,4 +649,4 @@ def job_scheduler_task(self):
                     )
 
     except Exception as e:
-        print(f"Error in job_scheduler_task: {e}")
+        error_logger.error("Error in job_scheduler_task: %s", e, exc_info=True)

@@ -65,7 +65,7 @@ ssh "$SERVER" << EOF
   # Start the app
   echo "🚀 Building and starting Docker containers..."
   docker compose -f docker-compose.prod.yml build
-  docker compose -f docker-compose.prod.yml up -d
+  docker compose -f docker-compose.prod.yml up -d --force-recreate
   
   echo "✅ Containers are running!"
 EOF

@@ -9,7 +9,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: gunicorn --workers 4 --bind 0.0.0.0:5000 --timeout 120 "app:create_app()"
+    command: gunicorn --workers 8 --bind 0.0.0.0:5000 --timeout 120 "app:create_app()"
     restart: always
     volumes:
       - app_data:/app/data
@@ -22,7 +22,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: celery -A celery_worker.celery worker --loglevel=info --concurrency=4
+    command: celery -A celery_worker.celery worker --loglevel=info --concurrency=12
     restart: always
     volumes:
       - app_data:/app/data

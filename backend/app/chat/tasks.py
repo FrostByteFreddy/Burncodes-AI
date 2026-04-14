@@ -65,7 +65,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
 
         # Determine the language for translation, defaulting to 'en'
         translation_target = tenant_config.get('translation_target', 'en')
-        print(f"📄 Using translation_target: {translation_target}")
+        error_logger.debug("Using translation_target: %s for tenant %s", translation_target, tenant_id)
 
         # --- Construct Fine-Tuning Instructions String ---
         fine_tune_prompt_template = FINE_TUNE_RULE_PROMPTS.get(translation_target, FINE_TUNE_RULE_PROMPTS['en'])
