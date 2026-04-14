@@ -18,13 +18,13 @@ def get_widget_script():
     const frontendUrl = "{frontend_url}".replace(/\\/$/, "");
 
     if (!tenantId) {{
-        console.error('SwiftAnswer Widget: data-tenant-id attribute is missing.');
+        console.error('Burncodes AI Widget: data-tenant-id attribute is missing.');
         return;
     }}
 
     // Create container for the widget
     const container = document.createElement('div');
-    container.id = 'swiftanswer-widget-container';
+    container.id = 'burncodes-ai-widget-container';
     container.style.position = 'fixed';
     container.style.bottom = '20px';
     container.style.right = '20px';
@@ -52,7 +52,7 @@ def get_widget_script():
         .then(response => response.json())
         .then(data => {{
             if (data.error) {{
-                console.error('SwiftAnswer Widget: Failed to load tenant config.', data.error);
+                console.error('Burncodes AI Widget: Failed to load tenant config.', data.error);
                 return;
             }}
 
@@ -116,7 +116,7 @@ def get_widget_script():
             container.appendChild(launcher);
         }})
         .catch(err => {{
-            console.error('SwiftAnswer Widget: Error fetching config.', err);
+            console.error('Burncodes AI Widget: Error fetching config.', err);
         }});
 
 }})();

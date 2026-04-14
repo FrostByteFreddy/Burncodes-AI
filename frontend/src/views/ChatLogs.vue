@@ -58,20 +58,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from "vue";
-import { useRoute } from "vue-router";
+import { ref, watch, nextTick } from "vue";
 import apiClient from "@/utils/api";
 import { useToast } from "@/composables/useToast";
 import { processBotMessage } from "@/utils/chatProcessor.js";
 import { useI18n } from "vue-i18n";
+import { useTenantsStore } from "@/stores/tenants";
 
-
-
-const route = useRoute();
-const authStore = useAuthStore();
 const { addToast } = useToast();
 const { t } = useI18n();
-const tenantId = ref(route.params.tenantId);
+const tenantsStore = useTenantsStore();
+
 const conversations = ref([]);
 const conversationLogs = ref([]);
 const selectedConversation = ref(null);
@@ -80,10 +77,11 @@ const error = ref(null);
 const chatContainer = ref(null);
 
 const fetchConversations = async () => {
+  if (!tenantsStore.currentTenant) return;
   try {
     isLoading.value = true;
     error.value = null;
-    const response = await apiClient.get(`/chat/${tenantId.value}/conversations`);
+    const response = await apiClient.get(`/chat/${tenantsStore.currentTenant.id}/conversations`);
     conversations.value = response.data;
   } catch (err) {
     error.value = t("chatLogs.errors.loadConversations");
@@ -99,7 +97,7 @@ const selectConversation = async (conversationId) => {
     error.value = null;
     selectedConversation.value = conversationId;
     const response = await apiClient.get(
-      `/chat/${tenantId.value}/conversation/${conversationId}`
+      `/chat/${tenantsStore.currentTenant.id}/conversation/${conversationId}`
     );
     conversationLogs.value = response.data;
     await nextTick();
@@ -113,7 +111,20 @@ const selectConversation = async (conversationId) => {
   }
 };
 
-onMounted(() => { fetchConversations(); });
+watch(
+  () => tenantsStore.currentTenant,
+  (newTenant) => {
+    if (newTenant) {
+      selectedConversation.value = null;
+      conversationLogs.value = [];
+      fetchConversations();
+    } else {
+      conversations.value = [];
+      conversationLogs.value = [];
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

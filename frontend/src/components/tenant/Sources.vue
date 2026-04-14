@@ -50,7 +50,7 @@
           placeholder="https://example.com"
           class="w-full p-3 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           :class="{ 'border-error': !isUrlValid && startUrl }"
-          aria-invalid="!isUrlValid && startUrl"
+          :aria-invalid="!isUrlValid && startUrl"
           aria-describedby="url-error"
         />
         <p v-if="!isUrlValid && startUrl" id="url-error" class="text-error text-sm mt-1">
@@ -165,10 +165,10 @@
         ></div>
       </div>
 
-      <!-- Empty State -->
       <div
         v-else-if="
           !tenantsStore.currentTenant ||
+          !tenantsStore.currentTenant.tenant_sources ||
           tenantsStore.currentTenant.tenant_sources.length === 0
         "
         class="text-center p-8 rounded-lg bg-base-200"
@@ -301,7 +301,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useTenantsStore } from "../../stores/tenants";
 import { useAuthStore } from "../../stores/auth";
 import { useToast } from "../../composables/useToast";
@@ -508,7 +508,15 @@ const fetchCrawlingJobs = async () => {
   }
 };
 
-onMounted(() => {
-  fetchCrawlingJobs();
-});
+watch(
+  () => tenantsStore.currentTenant,
+  (newTenant) => {
+    if (newTenant) {
+      fetchCrawlingJobs();
+    } else {
+      crawlingJobs.value = [];
+    }
+  },
+  { immediate: true }
+);
 </script>

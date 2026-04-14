@@ -4,11 +4,15 @@
 backend/__pycache__/
 
 # Environment variables
+.env
+.env.*
+!.env.example
 frontend/.env
 /backend/.env
 
 # Local data & uploads
 /backend/uploads/
+/crawled_markdown/
 /backend/vector_store/
 /backend/chromadb/
 dump.rdb

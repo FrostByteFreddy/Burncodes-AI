@@ -27,7 +27,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from app.prompts import CLEANUP_PROMPT_TEMPLATES, PDF_CLEANUP_PROMPT_TEMPLATES
 
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
-QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
+INDEXING_GEMINI_MODEL = os.getenv("INDEXING_GEMINI_MODEL")
 
 async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_language: str = 'en', source_id: int = None) -> tuple[str, int, int]:
     """Uses an LLM to clean, optimize, and chunk raw markdown asynchronously. Returns content and token usage."""
@@ -37,7 +37,7 @@ async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_langua
     template = CLEANUP_PROMPT_TEMPLATES.get(doc_language, CLEANUP_PROMPT_TEMPLATES['en'])
     print(f"📄 Using doc_language: {doc_language}")
 
-    cleanup_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0.0, timeout=600)
+    cleanup_llm = ChatGoogleGenerativeAI(model=INDEXING_GEMINI_MODEL, temperature=0.0, timeout=600)
     cleanup_prompt = PromptTemplate.from_template(template)
     cleanup_chain = cleanup_prompt | cleanup_llm
     
@@ -75,7 +75,7 @@ async def async_create_document_chunks_with_metadata(content: str, source: str, 
         user_response = await loop.run_in_executor(None, lambda: supabase.table('tenants').select('user_id').eq('id', str(tenant_id)).single().execute())
         if user_response.data:
             user_id = user_response.data['user_id']
-            cost = BillingService.deduct_cost(user_id, QUERY_GEMINI_MODEL, input_tokens, output_tokens)
+            cost = BillingService.deduct_cost(user_id, INDEXING_GEMINI_MODEL, input_tokens, output_tokens)
             
             # Update tenant_sources with usage stats
             await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({
@@ -141,7 +141,7 @@ async def async_clean_pdf_text_with_llm(raw_text: str, doc_language: str = 'en')
 
     template = PDF_CLEANUP_PROMPT_TEMPLATES.get(doc_language, PDF_CLEANUP_PROMPT_TEMPLATES['en'])
     
-    cleanup_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0.0, timeout=600)
+    cleanup_llm = ChatGoogleGenerativeAI(model=INDEXING_GEMINI_MODEL, temperature=0.0, timeout=600)
     cleanup_prompt = PromptTemplate.from_template(template)
     cleanup_chain = cleanup_prompt | cleanup_llm
     
@@ -196,7 +196,7 @@ async def async_create_document_chunks_for_pdf(content: str, source: str, source
         user_response = await loop.run_in_executor(None, lambda: supabase.table('tenants').select('user_id').eq('id', str(tenant_id)).single().execute())
         if user_response.data:
             user_id = user_response.data['user_id']
-            cost = BillingService.deduct_cost(user_id, QUERY_GEMINI_MODEL, total_input_tokens, total_output_tokens)
+            cost = BillingService.deduct_cost(user_id, INDEXING_GEMINI_MODEL, total_input_tokens, total_output_tokens)
             
             # Update tenant_sources with usage stats
             await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({

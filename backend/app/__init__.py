@@ -45,6 +45,7 @@ def create_app():
     upload_folder = os.getenv("UPLOAD_FOLDER_BASE", "/data/uploads")
     vector_store_path = os.getenv("CRAWL4_AI_BASE_DIRECTORY", "/data/chromadb")
     crawl_cache_path = os.getenv("CRAWL_CACHE_PATH", "/data/crawl4ai_cache")
+    log_dir = os.getenv("LOG_DIR", "/app/data/logs")
 
     app.config['UPLOAD_FOLDER_BASE'] = upload_folder
     app.config['CRAWL4_AI_BASE_DIRECTORY'] = vector_store_path
@@ -55,10 +56,11 @@ def create_app():
         os.makedirs(upload_folder, exist_ok=True)
         os.makedirs(vector_store_path, exist_ok=True)
         os.makedirs(crawl_cache_path, exist_ok=True)
+        os.makedirs(log_dir, exist_ok=True)
         error_logger.info("Successfully created/ensured data directories.")
     except PermissionError:
         error_logger.warning(
-            f"Could not create data directories ({upload_folder}, {vector_store_path}, {crawl_cache_path}). "
+            f"Could not create data directories ({upload_folder}, {vector_store_path}, {crawl_cache_path}, {log_dir}). "
             "This is expected if running without write permissions to the volume. "
             "The application will attempt to create subdirectories as needed."
         )
@@ -116,7 +118,7 @@ def create_app():
     @app.route('/api/health')
     def health_check():
         from flask import jsonify as _jsonify
-        status = {"status": "ok", "service": "swiftanswer-api"}
+        status = {"status": "ok", "service": "burncodes-ai-api"}
         try:
             from app.database.supabase_client import supabase
             supabase.table('tenants').select("id").limit(1).execute()

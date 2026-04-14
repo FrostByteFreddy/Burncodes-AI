@@ -55,12 +55,16 @@ const fetchProgress = async () => {
         const response = await apiClient.get(`/tenants/${tenantId.value}/crawling_jobs/${job.value.id}/progress`);
         progress.value = response.data;
 
-        // If the job is completed or failed, stop polling
-        if (job.value.status === 'COMPLETED' || job.value.status === 'FAILED') {
+        // Calculate if the job is fully done based on its internal task counters
+        const isDone = progress.value.total > 0 && progress.value.pending === 0 && progress.value.in_progress === 0;
+        
+        // If the job is completed or practically fully finished, stop polling
+        if (isDone || job.value.status === 'COMPLETED' || job.value.status === 'FAILED') {
             if (pollInterval.value) {
                 clearInterval(pollInterval.value);
                 pollInterval.value = null;
-                if (job.value.status === 'COMPLETED') {
+                // Only emit completion if it actually finished successfully
+                if (isDone || job.value.status === 'COMPLETED') {
                     emit('job-completed', job.value.id);
                 }
             }
