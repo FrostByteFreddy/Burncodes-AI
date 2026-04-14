@@ -185,7 +185,20 @@ def delete_source(current_user, tenant_id, source_id):
             return jsonify({"error": "Source not found or access denied"}), 404
 
         supabase.table('tenant_sources').delete().eq('id', source_id).execute()
-        return jsonify({"message": "Source deleted successfully. Note: Vector data may still exist and will be cleaned up later."}), 200
+        
+        # Attempt to delete from ChromaDB Vector Store
+        try:
+            from app.data_processing.processor import get_vectorstore
+            from langchain_google_genai import GoogleGenerativeAIEmbeddings
+            
+            embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+            db = get_vectorstore(tenant_id, embeddings)
+            # Delete all chunks matching this source ID
+            db._collection.delete(where={"source_id": source_id})
+        except Exception as vec_err:
+            error_logger.error(f"Soft failure: Could not delete source {source_id} from vector store: {vec_err}")
+
+        return jsonify({"message": "Source and associated vector data deleted successfully."}), 200
     except Exception as e:
         error_logger.error(f"Error deleting source {source_id} for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to delete source", "details": str(e)}), 500

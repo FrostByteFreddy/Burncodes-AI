@@ -82,10 +82,12 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         # --- Build Chains ---
         chat_history = [HumanMessage(content=msg['content']) if msg['type'] == 'human' else AIMessage(content=msg['content']) for msg in chat_history_json]
 
-        # Strip leading AIMessages (e.g. the intro greeting) — Gemini requires
-        # the first message after a SystemMessage to be a HumanMessage.
-        while chat_history and isinstance(chat_history[0], AIMessage):
-            chat_history.pop(0)
+        # Strip leading AIMessages (e.g. the intro greeting) for Gemini ONLY — Gemini requires
+        # the first message after a SystemMessage to be a HumanMessage. We use a copy of the
+        # list so we don't drop the intro_message from the history returned to the frontend.
+        gemini_history = list(chat_history)
+        while gemini_history and isinstance(gemini_history[0], AIMessage):
+            gemini_history.pop(0)
 
         # Select the rephrase prompt based on the translation target
         rephrase_prompt_tuple = REPHRASE_PROMPTS.get(translation_target, REPHRASE_PROMPTS['en'])
@@ -128,7 +130,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         conversational_rag_chain = create_retrieval_chain(history_aware_retriever_chain, document_chain)
 
         # --- Invoke Chain ---
-        response = conversational_rag_chain.invoke({"chat_history": chat_history, "input": query})
+        response = conversational_rag_chain.invoke({"chat_history": gemini_history, "input": query})
         ai_message = response["answer"]
 
         # --- Calculate Usage and Deduct Cost ---

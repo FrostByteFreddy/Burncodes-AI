@@ -547,12 +547,14 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
 
         async def crawl_and_close():
             nonlocal crawl_result
-            await crawler.start()
-            try:
-                # Pass the dynamic headers and config directly to the arun method.
+            # Add a random launch stagger (jitter) between 0.1 and 3.0 seconds. 
+            # When Celery picks up 12 tasks simultaneously, this staggers the massive 
+            # CPU/Memory spike of creating 12 Chrome processes at the exact same millisecond.
+            import random
+            await asyncio.sleep(random.uniform(0.5, 5.0))
+            
+            async with AsyncWebCrawler(config=dynamic_run_config) as crawler:
                 crawl_result = await crawler.arun(url=url, config=dynamic_run_config, headers=headers)
-            finally:
-                await crawler.close()
 
         try:
             # Use asyncio.wait_for to enforce a timeout on the entire crawl and close operation
