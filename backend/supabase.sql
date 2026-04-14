@@ -291,5 +291,39 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================================================
+-- Analytics Aggregation Function (RPC)
+-- ============================================================================
+
+-- Aggregate chat_logs into time buckets server-side.
+-- p_interval: 'minute', '5 minutes', '1 hour', '1 day'
+CREATE OR REPLACE FUNCTION analytics_time_buckets(
+    p_tenant_id UUID,
+    p_start_time TIMESTAMPTZ,
+    p_interval TEXT DEFAULT '1 hour'
+)
+RETURNS TABLE(time_bucket TIMESTAMPTZ, message_count BIGINT) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        date_trunc(
+            CASE
+                WHEN p_interval = 'minute' THEN 'minute'
+                WHEN p_interval = '5 minutes' THEN 'hour'
+                WHEN p_interval = '1 hour' THEN 'hour'
+                WHEN p_interval = '1 day' THEN 'day'
+                ELSE 'hour'
+            END,
+            cl.created_at
+        ) AS time_bucket,
+        COUNT(*)::BIGINT AS message_count
+    FROM chat_logs cl
+    WHERE cl.tenant_id = p_tenant_id
+      AND cl.created_at >= p_start_time
+    GROUP BY 1
+    ORDER BY 1;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================================
 -- Setup Complete
 -- ============================================================================
