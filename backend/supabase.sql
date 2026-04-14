@@ -248,5 +248,48 @@ ADD COLUMN IF NOT EXISTS cost_chf DECIMAL(10, 6);
 
 
 -- ============================================================================
+-- Atomic Balance Functions (RPC)
+-- ============================================================================
+
+-- Atomically deduct from balance. Returns the new balance.
+-- Returns -1 if the user does not exist.
+CREATE OR REPLACE FUNCTION deduct_balance(p_user_id UUID, p_amount DECIMAL)
+RETURNS DECIMAL AS $$
+DECLARE
+    v_new_balance DECIMAL;
+BEGIN
+    UPDATE user_billing
+    SET balance_chf = balance_chf - p_amount,
+        updated_at = NOW()
+    WHERE user_id = p_user_id
+    RETURNING balance_chf INTO v_new_balance;
+
+    IF NOT FOUND THEN
+        RETURN -1;
+    END IF;
+
+    RETURN v_new_balance;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Atomically credit balance. Returns the new balance.
+-- Creates the row if it doesn't exist (upsert).
+CREATE OR REPLACE FUNCTION credit_balance(p_user_id UUID, p_amount DECIMAL)
+RETURNS DECIMAL AS $$
+DECLARE
+    v_new_balance DECIMAL;
+BEGIN
+    INSERT INTO user_billing (user_id, balance_chf, updated_at)
+    VALUES (p_user_id, p_amount, NOW())
+    ON CONFLICT (user_id) DO UPDATE
+    SET balance_chf = user_billing.balance_chf + p_amount,
+        updated_at = NOW()
+    RETURNING balance_chf INTO v_new_balance;
+
+    RETURN v_new_balance;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================================
 -- Setup Complete
 -- ============================================================================
