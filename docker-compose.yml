@@ -25,6 +25,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     command: celery -A celery_worker.celery worker --loglevel=info
+    shm_size: '2gb'
     volumes:
       - backend_data:/app/data
     env_file:
