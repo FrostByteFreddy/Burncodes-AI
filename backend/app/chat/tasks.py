@@ -19,6 +19,11 @@ from app.prompts import REPHRASE_PROMPTS, FINE_TUNE_RULE_PROMPTS
 
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
 
+# --- Shared LLM Clients (reused across Celery tasks) ---
+_embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+_answer_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.2, convert_system_message_to_human=True)
+_query_rewrite_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0, convert_system_message_to_human=True)
+
 
 class TokenUsageCallback(BaseCallbackHandler):
     """Callback handler that captures token usage from LLM responses."""
@@ -42,11 +47,11 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
     """
     try:
         
-        # --- Init client ---
+        # --- Per-task token callback (not shared) ---
         token_cb = TokenUsageCallback()
-        embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
-        answer_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.2, convert_system_message_to_human=True, callbacks=[token_cb])
-        query_rewrite_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0, convert_system_message_to_human=True, callbacks=[token_cb])
+        embeddings = _embeddings
+        answer_llm = _answer_llm.with_config(callbacks=[token_cb])
+        query_rewrite_llm = _query_rewrite_llm.with_config(callbacks=[token_cb])
 
         # --- Get Tenant Info ---
         tenant_response = supabase.table('tenants').select("*").eq('id', str(tenant_id)).single().execute()
