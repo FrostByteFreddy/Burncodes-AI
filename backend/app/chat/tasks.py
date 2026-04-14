@@ -17,12 +17,12 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.callbacks import BaseCallbackHandler
 from app.prompts import REPHRASE_PROMPTS, FINE_TUNE_RULE_PROMPTS
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+CHAT_GEMINI_MODEL = os.getenv("CHAT_GEMINI_MODEL")
 
 # --- Shared LLM Clients (reused across Celery tasks) ---
 _embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
-_answer_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.2, convert_system_message_to_human=True)
-_query_rewrite_llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0, convert_system_message_to_human=True)
+_answer_llm = ChatGoogleGenerativeAI(model=CHAT_GEMINI_MODEL, temperature=0.2, convert_system_message_to_human=True)
+_query_rewrite_llm = ChatGoogleGenerativeAI(model=CHAT_GEMINI_MODEL, temperature=0, convert_system_message_to_human=True)
 
 
 class TokenUsageCallback(BaseCallbackHandler):
@@ -82,10 +82,12 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         # --- Build Chains ---
         chat_history = [HumanMessage(content=msg['content']) if msg['type'] == 'human' else AIMessage(content=msg['content']) for msg in chat_history_json]
 
-        # Strip leading AIMessages (e.g. the intro greeting) — Gemini requires
-        # the first message after a SystemMessage to be a HumanMessage.
-        while chat_history and isinstance(chat_history[0], AIMessage):
-            chat_history.pop(0)
+        # Strip leading AIMessages (e.g. the intro greeting) for Gemini ONLY — Gemini requires
+        # the first message after a SystemMessage to be a HumanMessage. We use a copy of the
+        # list so we don't drop the intro_message from the history returned to the frontend.
+        gemini_history = list(chat_history)
+        while gemini_history and isinstance(gemini_history[0], AIMessage):
+            gemini_history.pop(0)
 
         # Select the rephrase prompt based on the translation target
         rephrase_prompt_tuple = REPHRASE_PROMPTS.get(translation_target, REPHRASE_PROMPTS['en'])
@@ -128,7 +130,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         conversational_rag_chain = create_retrieval_chain(history_aware_retriever_chain, document_chain)
 
         # --- Invoke Chain ---
-        response = conversational_rag_chain.invoke({"chat_history": chat_history, "input": query})
+        response = conversational_rag_chain.invoke({"chat_history": gemini_history, "input": query})
         ai_message = response["answer"]
 
         # --- Calculate Usage and Deduct Cost ---
@@ -145,7 +147,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         
         cost = 0.0
         if user_id:
-             cost = BillingService.deduct_cost(user_id, GEMINI_MODEL, input_tokens, output_tokens)
+             cost = BillingService.deduct_cost(user_id, CHAT_GEMINI_MODEL, input_tokens, output_tokens)
 
         # --- Log Chat to Database ---
         try:
@@ -154,7 +156,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
                 'conversation_id': conversation_id,
                 'user_message': query,
                 'ai_message': ai_message,
-                'model_used': GEMINI_MODEL,
+                'model_used': CHAT_GEMINI_MODEL,
                 'input_tokens': input_tokens,
                 'output_tokens': output_tokens,
                 'cost_chf': cost

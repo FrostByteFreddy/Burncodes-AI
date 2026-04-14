@@ -1,55 +1,73 @@
 <template>
-  <h1 class="text-2xl font-bold mb-6">{{ $t("chatLogs.title") }}</h1>
+  <div>
+    <div class="flex justify-between items-center mb-8 border-b border-base-200/50 pb-6">
+      <h3 class="text-2xl font-bold text-base-content flex items-center">
+        <font-awesome-icon
+          :icon="['fas', 'comments']"
+          class="mr-3 text-primary"
+        />
+        {{ $t("chatLogs.title") }}
+      </h3>
+    </div>
 
-  <div v-if="isLoading" class="flex justify-center items-center h-64">
-    <span class="loading loading-spinner loading-lg"></span>
-  </div>
-  <div v-else-if="error" class="text-error">{{ error }}</div>
-
-  <div v-else>
-    <div v-if="selectedConversation">
-      <button @click="selectedConversation = null" class="btn btn-ghost btn-sm mb-4 -ml-2">
-        <font-awesome-icon :icon="['fas', 'arrow-left']" class="mr-2" />
-        {{ $t("chatLogs.back") }}
-      </button>
-
-      <div ref="chatContainer" class="max-h-[70vh] overflow-y-auto space-y-4">
-        <div v-for="log in conversationLogs" :key="log.id">
-          <div v-if="log.user_message" class="chat chat-end">
-            <div class="chat-bubble chat-bubble-primary">{{ log.user_message }}</div>
-          </div>
-          <div v-if="log.ai_message" class="chat chat-start">
-            <div class="chat-bubble chat-bubble-secondary prose max-w-none"
-                 v-html="processBotMessage(log.ai_message).html"></div>
-          </div>
-        </div>
+    <div v-if="isLoading" class="flex justify-center items-center h-80 bg-base-100 rounded-xl border border-base-200/50 shadow-sm animate-pulse">
+      <span class="loading loading-spinner text-primary loading-lg"></span>
+    </div>
+    
+    <div v-else-if="error" class="flex justify-center items-center h-80 bg-error/10 text-error rounded-xl border border-error/20 p-6">
+      <div class="text-center">
+        <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-4xl mb-3" />
+        <p class="font-bold text-lg">{{ error }}</p>
       </div>
     </div>
 
     <div v-else>
-      <div class="border-t border-base-200">
-        <div
-          v-for="convo in conversations"
-          :key="convo.conversation_id"
-          @click="selectConversation(convo.conversation_id)"
-          class="flex items-center justify-between py-4 border-b border-base-200 cursor-pointer hover:bg-base-200/50 px-2 rounded transition-colors"
-        >
-          <div class="min-w-0 flex-1">
-            <p class="font-semibold truncate">{{ convo.first_message || $t("chatLogs.noMessage") }}</p>
-            <div class="flex gap-4 text-sm text-base-content/60 mt-0.5">
-              <span class="flex items-center gap-1">
-                <font-awesome-icon :icon="['fas', 'comments']" class="text-xs" />
-                {{ convo.message_count }}
-              </span>
-              <span class="flex items-center gap-1">
-                <font-awesome-icon :icon="['fas', 'coins']" class="text-xs" />
-                CHF {{ (convo.total_cost || 0).toFixed(4) }}
-              </span>
+      <div v-if="selectedConversation" class="bg-base-100 rounded-xl p-6 shadow-sm border border-base-200/50">
+        <button @click="selectedConversation = null" class="btn btn-ghost rounded-xl px-4 hover:bg-base-200 transition-colors mb-6">
+          <font-awesome-icon :icon="['fas', 'arrow-left']" class="mr-2" />
+          {{ $t("chatLogs.back") }}
+        </button>
+
+        <div ref="chatContainer" class="max-h-[60vh] overflow-y-auto space-y-6 px-2 scroll-smooth">
+          <div v-for="log in conversationLogs" :key="log.id">
+            <div v-if="log.user_message" class="chat chat-end">
+              <div class="chat-bubble bg-gradient-to-r from-primary to-secondary text-primary-content shadow-md">{{ log.user_message }}</div>
+            </div>
+            <div v-if="log.ai_message" class="chat chat-start">
+              <div class="chat-bubble bg-base-200 text-base-content shadow-sm prose max-w-none text-sm leading-relaxed"
+                   v-html="processBotMessage(log.ai_message).html"></div>
             </div>
           </div>
-          <div class="flex items-center gap-3 ml-4 shrink-0">
-            <span class="text-xs text-base-content/50">{{ new Date(convo.last_active).toLocaleString() }}</span>
-            <font-awesome-icon :icon="['fas', 'chevron-right']" class="text-base-content/30 w-4 h-4" />
+        </div>
+      </div>
+
+      <div v-else class="bg-base-100 rounded-xl shadow-sm border border-base-200/50 overflow-hidden">
+        <div class="divide-y divide-base-200/50">
+          <div
+            v-for="convo in conversations"
+            :key="convo.conversation_id"
+            @click="selectConversation(convo.conversation_id)"
+            class="flex items-center justify-between p-6 cursor-pointer hover:bg-base-200/30 transition-all duration-300 group"
+          >
+            <div class="min-w-0 flex-1">
+              <p class="font-bold text-lg text-base-content truncate group-hover:text-primary transition-colors pb-1">{{ convo.first_message || $t("chatLogs.noMessage") }}</p>
+              <div class="flex gap-6 mt-2">
+                <span class="flex items-center gap-2 text-sm font-medium text-base-content/60 bg-base-200 px-3 py-1 rounded-full">
+                  <font-awesome-icon :icon="['fas', 'comments']" class="text-primary/70" />
+                  {{ convo.message_count }} Messages
+                </span>
+                <span class="flex items-center gap-2 text-sm font-medium text-base-content/60 bg-base-200 px-3 py-1 rounded-full">
+                  <font-awesome-icon :icon="['fas', 'coins']" class="text-warning/70" />
+                  CHF {{ (convo.total_cost || 0).toFixed(4) }}
+                </span>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 ml-6 shrink-0">
+              <span class="text-sm font-semibold text-base-content/40 bg-base-200/50 px-3 py-1 rounded-lg">{{ new Date(convo.last_active).toLocaleString() }}</span>
+              <div class="w-10 h-10 rounded-full bg-base-200 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-content transition-colors">
+                <font-awesome-icon :icon="['fas', 'chevron-right']" class="w-4 h-4" />
+              </div>
+            </div>
           </div>
         </div>
       </div>

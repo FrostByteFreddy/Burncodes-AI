@@ -9,7 +9,7 @@ from urllib.parse import urlparse, urldefrag
 from uuid import UUID
 
 from celery import shared_task
-from app.database.supabase_client import supabase, bucket_name
+from app.database.supabase_client import supabase
 from app.data_processing.processor import get_vectorstore, get_loader, process_documents, SUPPORTED_FILE_EXTENSIONS
 from app.data_processing.crawler import get_crawler
 from app.data_processing.config import MAX_CONCURRENT_CRAWLS_PER_JOB
@@ -207,17 +207,16 @@ async def async_create_document_chunks_for_pdf(content: str, source: str, source
         
         full_cleaned_content = "\n\n---CHUNK_SEPARATOR---\n\n".join(cleaned_chunks)
 
-        # 3. Upload readme to S3 (instead of DB)
-        # Path: /tenant-id/readme_output/filename.md
+        # 3. Save readme to local storage
+        # Path: /app/data/uploads/{tenant-id}/readme_output/filename.md
         filename_stem = os.path.splitext(os.path.basename(source))[0]
-        s3_readme_path = f"{tenant_id}/readme_output/{filename_stem}.md"
+        readme_dir = os.path.join(os.environ.get("UPLOADS_DIR", "/app/data/uploads"), str(tenant_id), "readme_output")
+        os.makedirs(readme_dir, exist_ok=True)
+        readme_path = os.path.join(readme_dir, f"{filename_stem}.md")
         
-        error_logger.info("Uploading cleaned readme to S3: %s", s3_readme_path)
-        await loop.run_in_executor(None, lambda: supabase.storage.from_(bucket_name).upload(
-            path=s3_readme_path,
-            file=full_cleaned_content.encode('utf-8'),
-            file_options={"content-type": "text/markdown", "upsert": "true"}
-        ))
+        error_logger.info("Saving cleaned readme to: %s", readme_path)
+        with open(readme_path, 'w', encoding='utf-8') as f:
+            f.write(full_cleaned_content)
 
         # 4. Split the CLEANED content into chunks using the separator
         chunks = [chunk.strip() for chunk in full_cleaned_content.split("---CHUNK_SEPARATOR---") if chunk.strip()]
@@ -251,32 +250,23 @@ async def _get_document_chunks_from_content(content: str, source: str, source_id
         return await async_create_document_chunks_with_metadata(content, source, source_id, tenant_id)
 
 @shared_task
-def process_s3_file(s3_path: str, source_filename: str, source_id: int, tenant_id: UUID):
-    """Celery task to process a file stored in Supabase S3."""
+def process_local_file(file_path: str, source_filename: str, source_id: int, tenant_id: UUID):
+    """Celery task to process a file stored on the local filesystem."""
     embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
-    docs = asyncio.run(async_process_s3_file(s3_path, source_filename, source_id, tenant_id))
+    docs = asyncio.run(async_process_local_file(file_path, source_filename, source_id, tenant_id))
     process_documents(docs, tenant_id, embeddings)
-    # The temporary file is handled within async_process_s3_file, so no need to remove it here.
 
-async def async_process_s3_file(s3_path: str, source_filename: str, source_id: int, tenant_id: UUID) -> list[Document]:
+async def async_process_local_file(file_path: str, source_filename: str, source_id: int, tenant_id: UUID) -> list[Document]:
     """
-    Downloads a file from S3, processes it into document chunks, and cleans up the temporary file.
+    Reads a file from local storage, processes it into document chunks.
     """
     ext = os.path.splitext(source_filename)[1].lower()
-    tmp_filepath = None
     try:
-        # Download file from S3
-        file_content = supabase.storage.from_(bucket_name).download(s3_path)
-        if file_content is None:
-            raise FileNotFoundError(f"File not found in S3 at path: {s3_path}")
-
-        # Create a temporary file to store the content
-        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp_file:
-            tmp_file.write(file_content)
-            tmp_filepath = tmp_file.name
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found at path: {file_path}")
 
         # Get the appropriate loader for the file extension
-        loader = get_loader(tmp_filepath)
+        loader = get_loader(file_path)
         if not loader:
             error_logger.warning("No loader found for extension %s, skipping file %s", ext, source_filename)
             return []
@@ -291,20 +281,11 @@ async def async_process_s3_file(s3_path: str, source_filename: str, source_id: i
         return await _get_document_chunks_from_content(content, source_filename, source_id, ext, tenant_id)
 
     except Exception as e:
-        error_logger.error("Error processing S3 file %s: %s", s3_path, e, exc_info=True)
+        error_logger.error("Error processing local file %s: %s", file_path, e, exc_info=True)
         # Mark the source as errored
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
         return []
-    finally:
-        # Clean up the temporary file
-        if tmp_filepath and os.path.exists(tmp_filepath):
-            os.remove(tmp_filepath)
-        # Clean up the S3 file after processing, regardless of success or failure
-        # try:
-        #     supabase.storage.from_(bucket_name).remove([s3_path])
-        # except Exception as e:
-        #     print(f"Failed to remove S3 file {s3_path} after processing: {e}")
 
 @shared_task
 def process_urls(urls: list[tuple[str, int]], tenant_id: UUID):
@@ -348,8 +329,19 @@ async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]], t
     try:
         async def process_single_result(result, source_id, tenant_id):
             async with semaphore:
+                status_code = getattr(result, 'status_code', None)
                 if result.success and result.markdown:
+                    # Update status_code for successful fetches
+                    loop = asyncio.get_running_loop()
+                    await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status_code": status_code}).eq('id', source_id).execute())
                     return await async_create_document_chunks_with_metadata(result.markdown, result.url, source_id, tenant_id)
+                else:
+                    # Mark as error immediately without hitting LLM
+                    loop = asyncio.get_running_loop()
+                    await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({
+                        "status": "ERROR",
+                        "status_code": status_code if status_code else 500
+                    }).eq('id', source_id).execute())
             return []
 
         url_to_source_id = {url: source_id for url, source_id in urls_to_process}
@@ -476,15 +468,20 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         # 1. Normalize the URL that is being crawled
         normalized_url = normalize_url(url)
 
-        # 2. Normalize the list of URLs to exclude
-        normalized_excluded_list = [normalize_url(str(ex_url)) for ex_url in excluded_urls]
+        # 2. Normalize the list of URLs to exclude (handling stray spaces, newlines, and \r)
+        normalized_excluded_list = [normalize_url(str(ex_url).strip()) for ex_url in excluded_urls]
         
-        error_logger.debug("Checking exclusion for %s", normalized_url)
+        error_logger.debug("Checking exclusion for %s against %s", normalized_url, normalized_excluded_list)
 
-        # 3. Perform the check with the normalized values
+        # 3. Perform the check with the normalized values (and be highly permissive about matches)
         is_excluded = False
         for excluded in normalized_excluded_list:
-            if normalized_url == excluded or normalized_url.startswith(excluded + '/'):
+            if not excluded:
+                continue
+            # Strip protocols for a bulletproof substring check (covers subdomains nicely)
+            stripped_ex = excluded.replace('https://', '').replace('http://', '').strip('/')
+            stripped_url = normalized_url.replace('https://', '').replace('http://', '').strip('/')
+            if stripped_ex and (stripped_ex == stripped_url or stripped_url.startswith(stripped_ex + '/')):
                 is_excluded = True
                 break
 
@@ -495,6 +492,28 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
 
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.IN_PROGRESS.value}).eq('id', task_id).execute()
         error_logger.info("Crawling URL: %s at depth %s", url, depth)
+
+        # FAST FAIL CHECK: Check if the URL is broken before spinning up the headless browser
+        try:
+            # Quick lightweight check to see if page actually exists
+            with httpx.Client(timeout=10.0, follow_redirects=True) as client:
+                fast_check = client.get(url, headers={"User-Agent": "Mozilla/5.0 (compatible; SwiftAnswerBot/1.0)"})
+                # if the page clearly 404s or 500s, we fail immediately to save tokens and browser time.
+                # Note: We give 403s the benefit of the doubt, as the headless browser might bypass cloudflare.
+                if fast_check.status_code == 404 or fast_check.status_code >= 500:
+                    error_logger.info(f"Fast fail for {url} with status {fast_check.status_code}")
+                    supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
+                    source_data = {
+                        "tenant_id": str(tenant_id),
+                        "source_type": "URL",
+                        "source_location": url,
+                        "status": "ERROR",
+                        "status_code": fast_check.status_code
+                    }
+                    supabase.table('tenant_sources').insert(source_data).execute()
+                    return
+        except Exception as e:
+            error_logger.warning("Fast check failed for %s, falling back to crawler: %s", url, e)
 
         # The user agent is randomized by the BrowserConfig.
         # We dynamically add the Referer header for each request if a parent URL exists.
@@ -528,12 +547,14 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
 
         async def crawl_and_close():
             nonlocal crawl_result
-            await crawler.start()
-            try:
-                # Pass the dynamic headers and config directly to the arun method.
+            # Add a random launch stagger (jitter) between 0.1 and 3.0 seconds. 
+            # When Celery picks up 12 tasks simultaneously, this staggers the massive 
+            # CPU/Memory spike of creating 12 Chrome processes at the exact same millisecond.
+            import random
+            await asyncio.sleep(random.uniform(0.5, 5.0))
+            
+            async with AsyncWebCrawler(config=dynamic_run_config) as crawler:
                 crawl_result = await crawler.arun(url=url, config=dynamic_run_config, headers=headers)
-            finally:
-                await crawler.close()
 
         try:
             # Use asyncio.wait_for to enforce a timeout on the entire crawl and close operation
@@ -541,16 +562,27 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         except asyncio.TimeoutError:
             error_logger.error("Timeout loading page %s", url)
             supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
+            source_data = {
+                "tenant_id": str(tenant_id),
+                "source_type": "URL",
+                "source_location": url,
+                "status": "ERROR",
+                "status_code": 408
+            }
+            supabase.table('tenant_sources').insert(source_data).execute()
             return
 
         # --- Step 2: Process the content ---
         found_links = set()
+        status_code = getattr(crawl_result, 'status_code', None) if crawl_result else None
+
         if crawl_result and crawl_result.success and crawl_result.markdown:
             source_data = {
                 "tenant_id": str(tenant_id),
                 "source_type": "URL",
                 "source_location": url,
-                "status": "PROCESSING"
+                "status": "PROCESSING",
+                "status_code": status_code
             }
             source_response = supabase.table('tenant_sources').insert(source_data).execute()
             source_id = source_response.data[0]['id']
@@ -566,12 +598,25 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
                 # Check exclusion again to be safe
                 is_excluded_link = False
                 for excluded in normalized_excluded_list:
-                     if href == excluded or href.startswith(excluded + '/'):
+                     if not excluded:
+                         continue
+                     stripped_ex = excluded.replace('https://', '').replace('http://', '').strip('/')
+                     stripped_url = href.replace('https://', '').replace('http://', '').strip('/')
+                     if stripped_ex and (stripped_ex == stripped_url or stripped_url.startswith(stripped_ex + '/')):
                         is_excluded_link = True
                         break
                 
                 if not is_excluded_link:
                     found_links.add(href)
+        else:
+            source_data = {
+                "tenant_id": str(tenant_id),
+                "source_type": "URL",
+                "source_location": url,
+                "status": "ERROR",
+                "status_code": status_code if status_code else 500
+            }
+            supabase.table('tenant_sources').insert(source_data).execute()
 
         # --- Step 3: Discover and save new links ---
         if depth < max_depth:

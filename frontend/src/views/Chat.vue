@@ -119,16 +119,14 @@ const fetchIntroMessage = async () => {
   }
 };
 
-const activePollingTimeout = ref(null);
+const activeAbortController = ref(null);
 
 const pollTaskStatus = (taskId) => {
-  let attempts = 0;
-  const MAX_ATTEMPTS = 120; // 2 minutes max
+  let retries = 0;
+  const MAX_RETRIES = 4; // 4 × 25s = ~2 minutes max
 
-  const poll = async () => {
-    attempts++;
-    if (attempts > MAX_ATTEMPTS) {
-      activePollingTimeout.value = null;
+  const longPoll = async () => {
+    if (retries >= MAX_RETRIES) {
       isThinking.value = false;
       const { text, html } = processBotMessage(t("chat.errors.taskStatus"));
       chatHistory.value.push({ text, html, isUser: false });
@@ -137,14 +135,19 @@ const pollTaskStatus = (taskId) => {
       return;
     }
 
+    retries++;
+    const controller = new AbortController();
+    activeAbortController.value = controller;
+
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/chat/task/${taskId}/status`
+        `${API_BASE_URL}/chat/task/${taskId}/status?timeout=25`,
+        { signal: controller.signal, timeout: 30000 }
       );
       const { state: task_status, result: task_result } = response.data;
 
       if (task_status === "SUCCESS") {
-        activePollingTimeout.value = null;
+        activeAbortController.value = null;
         isThinking.value = false;
         await scrollToBottom();
 
@@ -192,9 +195,9 @@ const pollTaskStatus = (taskId) => {
           saveChatSession(chatHistory.value, conversationId.value);
           await scrollToBottom();
         }
-        return; // Done — don't schedule next poll
+        return;
       } else if (task_status === "FAILURE") {
-        activePollingTimeout.value = null;
+        activeAbortController.value = null;
         const errorMsg = `${t("chat.errors.processingFailed")} ${
           task_result?.exc_message || ""
         }`;
@@ -203,14 +206,14 @@ const pollTaskStatus = (taskId) => {
         saveChatSession(chatHistory.value, conversationId.value);
         isThinking.value = false;
         await scrollToBottom();
-        return; // Done
+        return;
       }
 
-      // Still pending — schedule next poll with slight backoff
-      const nextDelay = Math.min(1000 + attempts * 100, 3000);
-      activePollingTimeout.value = setTimeout(poll, nextDelay);
+      // Still pending after timeout — retry long poll
+      await longPoll();
     } catch (error) {
-      activePollingTimeout.value = null;
+      if (axios.isCancel(error)) return; // Component unmounted
+      activeAbortController.value = null;
       const errorMsg = t("chat.errors.taskStatus");
       const { text, html } = processBotMessage(errorMsg);
       chatHistory.value.push({ text, html, isUser: false });
@@ -220,13 +223,13 @@ const pollTaskStatus = (taskId) => {
     }
   };
 
-  poll();
+  longPoll();
 };
 
 onUnmounted(() => {
-  if (activePollingTimeout.value) {
-    clearTimeout(activePollingTimeout.value);
-    activePollingTimeout.value = null;
+  if (activeAbortController.value) {
+    activeAbortController.value.abort();
+    activeAbortController.value = null;
   }
 });
 

@@ -55,16 +55,23 @@ def handle_chat(tenant_id):
 @chat_bp.route('/task/<string:task_id>/status', methods=['GET'])
 def get_task_status(task_id):
     task = AsyncResult(task_id)
+    timeout = min(int(request.args.get('timeout', 25)), 30)  # cap at 30s
+
+    # Long poll: hold the connection until the task finishes or we time out
+    import time
+    deadline = time.time() + timeout
+    while not task.ready() and time.time() < deadline:
+        time.sleep(0.5)
+
     response = {
         "task_id": task_id,
         "state": task.state,
     }
     if task.state == 'FAILURE':
-        response['result'] = str(task.info)  # Convert exception to string
+        response['result'] = str(task.info)
     elif task.state == 'SUCCESS':
         response['result'] = task.result
     else:
-        # For PENDING or other states, info might be a string or dict
         response['result'] = str(task.info)
     return jsonify(response)
 

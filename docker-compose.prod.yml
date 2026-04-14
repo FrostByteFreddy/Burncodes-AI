@@ -13,6 +13,7 @@ services:
     restart: always
     volumes:
       - app_data:/app/data
+      - uploads:/app/data/uploads
     env_file:
       - .env
     depends_on:
@@ -26,6 +27,7 @@ services:
     restart: always
     volumes:
       - app_data:/app/data
+      - uploads:/app/data/uploads
     env_file:
       - .env
     depends_on:
@@ -71,3 +73,4 @@ services:
 
 volumes:
   app_data:
+  uploads:

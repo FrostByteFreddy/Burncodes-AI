@@ -1,10 +1,13 @@
 from flask import Blueprint, request, jsonify
-from app.database.supabase_client import supabase, bucket_name
+from app.database.supabase_client import supabase
 from app.auth.decorators import token_required
 from app.models.database import SourceType
-from app.data_processing.tasks import process_s3_file, process_urls, crawl_links_task
+from app.data_processing.tasks import process_local_file, process_urls, crawl_links_task
 from app.logging_config import error_logger
 from app import celery
+import os
+
+UPLOADS_DIR = os.environ.get("UPLOADS_DIR", "/app/data/uploads")
 
 sources_bp = Blueprint('sources', __name__)
 
@@ -36,27 +39,28 @@ def upload_source(current_user, tenant_id):
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
-    s3_path = f"{tenant_id_str}/{file.filename}"
-    try:
-        supabase.storage.from_(bucket_name).upload(
-            path=s3_path,
-            file=file.read(),
-            file_options={"content-type": file.content_type}
-        )
+    # Save to local filesystem: /app/data/uploads/{tenant_id}/{filename}
+    tenant_upload_dir = os.path.join(UPLOADS_DIR, tenant_id_str)
+    os.makedirs(tenant_upload_dir, exist_ok=True)
+    local_path = os.path.join(tenant_upload_dir, file.filename)
 
-        source_data = {"tenant_id": tenant_id_str, "source_type": SourceType.FILE, "source_location": s3_path, "status": "QUEUED"}
+    try:
+        file.save(local_path)
+
+        source_data = {"tenant_id": tenant_id_str, "source_type": SourceType.FILE, "source_location": local_path, "status": "QUEUED"}
         source_record = supabase.table('tenant_sources').insert(source_data).execute()
         source_id = source_record.data[0]['id']
 
-        task = process_s3_file.delay(s3_path, file.filename, source_id, tenant_id_str)
+        task = process_local_file.delay(local_path, file.filename, source_id, tenant_id_str)
 
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
         error_logger.error(f"Error processing file upload for tenant {tenant_id_str}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         try:
-            supabase.storage.from_(bucket_name).remove([s3_path])
+            if os.path.exists(local_path):
+                os.remove(local_path)
         except Exception as cleanup_e:
-            error_logger.error(f"Failed to clean up S3 file {s3_path} after an error: {cleanup_e}", extra={'user_id': current_user.id})
+            error_logger.error(f"Failed to clean up file {local_path} after an error: {cleanup_e}", extra={'user_id': current_user.id})
         return jsonify({"error": f"Failed to process file: {str(e)}"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/sources/crawl', methods=['POST'])
@@ -181,7 +185,20 @@ def delete_source(current_user, tenant_id, source_id):
             return jsonify({"error": "Source not found or access denied"}), 404
 
         supabase.table('tenant_sources').delete().eq('id', source_id).execute()
-        return jsonify({"message": "Source deleted successfully. Note: Vector data may still exist and will be cleaned up later."}), 200
+        
+        # Attempt to delete from ChromaDB Vector Store
+        try:
+            from app.data_processing.processor import get_vectorstore
+            from langchain_google_genai import GoogleGenerativeAIEmbeddings
+            
+            embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+            db = get_vectorstore(tenant_id, embeddings)
+            # Delete all chunks matching this source ID
+            db._collection.delete(where={"source_id": source_id})
+        except Exception as vec_err:
+            error_logger.error(f"Soft failure: Could not delete source {source_id} from vector store: {vec_err}")
+
+        return jsonify({"message": "Source and associated vector data deleted successfully."}), 200
     except Exception as e:
         error_logger.error(f"Error deleting source {source_id} for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to delete source", "details": str(e)}), 500
