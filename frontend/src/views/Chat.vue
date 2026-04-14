@@ -51,43 +51,29 @@ const chatContainer = ref(null);
 const conversationId = ref(uuidv4());
 const isWidget = ref("widget" in route.query);
 
-// --- Cookie Management for Chat History ---
-const CHAT_COOKIE_KEY = `chatSession_${tenantId.value}`;
+// --- Session Storage for Chat History ---
+const STORAGE_KEY = `chatSession_${tenantId.value}`;
 
-const saveChatToCookie = (history, convId) => {
+const saveChatSession = (history, convId) => {
   if (!history || history.length === 0) {
-    document.cookie = `${CHAT_COOKIE_KEY}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    sessionStorage.removeItem(STORAGE_KEY);
     return;
   }
-  const sessionData = JSON.stringify({ history, conversationId: convId });
-  const d = new Date();
-  d.setTime(d.getTime() + 24 * 60 * 60 * 1000); // Expires in 1 day
-  let expires = "expires=" + d.toUTCString();
-  document.cookie = `${CHAT_COOKIE_KEY}=${encodeURIComponent(
-    sessionData
-  )};${expires};path=/;SameSite=Lax`;
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ history, conversationId: convId }));
+  } catch (e) {
+    console.warn("Failed to save chat session:", e);
+  }
 };
 
-const loadChatFromCookie = () => {
-  const name = CHAT_COOKIE_KEY + "=";
-  const ca = document.cookie.split(";");
-  for (let i = 0; i < ca.length; i++) {
-    let c = ca[i];
-    while (c.charAt(0) === " ") {
-      c = c.substring(1);
-    }
-    if (c.indexOf(name) === 0) {
-      try {
-        return JSON.parse(
-          decodeURIComponent(c.substring(name.length, c.length))
-        );
-      } catch (e) {
-        console.error("Error parsing chat session from cookie:", e);
-        return null;
-      }
-    }
+const loadChatSession = () => {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    console.warn("Failed to load chat session:", e);
+    return null;
   }
-  return null;
 };
 
 const scrollToBottom = async () => {
@@ -119,14 +105,14 @@ const fetchIntroMessage = async () => {
     );
     const { text, html } = processBotMessage(response.data.intro_message);
     chatHistory.value.push({ text, html, isUser: false });
-    saveChatToCookie(chatHistory.value, conversationId.value);
+    saveChatSession(chatHistory.value, conversationId.value);
   } catch (error) {
     const errorMsg = `Error: ${
       error.response?.data?.error || t("chat.errors.initialMessage")
     }`;
     const { text, html } = processBotMessage(errorMsg);
     chatHistory.value.push({ text, html, isUser: false });
-    saveChatToCookie(chatHistory.value, conversationId.value);
+    saveChatSession(chatHistory.value, conversationId.value);
   } finally {
     isThinking.value = false;
     await scrollToBottom();
@@ -146,7 +132,7 @@ const pollTaskStatus = (taskId) => {
       isThinking.value = false;
       const { text, html } = processBotMessage(t("chat.errors.taskStatus"));
       chatHistory.value.push({ text, html, isUser: false });
-      saveChatToCookie(chatHistory.value, conversationId.value);
+      saveChatSession(chatHistory.value, conversationId.value);
       await scrollToBottom();
       return;
     }
@@ -194,7 +180,7 @@ const pollTaskStatus = (taskId) => {
             const delay = Math.random() * (10 - 5);
             await new Promise((resolve) => setTimeout(resolve, delay));
           }
-          saveChatToCookie(chatHistory.value, conversationId.value);
+          saveChatSession(chatHistory.value, conversationId.value);
         } else {
           chatHistory.value = fullHistory.map((msg) => {
             if (msg.type === "ai") {
@@ -203,7 +189,7 @@ const pollTaskStatus = (taskId) => {
             }
             return { text: msg.content, html: null, isUser: true };
           });
-          saveChatToCookie(chatHistory.value, conversationId.value);
+          saveChatSession(chatHistory.value, conversationId.value);
           await scrollToBottom();
         }
         return; // Done — don't schedule next poll
@@ -214,7 +200,7 @@ const pollTaskStatus = (taskId) => {
         }`;
         const { text, html } = processBotMessage(errorMsg);
         chatHistory.value.push({ text, html, isUser: false });
-        saveChatToCookie(chatHistory.value, conversationId.value);
+        saveChatSession(chatHistory.value, conversationId.value);
         isThinking.value = false;
         await scrollToBottom();
         return; // Done
@@ -228,7 +214,7 @@ const pollTaskStatus = (taskId) => {
       const errorMsg = t("chat.errors.taskStatus");
       const { text, html } = processBotMessage(errorMsg);
       chatHistory.value.push({ text, html, isUser: false });
-      saveChatToCookie(chatHistory.value, conversationId.value);
+      saveChatSession(chatHistory.value, conversationId.value);
       isThinking.value = false;
       await scrollToBottom();
     }
@@ -254,7 +240,7 @@ const sendMessage = async () => {
   }));
 
   chatHistory.value.push({ text: currentMessage, html: null, isUser: true });
-  saveChatToCookie(chatHistory.value, conversationId.value);
+  saveChatSession(chatHistory.value, conversationId.value);
   userMessage.value = "";
   isThinking.value = true;
   await scrollToBottom();
@@ -281,7 +267,7 @@ const sendMessage = async () => {
     }`;
     const { text, html } = processBotMessage(errorMsg);
     chatHistory.value.push({ text, html, isUser: false });
-    saveChatToCookie(chatHistory.value, conversationId.value);
+    saveChatSession(chatHistory.value, conversationId.value);
     isThinking.value = false;
     await scrollToBottom();
   }
@@ -290,13 +276,13 @@ const sendMessage = async () => {
 const resetChat = () => {
   chatHistory.value = [];
   conversationId.value = uuidv4();
-  saveChatToCookie([], null);
+  saveChatSession([], null);
   fetchIntroMessage();
 };
 
 onMounted(async () => {
   await fetchTenant();
-  const sessionData = loadChatFromCookie();
+  const sessionData = loadChatSession();
   if (sessionData && sessionData.history && sessionData.history.length > 0) {
     chatHistory.value = sessionData.history;
     conversationId.value = sessionData.conversationId || uuidv4();
