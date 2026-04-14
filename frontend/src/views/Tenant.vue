@@ -2,16 +2,16 @@
   <div>
     <div
       v-if="tenantsStore.currentTenant"
-      class="mb-8 pb-4 border-b border-base-300"
+      class="mb-8"
     >
-      <h1 class="text-3xl font-bold flex items-center">
-        <font-awesome-icon :icon="['fas', 'cogs']" class="mr-3 text-primary" />
+      <h1 class="text-4xl font-bold flex items-center text-base-content">
+        <font-awesome-icon :icon="['fas', 'cogs']" class="mr-3 text-primary opacity-80" />
         {{ tenantsStore.currentTenant.name }}
       </h1>
-      <p class="text-base-content/70 mt-1">{{ $t("tenant.subtitle") }}</p>
+      <p class="text-base-content/60 mt-2 text-lg">{{ $t("tenant.subtitle") }}</p>
     </div>
-    <div v-else-if="tenantsStore.loading" class="text-center p-10">
-      <p>{{ $t("tenant.loading") }}</p>
+    <div v-else-if="tenantsStore.loading" class="text-center p-10 text-base-content/60">
+      <p class="animate-pulse">{{ $t("tenant.loading") }}</p>
     </div>
     <main>
       <router-view />

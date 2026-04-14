@@ -1,38 +1,54 @@
 <template>
-  <h1 class="text-2xl font-bold mb-6">{{ $t("analytics.title") }}</h1>
-  <div class="flex justify-end gap-4 mb-4">
-    <select
-      v-model="selectedInterval"
-      @change="updateChart"
-      class="select select-bordered"
-    >
-      <option v-for="item in intervals" :key="item.value" :value="item.value">
-        {{ item.label }}
-      </option>
-    </select>
-    <select
-      v-model="selectedTimeframe"
-      @change="updateChart"
-      class="select select-bordered"
-    >
-      <option
-        v-for="frame in timeframes"
-        :key="frame.value"
-        :value="frame.value"
-      >
-        {{ frame.label }}
-      </option>
-    </select>
-  </div>
-  <div v-if="isLoading" class="flex justify-center items-center h-64">
-    <span class="loading loading-spinner loading-lg"></span>
-  </div>
-  <div v-else-if="error" class="text-error">
-    {{ $t("analytics.error") }}
-  </div>
-  <div v-else>
-    <div class="chart-container">
-      <Line :data="chartData" :options="chartOptions" />
+  <div>
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 border-b border-base-200/50 pb-6 gap-4">
+      <h3 class="text-2xl font-bold text-base-content flex items-center">
+        <font-awesome-icon
+          :icon="['fas', 'chart-line']"
+          class="mr-3 text-primary"
+        />
+        {{ $t("analytics.title") }}
+      </h3>
+      <div class="flex flex-wrap items-center gap-3">
+        <select
+          v-model="selectedInterval"
+          @change="updateChart"
+          class="select select-bordered rounded-xl bg-base-100 font-medium focus:ring-2 focus:ring-primary/50 transition-shadow border-base-200"
+        >
+          <option v-for="item in intervals" :key="item.value" :value="item.value">
+            {{ item.label }}
+          </option>
+        </select>
+        <select
+          v-model="selectedTimeframe"
+          @change="updateChart"
+          class="select select-bordered rounded-xl bg-base-100 font-medium focus:ring-2 focus:ring-primary/50 transition-shadow border-base-200"
+        >
+          <option
+            v-for="frame in timeframes"
+            :key="frame.value"
+            :value="frame.value"
+          >
+            {{ frame.label }}
+          </option>
+        </select>
+      </div>
+    </div>
+    
+    <div v-if="isLoading" class="flex justify-center items-center h-80 bg-base-100 rounded-xl border border-base-200/50 shadow-sm animate-pulse">
+      <span class="loading loading-spinner text-primary loading-lg"></span>
+    </div>
+    
+    <div v-else-if="error" class="flex justify-center items-center h-80 bg-error/10 text-error rounded-xl border border-error/20 p-6">
+      <div class="text-center">
+        <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-4xl mb-3" />
+        <p class="font-bold text-lg">{{ $t("analytics.error") }}</p>
+      </div>
+    </div>
+    
+    <div v-else class="bg-base-100 p-6 rounded-xl shadow-sm border border-base-200/50">
+      <div class="chart-container">
+        <Line :data="chartData" :options="chartOptions" />
+      </div>
     </div>
   </div>
 </template>
@@ -123,13 +139,13 @@ const chartData = computed(() => {
     datasets: [
       {
         label: t("analytics.chartLabel"),
-        backgroundColor: "rgba(168, 85, 247, 0.2)",
-        borderColor: "rgba(168, 85, 247, 1)",
+        backgroundColor: "rgba(10, 31, 171, 0.15)", // Indigo with opacity
+        borderColor: "rgba(10, 31, 171, 1)", // Indigo
         borderWidth: 3,
-        pointBackgroundColor: "rgba(168, 85, 247, 1)",
+        pointBackgroundColor: "rgba(10, 31, 171, 1)",
         pointBorderColor: "#fff",
         pointHoverBackgroundColor: "#fff",
-        pointHoverBorderColor: "rgba(168, 85, 247, 1)",
+        pointHoverBorderColor: "rgba(10, 31, 171, 1)",
         fill: true,
         tension: 0.4,
         data: [],

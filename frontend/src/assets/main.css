@@ -4,7 +4,7 @@
 
 @layer components {
   .card {
-    @apply bg-base-100 rounded-lg;
+    @apply bg-base-100 rounded-xl shadow-[0px_10px_30px_rgba(10,31,171,0.06)] border border-transparent;
   }
 
   .card-login {
@@ -13,7 +13,7 @@
 
   @media screen and (min-width: 768px) {
     .card {
-      @apply p-6 shadow-lg;
+      @apply p-8 shadow-[0px_10px_30px_rgba(10,31,171,0.06)];
     }
   }
 
@@ -21,13 +21,13 @@
     @apply font-bold py-2 px-4 rounded transition-colors duration-200;
   }
   .btn-primary {
-    @apply bg-primary text-primary-content hover:bg-primary-focus;
+    @apply bg-gradient-to-br from-[#0A1FAB] to-[#000e78] text-white border-none shadow-md hover:shadow-lg hover:brightness-110 transition-all duration-300 rounded-xl;
   }
   .btn-secondary {
     @apply bg-secondary text-secondary-content hover:bg-secondary-focus;
   }
   .btn-error {
-    @apply bg-error text-white hover:brightness-90;
+    @apply bg-[#ba1a1a] text-white border-none hover:bg-opacity-90 rounded-xl;
   }
   .btn-sm {
     @apply py-1 px-3 text-sm;
@@ -42,7 +42,7 @@
 }
 
 body {
-    background-color: theme('colors.base-100');
+    background-color: theme('colors.base-200');
 }
 
 #test-chat {

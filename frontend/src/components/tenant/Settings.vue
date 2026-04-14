@@ -28,111 +28,143 @@
     </div>
 
     <form @submit.prevent="handleUpdate" class="space-y-6 mt-6">
-      <div v-show="activeTab === 'behavior'" class="space-y-6">
-        <div>
-          <label
-            for="name"
-            class="block text-sm font-medium text-base-content"
-            >{{ $t("tenant.settings.behavior.name") }}</label
-          >
-          <input
-            v-model="formData.name"
-            type="text"
-            id="name"
-            required
-            class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-        <div>
-          <label
-            for="intro_message"
-            class="block text-sm font-medium text-base-content"
-            >{{ $t("tenant.settings.behavior.introMessage") }}</label
-          >
-          <AutoGrowTextarea
-            v-model="formData.intro_message"
-            id="intro_message"
-            rows="3"
-            class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-        <div>
-          <label
-            for="system_persona"
-            class="block text-sm font-medium text-base-content"
-            >{{ $t("tenant.settings.behavior.systemPersona") }}</label
-          >
-          <AutoGrowTextarea
-            v-model="formData.system_persona"
-            id="system_persona"
-            rows="5"
-            class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-        <div>
-          <label
-            for="rag_prompt_template"
-            class="block text-sm font-medium text-base-content"
-            >{{ $t("tenant.settings.behavior.ragPromptTemplate") }}</label
-          >
-          <AutoGrowTextarea
-            v-model="formData.rag_prompt_template"
-            id="rag_prompt_template"
-            rows="8"
-            class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label
-              for="doc_language"
-              class="block text-sm font-medium text-base-content"
-              >{{ $t("tenant.settings.behavior.docLanguage") }}</label
-            >
-            <select
-              v-model="formData.doc_language"
-              id="doc_language"
-              class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option
-                v-for="lang in languageOptions"
-                :key="lang.value"
-                :value="lang.value"
+      <div v-show="activeTab === 'behavior'" class="space-y-8">
+        
+        <!-- General Information Card -->
+        <div class="bg-base-100 p-6 rounded-xl border border-base-200/50 shadow-sm">
+          <h3 class="text-xl font-bold text-base-content mb-6 flex items-center">
+            <font-awesome-icon :icon="['fas', 'info-circle']" class="mr-3 text-primary" />
+            General Information
+          </h3>
+          <div class="space-y-6">
+            <div>
+              <label
+                for="name"
+                class="block text-sm font-medium text-base-content"
+                >{{ $t("tenant.settings.behavior.name") }}</label
               >
-                {{ lang.text }}
-              </option>
-            </select>
+              <input
+                v-model="formData.name"
+                type="text"
+                id="name"
+                required
+                class="w-full p-3 mt-1 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+              />
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label
+                  for="doc_language"
+                  class="block text-sm font-medium text-base-content"
+                  >{{ $t("tenant.settings.behavior.docLanguage") }}</label
+                >
+                <select
+                  v-model="formData.doc_language"
+                  id="doc_language"
+                  class="w-full p-3 mt-1 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+                >
+                  <option
+                    v-for="lang in languageOptions"
+                    :key="lang.value"
+                    :value="lang.value"
+                  >
+                    {{ lang.text }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label
+                  for="translation_target"
+                  class="block text-sm font-medium text-base-content"
+                  >{{ $t("tenant.settings.behavior.translationTarget") }}</label
+                >
+                <select
+                  v-model="formData.translation_target"
+                  id="translation_target"
+                  class="w-full p-3 mt-1 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+                >
+                  <option
+                    v-for="lang in languageOptions"
+                    :key="lang.value"
+                    :value="lang.value"
+                  >
+                    {{ lang.text }}
+                  </option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div>
-            <label
-              for="translation_target"
-              class="block text-sm font-medium text-base-content"
-              >{{ $t("tenant.settings.behavior.translationTarget") }}</label
-            >
-            <select
-              v-model="formData.translation_target"
-              id="translation_target"
-              class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option
-                v-for="lang in languageOptions"
-                :key="lang.value"
-                :value="lang.value"
+        </div>
+
+        <!-- AI Persona & Role Card -->
+        <div class="bg-base-100 p-6 rounded-xl border border-base-200/50 shadow-sm">
+          <h3 class="text-xl font-bold text-base-content mb-6 flex items-center">
+            <font-awesome-icon :icon="['fas', 'user-astronaut']" class="mr-3 text-primary" />
+            AI Persona & Role
+          </h3>
+          <div class="space-y-6">
+            <div>
+              <label
+                for="intro_message"
+                class="block text-sm font-medium text-base-content"
+                >{{ $t("tenant.settings.behavior.introMessage") }}</label
               >
-                {{ lang.text }}
-              </option>
-            </select>
+              <AutoGrowTextarea
+                v-model="formData.intro_message"
+                id="intro_message"
+                rows="3"
+                class="w-full p-3 mt-1 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow resize-none"
+              />
+            </div>
+            <div>
+              <label
+                for="system_persona"
+                class="block text-sm font-medium text-base-content"
+                >{{ $t("tenant.settings.behavior.systemPersona") }}</label
+              >
+              <AutoGrowTextarea
+                v-model="formData.system_persona"
+                id="system_persona"
+                rows="5"
+                class="w-full p-3 mt-1 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow resize-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Advanced RAG Configuration Card -->
+        <div class="bg-base-100 p-6 rounded-xl border border-base-200/50 shadow-sm">
+          <h3 class="text-xl font-bold text-base-content mb-6 flex items-center">
+            <font-awesome-icon :icon="['fas', 'brain']" class="mr-3 text-primary" />
+            Advanced RAG Configuration
+          </h3>
+          <div class="space-y-6">
+            <div>
+              <label
+                for="rag_prompt_template"
+                class="block text-sm font-medium text-base-content"
+                >{{ $t("tenant.settings.behavior.ragPromptTemplate") }}</label
+              >
+              <AutoGrowTextarea
+                v-model="formData.rag_prompt_template"
+                id="rag_prompt_template"
+                rows="8"
+                class="w-full p-3 mt-1 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow font-mono text-sm resize-none"
+              />
+            </div>
           </div>
         </div>
       </div>
 
       <div v-show="activeTab === 'appearance'" @change="handleUpdate">
         <div class="space-y-8">
-          <div class="pb-8 mb-8 border-b border-base-200">
-            <h3 class="text-lg font-bold mb-4 flex items-center">
+          
+          <!-- Installation Script Card -->
+          <div class="bg-base-100 p-6 rounded-xl border border-base-200/50 shadow-sm">
+            <h3 class="text-xl font-bold text-base-content mb-4 flex items-center">
               <font-awesome-icon
                 :icon="['fas', 'code']"
-                class="mr-2 text-primary"
+                class="mr-3 text-primary"
               />
               {{ $t("tenant.settings.appearance.installation.title") }}
             </h3>
@@ -141,11 +173,11 @@
             </p>
             <div class="relative">
               <pre
-                class="bg-base-300 p-4 rounded-lg overflow-x-auto text-sm font-mono text-base-content"
+                class="bg-base-200/50 p-4 rounded-lg overflow-x-auto text-sm font-mono text-base-content border border-base-200"
               ><code>&lt;script src="{{ apiUrl }}/tenants/widget.js" data-tenant-id="{{ tenantsStore.currentTenant?.id }}"&gt;&lt;/script&gt;</code></pre>
               <button
                 @click.prevent="copyScript"
-                class="absolute top-2 right-2 btn btn-sm btn-ghost text-primary hover:bg-base-200"
+                class="absolute top-2 right-2 btn btn-sm btn-ghost text-primary hover:bg-base-300"
               >
                 <font-awesome-icon :icon="['fas', 'copy']" />
                 <span class="ml-1">{{
@@ -155,8 +187,10 @@
             </div>
           </div>
 
-          <div class="pb-8 mb-8 border-b border-base-200">
-            <h3 class="text-lg font-bold mb-4">
+          <!-- Color Palette Card -->
+          <div class="bg-base-100 p-6 rounded-xl border border-base-200/50 shadow-sm">
+            <h3 class="text-xl font-bold text-base-content mb-4 flex items-center">
+              <font-awesome-icon :icon="['fas', 'palette']" class="mr-3 text-primary" />
               {{ $t("tenant.settings.appearance.colorPalette.title") }}
             </h3>
             <p class="text-sm text-base-content/70 mb-4">
@@ -171,7 +205,7 @@
                 <input
                   v-model="color.value"
                   type="color"
-                  class="w-12 h-10 p-1 bg-base-200 border-none rounded-lg cursor-pointer aspect-square"
+                  class="w-12 h-10 p-1 bg-base-200 border-none rounded-lg cursor-pointer aspect-square focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
                 <input
                   v-model="color.name"
@@ -180,7 +214,7 @@
                     $t('tenant.settings.appearance.colorPalette.placeholder')
                   "
                   :disabled="index < 2"
-                  class="flex-grow p-2 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-base-300/50"
+                  class="flex-grow p-2 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:bg-base-300/50 transition-shadow"
                 />
                 <button
                   @click.prevent="removeColor(color.id)"
@@ -193,7 +227,7 @@
             </div>
             <button
               @click.prevent="addColor"
-              class="btn btn-secondary btn-sm mt-4"
+              class="btn btn-primary btn-outline btn-sm mt-4 rounded-lg"
             >
               <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
               {{ $t("tenant.settings.appearance.colorPalette.addColor") }}
@@ -202,15 +236,17 @@
 
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div class="space-y-8">
-              <div class="pb-8 mb-8 border-b border-base-200">
-                <h3 class="text-lg font-bold mb-4">
+              <!-- Chat Window Card -->
+              <div class="bg-base-100 p-6 rounded-xl border border-base-200/50 shadow-sm">
+                <h3 class="text-xl font-bold text-base-content mb-6 flex items-center">
+                  <font-awesome-icon :icon="['fas', 'comment-dots']" class="mr-3 text-primary" />
                   {{ $t("tenant.settings.appearance.chatWindow.title") }}
                 </h3>
                 <div class="space-y-4">
                   <div>
                     <label
                       for="chatbot_title"
-                      class="block text-sm font-medium"
+                      class="block text-sm font-medium text-base-content"
                       >{{
                         $t("tenant.settings.appearance.chatWindow.chatbotTitle")
                       }}</label
@@ -219,11 +255,11 @@
                       v-model="formData.widget_config.chatbot_title"
                       type="text"
                       id="chatbot_title"
-                      class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      class="w-full p-3 mt-1 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                     />
                   </div>
                   <div>
-                    <label for="logo" class="block text-sm font-medium">{{
+                    <label for="logo" class="block text-sm font-medium text-base-content">{{
                       $t("tenant.settings.appearance.chatWindow.logo")
                     }}</label>
                     <div class="flex items-center space-x-2 mt-1">
@@ -231,13 +267,13 @@
                         @change="handleFileUpload($event, 'logo')"
                         type="file"
                         id="logo"
-                        class="w-full p-2 bg-base-200 border border-base-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                        class="w-full p-2 bg-base-200 border-none rounded-xl file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                         accept="image/*,.svg"
                       />
                       <button
                         v-if="formData.widget_config.logo"
                         @click.prevent="removeFile('logo')"
-                        class="btn btn-square btn-ghost text-error"
+                        class="btn btn-square btn-ghost text-error hover:bg-error/10"
                         :title="
                           $t('tenant.settings.appearance.chatWindow.removeLogo')
                         "
@@ -248,7 +284,7 @@
                     <img
                       v-if="formData.widget_config.logo"
                       :src="formData.widget_config.logo"
-                      class="mt-4 max-h-20 rounded-md"
+                      class="mt-4 max-h-20 rounded-lg shadow-sm"
                     />
                   </div>
                   <div class="flex items-center">
@@ -256,9 +292,9 @@
                       v-model="formData.widget_config.show_reset_button"
                       type="checkbox"
                       id="show_reset_button"
-                      class="h-4 w-4 rounded border-base-300 text-primary focus:ring-primary"
+                      class="h-4 w-4 rounded border-base-200 text-primary focus:ring-primary/50 bg-base-200"
                     />
-                    <label for="show_reset_button" class="ml-2 block text-sm">{{
+                    <label for="show_reset_button" class="ml-2 block text-sm text-base-content">{{
                       $t(
                         "tenant.settings.appearance.chatWindow.showResetButton"
                       )
@@ -267,7 +303,7 @@
                   <div>
                     <label
                       for="input_placeholder"
-                      class="block text-sm font-medium"
+                      class="block text-sm font-medium text-base-content"
                       >{{
                         $t(
                           "tenant.settings.appearance.chatWindow.inputPlaceholder"
@@ -278,13 +314,13 @@
                       v-model="formData.widget_config.input_placeholder"
                       type="text"
                       id="input_placeholder"
-                      class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      class="w-full p-3 mt-1 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                     />
                   </div>
                   <div>
                     <label
                       for="thinking_messages"
-                      class="block text-sm font-medium"
+                      class="block text-sm font-medium text-base-content"
                       >{{
                         $t(
                           "tenant.settings.appearance.chatWindow.thinkingMessages"
@@ -294,7 +330,7 @@
                     <AutoGrowTextarea
                       v-model="thinkingMessages"
                       id="thinking_messages"
-                      class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      class="w-full p-3 mt-1 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow resize-none"
                       rows="3"
                       :placeholder="
                         $t(
@@ -306,8 +342,10 @@
                 </div>
               </div>
 
-              <div class="pb-8 mb-8 border-b border-base-200">
-                <h3 class="text-lg font-bold mb-4">
+              <!-- Component Styles Card -->
+              <div class="bg-base-100 p-6 rounded-xl border border-base-200/50 shadow-sm">
+                <h3 class="text-xl font-bold text-base-content mb-6 flex items-center">
+                  <font-awesome-icon :icon="['fas', 'swatchbook']" class="mr-3 text-primary" />
                   {{ $t("tenant.settings.appearance.componentStyles.title") }}
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
@@ -315,13 +353,13 @@
                     v-for="(label, key) in filteredComponentStyleLabels"
                     :key="key"
                   >
-                    <label :for="key" class="block text-sm font-medium">{{
+                    <label :for="key" class="block text-sm font-medium text-base-content">{{
                       label
                     }}</label>
                     <select
                       v-model="formData.widget_config.component_styles[key]"
                       :id="key"
-                      class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      class="w-full p-3 mt-1 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                     >
                       <option
                         v-for="color in formData.widget_config.color_palette"
@@ -335,15 +373,17 @@
                 </div>
               </div>
 
-              <div class="pb-8">
-                <h3 class="text-lg font-bold mb-4">
+              <!-- Launcher Card -->
+              <div class="bg-base-100 p-6 rounded-xl border border-base-200/50 shadow-sm">
+                <h3 class="text-xl font-bold text-base-content mb-6 flex items-center">
+                  <font-awesome-icon :icon="['fas', 'rocket']" class="mr-3 text-primary" />
                   {{ $t("tenant.settings.appearance.launcher.title") }}
                 </h3>
                 <div class="space-y-6">
                   <div>
                     <label
                       for="launcher_icon"
-                      class="block text-sm font-medium"
+                      class="block text-sm font-medium text-base-content"
                       >{{
                         $t("tenant.settings.appearance.launcher.icon")
                       }}</label
@@ -353,13 +393,13 @@
                         @change="handleFileUpload($event, 'launcher_icon')"
                         type="file"
                         id="launcher_icon"
-                        class="w-full p-2 bg-base-200 border border-base-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                        class="w-full p-2 bg-base-200 border-none rounded-xl file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                         accept="image/*,.svg"
                       />
                       <button
                         v-if="formData.widget_config.launcher_icon"
                         @click.prevent="removeFile('launcher_icon')"
-                        class="btn btn-square btn-ghost text-error"
+                        class="btn btn-square btn-ghost text-error hover:bg-error/10"
                         :title="
                           $t('tenant.settings.appearance.launcher.removeIcon')
                         "
@@ -369,16 +409,16 @@
                     </div>
                     <div
                       v-if="formData.widget_config.launcher_icon"
-                      class="mt-2"
+                      class="mt-4"
                     >
-                      <p class="text-xs text-base-content/50 mb-1">
+                      <p class="text-xs text-base-content/50 mb-2">
                         {{
                           $t("tenant.settings.appearance.launcher.currentIcon")
                         }}
                       </p>
                       <img
                         :src="formData.widget_config.launcher_icon"
-                        class="w-12 h-12 rounded-full object-cover border border-base-300"
+                        class="w-12 h-12 rounded-full object-cover shadow-sm bg-base-200 p-1"
                       />
                     </div>
                   </div>
@@ -386,7 +426,7 @@
                   <div>
                     <label
                       for="launcher_background_color"
-                      class="block text-sm font-medium"
+                      class="block text-sm font-medium text-base-content"
                       >{{
                         $t(
                           "tenant.settings.appearance.launcher.backgroundColor"
@@ -399,7 +439,7 @@
                           .launcher_background_color
                       "
                       id="launcher_background_color"
-                      class="w-full p-3 mt-1 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      class="w-full p-3 mt-1 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                     >
                       <option
                         v-for="color in formData.widget_config.color_palette"

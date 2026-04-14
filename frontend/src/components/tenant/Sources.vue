@@ -1,298 +1,217 @@
 ```
 <template>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-    <!-- Left side: Add new sources -->
-    <div class="space-y-0">
-      <h3 class="text-xl font-bold text-base-content flex items-center mb-6">
-        <font-awesome-icon :icon="['fas', 'plus-circle']" class="mr-3 text-primary" />
-        {{ $t("tenant.sources.addNew") }}
-      </h3>
-
-      <!-- File Upload Section -->
-      <div class="pb-6 border-b border-base-200">
-        <h4 class="text-sm font-semibold text-base-content flex items-center gap-2 mb-4">
-          <font-awesome-icon :icon="['fas', 'file-arrow-up']" class="text-primary" />
-          {{ $t("tenant.sources.uploadFile") }}
-        </h4>
-        <input
-          id="file-upload"
-          type="file"
-          @change="handleFileSelect"
-          class="block w-full text-sm text-base-content/70 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-        />
-        <button
-          @click="handleUpload"
-          :disabled="!selectedFile || loading"
-          class="mt-3 w-full btn btn-primary"
-        >
-          <font-awesome-icon :icon="['fas', 'upload']" class="mr-2" />
-          {{ loading ? $t("tenant.sources.uploading") : $t("tenant.sources.uploadFile") }}
-        </button>
-      </div>
-
-      <!-- Divider -->
-      <div class="flex items-center gap-4 py-4">
-        <div class="flex-1 h-px bg-base-200"></div>
-        <span class="text-xs text-base-content/40 font-medium uppercase tracking-widest">or</span>
-        <div class="flex-1 h-px bg-base-200"></div>
-      </div>
-
-      <!-- URL Crawl Section -->
-      <div class="pt-2">
-        <h4 class="text-sm font-semibold text-base-content flex items-center gap-2 mb-4">
-          <font-awesome-icon :icon="['fas', 'globe']" class="text-primary" />
-          {{ $t("tenant.sources.crawlWebsite") }}
-        </h4>
-        <input
-          v-model="startUrl"
-          id="url-input"
-          type="text"
-          placeholder="https://example.com"
-          class="w-full p-3 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          :class="{ 'border-error': !isUrlValid && startUrl }"
-          :aria-invalid="!isUrlValid && startUrl"
-          aria-describedby="url-error"
-        />
-        <p v-if="!isUrlValid && startUrl" id="url-error" class="text-error text-sm mt-1">
-          {{ $t("tenant.sources.invalidUrl") }}
-        </p>
-        <div class="flex items-center mt-3">
-          <input
-            type="checkbox"
-            v-model="crawlSinglePageOnly"
-            class="h-4 w-4 rounded border-base-300 text-primary focus:ring-primary"
-            id="single_crawl_only"
-          />
-          <label for="single_crawl_only" class="ml-2 block text-sm text-base-content/70">
-            Crawl only this page
-          </label>
-        </div>
-
-        <div v-if="!crawlSinglePageOnly" class="mt-4">
-          <label for="excluded-urls-input" class="block text-sm font-medium text-base-content mb-2">
-            {{ $t("tenant.sources.excludeUrls") }}
-          </label>
-          <textarea
-            v-model="excludedUrls"
-            id="excluded-urls-input"
-            :placeholder="$t('tenant.sources.excludePlaceholder')"
-            rows="3"
-            class="w-full p-3 bg-base-200 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          ></textarea>
-        </div>
-
-        <button
-          @click="startCrawl"
-          :disabled="!startUrl.trim() || loading || !isUrlValid"
-          class="mt-4 w-full btn btn-primary"
-        >
-          <font-awesome-icon :icon="['fas', 'globe']" class="mr-2" />
-          {{ loading ? $t("tenant.sources.crawling") : $t("tenant.sources.crawlWebsite") }}
-        </button>
-      </div>
-    </div>
-
-
-    <!-- Right side: List of existing sources -->
-    <div>
-      <!-- Crawling Activity -->
+  <div class="grid grid-cols-1 xl:grid-cols-12 xl:rounded-3xl bg-base-100 xl:border border-base-200/50 xl:shadow-sm overflow-hidden min-h-[calc(100vh-10rem)]">
+    
+    <!-- Left Column: Active Sources Data Hub -->
+    <div class="xl:col-span-7 bg-base-100 p-6 lg:p-10 flex flex-col h-full xl:border-r border-base-200/50">
       <div class="mb-8">
-        <h3 class="text-xl font-bold text-base-content mb-4 flex items-center">
-          <font-awesome-icon
-            :icon="['fas', 'person-digging']"
-            class="mr-3 text-primary"
-          />
-          {{ $t("tenant.sources.activity.title") }}
-        </h3>
-        <div
-          v-if="crawlingJobs.length === 0"
-          class="text-center p-8 rounded-lg bg-base-200"
-        >
-          <h4 class="text-xl font-semibold">
-            {{ $t("tenant.sources.activity.noActivity") }}
-          </h4>
-          <p class="text-base-content/70 mt-2">
-            {{ $t("tenant.sources.activity.instruction") }}
-          </p>
+        <h2 class="text-3xl font-display font-bold text-base-content tracking-tight mb-2">Active Sources</h2>
+        <p class="text-base-content/60 text-sm">Manage the knowledge base context that trains your AI.</p>
+      </div>
+
+      <!-- Metrics Row -->
+      <div class="grid grid-cols-2 gap-4 mb-10 shrink-0">
+        <div class="bg-primary/5 rounded-2xl p-5 border border-primary/10 transition-colors">
+          <p class="text-xs font-bold uppercase tracking-widest text-primary/70 mb-1">Total Documents</p>
+          <p class="text-4xl font-black text-primary font-display leading-none">{{ fileSources.length }}</p>
         </div>
-        <div v-else class="space-y-4 max-h-60 overflow-y-auto">
-          <div
-            v-for="job in crawlingJobs"
-            :key="job.id"
-            class="bg-base-200 p-4 rounded-lg"
-          >
-            <p class="font-semibold truncate" :title="job.start_url">
-              {{ job.start_url }}
-            </p>
-            <div class="flex justify-between items-center mt-2">
-              <p class="text-xs text-base-content/70">
-                {{ $t("tenant.sources.activity.status") }}:
-                <span
-                  class="font-bold"
-                  :class="{
-                    'text-success': job.status === 'COMPLETED',
-                    'text-warning': job.status === 'IN_PROGRESS',
-                  }"
-                  >{{ job.status }}</span
-                >
-              </p>
-              <p class="text-xs text-base-content/70">
-                {{ new Date(job.created_at).toLocaleString() }}
-              </p>
-            </div>
-            <CrawlingJobProgress
-              :job="job"
-              :tenantId="tenantsStore.currentTenant.id"
-              @job-completed="handleJobCompletion"
-            />
-          </div>
+        <div class="bg-secondary/5 rounded-2xl p-5 border border-secondary/10 transition-colors">
+          <p class="text-xs font-bold uppercase tracking-widest text-secondary/70 mb-1">Indexed Links</p>
+          <p class="text-4xl font-black text-secondary font-display leading-none">{{ urlSources.length }}</p>
         </div>
       </div>
-      <h3 class="text-xl font-bold text-base-content mb-4 flex items-center">
-        <font-awesome-icon
-          :icon="['fas', 'list-alt']"
-          class="mr-3 text-primary"
-        />
-        {{ $t("tenant.sources.existing.title") }}
-      </h3>
 
-      <!-- Loading Skeleton -->
-      <div v-if="tenantsStore.loading" class="space-y-4">
-        <div
-          v-for="n in 3"
-          :key="n"
-          class="h-16 bg-base-200 rounded-lg animate-pulse"
-        ></div>
-      </div>
+      <!-- Data List Area -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-10 pb-10">
+        
+        <!-- Loading State -->
+        <div v-if="tenantsStore.loading" class="space-y-4">
+          <div v-for="n in 3" :key="n" class="h-16 bg-base-200/50 rounded-xl animate-pulse"></div>
+        </div>
 
-      <div
-        v-else-if="
-          !tenantsStore.currentTenant ||
-          !tenantsStore.currentTenant.tenant_sources ||
-          tenantsStore.currentTenant.tenant_sources.length === 0
-        "
-        class="text-center p-8 rounded-lg bg-base-200"
-      >
-        <h4 class="text-xl font-semibold">
-          {{ $t("tenant.sources.existing.noSources") }}
-        </h4>
-        <p class="text-base-content/70 mt-2">
-          {{ $t("tenant.sources.existing.instruction") }}
-        </p>
-      </div>
-
-      <!-- Existing Sources List -->
-      <div v-else class="space-y-4 max-h-96 overflow-y-auto">
-        <!-- URL Sources Accordion -->
-        <details class="bg-base-200 rounded-lg">
-          <summary
-            class="cursor-pointer font-semibold p-4 flex justify-between items-center"
-          >
-            <span>
-              <font-awesome-icon :icon="['fas', 'link']" class="mr-2" />
-              {{ $t("tenant.sources.existing.crawledUrls") }} ({{
-                urlSources.length
-              }})
-            </span>
-            <font-awesome-icon
-              :icon="['fas', 'chevron-down']"
-              class="transition-transform duration-200 transform details-arrow"
-            />
-          </summary>
-          <div class="border-t border-base-300 p-4 space-y-2">
-            <div
-              v-for="source in urlSources"
-              :key="source.id"
-              class="bg-base-300 p-3 rounded-lg flex justify-between items-center"
-            >
-              <div>
-                <p
-                  class="font-semibold truncate"
-                  :title="source.source_location"
-                >
-                  {{ source.source_location }}
-                </p>
-                <p class="text-xs text-base-content/70">
-                  {{ $t("tenant.sources.activity.status") }}:
-                  {{ source.status }}
-                </p>
+        <div v-else>
+          <!-- Active Crawling Jobs -->
+          <div v-if="crawlingJobs.length > 0" class="mb-10 animate-fade-in">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-base-content/50 mb-4 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+              Live Activity
+            </h4>
+            <div class="space-y-3">
+              <div v-for="job in crawlingJobs" :key="job.id" class="bg-base-100 border border-base-200 p-4 rounded-2xl shadow-sm relative overflow-hidden">
+                <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b"
+                 :class="{
+                   'from-success/80 to-success/40': job.status === 'COMPLETED',
+                   'from-primary/80 to-primary/40': job.status === 'IN_PROGRESS',
+                   'from-error/80 to-error/40': job.status === 'FAILED',
+                   'from-base-300 to-base-200': !['COMPLETED', 'IN_PROGRESS', 'FAILED'].includes(job.status)
+                 }"></div>
+                 <div class="pl-4">
+                   <p class="font-semibold text-sm truncate text-base-content" :title="job.start_url">{{ job.start_url }}</p>
+                   <div class="flex justify-between items-center mt-2">
+                     <span class="text-xs font-bold tracking-wider"
+                      :class="{
+                        'text-success': job.status === 'COMPLETED',
+                        'text-primary': job.status === 'IN_PROGRESS',
+                        'text-error': job.status === 'FAILED',
+                        'text-base-content/50': !['COMPLETED', 'IN_PROGRESS', 'FAILED'].includes(job.status)
+                      }">{{ job.status }}</span>
+                      <p class="text-xs text-base-content/40 font-medium">
+                        {{ new Date(job.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}
+                      </p>
+                   </div>
+                   <div class="mt-3" v-if="job.status === 'IN_PROGRESS'">
+                     <CrawlingJobProgress :job="job" :tenantId="tenantsStore.currentTenant.id" @job-completed="handleJobCompletion" />
+                   </div>
+                 </div>
               </div>
-              <button
-                @click="confirmDelete(source)"
-                class="btn btn-sm text-error hover:bg-error/10"
-              >
-                <font-awesome-icon :icon="['fas', 'trash']" />
-              </button>
             </div>
-            <p
-              v-if="urlSources.length === 0"
-              class="text-base-content/70 text-sm"
-            >
-              {{ $t("tenant.sources.existing.noCrawledUrls") }}
-            </p>
           </div>
-        </details>
 
-        <!-- File Sources Accordion -->
-        <details class="bg-base-200 rounded-lg" open>
-          <summary
-            class="cursor-pointer font-semibold p-4 flex justify-between items-center"
-          >
-            <span>
-              <font-awesome-icon :icon="['fas', 'file-lines']" class="mr-2" />
-              {{ $t("tenant.sources.existing.uploadedFiles") }} ({{
-                fileSources.length
-              }})
-            </span>
-            <font-awesome-icon
-              :icon="['fas', 'chevron-down']"
-              class="transition-transform duration-200 transform details-arrow"
-            />
-          </summary>
-          <div class="border-t border-base-300 p-4 space-y-2">
-            <div
-              v-for="source in fileSources"
-              :key="source.id"
-              class="bg-base-300 p-3 rounded-lg flex justify-between items-center"
-            >
-              <div>
-                <p
-                  class="font-semibold truncate"
-                  :title="source.source_location"
-                >
-                  {{ source.source_location }}
-                </p>
-                <p class="text-xs text-base-content/70">
-                  {{ $t("tenant.sources.activity.status") }}:
-                  {{ source.status }}
-                </p>
-              </div>
-              <button
-                @click="confirmDelete(source)"
-                class="btn btn-sm text-error hover:bg-error/10"
-              >
-                <font-awesome-icon :icon="['fas', 'trash']" />
-              </button>
-            </div>
-            <p
-              v-if="fileSources.length === 0"
-              class="text-base-content/70 text-sm"
-            >
-              {{ $t("tenant.sources.existing.noUploadedFiles") }}
-            </p>
+          <!-- Documents -->
+          <div class="mb-10">
+             <h4 class="text-xs font-bold uppercase tracking-wider text-base-content/50 mb-4">
+               {{ $t("tenant.sources.existing.uploadedFiles") }}
+             </h4>
+             <div v-if="fileSources.length === 0" class="text-base-content/40 text-sm italic bg-base-200/20 p-4 rounded-xl border border-base-200 border-dashed text-center">
+               No documents uploaded yet.
+             </div>
+             <div class="space-y-2">
+               <div v-for="source in fileSources" :key="source.id" class="group bg-base-100 hover:bg-base-200/50 border border-base-200 p-4 rounded-2xl flex justify-between items-center transition-all duration-300">
+                 <div class="min-w-0 pr-4">
+                   <p class="font-semibold text-sm truncate text-base-content flex items-center gap-3">
+                     <font-awesome-icon :icon="['fas', 'file-pdf']" class="text-primary/60" />
+                     {{ source.source_location }}
+                   </p>
+                   <p class="text-xs text-base-content/50 mt-1.5 flex items-center gap-2">
+                     <span class="w-1.5 h-1.5 rounded-full" :class="source.status === 'INDEXED' ? 'bg-success' : (source.status === 'ERROR' ? 'bg-error' : 'bg-primary')"></span>
+                     {{ source.status }}
+                   </p>
+                 </div>
+                 <button @click="confirmDelete(source)" class="btn btn-ghost btn-sm btn-circle text-base-content/30 hover:text-error hover:bg-error/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <font-awesome-icon :icon="['fas', 'times']" />
+                 </button>
+               </div>
+             </div>
           </div>
-        </details>
+
+          <!-- Links -->
+          <div>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-base-content/50 mb-4">
+              {{ $t("tenant.sources.existing.crawledUrls") }}
+            </h4>
+            <div v-if="urlSources.length === 0" class="text-base-content/40 text-sm italic bg-base-200/20 p-4 rounded-xl border border-base-200 border-dashed text-center">
+               No URLs indexed yet.
+            </div>
+            <div class="space-y-2">
+              <div v-for="source in urlSources" :key="source.id" class="group bg-base-100 hover:bg-base-200/50 border border-base-200 p-4 rounded-2xl flex justify-between items-center transition-all duration-300">
+                <div class="min-w-0 pr-4">
+                  <p class="font-semibold text-sm truncate text-base-content flex items-center gap-3">
+                    <font-awesome-icon :icon="['fas', 'globe']" class="text-secondary/60" />
+                    {{ source.source_location }}
+                  </p>
+                  <p class="text-xs text-base-content/50 mt-1.5 flex items-center gap-2">
+                     <span class="w-1.5 h-1.5 rounded-full" :class="source.status === 'INDEXED' ? 'bg-success' : (source.status === 'ERROR' ? 'bg-error' : 'bg-primary')"></span>
+                     {{ source.status }}
+                  </p>
+                </div>
+                <button @click="confirmDelete(source)" class="btn btn-ghost btn-sm btn-circle text-base-content/30 hover:text-error hover:bg-error/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <font-awesome-icon :icon="['fas', 'times']" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
+    
+    <!-- Right Column: Ingestion Station -->
+    <div class="xl:col-span-5 bg-base-200/30 p-6 lg:p-10 flex flex-col h-full border-t xl:border-t-0 border-base-200/50">
+      <div class="mb-8">
+        <h2 class="text-2xl lg:text-3xl font-display font-bold text-base-content tracking-tight mb-2">Ingestion Station</h2>
+        <p class="text-base-content/60 text-sm">Add documents and URLs to ingest into your AI.</p>
+      </div>
 
+      <div class="space-y-6">
+        
+        <!-- File Upload Card -->
+        <div class="bg-base-100 p-6 rounded-3xl shadow-sm border border-base-200 flex flex-col">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+              <font-awesome-icon :icon="['fas', 'upload']" />
+            </div>
+            <div>
+              <h3 class="font-bold text-base-content leading-tight">Upload Document</h3>
+              <p class="text-xs text-base-content/50">PDF, TXT, CSV accepted</p>
+            </div>
+          </div>
+          
+          <div class="relative border-2 border-dashed border-base-300 hover:border-primary/50 transition-colors p-8 rounded-2xl flex flex-col items-center justify-center bg-base-50 group mb-4">
+             <input id="file-upload" type="file" @change="handleFileSelect" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+             <div class="w-12 h-12 rounded-full bg-base-200 group-hover:bg-primary/10 group-hover:text-primary transition-colors flex items-center justify-center text-base-content/40 text-xl mb-3">
+               <font-awesome-icon :icon="['fas', 'file-arrow-up']" />
+             </div>
+             <p class="text-sm font-medium text-base-content/80 text-center px-4" v-if="!selectedFile">Select a file from your computer to ingest.</p>
+             <p class="text-sm font-bold text-primary text-center px-4" v-else>{{ selectedFile.name }}</p>
+          </div>
+          
+          <button @click="handleUpload" :disabled="!selectedFile || loading" class="btn btn-primary w-full rounded-xl shadow-sm group">
+            <font-awesome-icon :icon="['fas', 'upload']" :class="{'mr-2': !loading, 'animate-bounce': loading}" />
+            {{ loading ? 'Ingesting...' : 'Ingest Document' }}
+          </button>
+        </div>
+
+        <!-- URL Crawling Card -->
+        <div class="bg-base-100 p-6 rounded-3xl shadow-sm border border-base-200 flex flex-col">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary">
+              <font-awesome-icon :icon="['fas', 'globe']" />
+            </div>
+            <div>
+              <h3 class="font-bold text-base-content leading-tight">Crawl Website</h3>
+              <p class="text-xs text-base-content/50">Point to a URL to sync content</p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/40">
+                <font-awesome-icon :icon="['fas', 'link']" />
+              </div>
+              <input v-model="startUrl" id="url-input" type="text" placeholder="https://example.com/docs" class="input input-lg w-full bg-base-200/50 border-transparent focus:border-primary focus:bg-base-100 transition-colors pl-12 rounded-2xl text-sm font-medium" :class="{ 'border-error bg-error/5 focus:border-error': !isUrlValid && startUrl }" />
+            </div>
+            <p v-if="!isUrlValid && startUrl" class="text-error text-xs px-2">Invalid URL format.</p>
+
+            <div class="bg-base-200/30 p-4 rounded-2xl space-y-3">
+              <div class="flex items-center">
+                <input type="checkbox" v-model="crawlSinglePageOnly" class="checkbox checkbox-sm checkbox-primary rounded" id="single_crawl_only" />
+                <label for="single_crawl_only" class="ml-2 block text-sm font-medium text-base-content/80 cursor-pointer">
+                  Crawl this page ONLY (no subpages)
+                </label>
+              </div>
+
+              <div v-if="!crawlSinglePageOnly" class="animate-fade-in pt-2">
+                <label for="excluded-urls-input" class="block text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-2 px-1">
+                  Exclude Paths (Optional)
+                </label>
+                <textarea v-model="excludedUrls" id="excluded-urls-input" placeholder="e.g. /login&#10;/dashboard" rows="2" class="w-full p-3 bg-base-100 border border-base-200 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors"></textarea>
+              </div>
+            </div>
+
+            <button @click="startCrawl" :disabled="!startUrl.trim() || loading || !isUrlValid" class="btn btn-secondary w-full rounded-xl shadow-sm mt-2">
+              <font-awesome-icon :icon="['fas', 'spider']" class="mr-2" v-if="!loading"/>
+              {{ loading ? 'Starting Crawl...' : 'Start Crawl' }}
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    
     <ConfirmationModal
       :show="showConfirmationModal"
       :title="$t('tenant.sources.deleteModal.title')"
-      :message="
-        $t('tenant.sources.deleteModal.message', {
-          source: sourceToDelete?.source_location,
-        })
-      "
+      :message="$t('tenant.sources.deleteModal.message', { source: sourceToDelete?.source_location })"
       :confirmButtonText="$t('tenant.sources.deleteModal.confirm')"
       @confirm="handleDelete"
       @cancel="cancelDelete"

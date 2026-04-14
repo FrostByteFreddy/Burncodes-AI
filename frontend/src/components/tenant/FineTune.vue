@@ -1,7 +1,7 @@
 <template>
   <div>
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="text-xl font-bold text-base-content flex items-center">
+    <div class="flex justify-between items-center mb-8 border-b border-base-200/50 pb-6">
+      <h3 class="text-2xl font-bold text-base-content flex items-center">
         <font-awesome-icon
           :icon="['fas', 'wand-magic-sparkles']"
           class="mr-3 text-primary"
@@ -10,9 +10,10 @@
       </h3>
       <button
         @click="isModalOpen = true"
-        class="btn btn-primary btn-sm btn-circle"
+        class="btn btn-primary rounded-xl px-6 shadow-md hover:shadow-lg transition-all duration-300"
       >
-        <font-awesome-icon :icon="['fas', 'plus']" class="h-4 w-4" />
+        <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
+        {{ $t("tenant.fineTune.addRule") || 'Add Rule' }}
       </button>
     </div>
 
@@ -21,13 +22,13 @@
         v-for="(rule, index) in rules"
         :key="index"
         :class="[
-          'p-4 rounded-xl flex flex-col transition-all duration-300 border',
+          'p-6 rounded-xl flex flex-col transition-all duration-300 shadow-sm',
           rule.isEditing
-            ? 'bg-base-100 ring-2 ring-primary shadow-xl border-transparent'
-            : 'bg-base-200 border-base-300',
+            ? 'bg-base-100 ring-2 ring-primary shadow-lg border-transparent relative z-10'
+            : 'bg-base-100 border border-base-200/50 hover:shadow-md hover:border-base-300/50',
         ]"
       >
-        <div class="flex-grow space-y-3">
+        <div class="flex-grow space-y-4">
           <input
             v-model="rule.trigger"
             type="text"
@@ -35,10 +36,10 @@
             :placeholder="$t('tenant.fineTune.trigger.placeholder')"
             :disabled="!rule.isEditing"
             :class="[
-              'w-full p-2 mt-1 rounded-lg text-lg font-semibold focus:outline-none',
+              'w-full p-3 mt-1 rounded-xl text-lg font-bold focus:outline-none transition-shadow',
               rule.isEditing
-                ? 'bg-base-100 border-base-300 border focus:ring-2 focus:ring-primary'
-                : 'bg-transparent border-transparent text-base-content',
+                ? 'bg-base-200 border-none focus:ring-2 focus:ring-primary/50'
+                : 'bg-transparent border-transparent text-base-content px-0',
             ]"
           />
 
@@ -50,10 +51,10 @@
               :placeholder="$t('tenant.fineTune.instruction.placeholder')"
               :disabled="!rule.isEditing"
               :class="[
-                'w-full p-2 mt-1 rounded-lg focus:outline-none',
+                'w-full p-3 mt-1 rounded-xl focus:outline-none transition-shadow',
                 rule.isEditing
-                  ? 'bg-base-100 border-base-300 border focus:ring-2 focus:ring-primary'
-                  : 'bg-transparent border-transparent text-base-content/70',
+                  ? 'bg-base-200 border-none focus:ring-2 focus:ring-primary/50'
+                  : 'bg-transparent border-transparent text-base-content/70 px-0 resize-none',
               ]"
             />
           </div>
@@ -100,29 +101,29 @@
   <Transition name="fade">
     <div
       v-if="isModalOpen"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
       @click="closeModal"
     >
       <div
-        class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 sm:p-8 m-4"
+        class="bg-base-100 rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8 m-4 border border-base-200/50"
         @click.stop
       >
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-xl font-bold text-gray-800">
+        <div class="flex justify-between items-center mb-6 border-b border-base-200/50 pb-4">
+          <h3 class="text-xl font-bold text-base-content">
             {{ $t("tenant.fineTune.addRule") }}
           </h3>
           <button
             @click="closeModal"
-            class="p-2 text-slate-500 rounded-full hover:bg-slate-200 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500"
+            class="btn btn-ghost btn-circle btn-sm text-base-content/50 hover:bg-base-200 transition-colors"
           >
-            <font-awesome-icon :icon="['fas', 'xmark']" class="h-5 w-5" />
+            <font-awesome-icon :icon="['fas', 'xmark']" class="h-4 w-4" />
           </button>
         </div>
-        <form @submit.prevent="addRule" class="space-y-4">
+        <form @submit.prevent="addRule" class="space-y-6">
           <div>
             <label
               for="new-trigger"
-              class="block text-sm font-medium text-gray-700 mb-1"
+              class="block text-sm font-medium text-base-content mb-2"
               >{{ $t("tenant.fineTune.trigger.label") }}</label
             >
             <input
@@ -130,13 +131,13 @@
               type="text"
               id="new-trigger"
               :placeholder="$t('tenant.fineTune.trigger.example')"
-              class="w-full p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+              class="w-full p-3 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
             />
           </div>
           <div>
             <label
               for="new-instruction"
-              class="block text-sm font-medium text-gray-700 mb-1"
+              class="block text-sm font-medium text-base-content mb-2"
               >{{ $t("tenant.fineTune.instruction.label") }}</label
             >
             <AutoGrowTextarea
@@ -144,20 +145,20 @@
               id="new-instruction"
               rows="3"
               :placeholder="$t('tenant.fineTune.instruction.example')"
-              class="w-full p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+              class="w-full p-3 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow resize-none"
             />
           </div>
-          <div class="flex justify-end pt-4 space-x-3">
+          <div class="flex justify-end pt-4 space-x-3 border-t border-base-200/50 mt-6">
             <button
               type="button"
               @click="closeModal"
-              class="px-4 py-2 rounded-lg font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400"
+              class="btn btn-ghost rounded-xl px-6"
             >
               {{ $t("tenant.fineTune.actions.cancel") }}
             </button>
             <button
               type="submit"
-              class="px-4 py-2 rounded-lg font-semibold text-white bg-purple-500 hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+              class="btn btn-primary rounded-xl px-6 shadow-md"
             >
               {{ $t("tenant.fineTune.actions.add") }}
             </button>
