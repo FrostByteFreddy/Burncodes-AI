@@ -191,9 +191,9 @@ let originalRuleState = null;
 watch(
   () => tenantsStore.currentTenant,
   (newTenant) => {
-    if (newTenant && newTenant.tenant_fine_tune) {
+    if (newTenant && newTenant.fine_tune_rules) {
       // Add the isEditing flag to each rule when loading
-      rules.value = JSON.parse(JSON.stringify(newTenant.tenant_fine_tune)).map(
+      rules.value = JSON.parse(JSON.stringify(newTenant.fine_tune_rules)).map(
         (rule) => ({
           ...rule,
           isEditing: false,

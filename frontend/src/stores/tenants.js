@@ -4,8 +4,17 @@ import apiClient from "../utils/api";
 import { useAuthStore } from "./auth";
 
 export const useTenantsStore = defineStore("tenants", () => {
-  const tenants = ref([]);
-  const currentTenant = ref(null);
+  const loadStored = (key, defaultVal) => {
+    try {
+      const stored = localStorage.getItem(key);
+      return stored ? JSON.parse(stored) : defaultVal;
+    } catch {
+      return defaultVal;
+    }
+  };
+
+  const tenants = ref(loadStored("tenantState_tenants", []));
+  const currentTenant = ref(loadStored("tenantState_currentTenant", null));
   const loading = ref(false);
   const error = ref(null);
 
@@ -78,16 +87,15 @@ export const useTenantsStore = defineStore("tenants", () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await apiClient.put(
+      await apiClient.put(
         `/tenants/${id}`,
         tenantData,
         { headers: getAuthHeaders() }
       );
-      const index = tenants.value.findIndex((t) => t.id === id);
-      if (index !== -1) {
-        tenants.value[index] = response.data;
-      }
-      currentTenant.value = response.data;
+      // The backend returns a success message string, not the updated object.
+      // Therefore, we must re-fetch cleanly to restore full state.
+      await fetchTenant(id);
+      await fetchTenants();
     } catch (e) {
       error.value = e.response?.data?.error || "Failed to update tenant";
       throw e;
@@ -130,13 +138,27 @@ export const useTenantsStore = defineStore("tenants", () => {
     currentTenant.value = tenant;
   }
 
-  watch(currentTenant, (newTenant) => {
-    if (newTenant) {
-      localStorage.setItem("currentTenantId", newTenant.id);
-    } else {
-      localStorage.removeItem("currentTenantId");
-    }
-  });
+  watch(
+    tenants,
+    (newTenants) => {
+      localStorage.setItem("tenantState_tenants", JSON.stringify(newTenants));
+    },
+    { deep: true }
+  );
+
+  watch(
+    currentTenant,
+    (newTenant) => {
+      if (newTenant) {
+        localStorage.setItem("currentTenantId", newTenant.id);
+        localStorage.setItem("tenantState_currentTenant", JSON.stringify(newTenant));
+      } else {
+        localStorage.removeItem("currentTenantId");
+        localStorage.removeItem("tenantState_currentTenant");
+      }
+    },
+    { deep: true }
+  );
 
   return {
     tenants,

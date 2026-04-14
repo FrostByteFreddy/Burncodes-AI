@@ -40,5 +40,15 @@ watch(
     }
   }
 );
+
+// When switching tabs/pages WITHIN the same tenant, silently refetch to guarantee fresh data
+watch(
+  () => route.path,
+  () => {
+    if (route.params.tenantId && tenantsStore.currentTenant?.id === route.params.tenantId) {
+      tenantsStore.refetch(route.params.tenantId);
+    }
+  }
+);
 </script>
 
