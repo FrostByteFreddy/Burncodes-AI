@@ -3,12 +3,14 @@ from app.database.supabase_client import supabase
 from app.logging_config import error_logger
 from app.chat.tasks import chat_task
 from app.billing.services import BillingService
+from app import limiter
 from celery.result import AsyncResult
 import uuid
 
 chat_bp = Blueprint('chat', __name__)
 
 @chat_bp.route('/<uuid:tenant_id>', methods=['POST'])
+@limiter.limit("30 per minute")
 def handle_chat(tenant_id):
     try:
         data = request.get_json()

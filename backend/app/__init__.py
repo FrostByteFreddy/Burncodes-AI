@@ -5,11 +5,18 @@ from flask import Flask
 from flask_cors import CORS
 from dotenv import load_dotenv
 from celery import Celery
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from app.logging_config import error_logger
 
 load_dotenv()
 
 celery = Celery(__name__)
+limiter = Limiter(
+    key_func=get_remote_address,
+    storage_uri=os.environ.get('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0'),
+    default_limits=["200 per hour"],
+)
 
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -21,6 +28,7 @@ def create_app():
     app = Flask(__name__)
     app.json_encoder = CustomJSONEncoder
     CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+    limiter.init_app(app)
 
     # --- Configuration ---
     # --- Configuration and Directory Setup ---
