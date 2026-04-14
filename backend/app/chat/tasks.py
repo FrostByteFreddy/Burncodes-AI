@@ -12,7 +12,7 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.history_aware_retriever import create_history_aware_retriever
 
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.callbacks import BaseCallbackHandler
 from app.prompts import REPHRASE_PROMPTS, FINE_TUNE_RULE_PROMPTS
@@ -82,6 +82,11 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         # --- Build Chains ---
         chat_history = [HumanMessage(content=msg['content']) if msg['type'] == 'human' else AIMessage(content=msg['content']) for msg in chat_history_json]
 
+        # Strip leading AIMessages (e.g. the intro greeting) — Gemini requires
+        # the first message after a SystemMessage to be a HumanMessage.
+        while chat_history and isinstance(chat_history[0], AIMessage):
+            chat_history.pop(0)
+
         # Select the rephrase prompt based on the translation target
         rephrase_prompt_tuple = REPHRASE_PROMPTS.get(translation_target, REPHRASE_PROMPTS['en'])
         history_aware_prompt = ChatPromptTemplate.from_messages([
@@ -102,11 +107,22 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
             history_aware_prompt
         )
 
-        rag_prompt_template = PromptTemplate.from_template(tenant_config['rag_prompt_template'])
-        final_rag_prompt = rag_prompt_template.partial(
-            persona=tenant_config.get('system_persona', ''),
-            fine_tune_instructions=fine_tune_instructions,
+        # --- Build the answer prompt WITH chat history ---
+        # The tenant's rag_prompt_template becomes the system instruction,
+        # then we inject the full chat history so the LLM has conversational context.
+        rag_system_template = tenant_config['rag_prompt_template']
+        # Partially fill in the persona and fine-tune instructions
+        rag_system_text = rag_system_template.replace(
+            '{persona}', tenant_config.get('system_persona', '')
+        ).replace(
+            '{fine_tune_instructions}', fine_tune_instructions
         )
+
+        final_rag_prompt = ChatPromptTemplate.from_messages([
+            ("system", rag_system_text),
+            MessagesPlaceholder(variable_name="chat_history"),
+            ("human", "Context:\n{context}\n\nQuestion: {input}"),
+        ])
 
         document_chain = create_stuff_documents_chain(answer_llm, final_rag_prompt)
         conversational_rag_chain = create_retrieval_chain(history_aware_retriever_chain, document_chain)
