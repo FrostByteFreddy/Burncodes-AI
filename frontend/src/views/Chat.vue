@@ -28,7 +28,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from "vue";
+import { ref, onMounted, onUnmounted, nextTick } from "vue";
 import { useRoute } from "vue-router";
 import axios from "axios";
 import { processBotMessage } from "@/utils/chatProcessor.js";
@@ -133,8 +133,24 @@ const fetchIntroMessage = async () => {
   }
 };
 
+const activePollingTimeout = ref(null);
+
 const pollTaskStatus = (taskId) => {
-  const interval = setInterval(async () => {
+  let attempts = 0;
+  const MAX_ATTEMPTS = 120; // 2 minutes max
+
+  const poll = async () => {
+    attempts++;
+    if (attempts > MAX_ATTEMPTS) {
+      activePollingTimeout.value = null;
+      isThinking.value = false;
+      const { text, html } = processBotMessage(t("chat.errors.taskStatus"));
+      chatHistory.value.push({ text, html, isUser: false });
+      saveChatToCookie(chatHistory.value, conversationId.value);
+      await scrollToBottom();
+      return;
+    }
+
     try {
       const response = await axios.get(
         `${API_BASE_URL}/chat/task/${taskId}/status`
@@ -142,9 +158,9 @@ const pollTaskStatus = (taskId) => {
       const { state: task_status, result: task_result } = response.data;
 
       if (task_status === "SUCCESS") {
-        clearInterval(interval);
+        activePollingTimeout.value = null;
         isThinking.value = false;
-        await scrollToBottom(); // Scroll down after the "thinking" dots disappear
+        await scrollToBottom();
 
         const fullHistory = task_result.chat_history;
         const lastMessageFromServer = fullHistory[fullHistory.length - 1];
@@ -160,7 +176,7 @@ const pollTaskStatus = (taskId) => {
           });
 
           chatHistory.value.push({ text: "", html: "", isUser: false });
-          await nextTick(); // Ensure the empty message div is in the DOM
+          await nextTick();
 
           const fullBotResponseText = lastMessageFromServer.content;
           const wordsAndSpaces = fullBotResponseText.split(/(\s+)/);
@@ -190,8 +206,9 @@ const pollTaskStatus = (taskId) => {
           saveChatToCookie(chatHistory.value, conversationId.value);
           await scrollToBottom();
         }
+        return; // Done — don't schedule next poll
       } else if (task_status === "FAILURE") {
-        clearInterval(interval);
+        activePollingTimeout.value = null;
         const errorMsg = `${t("chat.errors.processingFailed")} ${
           task_result?.exc_message || ""
         }`;
@@ -200,9 +217,14 @@ const pollTaskStatus = (taskId) => {
         saveChatToCookie(chatHistory.value, conversationId.value);
         isThinking.value = false;
         await scrollToBottom();
+        return; // Done
       }
+
+      // Still pending — schedule next poll with slight backoff
+      const nextDelay = Math.min(1000 + attempts * 100, 3000);
+      activePollingTimeout.value = setTimeout(poll, nextDelay);
     } catch (error) {
-      clearInterval(interval);
+      activePollingTimeout.value = null;
       const errorMsg = t("chat.errors.taskStatus");
       const { text, html } = processBotMessage(errorMsg);
       chatHistory.value.push({ text, html, isUser: false });
@@ -210,8 +232,17 @@ const pollTaskStatus = (taskId) => {
       isThinking.value = false;
       await scrollToBottom();
     }
-  }, 1000);
+  };
+
+  poll();
 };
+
+onUnmounted(() => {
+  if (activePollingTimeout.value) {
+    clearTimeout(activePollingTimeout.value);
+    activePollingTimeout.value = null;
+  }
+});
 
 const sendMessage = async () => {
   if (!userMessage.value.trim() || !tenantId.value || isThinking.value) return;
