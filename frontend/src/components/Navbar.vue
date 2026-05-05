@@ -1,5 +1,5 @@
 <template>
-  <header class="sticky top-0 z-50 bg-base-100/95 backdrop-blur border-b border-base-300">
+  <header class="sticky top-0 z-50 bg-base-100/90 backdrop-blur-md border-b border-base-200/50 shadow-sm">
     <div class="flex items-center justify-between px-4 md:px-8 h-16">
 
       <!-- Left: Logo + Tenant Switcher -->
@@ -23,14 +23,14 @@
         <div v-if="tenantsStore.tenants.length > 1" class="relative" ref="tenantDropdownRef">
           <button
             @click="tenantDropdownOpen = !tenantDropdownOpen"
-            class="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-base-200 hover:bg-base-300 transition-colors"
+            class="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl bg-base-200 hover:bg-base-300 transition-colors shadow-sm"
           >
             <span class="max-w-[120px] truncate">{{ activeTenant ? activeTenant.name : $t('sidebar.selectTenant') }}</span>
             <font-awesome-icon :icon="['fas', 'chevron-down']" class="w-3 h-3 opacity-60" />
           </button>
           <div
             v-show="tenantDropdownOpen"
-            class="absolute left-0 top-full mt-1 w-48 py-1 bg-base-100 border border-base-300 rounded-lg shadow-lg z-50"
+            class="absolute left-0 top-full mt-2 w-56 py-2 bg-base-100 border border-base-200/50 rounded-2xl shadow-xl z-50 overflow-hidden"
           >
             <a
               v-for="tenant in tenantsStore.tenants"
@@ -102,16 +102,16 @@
         <div class="relative hidden md:block" ref="userDropdownRef">
           <button
             @click="userDropdownOpen = !userDropdownOpen"
-            class="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-base-200 transition-colors text-sm"
+            class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-base-200 transition-colors text-sm font-medium"
           >
-            <div class="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center text-primary font-semibold text-xs shrink-0">
+            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
               {{ userInitial }}
             </div>
             <font-awesome-icon :icon="['fas', 'chevron-down']" class="w-3 h-3 opacity-60" />
           </button>
           <div
             v-show="userDropdownOpen"
-            class="absolute right-0 top-full mt-1 w-48 py-1 bg-base-100 border border-base-300 rounded-lg shadow-lg z-50"
+            class="absolute right-0 top-full mt-2 w-56 py-2 bg-base-100 border border-base-200/50 rounded-2xl shadow-xl z-50 overflow-hidden"
           >
             <div class="px-4 py-2 border-b border-base-200 mb-1">
               <p class="text-xs text-base-content/50 truncate">{{ authStore.user?.email }}</p>
@@ -140,7 +140,7 @@
         <!-- Mobile hamburger -->
         <button
           @click="mobileMenuOpen = !mobileMenuOpen"
-          class="lg:hidden btn btn-ghost btn-sm btn-square"
+          class="lg:hidden btn btn-ghost btn-sm btn-circle"
           aria-label="Toggle menu"
         >
           <font-awesome-icon :icon="mobileMenuOpen ? ['fas', 'xmark'] : ['fas', 'bars']" class="w-5 h-5" />
@@ -278,29 +278,30 @@ const handleLogout = async () => {
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.5rem;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
-  font-weight: 500;
-  border-radius: 0.375rem;
-  transition: background-color 0.15s, color 0.15s;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
   color: oklch(var(--bc) / 0.65);
   letter-spacing: 0.01em;
 }
 .nav-link:hover {
-  background-color: oklch(var(--b2));
+  background-color: oklch(var(--b2) / 0.5);
   color: oklch(var(--bc));
 }
 .nav-link-active {
-  background-color: oklch(var(--b2));
-  color: oklch(var(--bc));
+  background-color: oklch(var(--p) / 0.1);
+  color: oklch(var(--p));
 }
 .dropdown-item {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.5rem 1rem;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
   font-size: 0.875rem;
+  font-weight: 500;
   transition: background-color 0.15s;
   color: oklch(var(--bc));
 }

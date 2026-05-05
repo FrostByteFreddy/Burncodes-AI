@@ -8,6 +8,7 @@ class SourceType(str, Enum):
     FILE = "FILE"
 
 class SourceStatus(str, Enum):
+    QUEUED = "QUEUED"
     PROCESSING = "PROCESSING"
     COMPLETED = "COMPLETED"
     ERROR = "ERROR"
@@ -24,6 +25,7 @@ class TenantSource(BaseModel):
     source_type: SourceType
     source_location: str
     status: SourceStatus
+    status_code: Optional[int] = None
     input_tokens: int = 0
     output_tokens: int = 0
     cost_chf: float = 0.0

@@ -1,5 +1,6 @@
 import os
 import re
+from app.logging_config import error_logger
 import time
 import random
 import chromadb
@@ -91,12 +92,12 @@ def get_vectorstore(tenant_id: UUID, embeddings: Embeddings):
     # Cache the vectorstore for future use
     # vectorstore_cache[tenant_id] = vectorstore
     
-    print(f"✅ ChromaDB vector store initialized for tenant: {tenant_id_str}")
+    error_logger.info("ChromaDB vector store initialized for tenant: %s", tenant_id_str)
     return vectorstore
 
 def process_documents(docs: list[Document], tenant_id: UUID, embeddings: Embeddings, supabase_client: Client = supabase):
     if not docs:
-        print("No documents to process")
+        error_logger.debug("No documents to process — skipping.")
         return
 
     source_ids = list(set(doc.metadata['source_id'] for doc in docs if 'source_id' in doc.metadata))
@@ -115,17 +116,17 @@ def process_documents(docs: list[Document], tenant_id: UUID, embeddings: Embeddi
                     continue
                 raise e
             
-        print(f"✅ Added {len(docs)} document chunks to ChromaDB for tenant: {tenant_id}.")
+        error_logger.info("Added %d document chunks to ChromaDB for tenant: %s", len(docs), tenant_id)
 
         if source_ids:
             supabase_client.table('tenant_sources').update({"status": "COMPLETED"}).in_('id', source_ids).execute()
-            print(f"✅ Marked sources {source_ids} as COMPLETED.")
+            error_logger.info("Marked sources %s as COMPLETED.", source_ids)
 
     except Exception as e:
-        print(f"❌ Error processing documents for tenant {tenant_id}: {e}")
+        error_logger.error("Error processing documents for tenant %s: %s", tenant_id, e, exc_info=True)
         if source_ids:
             supabase_client.table('tenant_sources').update({"status": "ERROR"}).in_('id', source_ids).execute()
-            print(f"🔥 Marked sources {source_ids} as ERROR.")
+            error_logger.error("Marked sources %s as ERROR.", source_ids)
 
 def process_fine_tune_rules(rules: List[TenantFineTune], tenant_id: UUID, embeddings: Embeddings, supabase_client: Client = supabase):
     """
@@ -133,7 +134,7 @@ def process_fine_tune_rules(rules: List[TenantFineTune], tenant_id: UUID, embedd
     Returns the vector IDs of the newly created documents.
     """
     if not rules:
-        print("No fine-tune rules to process.")
+        error_logger.debug("No fine-tune rules to process.")
         return []
 
     docs = [
@@ -149,10 +150,10 @@ def process_fine_tune_rules(rules: List[TenantFineTune], tenant_id: UUID, embedd
         # This might need to be adjusted based on the actual return value of `db.add_documents`.
         # According to LangChain docs, the `add_documents` method in Chroma returns a list of IDs.
         vector_ids = db.add_documents(docs)
-        print(f"✅ Added {len(docs)} fine-tune rule vectors to ChromaDB for tenant: {tenant_id}.")
+        error_logger.info("Added %d fine-tune rule vectors to ChromaDB for tenant: %s", len(docs), tenant_id)
         return vector_ids
     except Exception as e:
-        print(f"❌ Error processing fine-tune rules for tenant {tenant_id}: {e}")
+        error_logger.error("Error processing fine-tune rules for tenant %s: %s", tenant_id, e, exc_info=True)
         # Optionally, handle the error more gracefully
         return []
 
@@ -161,12 +162,12 @@ def delete_fine_tune_vectors(vector_ids: List[str], tenant_id: UUID, embeddings:
     Deletes fine-tuning rule vectors from the vector store based on their IDs.
     """
     if not vector_ids:
-        print("No vector IDs provided for deletion.")
+        error_logger.debug("No vector IDs provided for deletion — skipping.")
         return
 
     try:
         db = get_vectorstore(tenant_id, embeddings)
         db.delete(ids=vector_ids)
-        print(f"✅ Deleted {len(vector_ids)} fine-tune rule vectors from ChromaDB for tenant: {tenant_id}.")
+        error_logger.info("Deleted %d fine-tune rule vectors from ChromaDB for tenant: %s", len(vector_ids), tenant_id)
     except Exception as e:
-        print(f"❌ Error deleting fine-tune vectors for tenant {tenant_id}: {e}")
+        error_logger.error("Error deleting fine-tune vectors for tenant %s: %s", tenant_id, e, exc_info=True)

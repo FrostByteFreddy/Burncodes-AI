@@ -48,19 +48,30 @@
     </div>
 
     <!-- Tenant List -->
-    <div v-else class="border-t border-base-200">
+    <div v-else class="space-y-4 pt-4">
       <div
         v-for="tenant in tenantsStore.tenants"
         :key="tenant.id"
-        class="flex justify-between items-center py-4 border-b border-base-200"
+        class="bg-base-100 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-base-200/50 flex justify-between items-center"
       >
         <div>
-          <h2 class="text-xl font-bold">{{ tenant.name }}</h2>
+          <h2 class="text-xl font-bold text-base-content">{{ tenant.name }}</h2>
+          <p class="text-sm text-base-content/60 mt-1 flex items-center space-x-2">
+            <font-awesome-icon :icon="['fas', 'globe']" class="text-xs" />
+            <span class="font-medium">{{ tenant.language ? tenant.language.toUpperCase() : 'Global' }}</span>
+          </p>
         </div>
-        <div class="flex space-x-4">
+        <div class="flex space-x-3 items-center">
+          <router-link
+            :to="`/tenants/${tenant.id}`"
+            class="btn btn-primary btn-sm px-6"
+          >
+            <font-awesome-icon :icon="['fas', 'cog']" class="mr-2" />
+            Manage
+          </router-link>
           <button
             @click="confirmDelete(tenant)"
-            class="btn btn-sm text-error hover:bg-error/10"
+            class="btn btn-sm btn-ghost text-error hover:bg-error/10 hover:text-error border-none"
           >
             <font-awesome-icon :icon="['fas', 'trash']" class="mr-2" />
             {{ $t("manageTenants.delete") }}

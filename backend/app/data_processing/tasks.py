@@ -9,14 +9,15 @@ from urllib.parse import urlparse, urldefrag
 from uuid import UUID
 
 from celery import shared_task
-from app.database.supabase_client import supabase, bucket_name
+from app.database.supabase_client import supabase
 from app.data_processing.processor import get_vectorstore, get_loader, process_documents, SUPPORTED_FILE_EXTENSIONS
-from app.data_processing.crawler import get_crawler
+from app.data_processing.crawler import get_crawler, browser_config
 from app.data_processing.config import MAX_CONCURRENT_CRAWLS_PER_JOB
 from app.billing.services import BillingService
+from app.logging_config import error_logger
 
 # --- Crawl4AI Imports ---
-from crawl4ai import CacheMode, CrawlerRunConfig, LinkPreviewConfig
+from crawl4ai import AsyncWebCrawler, CacheMode, CrawlerRunConfig, LinkPreviewConfig
 
 # --- LangChain Core Imports ---
 from langchain_core.documents import Document
@@ -26,18 +27,18 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from app.prompts import CLEANUP_PROMPT_TEMPLATES, PDF_CLEANUP_PROMPT_TEMPLATES
 
-DEBUG = os.getenv("DEBUG", "False").lower() == "true"
-QUERY_GEMINI_MODEL = os.getenv("QUERY_GEMINI_MODEL", "gemini-1.5-flash")
+# DEBUG flag removed: debug logging is always-on via logging_config.py
+INDEXING_GEMINI_MODEL = os.getenv("INDEXING_GEMINI_MODEL")
 
 async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_language: str = 'en', source_id: int = None) -> tuple[str, int, int]:
     """Uses an LLM to clean, optimize, and chunk raw markdown asynchronously. Returns content and token usage."""
-    print(f"🤖 Calling LLM to clean and chunk markdown ({len(markdown_text)} chars) with language '{doc_language}'...")
+    error_logger.info("Calling LLM to clean and chunk markdown (%d chars) lang='%s' source_id=%s", len(markdown_text), doc_language, source_id)
 
     # Select the appropriate prompt template based on the document language
     template = CLEANUP_PROMPT_TEMPLATES.get(doc_language, CLEANUP_PROMPT_TEMPLATES['en'])
-    print(f"📄 Using doc_language: {doc_language}")
+    error_logger.debug("doc_language resolved to: %s", doc_language)
 
-    cleanup_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0.0, timeout=600)
+    cleanup_llm = ChatGoogleGenerativeAI(model=INDEXING_GEMINI_MODEL, temperature=0.0, timeout=600)
     cleanup_prompt = PromptTemplate.from_template(template)
     cleanup_chain = cleanup_prompt | cleanup_llm
     
@@ -45,7 +46,7 @@ async def async_clean_and_chunk_markdown_with_llm(markdown_text: str, doc_langua
     input_tokens = len(markdown_text) // 4
     
     response = await cleanup_chain.ainvoke({"raw_markdown": markdown_text})
-    print("✅ Markdown cleaned and chunked successfully.")
+    error_logger.info("Markdown cleaned and chunked successfully for source_id=%s", source_id)
     
     # Estimate output tokens
     output_tokens = len(response.content) // 4
@@ -75,7 +76,7 @@ async def async_create_document_chunks_with_metadata(content: str, source: str, 
         user_response = await loop.run_in_executor(None, lambda: supabase.table('tenants').select('user_id').eq('id', str(tenant_id)).single().execute())
         if user_response.data:
             user_id = user_response.data['user_id']
-            cost = BillingService.deduct_cost(user_id, QUERY_GEMINI_MODEL, input_tokens, output_tokens)
+            cost = BillingService.deduct_cost(user_id, INDEXING_GEMINI_MODEL, input_tokens, output_tokens)
             
             # Update tenant_sources with usage stats
             await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({
@@ -86,17 +87,16 @@ async def async_create_document_chunks_with_metadata(content: str, source: str, 
             
         chunks = [chunk.strip() for chunk in cleaned_and_chunked_content.split("---CHUNK_SEPARATOR---") if chunk.strip()]
 
-        if DEBUG:
-            try:
-                os.makedirs('crawled_markdown', exist_ok=True)
-                safe_filename = re.sub(r'https://?|www\.|\/|\?|\=|\&', '_', source) + ".md"
-                filepath = os.path.join('crawled_markdown', safe_filename)
-                # Save the raw, chunked output for inspection
-                with open(filepath, 'w', encoding='utf-8') as f:
-                    f.write(f"# SOURCE: {source}\n\n{cleaned_and_chunked_content}")
-                print(f"🕵️‍♂️ Saved CLEANED and CHUNKED markdown for {source} to {filepath}")
-            except Exception as e:
-                print(f"❌ Could not save cleaned markdown file for {source}: {e}")
+        try:
+            os.makedirs('crawled_markdown', exist_ok=True)
+            safe_filename = re.sub(r'https://?|www\.|\/|\?|\=|\&', '_', source) + ".md"
+            filepath = os.path.join('crawled_markdown', safe_filename)
+            # Save the raw, chunked output for inspection
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(f"# SOURCE: {source}\n\n{cleaned_and_chunked_content}")
+            error_logger.debug("Saved cleaned+chunked markdown for %s to %s", source, filepath)
+        except Exception as e:
+            error_logger.warning("Could not save cleaned markdown file for %s: %s", source, e)
 
         timestamp = datetime.now(timezone.utc).isoformat()
         for i, chunk in enumerate(chunks):
@@ -108,7 +108,7 @@ async def async_create_document_chunks_with_metadata(content: str, source: str, 
 
         return documents
     except Exception as e:
-        print(f"Error creating document chunks for source {source_id}: {e}")
+        error_logger.error("Error creating document chunks for source %s: %s", source_id, e, exc_info=True)
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
         return []
 
@@ -128,20 +128,20 @@ async def async_create_document_chunks_for_structured_data(content: str, source:
         )
         documents.append(doc)
 
-        print(f"✅ Created 1 document for structured file {source} (source_id: {source_id})")
+        error_logger.info("Created 1 document for structured file %s (source_id: %s)", source, source_id)
         return documents
     except Exception as e:
-        print(f"Error creating document chunks for structured source {source_id}: {e}")
+        error_logger.error("Error creating document chunks for structured source %s: %s", source_id, e, exc_info=True)
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
         return []
 
 async def async_clean_pdf_text_with_llm(raw_text: str, doc_language: str = 'en') -> tuple[str, int, int]:
     """Uses an LLM to clean and reconstruct PDF text into valid markdown. Returns content and token usage."""
-    print(f"🤖 Calling LLM to clean PDF text chunk ({len(raw_text)} chars) with language '{doc_language}'...")
+    error_logger.info("Calling LLM to clean PDF text chunk (%d chars) lang='%s'", len(raw_text), doc_language)
 
     template = PDF_CLEANUP_PROMPT_TEMPLATES.get(doc_language, PDF_CLEANUP_PROMPT_TEMPLATES['en'])
     
-    cleanup_llm = ChatGoogleGenerativeAI(model=QUERY_GEMINI_MODEL, temperature=0.0, timeout=600)
+    cleanup_llm = ChatGoogleGenerativeAI(model=INDEXING_GEMINI_MODEL, temperature=0.0, timeout=600)
     cleanup_prompt = PromptTemplate.from_template(template)
     cleanup_chain = cleanup_prompt | cleanup_llm
     
@@ -149,11 +149,11 @@ async def async_clean_pdf_text_with_llm(raw_text: str, doc_language: str = 'en')
     
     try:
         response = await cleanup_chain.ainvoke({"raw_text": raw_text})
-        print("✅ PDF text chunk cleaned successfully.")
+        error_logger.debug("PDF text chunk cleaned successfully.")
         output_tokens = len(response.content) // 4
         return response.content, input_tokens, output_tokens
     except Exception as e:
-        print(f"⚠️ Error cleaning PDF text chunk: {e}")
+        error_logger.warning("Error cleaning PDF text chunk (falling back to raw text): %s", e)
         return raw_text, input_tokens, 0 # Fallback to raw text if cleaning fails
 
 async def async_create_document_chunks_for_pdf(content: str, source: str, source_id: int, tenant_id: UUID) -> list[Document]:
@@ -185,7 +185,7 @@ async def async_create_document_chunks_for_pdf(content: str, source: str, source
         total_output_tokens = 0
         
         for i, chunk in enumerate(large_chunks):
-            print(f"Processing large PDF chunk {i+1}/{len(large_chunks)}...")
+            error_logger.debug("Processing large PDF chunk %d/%d for source_id=%s", i + 1, len(large_chunks), source_id)
             cleaned_chunk, input_tokens, output_tokens = await async_clean_pdf_text_with_llm(chunk, doc_language)
             cleaned_chunks.append(cleaned_chunk)
             total_input_tokens += input_tokens
@@ -196,7 +196,7 @@ async def async_create_document_chunks_for_pdf(content: str, source: str, source
         user_response = await loop.run_in_executor(None, lambda: supabase.table('tenants').select('user_id').eq('id', str(tenant_id)).single().execute())
         if user_response.data:
             user_id = user_response.data['user_id']
-            cost = BillingService.deduct_cost(user_id, QUERY_GEMINI_MODEL, total_input_tokens, total_output_tokens)
+            cost = BillingService.deduct_cost(user_id, INDEXING_GEMINI_MODEL, total_input_tokens, total_output_tokens)
             
             # Update tenant_sources with usage stats
             await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({
@@ -207,17 +207,16 @@ async def async_create_document_chunks_for_pdf(content: str, source: str, source
         
         full_cleaned_content = "\n\n---CHUNK_SEPARATOR---\n\n".join(cleaned_chunks)
 
-        # 3. Upload readme to S3 (instead of DB)
-        # Path: /tenant-id/readme_output/filename.md
+        # 3. Save readme to local storage
+        # Path: /app/data/uploads/{tenant-id}/readme_output/filename.md
         filename_stem = os.path.splitext(os.path.basename(source))[0]
-        s3_readme_path = f"{tenant_id}/readme_output/{filename_stem}.md"
+        readme_dir = os.path.join(os.environ.get("UPLOADS_DIR", "/app/data/uploads"), str(tenant_id), "readme_output")
+        os.makedirs(readme_dir, exist_ok=True)
+        readme_path = os.path.join(readme_dir, f"{filename_stem}.md")
         
-        print(f"📤 Uploading cleaned readme to S3: {s3_readme_path}")
-        await loop.run_in_executor(None, lambda: supabase.storage.from_(bucket_name).upload(
-            path=s3_readme_path,
-            file=full_cleaned_content.encode('utf-8'),
-            file_options={"content-type": "text/markdown", "upsert": "true"}
-        ))
+        error_logger.info("Saving cleaned readme to: %s", readme_path)
+        with open(readme_path, 'w', encoding='utf-8') as f:
+            f.write(full_cleaned_content)
 
         # 4. Split the CLEANED content into chunks using the separator
         chunks = [chunk.strip() for chunk in full_cleaned_content.split("---CHUNK_SEPARATOR---") if chunk.strip()]
@@ -230,10 +229,10 @@ async def async_create_document_chunks_for_pdf(content: str, source: str, source
             )
             documents.append(doc)
 
-        print(f"✅ Created {len(documents)} document chunks for PDF {source} (source_id: {source_id})")
+        error_logger.info("Created %d document chunks for PDF %s (source_id: %s)", len(documents), source, source_id)
         return documents
     except Exception as e:
-        print(f"Error creating document chunks for PDF source {source_id}: {e}")
+        error_logger.error("Error creating document chunks for PDF source %s: %s", source_id, e, exc_info=True)
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
         return []
 
@@ -241,44 +240,124 @@ async def _get_document_chunks_from_content(content: str, source: str, source_id
     """Internal helper to decide which chunking strategy to use based on file extension."""
     structured_extensions = ['.csv', '.ics']
     if ext in structured_extensions:
-        # Use the direct path for structured data
         return await async_create_document_chunks_for_structured_data(content, source, source_id)
     elif ext == '.pdf':
-        # Use the RecursiveCharacterTextSplitter for PDFs
         return await async_create_document_chunks_for_pdf(content, source, source_id, tenant_id)
     else:
-        # Use the LLM cleaning path for unstructured data
         return await async_create_document_chunks_with_metadata(content, source, source_id, tenant_id)
 
-@shared_task
-def process_s3_file(s3_path: str, source_filename: str, source_id: int, tenant_id: UUID):
-    """Celery task to process a file stored in Supabase S3."""
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
-    docs = asyncio.run(async_process_s3_file(s3_path, source_filename, source_id, tenant_id))
-    process_documents(docs, tenant_id, embeddings)
-    # The temporary file is handled within async_process_s3_file, so no need to remove it here.
+# ---------------------------------------------------------------------------
+# Fast (no-LLM) indexing path
+# ---------------------------------------------------------------------------
 
-async def async_process_s3_file(s3_path: str, source_filename: str, source_id: int, tenant_id: UUID) -> list[Document]:
+async def async_create_document_chunks_fast(content: str, source: str, source_id: int, tenant_id: UUID) -> list[Document]:
     """
-    Downloads a file from S3, processes it into document chunks, and cleans up the temporary file.
+    Token-free indexing path.
+
+    Skips the LLM cleaning step entirely. The raw markdown/text is split using
+    RecursiveCharacterTextSplitter with sensible defaults. Significantly faster
+    and uses zero billing tokens — ideal for large knowledge bases where speed
+    matters more than per-chunk semantic cleanliness.
+    """
+    loop = asyncio.get_running_loop()
+    try:
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "PROCESSING"}).eq('id', source_id).execute())
+
+        sanitized = content.replace('\x00', '')
+
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1500,
+            chunk_overlap=150,
+            separators=["\n\n", "\n", ". ", " ", ""],
+            length_function=len,
+        )
+        raw_chunks = splitter.split_text(sanitized)
+
+        timestamp = datetime.now(timezone.utc).isoformat()
+        documents = [
+            Document(
+                page_content=chunk,
+                metadata={"source": source, "source_id": source_id, "chunk": i, "last_updated": timestamp},
+            )
+            for i, chunk in enumerate(raw_chunks)
+            if chunk.strip()
+        ]
+
+        # Zero token cost — write explicit zeros so the UI stays accurate
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cost_chf": 0.0,
+        }).eq('id', source_id).execute())
+
+        error_logger.info(
+            "fast-index: created %d chunks for source_id=%s (no LLM, no cost)",
+            len(documents), source_id,
+        )
+        return documents
+
+    except Exception as e:
+        error_logger.error("fast-index: error for source_id=%s: %s", source_id, e, exc_info=True)
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
+        return []
+
+
+async def _resolve_indexing_mode(tenant_id: UUID) -> str:
+    """Returns the tenant's indexing_mode ('llm' or 'fast'). Defaults to 'llm'."""
+    loop = asyncio.get_running_loop()
+    try:
+        response = await loop.run_in_executor(
+            None,
+            lambda: supabase.table('tenants').select('indexing_mode').eq('id', str(tenant_id)).single().execute()
+        )
+        return (response.data or {}).get('indexing_mode') or 'llm'
+    except Exception:
+        return 'llm'
+
+
+async def _get_document_chunks(content: str, source: str, source_id: int, ext: str, tenant_id: UUID) -> list[Document]:
+    """
+    Unified chunking dispatcher. Reads the tenant's indexing_mode and routes to:
+      - 'fast': RecursiveCharacterTextSplitter, no LLM, no billing cost
+      - 'llm'  (default): LLM-cleaned semantic chunks, billed to the tenant
+    Structured data (CSV, ICS) always bypasses the LLM regardless of mode.
+    """
+    structured_extensions = ['.csv', '.ics']
+    if ext in structured_extensions:
+        return await async_create_document_chunks_for_structured_data(content, source, source_id)
+
+    indexing_mode = await _resolve_indexing_mode(tenant_id)
+
+    if indexing_mode == 'fast':
+        error_logger.info("indexing_mode=fast for source_id=%s — skipping LLM", source_id)
+        return await async_create_document_chunks_fast(content, source, source_id, tenant_id)
+
+    # Default LLM path
+    if ext == '.pdf':
+        return await async_create_document_chunks_for_pdf(content, source, source_id, tenant_id)
+    return await async_create_document_chunks_with_metadata(content, source, source_id, tenant_id)
+
+
+@shared_task(queue='fast')
+def process_local_file(file_path: str, source_filename: str, source_id: int, tenant_id: UUID):
+    """Celery task to process a file stored on the local filesystem."""
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+    docs = asyncio.run(async_process_local_file(file_path, source_filename, source_id, tenant_id))
+    process_documents(docs, tenant_id, embeddings)
+
+async def async_process_local_file(file_path: str, source_filename: str, source_id: int, tenant_id: UUID) -> list[Document]:
+    """
+    Reads a file from local storage, processes it into document chunks.
     """
     ext = os.path.splitext(source_filename)[1].lower()
-    tmp_filepath = None
     try:
-        # Download file from S3
-        file_content = supabase.storage.from_(bucket_name).download(s3_path)
-        if file_content is None:
-            raise FileNotFoundError(f"File not found in S3 at path: {s3_path}")
-
-        # Create a temporary file to store the content
-        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp_file:
-            tmp_file.write(file_content)
-            tmp_filepath = tmp_file.name
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found at path: {file_path}")
 
         # Get the appropriate loader for the file extension
-        loader = get_loader(tmp_filepath)
+        loader = get_loader(file_path)
         if not loader:
-            print(f"⚠️ No loader found for extension {ext}, skipping file {source_filename}")
+            error_logger.warning("No loader found for extension %s, skipping file %s", ext, source_filename)
             return []
 
         # Load and process the document
@@ -288,25 +367,16 @@ async def async_process_s3_file(s3_path: str, source_filename: str, source_id: i
 
         # Concatenate content from all pages
         content = "\n\n".join([doc.page_content for doc in docs_from_loader])
-        return await _get_document_chunks_from_content(content, source_filename, source_id, ext, tenant_id)
+        return await _get_document_chunks(content, source_filename, source_id, ext, tenant_id)
 
     except Exception as e:
-        print(f"❌ Error processing S3 file {s3_path}: {e}")
+        error_logger.error("Error processing local file %s: %s", file_path, e, exc_info=True)
         # Mark the source as errored
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
         return []
-    finally:
-        # Clean up the temporary file
-        if tmp_filepath and os.path.exists(tmp_filepath):
-            os.remove(tmp_filepath)
-        # Clean up the S3 file after processing, regardless of success or failure
-        # try:
-        #     supabase.storage.from_(bucket_name).remove([s3_path])
-        # except Exception as e:
-        #     print(f"Failed to remove S3 file {s3_path} after processing: {e}")
 
-@shared_task
+@shared_task(queue='fast')
 def process_urls(urls: list[tuple[str, int]], tenant_id: UUID):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
     docs = asyncio.run(process_urls_concurrently(urls, tenant_id))
@@ -341,15 +411,27 @@ async def process_urls_concurrently(urls: list[tuple[str, int]], tenant_id: UUID
 async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]], tenant_id: UUID) -> list[Document]:
     """Crawls URLs and processes their content concurrently using the shared crawler."""
     all_docs = []
-    semaphore = asyncio.Semaphore(10)
+    semaphore = asyncio.Semaphore(30)
     crawler = get_crawler()
     await crawler.start()
 
     try:
         async def process_single_result(result, source_id, tenant_id):
             async with semaphore:
+                status_code = getattr(result, 'status_code', None)
                 if result.success and result.markdown:
-                    return await async_create_document_chunks_with_metadata(result.markdown, result.url, source_id, tenant_id)
+                    # Update status_code for successful fetches
+                    loop = asyncio.get_running_loop()
+                    await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status_code": status_code}).eq('id', source_id).execute())
+                    ext = os.path.splitext(urlparse(result.url).path)[1].lower() or '.html'
+                    return await _get_document_chunks(result.markdown, result.url, source_id, ext, tenant_id)
+                else:
+                    # Mark as error immediately without hitting LLM
+                    loop = asyncio.get_running_loop()
+                    await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({
+                        "status": "ERROR",
+                        "status_code": status_code if status_code else 500
+                    }).eq('id', source_id).execute())
             return []
 
         url_to_source_id = {url: source_id for url, source_id in urls_to_process}
@@ -366,7 +448,7 @@ async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]], t
 
 async def async_process_file_url(url: str, tenant_id: UUID, source_id: int) -> list[Document]:
     """Downloads a file from a URL and processes its content."""
-    print(f"📄 Downloading and processing file: {url}")
+    error_logger.info("Downloading and processing file: %s", url)
     ext = os.path.splitext(urlparse(url).path)[1].lower()
     if not ext: return []
 
@@ -384,7 +466,7 @@ async def async_process_file_url(url: str, tenant_id: UUID, source_id: int) -> l
 
         loader = get_loader(tmp_filepath)
         if not loader:
-            print(f"⚠️ No loader found for extension {ext}, skipping file {url}")
+            error_logger.warning("No loader found for extension %s, skipping file URL %s", ext, url)
             os.remove(tmp_filepath)
             return []
 
@@ -397,7 +479,7 @@ async def async_process_file_url(url: str, tenant_id: UUID, source_id: int) -> l
         return await _get_document_chunks_from_content(content, url, source_id, ext, tenant_id)
 
     except Exception as e:
-        print(f"❌ Error processing file URL {url}: {e}")
+        error_logger.error("Error processing file URL %s: %s", url, e, exc_info=True)
         if 'tmp_filepath' in locals() and os.path.exists(tmp_filepath):
             os.remove(tmp_filepath)
         return []
@@ -408,7 +490,7 @@ def normalize_url(url):
     """Normalizes a URL by removing fragment and trailing slash."""
     return urldefrag(url)[0].rstrip('/')
 
-@shared_task(bind=True)
+@shared_task(bind=True, queue='fast')
 def crawl_links_task(self, tenant_id: UUID, start_url: str, single_page_only: bool = False, excluded_urls: list[str] = None, max_depth: int = 3):
     """
     Orchestrator Celery task to initiate a distributed web crawl.
@@ -449,13 +531,13 @@ def crawl_links_task(self, tenant_id: UUID, start_url: str, single_page_only: bo
 
     except Exception as e:
         error_message = f"Failed to initiate crawl: {e}"
-        print(error_message)
+        error_logger.error(error_message)
         if 'job_id' in locals():
             supabase.table('crawling_jobs').update({"status": CrawlingStatus.FAILED.value}).eq('id', job_id).execute()
         self.update_state(state='FAILURE', meta={'status': error_message})
         raise e
 
-@shared_task(bind=True, time_limit=600) # 5-minute hard time limit
+@shared_task(bind=True, queue='heavy', time_limit=600)
 def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str = None):
     """
     Worker Celery task to crawl a single URL, process its content, and discover new links.
@@ -476,25 +558,52 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         # 1. Normalize the URL that is being crawled
         normalized_url = normalize_url(url)
 
-        # 2. Normalize the list of URLs to exclude
-        normalized_excluded_list = [normalize_url(str(ex_url)) for ex_url in excluded_urls]
+        # 2. Normalize the list of URLs to exclude (handling stray spaces, newlines, and \r)
+        normalized_excluded_list = [normalize_url(str(ex_url).strip()) for ex_url in excluded_urls]
         
-        print(f"🔍 Checking exclusion for {normalized_url} against {normalized_excluded_list}")
+        error_logger.debug("Checking exclusion for %s against %s", normalized_url, normalized_excluded_list)
 
-        # 3. Perform the check with the normalized values
+        # 3. Perform the check with the normalized values (and be highly permissive about matches)
         is_excluded = False
         for excluded in normalized_excluded_list:
-            if normalized_url == excluded or normalized_url.startswith(excluded + '/'):
+            if not excluded:
+                continue
+            # Strip protocols for a bulletproof substring check (covers subdomains nicely)
+            stripped_ex = excluded.replace('https://', '').replace('http://', '').strip('/')
+            stripped_url = normalized_url.replace('https://', '').replace('http://', '').strip('/')
+            if stripped_ex and (stripped_ex == stripped_url or stripped_url.startswith(stripped_ex + '/')):
                 is_excluded = True
                 break
 
         if is_excluded:
-            print(f"🚫 Skipping excluded URL: {url}")
+            error_logger.info("Skipping excluded URL: %s", url)
             supabase.table('crawling_tasks').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', task_id).execute()
             return
 
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.IN_PROGRESS.value}).eq('id', task_id).execute()
-        print(f"Crawling URL: {url} at depth {depth}")
+        error_logger.info("Crawling URL: %s at depth %s", url, depth)
+
+        # FAST FAIL CHECK: Check if the URL is broken before spinning up the headless browser
+        try:
+            # Quick lightweight check to see if page actually exists
+            with httpx.Client(timeout=10.0, follow_redirects=True) as client:
+                fast_check = client.get(url, headers={"User-Agent": "Mozilla/5.0 (compatible; SwiftAnswerBot/1.0)"})
+                # if the page clearly 404s or 500s, we fail immediately to save tokens and browser time.
+                # Note: We give 403s the benefit of the doubt, as the headless browser might bypass cloudflare.
+                if fast_check.status_code == 404 or fast_check.status_code >= 500:
+                    error_logger.info(f"Fast fail for {url} with status {fast_check.status_code}")
+                    supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
+                    source_data = {
+                        "tenant_id": str(tenant_id),
+                        "source_type": "URL",
+                        "source_location": url,
+                        "status": "ERROR",
+                        "status_code": fast_check.status_code
+                    }
+                    supabase.table('tenant_sources').insert(source_data).execute()
+                    return
+        except Exception as e:
+            error_logger.warning("Fast check failed for %s, falling back to crawler: %s", url, e)
 
         # The user agent is randomized by the BrowserConfig.
         # We dynamically add the Referer header for each request if a parent URL exists.
@@ -528,34 +637,48 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
 
         async def crawl_and_close():
             nonlocal crawl_result
-            await crawler.start()
-            try:
-                # Pass the dynamic headers and config directly to the arun method.
+            # Add a random launch stagger (jitter) between 0.1 and 3.0 seconds. 
+            # When Celery picks up 12 tasks simultaneously, this staggers the massive 
+            # CPU/Memory spike of creating 12 Chrome processes at the exact same millisecond.
+            import random
+            await asyncio.sleep(random.uniform(0.5, 5.0))
+            
+            async with AsyncWebCrawler(config=browser_config) as crawler:
                 crawl_result = await crawler.arun(url=url, config=dynamic_run_config, headers=headers)
-            finally:
-                await crawler.close()
 
         try:
             # Use asyncio.wait_for to enforce a timeout on the entire crawl and close operation
             asyncio.run(asyncio.wait_for(crawl_and_close(), timeout=70.0))
         except asyncio.TimeoutError:
-            print(f"❌ Timeout loading page {url}")
+            error_logger.error("Timeout loading page %s", url)
             supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
+            source_data = {
+                "tenant_id": str(tenant_id),
+                "source_type": "URL",
+                "source_location": url,
+                "status": "ERROR",
+                "status_code": 408
+            }
+            supabase.table('tenant_sources').insert(source_data).execute()
             return
 
         # --- Step 2: Process the content ---
         found_links = set()
+        status_code = getattr(crawl_result, 'status_code', None) if crawl_result else None
+
         if crawl_result and crawl_result.success and crawl_result.markdown:
             source_data = {
                 "tenant_id": str(tenant_id),
                 "source_type": "URL",
                 "source_location": url,
-                "status": "PROCESSING"
+                "status": "PROCESSING",
+                "status_code": status_code
             }
             source_response = supabase.table('tenant_sources').insert(source_data).execute()
             source_id = source_response.data[0]['id']
 
-            docs = asyncio.run(async_create_document_chunks_with_metadata(crawl_result.markdown, crawl_result.url, source_id, tenant_id))
+            ext = os.path.splitext(urlparse(crawl_result.url).path)[1].lower() or '.html'
+            docs = asyncio.run(_get_document_chunks(crawl_result.markdown, crawl_result.url, source_id, ext, tenant_id))
             embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
             process_documents(docs, tenant_id, embeddings)
 
@@ -566,12 +689,25 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
                 # Check exclusion again to be safe
                 is_excluded_link = False
                 for excluded in normalized_excluded_list:
-                     if href == excluded or href.startswith(excluded + '/'):
+                     if not excluded:
+                         continue
+                     stripped_ex = excluded.replace('https://', '').replace('http://', '').strip('/')
+                     stripped_url = href.replace('https://', '').replace('http://', '').strip('/')
+                     if stripped_ex and (stripped_ex == stripped_url or stripped_url.startswith(stripped_ex + '/')):
                         is_excluded_link = True
                         break
                 
                 if not is_excluded_link:
                     found_links.add(href)
+        else:
+            source_data = {
+                "tenant_id": str(tenant_id),
+                "source_type": "URL",
+                "source_location": url,
+                "status": "ERROR",
+                "status_code": status_code if status_code else 500
+            }
+            supabase.table('tenant_sources').insert(source_data).execute()
 
         # --- Step 3: Discover and save new links ---
         if depth < max_depth:
@@ -596,14 +732,14 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
                 supabase.table('crawling_tasks').insert(new_tasks_data).execute()
 
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', task_id).execute()
-        print(f"✅ Completed processing URL: {url}")
+        error_logger.info("Completed processing URL: %s", url)
 
     except Exception as e:
         error_message = f"Error processing URL {task_details.get('url', 'unknown')}: {e}"
-        print(f"❌ {error_message}")
+        error_logger.error(error_message, exc_info=True)
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
 
-@shared_task(bind=True)
+@shared_task(bind=True, queue='fast')
 def job_scheduler_task(self):
     """
     Periodic task to schedule new crawling tasks and check for job completion.
@@ -626,7 +762,7 @@ def job_scheduler_task(self):
             if running_tasks_count == 0:
                 pending_tasks_response = supabase.table('crawling_tasks').select('id', count='exact').eq('job_id', job_id).eq('status', CrawlingStatus.PENDING.value).execute()
                 if pending_tasks_response.count == 0:
-                    print(f"🎉 Job {job_id} has no more running or pending tasks. Marking as completed.")
+                    error_logger.info("Job %s complete — no remaining tasks.", job_id)
                     supabase.table('crawling_jobs').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', job_id).execute()
                     continue  # Proceed to the next job
 
@@ -641,7 +777,7 @@ def job_scheduler_task(self):
                 tasks_to_schedule = tasks_to_schedule_response.data
 
                 for task in tasks_to_schedule:
-                    print(f"Scheduler: Enqueuing task {task['id']} for job {job_id}.")
+                    error_logger.debug("Scheduler: Enqueuing task %s for job %s.", task['id'], job_id)
                     process_single_url_task.delay(
                         task_id=task['id'],
                         tenant_id=tenant_id,
@@ -649,4 +785,53 @@ def job_scheduler_task(self):
                     )
 
     except Exception as e:
-        print(f"Error in job_scheduler_task: {e}")
+        error_logger.error("Error in job_scheduler_task: %s", e, exc_info=True)
+
+
+@shared_task(bind=True, queue='fast')
+def zombie_reaper_task(self):
+    """
+    Periodic Celery Beat task — the 'Zombie Reaper'.
+
+    Finds tenant_sources rows that have been stuck in PROCESSING for longer
+    than ZOMBIE_THRESHOLD_HOURS (default 4 h). This happens when a Celery worker
+    is killed mid-task before it can write the final status back to Supabase.
+
+    Action taken: mark the row as ERROR so the UI stops spinning and the user
+    knows they need to re-submit the source.
+    """
+    ZOMBIE_THRESHOLD_HOURS = 4
+
+    try:
+        from datetime import timedelta
+
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=ZOMBIE_THRESHOLD_HOURS)).isoformat()
+
+        # Find all sources stuck in PROCESSING older than the threshold
+        response = supabase.table('tenant_sources') \
+            .select('id, tenant_id, source_location, created_at') \
+            .eq('status', 'PROCESSING') \
+            .lt('created_at', cutoff) \
+            .execute()
+
+        zombies = response.data or []
+
+        if not zombies:
+            error_logger.debug("zombie_reaper: no stuck sources found.")
+            return
+
+        zombie_ids = [z['id'] for z in zombies]
+        error_logger.warning(
+            "zombie_reaper: found %d stuck PROCESSING source(s) older than %dh — marking ERROR. ids=%s",
+            len(zombie_ids), ZOMBIE_THRESHOLD_HOURS, zombie_ids,
+        )
+
+        supabase.table('tenant_sources') \
+            .update({'status': 'ERROR'}) \
+            .in_('id', zombie_ids) \
+            .execute()
+
+        error_logger.info("zombie_reaper: successfully marked %d source(s) as ERROR.", len(zombie_ids))
+
+    except Exception as e:
+        error_logger.error("zombie_reaper: unexpected error: %s", e, exc_info=True)

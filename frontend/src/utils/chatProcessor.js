@@ -1,6 +1,7 @@
 import { Marked } from "marked";
 import { markedHighlight } from "marked-highlight";
 import hljs from "highlight.js";
+import DOMPurify from "dompurify";
 
 // Configure marked with highlight.js
 const marked = new Marked(
@@ -26,12 +27,12 @@ export const processBotMessage = (content) => {
     }
     // This regex removes the specific Kramdown attribute list for target="_blank"
     const cleanedText = content.replace(/{:target="_blank"}/g, "");
-    const html = marked.parse(cleanedText);
+    const html = DOMPurify.sanitize(marked.parse(cleanedText));
     return { text: cleanedText, html };
   } catch (e) {
     console.error("Error parsing content with marked.js:", e);
     console.error("Original content:", content);
     // Fallback to returning the original content unprocessed but safely wrapped
-    return { text: content, html: content };
+    return { text: content, html: DOMPurify.sanitize(content) };
   }
 };

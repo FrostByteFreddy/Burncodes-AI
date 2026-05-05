@@ -28,7 +28,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from "vue";
+import { ref, onMounted, onUnmounted, nextTick } from "vue";
 import { useRoute } from "vue-router";
 import axios from "axios";
 import { processBotMessage } from "@/utils/chatProcessor.js";
@@ -51,43 +51,29 @@ const chatContainer = ref(null);
 const conversationId = ref(uuidv4());
 const isWidget = ref("widget" in route.query);
 
-// --- Cookie Management for Chat History ---
-const CHAT_COOKIE_KEY = `chatSession_${tenantId.value}`;
+// --- Session Storage for Chat History ---
+const STORAGE_KEY = `chatSession_${tenantId.value}`;
 
-const saveChatToCookie = (history, convId) => {
+const saveChatSession = (history, convId) => {
   if (!history || history.length === 0) {
-    document.cookie = `${CHAT_COOKIE_KEY}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    sessionStorage.removeItem(STORAGE_KEY);
     return;
   }
-  const sessionData = JSON.stringify({ history, conversationId: convId });
-  const d = new Date();
-  d.setTime(d.getTime() + 24 * 60 * 60 * 1000); // Expires in 1 day
-  let expires = "expires=" + d.toUTCString();
-  document.cookie = `${CHAT_COOKIE_KEY}=${encodeURIComponent(
-    sessionData
-  )};${expires};path=/;SameSite=Lax`;
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ history, conversationId: convId }));
+  } catch (e) {
+    console.warn("Failed to save chat session:", e);
+  }
 };
 
-const loadChatFromCookie = () => {
-  const name = CHAT_COOKIE_KEY + "=";
-  const ca = document.cookie.split(";");
-  for (let i = 0; i < ca.length; i++) {
-    let c = ca[i];
-    while (c.charAt(0) === " ") {
-      c = c.substring(1);
-    }
-    if (c.indexOf(name) === 0) {
-      try {
-        return JSON.parse(
-          decodeURIComponent(c.substring(name.length, c.length))
-        );
-      } catch (e) {
-        console.error("Error parsing chat session from cookie:", e);
-        return null;
-      }
-    }
+const loadChatSession = () => {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    console.warn("Failed to load chat session:", e);
+    return null;
   }
-  return null;
 };
 
 const scrollToBottom = async () => {
@@ -119,32 +105,51 @@ const fetchIntroMessage = async () => {
     );
     const { text, html } = processBotMessage(response.data.intro_message);
     chatHistory.value.push({ text, html, isUser: false });
-    saveChatToCookie(chatHistory.value, conversationId.value);
+    saveChatSession(chatHistory.value, conversationId.value);
   } catch (error) {
     const errorMsg = `Error: ${
       error.response?.data?.error || t("chat.errors.initialMessage")
     }`;
     const { text, html } = processBotMessage(errorMsg);
     chatHistory.value.push({ text, html, isUser: false });
-    saveChatToCookie(chatHistory.value, conversationId.value);
+    saveChatSession(chatHistory.value, conversationId.value);
   } finally {
     isThinking.value = false;
     await scrollToBottom();
   }
 };
 
+const activeAbortController = ref(null);
+
 const pollTaskStatus = (taskId) => {
-  const interval = setInterval(async () => {
+  let retries = 0;
+  const MAX_RETRIES = 4; // 4 × 25s = ~2 minutes max
+
+  const longPoll = async () => {
+    if (retries >= MAX_RETRIES) {
+      isThinking.value = false;
+      const { text, html } = processBotMessage(t("chat.errors.taskStatus"));
+      chatHistory.value.push({ text, html, isUser: false });
+      saveChatSession(chatHistory.value, conversationId.value);
+      await scrollToBottom();
+      return;
+    }
+
+    retries++;
+    const controller = new AbortController();
+    activeAbortController.value = controller;
+
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/chat/task/${taskId}/status`
+        `${API_BASE_URL}/chat/task/${taskId}/status?timeout=25`,
+        { signal: controller.signal, timeout: 30000 }
       );
       const { state: task_status, result: task_result } = response.data;
 
       if (task_status === "SUCCESS") {
-        clearInterval(interval);
+        activeAbortController.value = null;
         isThinking.value = false;
-        await scrollToBottom(); // Scroll down after the "thinking" dots disappear
+        await scrollToBottom();
 
         const fullHistory = task_result.chat_history;
         const lastMessageFromServer = fullHistory[fullHistory.length - 1];
@@ -160,7 +165,7 @@ const pollTaskStatus = (taskId) => {
           });
 
           chatHistory.value.push({ text: "", html: "", isUser: false });
-          await nextTick(); // Ensure the empty message div is in the DOM
+          await nextTick();
 
           const fullBotResponseText = lastMessageFromServer.content;
           const wordsAndSpaces = fullBotResponseText.split(/(\s+)/);
@@ -178,7 +183,7 @@ const pollTaskStatus = (taskId) => {
             const delay = Math.random() * (10 - 5);
             await new Promise((resolve) => setTimeout(resolve, delay));
           }
-          saveChatToCookie(chatHistory.value, conversationId.value);
+          saveChatSession(chatHistory.value, conversationId.value);
         } else {
           chatHistory.value = fullHistory.map((msg) => {
             if (msg.type === "ai") {
@@ -187,31 +192,46 @@ const pollTaskStatus = (taskId) => {
             }
             return { text: msg.content, html: null, isUser: true };
           });
-          saveChatToCookie(chatHistory.value, conversationId.value);
+          saveChatSession(chatHistory.value, conversationId.value);
           await scrollToBottom();
         }
+        return;
       } else if (task_status === "FAILURE") {
-        clearInterval(interval);
+        activeAbortController.value = null;
         const errorMsg = `${t("chat.errors.processingFailed")} ${
           task_result?.exc_message || ""
         }`;
         const { text, html } = processBotMessage(errorMsg);
         chatHistory.value.push({ text, html, isUser: false });
-        saveChatToCookie(chatHistory.value, conversationId.value);
+        saveChatSession(chatHistory.value, conversationId.value);
         isThinking.value = false;
         await scrollToBottom();
+        return;
       }
+
+      // Still pending after timeout — retry long poll
+      await longPoll();
     } catch (error) {
-      clearInterval(interval);
+      if (axios.isCancel(error)) return; // Component unmounted
+      activeAbortController.value = null;
       const errorMsg = t("chat.errors.taskStatus");
       const { text, html } = processBotMessage(errorMsg);
       chatHistory.value.push({ text, html, isUser: false });
-      saveChatToCookie(chatHistory.value, conversationId.value);
+      saveChatSession(chatHistory.value, conversationId.value);
       isThinking.value = false;
       await scrollToBottom();
     }
-  }, 1000);
+  };
+
+  longPoll();
 };
+
+onUnmounted(() => {
+  if (activeAbortController.value) {
+    activeAbortController.value.abort();
+    activeAbortController.value = null;
+  }
+});
 
 const sendMessage = async () => {
   if (!userMessage.value.trim() || !tenantId.value || isThinking.value) return;
@@ -223,7 +243,7 @@ const sendMessage = async () => {
   }));
 
   chatHistory.value.push({ text: currentMessage, html: null, isUser: true });
-  saveChatToCookie(chatHistory.value, conversationId.value);
+  saveChatSession(chatHistory.value, conversationId.value);
   userMessage.value = "";
   isThinking.value = true;
   await scrollToBottom();
@@ -250,7 +270,7 @@ const sendMessage = async () => {
     }`;
     const { text, html } = processBotMessage(errorMsg);
     chatHistory.value.push({ text, html, isUser: false });
-    saveChatToCookie(chatHistory.value, conversationId.value);
+    saveChatSession(chatHistory.value, conversationId.value);
     isThinking.value = false;
     await scrollToBottom();
   }
@@ -259,13 +279,13 @@ const sendMessage = async () => {
 const resetChat = () => {
   chatHistory.value = [];
   conversationId.value = uuidv4();
-  saveChatToCookie([], null);
+  saveChatSession([], null);
   fetchIntroMessage();
 };
 
 onMounted(async () => {
   await fetchTenant();
-  const sessionData = loadChatFromCookie();
+  const sessionData = loadChatSession();
   if (sessionData && sessionData.history && sessionData.history.length > 0) {
     chatHistory.value = sessionData.history;
     conversationId.value = sessionData.conversationId || uuidv4();
