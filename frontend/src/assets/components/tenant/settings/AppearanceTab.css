@@ -18,18 +18,24 @@
   }
 
   .palette-swatch {
-    @apply relative group flex flex-col items-center gap-1.5;
+    @apply relative flex flex-col items-center gap-1.5;
   }
 
   .palette-swatch__color {
-    @apply block w-12 h-12 rounded-xl shadow-sm ring-1 ring-black/10
-           transition-transform group-hover:scale-105;
+    @apply block w-12 h-12 rounded-xl shadow-sm ring-1 ring-black/10 transition-transform;
+  }
+  .palette-swatch:hover .palette-swatch__color {
+    transform: scale(1.05);
   }
 
   .palette-swatch__remove {
     @apply absolute -top-1.5 -right-1.5 w-4 h-4 bg-error text-white
-           rounded-full hidden group-hover:flex items-center justify-center leading-none;
+           rounded-full items-center justify-center leading-none;
     font-size: 10px;
+    display: none;
+  }
+  .palette-swatch:hover .palette-swatch__remove {
+    display: flex;
   }
 
   .palette-swatch__name {

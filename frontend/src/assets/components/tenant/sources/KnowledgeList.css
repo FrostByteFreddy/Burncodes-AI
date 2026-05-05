@@ -72,9 +72,12 @@
 
   /* Individual source row */
   .source-item {
-    @apply group bg-base-100 hover:bg-base-200/50 border border-base-200
+    @apply bg-base-100 border border-base-200
            p-4 rounded-2xl flex justify-between items-center
            transition-all duration-300;
+  }
+  .source-item:hover {
+    @apply bg-base-200/50;
   }
 
   .source-item--error {
@@ -104,7 +107,11 @@
   .source-item__delete {
     @apply btn btn-ghost btn-sm btn-circle text-base-content/30
            hover:text-error hover:bg-error/10
-           opacity-0 group-hover:opacity-100 transition-opacity;
+           transition-opacity;
+    opacity: 0;
+  }
+  .source-item:hover .source-item__delete {
+    opacity: 1;
   }
 
   .source-item__delete--error {

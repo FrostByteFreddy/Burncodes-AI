@@ -19,14 +19,21 @@
            rounded-2xl flex flex-col items-center justify-center gap-4 py-12 cursor-pointer;
   }
 
+  /* group-hover converted to real CSS parent:hover selectors */
   .add-knowledge-btn__icon {
-    @apply w-14 h-14 rounded-2xl bg-base-200 group-hover:bg-primary/10
+    @apply w-14 h-14 rounded-2xl bg-base-200
            transition-colors flex items-center justify-center text-2xl
-           text-base-content/30 group-hover:text-primary;
+           text-base-content/30;
+  }
+  .add-knowledge-btn:hover .add-knowledge-btn__icon {
+    @apply bg-primary/10 text-primary;
   }
 
   .add-knowledge-btn__label {
-    @apply text-sm font-bold text-base-content/50 group-hover:text-base-content transition-colors;
+    @apply text-sm font-bold text-base-content/50 transition-colors;
+  }
+  .add-knowledge-btn:hover .add-knowledge-btn__label {
+    @apply text-base-content;
   }
 
   .add-knowledge-btn__sub {
