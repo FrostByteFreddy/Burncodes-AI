@@ -80,7 +80,8 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useTenantsStore } from '../../stores/tenants'
-import { apiClient } from '../../utils/api'
+import apiClient from '../../utils/api'
+
 
 const tenantsStore = useTenantsStore()
 
