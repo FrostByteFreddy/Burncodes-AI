@@ -11,10 +11,11 @@
           <div class="flex items-center justify-between p-6 border-b border-base-200/50">
             <div>
               <h2 class="text-xl font-bold text-base-content">{{ $t('tenant.sources.wizard.addKnowledge') }}</h2>
+              <!-- progress dots: one per step in the current flow -->
               <div class="flex items-center gap-2 mt-2">
-                <div v-for="(s, i) in steps" :key="i"
+                <div v-for="i in lastStep + 1" :key="i"
                   class="h-1 rounded-full transition-all duration-300"
-                  :class="[i <= step ? 'bg-primary' : 'bg-base-300', i === step ? 'w-8' : 'w-4']"></div>
+                  :class="[i - 1 <= step ? 'bg-primary' : 'bg-base-300', i - 1 === step ? 'w-8' : 'w-4']"></div>
               </div>
             </div>
             <button @click="$emit('close')" class="btn btn-ghost btn-circle btn-sm">
@@ -50,8 +51,6 @@
                   <p class="text-xs text-base-content/50 mt-1 leading-relaxed">{{ $t('tenant.sources.wizard.typeDocumentDesc') }}</p>
                 </button>
               </div>
-
-              <!-- Info box -->
               <div class="mt-6 bg-base-200/50 rounded-2xl p-4 border border-base-200">
                 <p class="text-xs font-bold uppercase tracking-wider text-base-content/50 mb-2 flex items-center gap-2">
                   <font-awesome-icon :icon="['fas', 'circle-info']" /> {{ $t('tenant.sources.wizard.infoTitle') }}
@@ -64,10 +63,8 @@
 
             <!-- Step 1: Configure -->
             <div v-if="step === 1">
-              <!-- Website form -->
+              <!-- Website: URL + crawl mode -->
               <div v-if="type === 'website'" class="space-y-6">
-
-                <!-- URL -->
                 <div>
                   <label class="block text-xs font-bold uppercase tracking-wider text-base-content/50 mb-2">{{ $t('tenant.sources.wizard.urlLabel') }}</label>
                   <div class="relative">
@@ -82,23 +79,18 @@
                     <font-awesome-icon :icon="['fas', 'circle-exclamation']" /> {{ $t('tenant.sources.invalidUrl') }}
                   </p>
                 </div>
-
-                <!-- Crawl Mode cards -->
                 <div>
                   <label class="block text-xs font-bold uppercase tracking-wider text-base-content/50 mb-3">{{ $t('tenant.sources.wizard.crawlModeLabel') }}</label>
                   <div class="space-y-2">
                     <button v-for="mode in crawlModes" :key="mode.value" type="button"
                       @click="crawlMode = mode.value"
                       class="w-full flex items-start gap-4 p-4 rounded-2xl border-2 transition-all duration-150 text-left"
-                      :class="crawlMode === mode.value
-                        ? 'border-primary bg-primary/5 shadow-sm'
-                        : 'border-base-200 bg-base-100 hover:border-base-300'">
+                      :class="crawlMode === mode.value ? 'border-primary bg-primary/5 shadow-sm' : 'border-base-200 bg-base-100 hover:border-base-300'">
                       <div class="text-xl leading-none mt-0.5 w-6 flex-shrink-0">{{ mode.emoji }}</div>
                       <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
                           <span class="text-sm font-bold" :class="crawlMode === mode.value ? 'text-primary' : 'text-base-content'">{{ mode.label }}</span>
-                          <span v-if="mode.badge" class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                            :class="mode.badgeClass">{{ mode.badge }}</span>
+                          <span v-if="mode.badge" class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" :class="mode.badgeClass">{{ mode.badge }}</span>
                         </div>
                         <p class="text-xs text-base-content/50 mt-0.5 leading-relaxed">{{ mode.desc }}</p>
                       </div>
@@ -109,68 +101,9 @@
                     </button>
                   </div>
                 </div>
-
-                <!-- Scope -->
-                <div class="rounded-2xl border border-base-200 overflow-hidden">
-                  <label for="wiz_single"
-                    class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/40 transition-colors select-none"
-                    :class="singlePageOnly ? 'bg-base-200/30' : ''">
-                    <input type="checkbox" v-model="singlePageOnly" id="wiz_single"
-                      class="checkbox checkbox-sm checkbox-primary rounded" />
-                    <div class="flex-1">
-                      <p class="text-sm font-semibold text-base-content">{{ $t('tenant.sources.wizard.singlePageLabel') }}</p>
-                      <p class="text-xs text-base-content/40 mt-0.5">Only index this exact URL — skip all internal links</p>
-                    </div>
-                  </label>
-                </div>
-
-                <!-- Exclusions — only shown when crawling full site -->
-                <Transition name="fade-down">
-                  <div v-if="!singlePageOnly" class="space-y-3">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <p class="text-xs font-bold uppercase tracking-wider text-base-content/50">Excluded paths</p>
-                        <p class="text-xs text-base-content/40 mt-0.5">These paths will be skipped — useful for login pages, dashboards, or private sections.</p>
-                      </div>
-                      <button type="button" @click="addExclusion"
-                        class="btn btn-ghost btn-sm btn-circle border border-base-200 hover:border-primary/50 hover:bg-primary/5 hover:text-primary">
-                        <font-awesome-icon :icon="['fas', 'plus']" />
-                      </button>
-                    </div>
-
-                    <!-- chips -->
-                    <div v-if="excludedPaths.length > 0" class="flex flex-wrap gap-2">
-                      <div v-for="(path, i) in excludedPaths" :key="i"
-                        class="flex items-center gap-1.5 bg-base-200 text-base-content/70 text-xs font-mono px-3 py-1.5 rounded-xl border border-base-200 group">
-                        <span>{{ path }}</span>
-                        <button type="button" @click="removeExclusion(i)"
-                          class="text-base-content/30 hover:text-error transition-colors ml-1">
-                          <font-awesome-icon :icon="['fas', 'xmark']" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- inline path input -->
-                    <div v-if="addingExclusion" class="flex gap-2">
-                      <div class="relative flex-1">
-                        <div class="absolute inset-y-0 left-3 flex items-center text-base-content/30 text-xs pointer-events-none">/</div>
-                        <input ref="exclusionInput" v-model="exclusionDraft"
-                          @keydown.enter.prevent="confirmExclusion"
-                          @keydown.escape="addingExclusion = false; exclusionDraft = ''"
-                          placeholder="login"
-                          class="input input-sm w-full bg-base-200 border-2 border-primary/40 focus:border-primary rounded-xl pl-6 font-mono text-sm" />
-                      </div>
-                      <button type="button" @click="confirmExclusion" class="btn btn-sm btn-primary rounded-xl px-4">Add</button>
-                      <button type="button" @click="addingExclusion = false; exclusionDraft = ''" class="btn btn-sm btn-ghost rounded-xl">Cancel</button>
-                    </div>
-
-                    <p v-if="excludedPaths.length === 0 && !addingExclusion"
-                      class="text-xs text-base-content/30 italic">No exclusions yet — click + to add a path.</p>
-                  </div>
-                </Transition>
               </div>
 
-              <!-- Document form -->
+              <!-- Document: file upload -->
               <div v-if="type === 'document'" class="space-y-5">
                 <label for="wiz-file-upload"
                   class="flex flex-col items-center justify-center gap-4 p-10 rounded-3xl border-2 border-dashed transition-all duration-200 cursor-pointer group"
@@ -190,9 +123,88 @@
               </div>
             </div>
 
+            <!-- Step 2 (website): Scope -->
+            <div v-if="step === 2 && type === 'website'" class="space-y-4">
+              <p class="text-sm text-base-content/60">How much of this site should we index?</p>
+              <div class="space-y-3">
+                <button type="button" @click="singlePageOnly = false"
+                  class="w-full flex items-start gap-4 p-5 rounded-2xl border-2 transition-all duration-150 text-left"
+                  :class="!singlePageOnly ? 'border-primary bg-primary/5 shadow-sm' : 'border-base-200 bg-base-100 hover:border-base-300'">
+                  <div class="text-xl mt-0.5">🌐</div>
+                  <div class="flex-1">
+                    <p class="text-sm font-bold" :class="!singlePageOnly ? 'text-primary' : 'text-base-content'">Full site crawl</p>
+                    <p class="text-xs text-base-content/50 mt-0.5 leading-relaxed">Follow internal links and index all reachable pages</p>
+                  </div>
+                  <div class="w-4 h-4 rounded-full border-2 flex-shrink-0 mt-1 flex items-center justify-center"
+                    :class="!singlePageOnly ? 'border-primary bg-primary' : 'border-base-300'">
+                    <div v-if="!singlePageOnly" class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                  </div>
+                </button>
+                <button type="button" @click="singlePageOnly = true"
+                  class="w-full flex items-start gap-4 p-5 rounded-2xl border-2 transition-all duration-150 text-left"
+                  :class="singlePageOnly ? 'border-primary bg-primary/5 shadow-sm' : 'border-base-200 bg-base-100 hover:border-base-300'">
+                  <div class="text-xl mt-0.5">📄</div>
+                  <div class="flex-1">
+                    <p class="text-sm font-bold" :class="singlePageOnly ? 'text-primary' : 'text-base-content'">{{ $t('tenant.sources.wizard.singlePageLabel') }}</p>
+                    <p class="text-xs text-base-content/50 mt-0.5 leading-relaxed">Only index this exact URL — skip all internal links</p>
+                  </div>
+                  <div class="w-4 h-4 rounded-full border-2 flex-shrink-0 mt-1 flex items-center justify-center"
+                    :class="singlePageOnly ? 'border-primary bg-primary' : 'border-base-300'">
+                    <div v-if="singlePageOnly" class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                  </div>
+                </button>
+              </div>
+            </div>
 
-            <!-- Step 2: Confirm -->
-            <div v-if="step === 2">
+            <!-- Step 3 (website + full site): Exclusions -->
+            <div v-if="step === 3 && type === 'website' && !singlePageOnly" class="space-y-5">
+              <div>
+                <p class="text-sm font-semibold text-base-content mb-1">Exclude paths</p>
+                <p class="text-xs text-base-content/50 leading-relaxed">
+                  These paths will be skipped entirely during crawling.
+                  Useful for login pages, dashboards, or sections you don't want indexed.
+                </p>
+              </div>
+
+              <!-- chips -->
+              <div v-if="excludedPaths.length > 0" class="flex flex-wrap gap-2">
+                <div v-for="(path, i) in excludedPaths" :key="i"
+                  class="flex items-center gap-1.5 bg-base-200 text-base-content/70 text-xs font-mono px-3 py-2 rounded-xl border border-base-200">
+                  <span>{{ path }}</span>
+                  <button type="button" @click="removeExclusion(i)" class="text-base-content/30 hover:text-error transition-colors ml-1">
+                    <font-awesome-icon :icon="['fas', 'xmark']" />
+                  </button>
+                </div>
+              </div>
+
+              <!-- inline add -->
+              <div v-if="addingExclusion" class="flex gap-2">
+                <div class="relative flex-1">
+                  <div class="absolute inset-y-0 left-3 flex items-center text-base-content/30 text-xs pointer-events-none">/</div>
+                  <input ref="exclusionInput" v-model="exclusionDraft"
+                    @keydown.enter.prevent="confirmExclusion"
+                    @keydown.escape="addingExclusion = false; exclusionDraft = ''"
+                    placeholder="login"
+                    class="input input-sm w-full bg-base-200 border-2 border-primary/40 focus:border-primary rounded-xl pl-6 font-mono text-sm" />
+                </div>
+                <button type="button" @click="confirmExclusion" class="btn btn-sm btn-primary rounded-xl px-4">Add</button>
+                <button type="button" @click="addingExclusion = false; exclusionDraft = ''" class="btn btn-sm btn-ghost rounded-xl">Cancel</button>
+              </div>
+
+              <button v-if="!addingExclusion" type="button" @click="addExclusion"
+                class="flex items-center gap-2 text-sm text-base-content/50 hover:text-primary transition-colors">
+                <span class="w-7 h-7 rounded-xl border-2 border-dashed border-base-300 hover:border-primary/50 flex items-center justify-center">
+                  <font-awesome-icon :icon="['fas', 'plus']" class="text-xs" />
+                </span>
+                Add a path
+              </button>
+
+              <p v-if="excludedPaths.length === 0 && !addingExclusion"
+                class="text-xs text-base-content/30 italic">No exclusions added — you can skip this step.</p>
+            </div>
+
+            <!-- Confirm (last step) -->
+            <div v-if="step === lastStep">
               <p class="text-sm text-base-content/60 mb-6">{{ $t('tenant.sources.wizard.confirmTitle') }}</p>
               <div class="bg-base-200/50 rounded-2xl p-5 space-y-3 border border-base-200">
                 <div class="flex justify-between text-sm">
@@ -212,6 +224,10 @@
                     <span class="text-base-content/50 font-medium">Scope</span>
                     <span class="font-bold text-base-content">{{ singlePageOnly ? $t('tenant.sources.wizard.confirmSinglePage') : $t('tenant.sources.wizard.confirmFullSite') }}</span>
                   </div>
+                  <div v-if="!singlePageOnly && excludedPaths.length > 0" class="flex justify-between text-sm">
+                    <span class="text-base-content/50 font-medium">Excluded</span>
+                    <span class="font-bold text-base-content font-mono text-right">{{ excludedPaths.join(', ') }}</span>
+                  </div>
                 </template>
                 <template v-else>
                   <div class="flex justify-between text-sm">
@@ -228,10 +244,10 @@
             <button v-if="step > 0" @click="step--" class="btn btn-ghost flex-1">
               <font-awesome-icon :icon="['fas', 'arrow-left']" class="mr-2" />{{ $t('tenant.sources.wizard.back') }}
             </button>
-            <button v-if="step < 2" @click="nextStep" :disabled="!canProceed" class="btn btn-primary flex-1">
+            <button v-if="step < lastStep" @click="nextStep" :disabled="!canProceed" class="btn btn-primary flex-1">
               {{ $t('tenant.sources.wizard.next') }}<font-awesome-icon :icon="['fas', 'arrow-right']" class="ml-2" />
             </button>
-            <button v-if="step === 2" @click="submit" :disabled="submitting" class="btn btn-primary flex-1">
+            <button v-if="step === lastStep" @click="submit" :disabled="submitting" class="btn btn-primary flex-1">
               <font-awesome-icon v-if="submitting" :icon="['fas', 'spinner']" class="animate-spin mr-2" />
               {{ type === 'website' ? $t('tenant.sources.wizard.startCrawl') : $t('tenant.sources.wizard.uploadFile') }}
             </button>
@@ -256,9 +272,14 @@ const { t } = useI18n();
 const { addToast } = useToast();
 const tenantsStore = useTenantsStore();
 
-const steps = [0, 1, 2];
 const step = ref(0);
-const type = ref(null);        // 'website' | 'document'
+const type = ref(null); // 'website' | 'document'
+
+// lastStep: 1 (document) | 3 (website single page) | 4 (website full site)
+const lastStep = computed(() => {
+  if (type.value !== 'website') return 2; // type → upload → confirm
+  return singlePageOnly.value ? 3 : 4;    // type → configure → scope → [exclusions] → confirm
+});
 
 const crawlModes = computed(() => [
   { value: 'soup',          emoji: '⚡', label: t('tenant.sources.wizard.modeSoup'),      desc: t('tenant.sources.wizard.modeSoupDesc'),       badge: 'Fastest', badgeClass: 'bg-success/15 text-success' },
@@ -292,7 +313,7 @@ const canProceed = computed(() => {
   if (step.value === 0) return !!type.value;
   if (step.value === 1 && type.value === 'website') return !!url.value && isUrlValid.value;
   if (step.value === 1 && type.value === 'document') return !!selectedFile.value;
-  return true;
+  return true; // scope and exclusions steps are always skippable
 });
 
 const nextStep = () => { if (canProceed.value) step.value++; };
