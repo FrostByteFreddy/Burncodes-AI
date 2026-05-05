@@ -212,84 +212,68 @@
 
       <div v-show="activeTab === 'appearance'" @change="handleUpdate">
         <div class="space-y-8">
-          
-          <!-- Installation Script Card -->
-          <div class="bg-base-100 p-6 rounded-xl border border-base-200/50 shadow-sm">
-            <h3 class="text-xl font-bold text-base-content mb-4 flex items-center">
-              <font-awesome-icon
-                :icon="['fas', 'code']"
-                class="mr-3 text-primary"
-              />
-              {{ $t("tenant.settings.appearance.installation.title") }}
-            </h3>
-            <p class="text-sm text-base-content/70 mb-4">
-              {{ $t("tenant.settings.appearance.installation.instruction") }}
-            </p>
-            <div class="relative">
-              <pre
-                class="bg-base-200/50 p-4 rounded-lg overflow-x-auto text-sm font-mono text-base-content border border-base-200"
-              ><code>&lt;script src="{{ apiUrl }}/tenants/widget.js" data-tenant-id="{{ tenantsStore.currentTenant?.id }}"&gt;&lt;/script&gt;</code></pre>
-              <button
-                @click.prevent="copyScript"
-                class="absolute top-2 right-2 btn btn-sm btn-ghost text-primary hover:bg-base-300"
-              >
-                <font-awesome-icon :icon="['fas', 'copy']" />
-                <span class="ml-1">{{
-                  $t("tenant.settings.appearance.installation.copy")
-                }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Color Palette Card -->
-          <div class="bg-base-100 p-6 rounded-xl border border-base-200/50 shadow-sm">
-            <h3 class="text-xl font-bold text-base-content mb-4 flex items-center">
-              <font-awesome-icon :icon="['fas', 'palette']" class="mr-3 text-primary" />
-              {{ $t("tenant.settings.appearance.colorPalette.title") }}
-            </h3>
-            <p class="text-sm text-base-content/70 mb-4">
-              {{ $t("tenant.settings.appearance.colorPalette.description") }}
-            </p>
-            <div class="space-y-3">
-              <div
-                v-for="(color, index) in formData.widget_config.color_palette"
-                :key="color.id"
-                class="flex items-center space-x-3"
-              >
-                <input
-                  v-model="color.value"
-                  type="color"
-                  class="w-12 h-10 p-1 bg-base-200 border-none rounded-lg cursor-pointer aspect-square focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-                <input
-                  v-model="color.name"
-                  type="text"
-                  :placeholder="
-                    $t('tenant.settings.appearance.colorPalette.placeholder')
-                  "
-                  :disabled="index < 2"
-                  class="flex-grow p-2 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:bg-base-300/50 transition-shadow"
-                />
-                <button
-                  @click.prevent="removeColor(color.id)"
-                  v-if="index > 1"
-                  class="btn btn-ghost btn-sm text-error"
-                >
-                  <font-awesome-icon :icon="['fas', 'trash']" />
-                </button>
-              </div>
-            </div>
-            <button
-              @click.prevent="addColor"
-              class="btn btn-primary btn-outline btn-sm mt-4"
-            >
-              <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
-              {{ $t("tenant.settings.appearance.colorPalette.addColor") }}
-            </button>
-          </div>
-
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div class="space-y-8">
+
+              <!-- Color Palette — swatch strip -->
+              <div class="bg-base-100 p-6 rounded-xl border border-base-200/50 shadow-sm">
+                <h3 class="text-xl font-bold text-base-content mb-4 flex items-center">
+                  <font-awesome-icon :icon="['fas', 'palette']" class="mr-3 text-primary" />
+                  {{ $t('tenant.settings.appearance.colorPalette.title') }}
+                </h3>
+                <p class="text-sm text-base-content/70 mb-4">
+                  {{ $t('tenant.settings.appearance.colorPalette.description') }}
+                </p>
+                <!-- Swatch grid -->
+                <div class="flex flex-wrap gap-3">
+                  <div
+                    v-for="(color, index) in formData.widget_config.color_palette"
+                    :key="color.id"
+                    class="relative group flex flex-col items-center gap-1.5"
+                  >
+                    <!-- Colour swatch — clicking opens native color picker -->
+                    <label class="relative cursor-pointer block">
+                      <span
+                        class="block w-12 h-12 rounded-xl shadow-sm ring-1 ring-black/10 transition-transform group-hover:scale-105"
+                        :style="{ backgroundColor: color.value }"
+                      />
+                      <input
+                        v-model="color.value"
+                        type="color"
+                        class="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                      />
+                      <!-- Delete badge (custom colors only) -->
+                      <button
+                        v-if="index > 1"
+                        type="button"
+                        @click.prevent.stop="removeColor(color.id)"
+                        class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-error text-white rounded-full hidden group-hover:flex items-center justify-center leading-none"
+                        style="font-size:10px;"
+                      >×</button>
+                    </label>
+                    <!-- Editable name beneath swatch -->
+                    <input
+                      v-model="color.name"
+                      type="text"
+                      :disabled="index < 2"
+                      class="w-12 text-xs text-center bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-primary/50 rounded p-0 disabled:cursor-default"
+                    />
+                  </div>
+
+                  <!-- Add-new ghost swatch -->
+                  <div class="flex flex-col items-center gap-1.5">
+                    <button
+                      type="button"
+                      @click.prevent="addColor"
+                      class="w-12 h-12 rounded-xl border-2 border-dashed border-base-300 flex items-center justify-center text-base-content/30 hover:border-primary/50 hover:text-primary/50 transition-colors"
+                    >
+                      <font-awesome-icon :icon="['fas', 'plus']" />
+                    </button>
+                    <span class="w-12 text-xs text-center text-base-content/30">Add</span>
+                  </div>
+                </div>
+              </div>
+
               <!-- Chat Window Card -->
               <div class="bg-base-100 p-6 rounded-xl border border-base-200/50 shadow-sm">
                 <h3 class="text-xl font-bold text-base-content mb-6 flex items-center">
@@ -541,6 +525,27 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- ── Installation Script — always at the bottom ── -->
+          <div class="bg-base-100 p-6 rounded-xl border border-base-200/50 shadow-sm mt-2">
+            <h3 class="text-xl font-bold text-base-content mb-4 flex items-center">
+              <font-awesome-icon :icon="['fas', 'code']" class="mr-3 text-primary" />
+              {{ $t('tenant.settings.appearance.installation.title') }}
+            </h3>
+            <p class="text-sm text-base-content/70 mb-4">
+              {{ $t('tenant.settings.appearance.installation.instruction') }}
+            </p>
+            <div class="relative">
+              <pre class="bg-base-200/50 p-4 rounded-lg overflow-x-auto text-sm font-mono text-base-content border border-base-200"><code>&lt;script src="{{ apiUrl }}/tenants/widget.js" data-tenant-id="{{ tenantsStore.currentTenant?.id }}"&gt;&lt;/script&gt;</code></pre>
+              <button
+                @click.prevent="copyScript"
+                class="absolute top-2 right-2 btn btn-sm btn-ghost text-primary hover:bg-base-300"
+              >
+                <font-awesome-icon :icon="['fas', 'copy']" />
+                <span class="ml-1">{{ $t('tenant.settings.appearance.installation.copy') }}</span>
+              </button>
             </div>
           </div>
         </div>
