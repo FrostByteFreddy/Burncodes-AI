@@ -11,13 +11,13 @@ from uuid import UUID
 from celery import shared_task
 from app.database.supabase_client import supabase
 from app.data_processing.processor import get_vectorstore, get_loader, process_documents, SUPPORTED_FILE_EXTENSIONS
-from app.data_processing.crawler import get_crawler
+from app.data_processing.crawler import get_crawler, browser_config
 from app.data_processing.config import MAX_CONCURRENT_CRAWLS_PER_JOB
 from app.billing.services import BillingService
 from app.logging_config import error_logger
 
 # --- Crawl4AI Imports ---
-from crawl4ai import CacheMode, CrawlerRunConfig, LinkPreviewConfig
+from crawl4ai import AsyncWebCrawler, CacheMode, CrawlerRunConfig, LinkPreviewConfig
 
 # --- LangChain Core Imports ---
 from langchain_core.documents import Document
@@ -643,7 +643,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             import random
             await asyncio.sleep(random.uniform(0.5, 5.0))
             
-            async with AsyncWebCrawler(config=dynamic_run_config) as crawler:
+            async with AsyncWebCrawler(config=browser_config) as crawler:
                 crawl_result = await crawler.arun(url=url, config=dynamic_run_config, headers=headers)
 
         try:
