@@ -94,34 +94,46 @@
               </div>
             </div>
 
-            <!-- Indexing Mode -->
+            <!-- Crawl Mode -->
             <div class="pt-2">
-              <label class="block text-sm font-medium text-base-content mb-2">Indexing Mode</label>
+              <label class="block text-sm font-medium text-base-content mb-2">Crawl Mode</label>
               <p class="text-xs text-base-content/50 mb-3">
-                Controls how ingested content is processed.
-                <strong>LLM</strong> produces semantic, cleaned chunks but uses tokens.
-                <strong>Fast</strong> skips the LLM and uses a text splitter — instant and token-free.
+                Controls how pages are fetched and processed when you add a URL source.
               </p>
               <div class="inline-flex p-1 bg-base-200 rounded-xl gap-1">
                 <button
                   type="button"
-                  @click="formData.indexing_mode = 'llm'"
-                  class="px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
-                  :class="formData.indexing_mode !== 'fast' ? 'bg-primary text-primary-content shadow-sm' : 'text-base-content/60 hover:text-base-content'"
+                  @click="formData.crawl_mode = 'soup'"
+                  class="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+                  :class="formData.crawl_mode === 'soup' ? 'bg-success text-success-content shadow-sm' : 'text-base-content/60 hover:text-base-content'"
                 >
-                  <font-awesome-icon :icon="['fas', 'brain']" class="mr-2" />
-                  LLM (Accurate)
+                  <font-awesome-icon :icon="['fas', 'bolt']" class="mr-2" />
+                  Soup
                 </button>
                 <button
                   type="button"
-                  @click="formData.indexing_mode = 'fast'"
-                  class="px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
-                  :class="formData.indexing_mode === 'fast' ? 'bg-success text-success-content shadow-sm' : 'text-base-content/60 hover:text-base-content'"
+                  @click="formData.crawl_mode = 'playwright'"
+                  class="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+                  :class="formData.crawl_mode === 'playwright' ? 'bg-warning text-warning-content shadow-sm' : 'text-base-content/60 hover:text-base-content'"
                 >
-                  <font-awesome-icon :icon="['fas', 'bolt']" class="mr-2" />
-                  Fast (No LLM)
+                  <font-awesome-icon :icon="['fas', 'globe']" class="mr-2" />
+                  Playwright
+                </button>
+                <button
+                  type="button"
+                  @click="formData.crawl_mode = 'playwright_llm'"
+                  class="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+                  :class="formData.crawl_mode === 'playwright_llm' ? 'bg-primary text-primary-content shadow-sm' : 'text-base-content/60 hover:text-base-content'"
+                >
+                  <font-awesome-icon :icon="['fas', 'brain']" class="mr-2" />
+                  Playwright + LLM
                 </button>
               </div>
+              <p class="text-xs text-base-content/40 mt-2">
+                <span v-if="formData.crawl_mode === 'soup'">⚡ httpx + trafilatura — fastest, no browser, no tokens. May miss JS-rendered content.</span>
+                <span v-else-if="formData.crawl_mode === 'playwright'">🌐 Headless browser, handles JS sites. Raw text splitter, no tokens.</span>
+                <span v-else>🧠 Headless browser + LLM cleaning. Best chunk quality, uses tokens.</span>
+              </p>
             </div>
           </div>
         </div>
@@ -630,7 +642,7 @@ const formData = ref({
   rag_prompt_template: "",
   doc_language: "en",
   translation_target: "en",
-  indexing_mode: "llm",
+  crawl_mode: "playwright_llm",
   widget_config: defaultWidgetConfig(),
 });
 
@@ -709,7 +721,7 @@ watch(
         rag_prompt_template: newTenant.rag_prompt_template,
         doc_language: newTenant.doc_language,
         translation_target: newTenant.translation_target,
-        indexing_mode: newTenant.indexing_mode || 'llm',
+        crawl_mode: newTenant.crawl_mode || 'playwright_llm',
         widget_config: newConfig,
       };
     }

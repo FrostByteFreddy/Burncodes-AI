@@ -28,7 +28,7 @@ def create_tenant(current_user):
             "rag_prompt_template": data['rag_prompt_template'], 
             "doc_language": data.get('doc_language'),
             "translation_target": data.get('translation_target'),
-            "indexing_mode": data.get('indexing_mode', 'llm'),
+            "crawl_mode": data.get('crawl_mode', 'playwright_llm'),
         }
         supabase.table('tenants').insert(tenant_data).execute()
 
@@ -109,7 +109,7 @@ def update_tenant(current_user, tenant_id):
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
         tenant_update_data = {}
-        allowed_fields = ['name', 'intro_message', 'system_persona', 'rag_prompt_template', 'doc_language', 'translation_target', 'widget_config', 'indexing_mode']
+        allowed_fields = ['name', 'intro_message', 'system_persona', 'rag_prompt_template', 'doc_language', 'translation_target', 'widget_config', 'crawl_mode']
         for field in allowed_fields:
             if field in data:
                 tenant_update_data[field] = data[field]

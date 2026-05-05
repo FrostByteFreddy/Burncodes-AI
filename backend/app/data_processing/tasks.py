@@ -12,6 +12,9 @@ from celery import shared_task
 from app.database.supabase_client import supabase
 from app.data_processing.processor import get_vectorstore, get_loader, process_documents, SUPPORTED_FILE_EXTENSIONS
 from app.data_processing.crawler import get_crawler, browser_config
+from app.data_processing.soup_extractor import (
+    fetch_html, extract_content, filter_chunks, extract_internal_links
+)
 from app.data_processing.config import MAX_CONCURRENT_CRAWLS_PER_JOB
 from app.billing.services import BillingService
 from app.logging_config import error_logger
@@ -302,40 +305,107 @@ async def async_create_document_chunks_fast(content: str, source: str, source_id
         return []
 
 
-async def _resolve_indexing_mode(tenant_id: UUID) -> str:
-    """Returns the tenant's indexing_mode ('llm' or 'fast'). Defaults to 'llm'."""
+async def _resolve_crawl_mode(tenant_id: UUID) -> str:
+    """Returns the tenant's crawl_mode. Defaults to 'playwright_llm'."""
     loop = asyncio.get_running_loop()
     try:
         response = await loop.run_in_executor(
             None,
-            lambda: supabase.table('tenants').select('indexing_mode').eq('id', str(tenant_id)).single().execute()
+            lambda: supabase.table('tenants').select('crawl_mode').eq('id', str(tenant_id)).single().execute()
         )
-        return (response.data or {}).get('indexing_mode') or 'llm'
+        return (response.data or {}).get('crawl_mode') or 'playwright_llm'
     except Exception:
-        return 'llm'
+        return 'playwright_llm'
 
 
 async def _get_document_chunks(content: str, source: str, source_id: int, ext: str, tenant_id: UUID) -> list[Document]:
     """
-    Unified chunking dispatcher. Reads the tenant's indexing_mode and routes to:
-      - 'fast': RecursiveCharacterTextSplitter, no LLM, no billing cost
-      - 'llm'  (default): LLM-cleaned semantic chunks, billed to the tenant
-    Structured data (CSV, ICS) always bypasses the LLM regardless of mode.
+    Unified chunking dispatcher for already-fetched content.
+    Used by playwright and playwright_llm modes after Crawl4AI returns markdown.
+
+    crawl_mode routing:
+      'soup'           → fast splitter (content already extracted by soup_extractor)
+      'playwright'     → fast splitter on Crawl4AI markdown
+      'playwright_llm' → LLM cleaning + semantic chunking (default)
+    Structured data (CSV, ICS) always bypasses LLM regardless of mode.
     """
     structured_extensions = ['.csv', '.ics']
     if ext in structured_extensions:
         return await async_create_document_chunks_for_structured_data(content, source, source_id)
 
-    indexing_mode = await _resolve_indexing_mode(tenant_id)
+    crawl_mode = await _resolve_crawl_mode(tenant_id)
 
-    if indexing_mode == 'fast':
-        error_logger.info("indexing_mode=fast for source_id=%s — skipping LLM", source_id)
+    if crawl_mode in ('soup', 'playwright'):
+        error_logger.info("crawl_mode=%s for source_id=%s — using fast splitter", crawl_mode, source_id)
         return await async_create_document_chunks_fast(content, source, source_id, tenant_id)
 
-    # Default LLM path
+    # playwright_llm (default)
     if ext == '.pdf':
         return await async_create_document_chunks_for_pdf(content, source, source_id, tenant_id)
     return await async_create_document_chunks_with_metadata(content, source, source_id, tenant_id)
+
+
+async def async_fetch_and_chunk_soup(
+    url: str,
+    source_id: int,
+    tenant_id: UUID,
+) -> list[Document]:
+    """
+    Full soup pipeline: httpx fetch → trafilatura/BS4 extraction →
+    heuristic quality filter → RecursiveCharacterTextSplitter.
+    No Playwright, no LLM.
+    """
+    loop = asyncio.get_running_loop()
+    try:
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "PROCESSING"}).eq('id', source_id).execute())
+
+        html, status_code = await loop.run_in_executor(None, lambda: fetch_html(url))
+
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status_code": status_code}).eq('id', source_id).execute())
+
+        if not html:
+            error_logger.warning("soup: empty response for %s (status=%s)", url, status_code)
+            await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
+            return []
+
+        content = await loop.run_in_executor(None, lambda: extract_content(html, url))
+        if not content:
+            error_logger.warning("soup: no content extracted from %s", url)
+            await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
+            return []
+
+        # Split into raw chunks
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1500,
+            chunk_overlap=150,
+            separators=["\n\n", "\n", ". ", " ", ""],
+            length_function=len,
+        )
+        raw_chunks = splitter.split_text(content)
+
+        # Apply heuristic quality filter
+        clean_chunks = await loop.run_in_executor(None, lambda: filter_chunks(raw_chunks))
+
+        timestamp = datetime.now(timezone.utc).isoformat()
+        documents = [
+            Document(
+                page_content=chunk,
+                metadata={"source": url, "source_id": source_id, "chunk": i, "last_updated": timestamp},
+            )
+            for i, chunk in enumerate(clean_chunks)
+        ]
+
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({
+            "input_tokens": 0, "output_tokens": 0, "cost_chf": 0.0,
+        }).eq('id', source_id).execute())
+
+        error_logger.info("soup: %d chunks from %s (status=%s)", len(documents), url, status_code)
+        return documents
+
+    except Exception as e:
+        error_logger.error("soup: error processing %s: %s", url, e, exc_info=True)
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
+        return []
 
 
 @shared_task(queue='fast')
@@ -582,6 +652,65 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
 
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.IN_PROGRESS.value}).eq('id', task_id).execute()
         error_logger.info("Crawling URL: %s at depth %s", url, depth)
+
+        # ------------------------------------------------------------------
+        # SOUP MODE: lightweight HTTP-only path, no Playwright
+        # ------------------------------------------------------------------
+        crawl_mode = supabase.table('tenants').select('crawl_mode').eq('id', str(tenant_id)).single().execute()
+        crawl_mode = (crawl_mode.data or {}).get('crawl_mode') or 'playwright_llm'
+
+        if crawl_mode == 'soup':
+            error_logger.info("crawl_mode=soup for %s — skipping Playwright", url)
+
+            html, status_code = fetch_html(url)
+            if not html or status_code >= 400:
+                supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
+                supabase.table('tenant_sources').insert({
+                    "tenant_id": str(tenant_id), "source_type": "URL",
+                    "source_location": url, "status": "ERROR", "status_code": status_code
+                }).execute()
+                return
+
+            # Insert source row, then chunk content
+            source_response = supabase.table('tenant_sources').insert({
+                "tenant_id": str(tenant_id), "source_type": "URL",
+                "source_location": url, "status": "PROCESSING", "status_code": status_code
+            }).execute()
+            source_id = source_response.data[0]['id']
+
+            docs = asyncio.run(async_fetch_and_chunk_soup(url, source_id, tenant_id))
+            if docs:
+                embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+                process_documents(docs, tenant_id, embeddings)
+                supabase.table('tenant_sources').update({"status": "DONE"}).eq('id', source_id).execute()
+
+            # Discover + enqueue internal links via BeautifulSoup (no browser needed)
+            found_links = set(extract_internal_links(html, url))
+            if depth < max_depth and found_links:
+                existing_urls_response = supabase.table('crawling_tasks').select('url').eq('job_id', job_id).execute()
+                existing_urls = {item['url'] for item in existing_urls_response.data}
+                new_links = found_links - existing_urls
+                # Apply exclusion filter
+                new_links = {
+                    href for href in new_links
+                    if not any(
+                        (ex := normalize_url(str(ex_url).strip()))
+                        and href.replace('https://', '').replace('http://', '').strip('/').startswith(
+                            ex.replace('https://', '').replace('http://', '').strip('/')
+                        )
+                        for ex_url in excluded_urls if ex_url
+                    )
+                }
+                if new_links:
+                    supabase.table('crawling_tasks').insert([
+                        {"job_id": job_id, "url": link, "depth": depth + 1,
+                         "status": CrawlingStatus.PENDING.value, "parent_url": url}
+                        for link in new_links
+                    ]).execute()
+
+            supabase.table('crawling_tasks').update({"status": CrawlingStatus.COMPLETED.value}).eq('id', task_id).execute()
+            error_logger.info("soup: completed %s", url)
+            return
 
         # FAST FAIL CHECK: Check if the URL is broken before spinning up the headless browser
         try:
