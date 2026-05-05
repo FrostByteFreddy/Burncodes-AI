@@ -110,67 +110,64 @@
                   </div>
                 </div>
 
-                <!-- Scope + Exclusions in tabs -->
-                <div>
-                  <!-- Sub-tabs -->
-                  <div class="flex gap-1 p-1 bg-base-200/60 rounded-xl mb-4 w-fit">
-                    <button type="button" @click="configTab = 'general'"
-                      class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all"
-                      :class="configTab === 'general' ? 'bg-base-100 text-base-content shadow-sm' : 'text-base-content/50 hover:text-base-content'">
-                      General
-                    </button>
-                    <button type="button" @click="configTab = 'exclusions'"
-                      class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all"
-                      :class="configTab === 'exclusions' ? 'bg-base-100 text-base-content shadow-sm' : 'text-base-content/50 hover:text-base-content'">
-                      Exclusions
-                      <span v-if="excludedUrls.trim()" class="ml-1.5 w-1.5 h-1.5 rounded-full bg-primary inline-block"></span>
-                    </button>
-                  </div>
-
-                  <!-- General tab -->
-                  <div v-if="configTab === 'general'" class="rounded-2xl border border-base-200 overflow-hidden">
-                    <label for="wiz_single"
-                      class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/40 transition-colors"
-                      :class="singlePageOnly ? 'bg-base-200/30' : ''">
-                      <input type="checkbox" v-model="singlePageOnly" id="wiz_single"
-                        class="checkbox checkbox-sm checkbox-primary rounded" />
-                      <div>
-                        <p class="text-sm font-semibold text-base-content">{{ $t('tenant.sources.wizard.singlePageLabel') }}</p>
-                        <p class="text-xs text-base-content/40 mt-0.5">Only index this exact URL — skip all internal links</p>
-                      </div>
-                    </label>
-                  </div>
-
-                  <!-- Exclusions tab -->
-                  <div v-if="configTab === 'exclusions'" class="space-y-3">
-                    <!-- Explanation box -->
-                    <div class="bg-base-200/50 rounded-2xl p-4 border border-base-200 space-y-2">
-                      <p class="text-xs font-bold text-base-content/60 flex items-center gap-2">
-                        <font-awesome-icon :icon="['fas', 'circle-info']" class="text-primary" />
-                        What are exclusions?
-                      </p>
-                      <p class="text-xs text-base-content/50 leading-relaxed">
-                        Paths listed here will be skipped entirely during crawling — no content from those URLs will be indexed.
-                        Use this to ignore login pages, user dashboards, or any section you don't want in your knowledge base.
-                      </p>
-                      <p class="text-xs text-base-content/40 font-mono bg-base-100 rounded-lg p-2 leading-relaxed border border-base-200">
-                        /login<br>/dashboard<br>/account/settings
-                      </p>
+                <!-- Scope -->
+                <div class="rounded-2xl border border-base-200 overflow-hidden">
+                  <label for="wiz_single"
+                    class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/40 transition-colors select-none"
+                    :class="singlePageOnly ? 'bg-base-200/30' : ''">
+                    <input type="checkbox" v-model="singlePageOnly" id="wiz_single"
+                      class="checkbox checkbox-sm checkbox-primary rounded" />
+                    <div class="flex-1">
+                      <p class="text-sm font-semibold text-base-content">{{ $t('tenant.sources.wizard.singlePageLabel') }}</p>
+                      <p class="text-xs text-base-content/40 mt-0.5">Only index this exact URL — skip all internal links</p>
                     </div>
-
-                    <div :class="singlePageOnly ? 'opacity-40 pointer-events-none' : ''">
-                      <label class="block text-xs font-bold uppercase tracking-wider text-base-content/40 mb-2">
-                        {{ $t('tenant.sources.wizard.excludeLabel') }}
-                      </label>
-                      <textarea v-model="excludedUrls" :placeholder="$t('tenant.sources.wizard.excludePlaceholder')" rows="4"
-                        class="w-full p-3 bg-base-100 border border-base-200 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors resize-none font-mono leading-relaxed"></textarea>
-                      <p v-if="singlePageOnly" class="text-xs text-base-content/40 mt-1.5 flex items-center gap-1">
-                        <font-awesome-icon :icon="['fas', 'ban']" />
-                        Exclusions are ignored when "this page only" is active
-                      </p>
-                    </div>
-                  </div>
+                  </label>
                 </div>
+
+                <!-- Exclusions — only shown when crawling full site -->
+                <Transition name="fade-down">
+                  <div v-if="!singlePageOnly" class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-xs font-bold uppercase tracking-wider text-base-content/50">Excluded paths</p>
+                        <p class="text-xs text-base-content/40 mt-0.5">These paths will be skipped — useful for login pages, dashboards, or private sections.</p>
+                      </div>
+                      <button type="button" @click="addExclusion"
+                        class="btn btn-ghost btn-sm btn-circle border border-base-200 hover:border-primary/50 hover:bg-primary/5 hover:text-primary">
+                        <font-awesome-icon :icon="['fas', 'plus']" />
+                      </button>
+                    </div>
+
+                    <!-- chips -->
+                    <div v-if="excludedPaths.length > 0" class="flex flex-wrap gap-2">
+                      <div v-for="(path, i) in excludedPaths" :key="i"
+                        class="flex items-center gap-1.5 bg-base-200 text-base-content/70 text-xs font-mono px-3 py-1.5 rounded-xl border border-base-200 group">
+                        <span>{{ path }}</span>
+                        <button type="button" @click="removeExclusion(i)"
+                          class="text-base-content/30 hover:text-error transition-colors ml-1">
+                          <font-awesome-icon :icon="['fas', 'xmark']" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- inline path input -->
+                    <div v-if="addingExclusion" class="flex gap-2">
+                      <div class="relative flex-1">
+                        <div class="absolute inset-y-0 left-3 flex items-center text-base-content/30 text-xs pointer-events-none">/</div>
+                        <input ref="exclusionInput" v-model="exclusionDraft"
+                          @keydown.enter.prevent="confirmExclusion"
+                          @keydown.escape="addingExclusion = false; exclusionDraft = ''"
+                          placeholder="login"
+                          class="input input-sm w-full bg-base-200 border-2 border-primary/40 focus:border-primary rounded-xl pl-6 font-mono text-sm" />
+                      </div>
+                      <button type="button" @click="confirmExclusion" class="btn btn-sm btn-primary rounded-xl px-4">Add</button>
+                      <button type="button" @click="addingExclusion = false; exclusionDraft = ''" class="btn btn-sm btn-ghost rounded-xl">Cancel</button>
+                    </div>
+
+                    <p v-if="excludedPaths.length === 0 && !addingExclusion"
+                      class="text-xs text-base-content/30 italic">No exclusions yet — click + to add a path.</p>
+                  </div>
+                </Transition>
               </div>
 
               <!-- Document form -->
@@ -246,7 +243,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '../../../composables/useToast';
 import { useTenantsStore } from '../../../stores/tenants';
@@ -271,8 +268,10 @@ const crawlModes = computed(() => [
 const url = ref('');
 const crawlMode = ref('soup');
 const singlePageOnly = ref(false);
-const configTab = ref('general'); // 'general' | 'exclusions'
-const excludedUrls = ref('');
+const addingExclusion = ref(false);
+const exclusionDraft = ref('');
+const exclusionInput = ref(null);
+const excludedPaths = ref([]);
 const selectedFile = ref(null);
 const submitting = ref(false);
 
@@ -300,10 +299,23 @@ const nextStep = () => { if (canProceed.value) step.value++; };
 
 const handleFileSelect = (e) => { selectedFile.value = e.target.files[0] || null; };
 
+const addExclusion = async () => {
+  addingExclusion.value = true;
+  await nextTick();
+  exclusionInput.value?.focus();
+};
+const confirmExclusion = () => {
+  const val = ('/' + exclusionDraft.value.replace(/^\/+/, '')).trim();
+  if (val && val !== '/' && !excludedPaths.value.includes(val)) excludedPaths.value.push(val);
+  exclusionDraft.value = '';
+  addingExclusion.value = false;
+};
+const removeExclusion = (i) => excludedPaths.value.splice(i, 1);
+
 const reset = () => {
   step.value = 0; type.value = null; url.value = ''; crawlMode.value = 'soup';
-  singlePageOnly.value = false; excludedUrls.value = ''; selectedFile.value = null;
-  configTab.value = 'general';
+  singlePageOnly.value = false; excludedPaths.value = []; selectedFile.value = null;
+  addingExclusion.value = false; exclusionDraft.value = '';
 };
 
 const submit = async () => {
@@ -314,7 +326,7 @@ const submit = async () => {
       await apiClient.post(`/tenants/${tenantId}/sources/discover`, {
         url: finalUrl.value,
         single_page_only: singlePageOnly.value,
-        excluded_urls: singlePageOnly.value ? [] : excludedUrls.value.split('\n').filter(u => u.trim()),
+        excluded_urls: singlePageOnly.value ? [] : excludedPaths.value,
         crawl_mode: crawlMode.value,
       });
       addToast(t('tenant.sources.actions.crawlStarted'), 'success');
@@ -343,4 +355,9 @@ const submit = async () => {
 .slide-over-enter-from .relative { transform: translateX(100%); }
 .slide-over-leave-to { opacity: 0; }
 .slide-over-leave-to .relative { transform: translateX(100%); }
+
+.fade-down-enter-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.fade-down-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
+.fade-down-enter-from { opacity: 0; transform: translateY(-6px); }
+.fade-down-leave-to { opacity: 0; transform: translateY(-6px); }
 </style>
