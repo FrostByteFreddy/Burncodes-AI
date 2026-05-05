@@ -121,13 +121,44 @@ def discover_links(current_user, tenant_id):
 @token_required
 def get_crawling_jobs(current_user, tenant_id):
     try:
+        from collections import defaultdict
         tenant_id_str = str(tenant_id)
         tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
-        jobs = supabase.table('crawling_jobs').select("*").eq('tenant_id', tenant_id_str).order('created_at', desc=True).execute()
-        return jsonify(jobs.data), 200
+        jobs_resp = supabase.table('crawling_jobs').select("*").eq('tenant_id', tenant_id_str).order('created_at', desc=True).execute()
+        jobs = jobs_resp.data or []
+        if not jobs:
+            return jsonify([]), 200
+
+        job_ids = [j['id'] for j in jobs]
+
+        # Batch-fetch tasks — one query for all jobs
+        tasks_resp = supabase.table('crawling_tasks').select("job_id,url,status").in_('job_id', job_ids).execute()
+        tasks_by_job = defaultdict(list)
+        all_crawled_urls = set()
+        for t in (tasks_resp.data or []):
+            tasks_by_job[t['job_id']].append(t)
+            all_crawled_urls.add(t['url'])
+
+        # Batch-fetch matching tenant_sources — one query total
+        sources_by_url = {}
+        if all_crawled_urls:
+            sources_resp = supabase.table('tenant_sources').select("*") \
+                .eq('tenant_id', tenant_id_str) \
+                .in_('source_location', list(all_crawled_urls)) \
+                .execute()
+            for s in (sources_resp.data or []):
+                sources_by_url[s['source_location']] = s
+
+        # Attach sources + counts to each job
+        for job in jobs:
+            job_tasks = tasks_by_job.get(job['id'], [])
+            job['sources'] = [sources_by_url[t['url']] for t in job_tasks if t['url'] in sources_by_url]
+            job['task_count'] = len(job_tasks)
+
+        return jsonify(jobs), 200
     except Exception as e:
         error_logger.error(f"Error getting crawling jobs for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to retrieve crawling jobs", "details": str(e)}), 500

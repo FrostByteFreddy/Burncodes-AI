@@ -1,26 +1,24 @@
 <template>
-  <div class="sources-panel">
+  <div class="sources-page">
+    <!-- Banner add button -->
+    <button @click="wizardOpen = true" class="sources-add-banner">
+      <div class="sources-add-banner__icon">
+        <font-awesome-icon :icon="['fas', 'plus']" />
+      </div>
+      <div class="sources-add-banner__text">
+        <span class="sources-add-banner__title">{{ $t('tenant.sources.wizard.addKnowledge') }}</span>
+        <span class="sources-add-banner__sub">Crawl a website · Upload a PDF or document</span>
+      </div>
+    </button>
+
+    <!-- Main list -->
     <KnowledgeList
       :crawling-jobs="crawlingJobs"
-      @delete="confirmDelete"
+      @delete-source="confirmDelete"
       @job-completed="handleJobCompletion"
       @job-cancelled="handleJobCancelled"
       @job-deleted="handleJobDeleted"
     />
-
-    <div class="sources-sidebar">
-      <div class="sources-sidebar__sticky">
-        <button @click="wizardOpen = true" class="add-knowledge-btn group">
-          <div class="add-knowledge-btn__icon">
-            <font-awesome-icon :icon="['fas', 'plus']" />
-          </div>
-          <div class="text-center">
-            <p class="add-knowledge-btn__label">{{ $t('tenant.sources.wizard.addKnowledge') }}</p>
-            <p class="add-knowledge-btn__sub">Website or document</p>
-          </div>
-        </button>
-      </div>
-    </div>
 
     <AddKnowledgeWizard
       :open="wizardOpen"
@@ -54,9 +52,9 @@ const tenantsStore = useTenantsStore();
 const { addToast } = useToast();
 const { t } = useI18n();
 
-const wizardOpen = ref(false);
-const crawlingJobs = ref([]);
-const sourceToDelete = ref(null);
+const wizardOpen            = ref(false);
+const crawlingJobs          = ref([]);
+const sourceToDelete        = ref(null);
 const showConfirmationModal = ref(false);
 
 const fetchCrawlingJobs = async () => {
@@ -72,7 +70,7 @@ watch(() => tenantsStore.currentTenant, (t) => {
 }, { immediate: true });
 
 const onCrawlStarted = async () => { await fetchCrawlingJobs(); };
-const onUploadDone  = async () => { await tenantsStore.refetch(tenantsStore.currentTenant.id); };
+const onUploadDone   = async () => { await tenantsStore.refetch(tenantsStore.currentTenant.id); };
 
 const handleJobCompletion = async () => {
   addToast(t('tenant.sources.actions.crawlCompleted'), 'success');
@@ -80,7 +78,7 @@ const handleJobCompletion = async () => {
   await fetchCrawlingJobs();
 };
 const handleJobCancelled = async () => { await fetchCrawlingJobs(); };
-const handleJobDeleted = async () => {
+const handleJobDeleted   = async () => {
   await fetchCrawlingJobs();
   await tenantsStore.refetch(tenantsStore.currentTenant.id);
 };
@@ -92,7 +90,7 @@ const handleDelete = async () => {
   if (!tenantsStore.currentTenant || !sourceToDelete.value) return;
   const id = sourceToDelete.value.id;
   const orig = [...tenantsStore.currentTenant.tenant_sources];
-  const idx = orig.findIndex(s => s.id === id);
+  const idx  = orig.findIndex(s => s.id === id);
   if (idx > -1) tenantsStore.currentTenant.tenant_sources.splice(idx, 1);
   try {
     await apiClient.delete(`/tenants/${tenantsStore.currentTenant.id}/sources/${id}`);

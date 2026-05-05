@@ -1,184 +1,159 @@
 @layer components {
-  .knowledge-panel {
-    @apply xl:col-span-7 bg-base-100 p-6 flex flex-col h-full xl:border-r border-base-200/50;
+
+  /* ── Page-level list container ─────────────────────── */
+  .knowledge-list {
+    @apply flex flex-col gap-8;
   }
 
-  .knowledge-header {
-    @apply mb-8;
+  .kl-skeleton {
+    @apply flex flex-col gap-3;
   }
 
-  .knowledge-title {
-    @apply text-3xl font-bold text-base-content tracking-tight mb-2;
-    font-family: var(--font-display, ui-sans-serif, system-ui, sans-serif);
+  .kl-empty {
+    @apply flex flex-col items-center justify-center py-24 text-center;
   }
 
-  .knowledge-subtitle {
-    @apply text-base-content/60 text-sm;
+  /* ── Section ────────────────────────────────────────── */
+  .kl-section {
+    @apply flex flex-col gap-3;
   }
 
-  /* Stats row */
-  .metric-grid {
-    @apply grid grid-cols-2 gap-4 mb-10 shrink-0;
+  .kl-section__title {
+    @apply flex items-center gap-2 text-xs font-bold uppercase tracking-wider
+           text-base-content/40 px-1;
   }
 
-  .metric-card {
-    @apply rounded-2xl p-5 border;
+  /* ── Job card ───────────────────────────────────────── */
+  .kl-jobs {
+    @apply flex flex-col gap-3;
   }
 
-  .metric-card--primary {
-    @apply bg-primary/5 border-primary/10;
+  .kl-job {
+    @apply bg-base-100 border border-base-200 rounded-2xl overflow-hidden;
   }
 
-  .metric-card--secondary {
-    @apply bg-secondary/5 border-secondary/10;
+  .kl-job__header {
+    @apply flex items-center gap-3 px-4 py-3;
   }
 
-  .metric-label {
-    @apply text-xs font-bold uppercase tracking-widest mb-1;
+  /* Colored left strip */
+  .kl-job__status-strip {
+    @apply w-1 self-stretch rounded-full flex-shrink-0;
+  }
+  .kl-job__status-strip--active  { @apply bg-primary; }
+  .kl-job__status-strip--done    { @apply bg-success; }
+  .kl-job__status-strip--failed  { @apply bg-base-300; }
+
+  .kl-job__info {
+    @apply flex-1 min-w-0;
   }
 
-  .metric-label--primary   { @apply text-primary/70; }
-  .metric-label--secondary { @apply text-secondary/70; }
-
-  .metric-value {
-    @apply text-4xl font-black leading-none;
-    font-family: var(--font-display, ui-sans-serif, system-ui, sans-serif);
+  .kl-job__url {
+    @apply text-sm font-semibold text-base-content truncate;
   }
 
-  .metric-value--primary   { @apply text-primary; }
-  .metric-value--secondary { @apply text-secondary; }
-
-  /* Scrollable source list */
-  .source-scroll {
-    @apply flex-1 overflow-y-auto pr-2 space-y-10 pb-10;
+  .kl-job__meta {
+    @apply text-xs text-base-content/40 mt-0.5;
   }
 
-  /* Section group within the list */
-  .source-section {
-    @apply mb-10;
+  .kl-job__actions {
+    @apply flex items-center gap-2 flex-shrink-0;
   }
 
-  .source-section-title {
-    @apply text-xs font-bold uppercase tracking-wider text-base-content/50 mb-4;
+  /* Status badge */
+  .kl-job__badge {
+    @apply text-xs font-bold px-2 py-0.5 rounded-full;
+  }
+  .kl-job__badge--active { @apply bg-primary/10 text-primary; }
+  .kl-job__badge--done   { @apply bg-success/10 text-success; }
+  .kl-job__badge--failed { @apply bg-base-200 text-base-content/40; }
+
+  /* Delete button on job header */
+  .kl-job__delete-btn {
+    @apply w-7 h-7 rounded-lg flex items-center justify-center
+           text-base-content/30 hover:text-error hover:bg-error/10
+           transition-colors text-xs;
+  }
+  .kl-job__delete-btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
   }
 
-  .source-section-title--error {
-    @apply text-error/70 flex items-center gap-2;
+  /* ── Sources list inside a job ───────────────────────── */
+  .kl-job__sources {
+    @apply border-t border-base-200 flex flex-col;
   }
 
-  .source-section-title--live {
-    @apply flex items-center gap-2;
+  .kl-job__empty {
+    @apply border-t border-base-200 px-4 py-3 text-xs text-base-content/40 italic;
   }
 
-  /* Individual source row */
-  .source-item {
-    @apply bg-base-100 border border-base-200
-           p-4 rounded-2xl flex justify-between items-center
-           transition-all duration-300;
-  }
-  .source-item:hover {
-    @apply bg-base-200/50;
+  .kl-source-row {
+    @apply flex items-center gap-2.5 px-4 py-2 text-xs
+           border-b border-base-200/50 last:border-0;
   }
 
-  .source-item--error {
-    @apply bg-error/5 hover:bg-error/10 border-error/20;
+  .kl-source-row__url {
+    @apply flex-1 truncate text-base-content/70 font-mono;
   }
 
-  .source-item__body {
-    @apply min-w-0 pr-4;
+  .kl-source-row__code {
+    @apply text-base-content/30 flex-shrink-0;
   }
 
-  .source-item__name {
-    @apply font-semibold text-sm truncate text-base-content flex items-center gap-3;
+  .kl-job__expand-btn {
+    @apply flex items-center gap-1.5 px-4 py-2.5 text-xs text-primary/70
+           hover:text-primary hover:bg-primary/5 transition-colors w-full;
   }
 
-  .source-item__name--struck {
-    @apply line-through opacity-70;
+  /* ── Standalone source list ──────────────────────────── */
+  .kl-source-list {
+    @apply flex flex-col gap-2;
   }
 
-  .source-item__meta {
-    @apply text-xs text-base-content/50 mt-1.5 flex items-center gap-2;
-  }
-
-  .source-item__meta--error {
-    @apply text-error/80 font-medium;
-  }
-
-  .source-item__delete {
-    @apply btn btn-ghost btn-sm btn-circle text-base-content/30
-           hover:text-error hover:bg-error/10
-           transition-opacity;
-    opacity: 0;
-  }
-  .source-item:hover .source-item__delete {
-    opacity: 1;
-  }
-
-  .source-item__delete--error {
-    @apply text-error/50 hover:text-error hover:bg-error/20;
-  }
-
-  /* Status dot */
+  /* ── Status dots ─────────────────────────────────────── */
   .status-dot {
-    @apply w-1.5 h-1.5 rounded-full;
+    @apply w-2 h-2 rounded-full flex-shrink-0;
   }
-
   .status-dot--success    { @apply bg-success; }
   .status-dot--error      { @apply bg-error; }
-  .status-dot--processing { @apply bg-primary; }
+  .status-dot--processing { @apply bg-warning animate-pulse; }
 
-  /* Live job card */
-  .job-card {
-    @apply bg-base-100 border border-base-200 p-4 rounded-2xl shadow-sm
-           relative overflow-hidden;
+  /* ── Source items (standalone) ───────────────────────── */
+  .source-item {
+    @apply bg-base-100 border border-base-200 p-3.5 rounded-xl
+           flex justify-between items-center transition-colors;
+  }
+  .source-item:hover { @apply bg-base-200/40; }
+  .source-item--error { @apply bg-error/5 border-error/20; }
+
+  .source-item__body  { @apply min-w-0 pr-4; }
+
+  .source-item__name {
+    @apply font-medium text-sm truncate text-base-content flex items-center gap-2.5;
+  }
+  .source-item__name--struck { @apply line-through opacity-60; }
+
+  .source-item__meta {
+    @apply text-xs text-base-content/50 mt-1 flex items-center gap-2;
+  }
+  .source-item__meta--error { @apply text-error/80 font-medium; }
+
+  .source-item__delete {
+    @apply w-7 h-7 rounded-lg flex items-center justify-center
+           text-base-content/30 hover:text-error hover:bg-error/10
+           transition-all text-xs;
+    opacity: 0;
+  }
+  .source-item:hover .source-item__delete { opacity: 1; }
+  .source-item__delete--error { @apply text-error/50 hover:text-error; opacity: 1; }
+
+  /* ── Skeleton ─────────────────────────────────────────── */
+  .skeleton-row {
+    @apply h-16 bg-base-200 rounded-2xl animate-pulse;
   }
 
-  .job-card__bar {
-    @apply absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b;
-  }
-
-  .job-card__bar--completed  { @apply from-success/80 to-success/40; }
-  .job-card__bar--processing { @apply from-primary/80 to-primary/40; }
-  .job-card__bar--failed     { @apply from-error/80 to-error/40; }
-  .job-card__bar--default    { @apply from-base-300 to-base-200; }
-
-  .job-card__body {
-    @apply pl-4;
-  }
-
-  .job-card__url {
-    @apply font-semibold text-sm truncate text-base-content;
-  }
-
-  .job-card__footer {
-    @apply flex justify-between items-center mt-2;
-  }
-
-  .job-status {
-    @apply text-xs font-bold tracking-wider;
-  }
-
-  .job-status--completed  { @apply text-success; }
-  .job-status--processing { @apply text-primary; }
-  .job-status--failed     { @apply text-error; }
-  .job-status--default    { @apply text-base-content/50; }
-
-  .job-card__time {
-    @apply text-xs text-base-content/40 font-medium;
-  }
-
+  /* ── Live dot ─────────────────────────────────────────── */
   .live-dot {
     @apply w-2 h-2 rounded-full bg-primary animate-pulse;
-  }
-
-  /* Empty state */
-  .empty-state {
-    @apply text-base-content/40 text-sm italic bg-base-200/20
-           p-4 rounded-xl border border-base-200 border-dashed text-center;
-  }
-
-  /* Skeleton */
-  .skeleton-row {
-    @apply h-16 bg-base-200/50 rounded-xl animate-pulse;
   }
 }

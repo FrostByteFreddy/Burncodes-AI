@@ -55,10 +55,10 @@
 
   /* Color variants */
   .btn-primary   { @apply bg-gradient-to-br from-[#0A1FAB] to-[#000e78] text-white shadow-md hover:shadow-lg hover:brightness-110; }
-  .btn-secondary { @apply bg-secondary text-secondary-content hover:brightness-95; }
+  .btn-secondary { @apply bg-secondary hover:brightness-95; color: oklch(var(--sc)); }
   .btn-error     { @apply bg-[#ba1a1a] text-white hover:brightness-110; }
-  .btn-success   { @apply bg-success text-success-content hover:brightness-95; }
-  .btn-warning   { @apply bg-warning text-warning-content hover:brightness-95; }
+  .btn-success   { @apply bg-success hover:brightness-95; color: oklch(var(--suc)); }
+  .btn-warning   { @apply bg-warning hover:brightness-95; color: oklch(var(--wc)); }
   .btn-ghost     { @apply bg-transparent text-base-content hover:bg-base-200; box-shadow: none !important; }
   .btn-outline   { @apply bg-transparent border border-current hover:bg-base-200; box-shadow: none !important; }
 
