@@ -51,6 +51,21 @@ services:
       - redis
       - backend
 
+  celery_worker_chat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A celery_worker.celery worker --loglevel=info --queues=chat --concurrency=6 --hostname=chat@%h
+    restart: always
+    volumes:
+      - app_data:/app/data
+      - uploads:/app/data/uploads
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - backend
+
   celery_beat:
     build:
       context: ./backend

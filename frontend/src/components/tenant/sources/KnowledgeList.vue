@@ -145,7 +145,7 @@
     <ConfirmationModal
       :show="showDeleteJobModal"
       title="Delete Crawl Job"
-      :message="`Delete the crawl of <strong>${jobToDelete?.start_url}</strong> and all ${jobToDelete?.sources?.length || 0} indexed pages? This cannot be undone.`"
+      :message="`Delete the crawl of <strong>${jobToDelete?.start_url}</strong>?<br><br>${jobToDelete?.task_count || 0} pages attempted · ${jobToDelete?.sources?.length || 0} pages indexed.<br>All indexed data will be removed. This cannot be undone.`"
       confirmButtonText="Delete"
       @confirm="executeDeleteJob"
       @cancel="jobToDelete = null; showDeleteJobModal = false"

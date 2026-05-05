@@ -11,7 +11,7 @@
         />
         {{ title }}
       </h2>
-      <p class="text-base-content/70 mb-6">{{ message }}</p>
+      <p class="text-base-content/70 mb-6" v-html="message"></p>
 
       <div v-if="confirmationText">
         <label class="block text-sm font-medium text-base-content/70 mb-2">

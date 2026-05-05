@@ -857,8 +857,20 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         error_logger.info("Completed processing URL: %s", url)
 
     except Exception as e:
-        error_message = f"Error processing URL {task_details.get('url', 'unknown')}: {e}"
-        error_logger.error(error_message, exc_info=True)
+        err_str = str(e)
+        # "Connection closed while reading from the driver" is a Playwright teardown
+        # race condition that happens when the worker is restarted mid-crawl.
+        # The browser process was already dead — this is not a data issue.
+        if "Connection closed" in err_str or "connection closed" in err_str.lower():
+            error_logger.warning(
+                "Browser connection lost for %s (worker restart?) — task will be re-queued: %s",
+                task_details.get('url', 'unknown'), err_str
+            )
+        else:
+            error_logger.error(
+                "Error processing URL %s: %s",
+                task_details.get('url', 'unknown'), err_str, exc_info=True
+            )
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
 
 @shared_task(bind=True, queue='fast')

@@ -40,7 +40,7 @@ class TokenUsageCallback(BaseCallbackHandler):
                 self.input_tokens += usage_metadata.get('prompt_token_count', 0)
                 self.output_tokens += usage_metadata.get('candidates_token_count', 0)
 
-@shared_task(bind=True, queue='fast')
+@shared_task(bind=True, queue='chat')
 def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_id=None):
     """
     Celery task to handle the chat logic synchronously.
