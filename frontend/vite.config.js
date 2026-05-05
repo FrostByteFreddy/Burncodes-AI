@@ -17,5 +17,14 @@ export default defineConfig(({ mode }) => {
         '@': fileURLToPath(new URL('./src', import.meta.url))
       },
     },
+    server: {
+      proxy: {
+        // Forward /api/* to Flask — same origin, no CORS needed in local dev
+        '/api': {
+          target: 'http://backend:5000',
+          changeOrigin: true,
+        },
+      },
+    },
   }
 })

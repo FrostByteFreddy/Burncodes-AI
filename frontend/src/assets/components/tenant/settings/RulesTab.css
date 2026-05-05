@@ -1,0 +1,69 @@
+@layer components {
+  .rule-card {
+    @apply p-6 rounded-xl flex flex-col transition-all duration-300 shadow-sm
+           bg-base-100 border border-base-200/50 hover:shadow-md hover:border-base-300/50;
+  }
+
+  .rule-card.is-editing {
+    @apply ring-2 ring-primary shadow-lg border-transparent relative z-10;
+  }
+
+  .rule-card__trigger {
+    @apply w-full p-3 mt-1 rounded-xl text-lg font-bold focus:outline-none transition-shadow
+           bg-transparent border-transparent text-base-content px-0;
+  }
+
+  .rule-card__trigger.is-editing {
+    @apply bg-base-200 border-none focus:ring-2 focus:ring-primary/50;
+  }
+
+  .rule-card__instruction {
+    @apply w-full p-3 mt-1 rounded-xl focus:outline-none transition-shadow
+           bg-transparent border-transparent text-base-content/70 px-0 resize-none;
+  }
+
+  .rule-card__instruction.is-editing {
+    @apply bg-base-200 border-none focus:ring-2 focus:ring-primary/50;
+  }
+
+  .rule-card__actions {
+    @apply flex justify-end items-center pt-3 mt-auto space-x-1;
+  }
+
+  .rules-header {
+    @apply flex justify-between items-center mb-8 border-b border-base-200/50 pb-6;
+  }
+
+  .rules-title {
+    @apply text-2xl font-bold text-base-content flex items-center;
+  }
+
+  .rules-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
+  }
+
+  .rules-empty {
+    @apply text-base-content/50 text-center py-8;
+  }
+
+  /* Add rule modal */
+  .rule-modal-backdrop {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm;
+  }
+
+  .rule-modal {
+    @apply bg-base-100 rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8 m-4 border border-base-200/50;
+  }
+
+  .rule-modal__header {
+    @apply flex justify-between items-center mb-6 border-b border-base-200/50 pb-4;
+  }
+
+  .rule-modal__title {
+    @apply text-xl font-bold text-base-content;
+  }
+
+  .rule-modal__footer {
+    @apply flex justify-end pt-4 space-x-3 border-t border-base-200/50 mt-6;
+  }
+}

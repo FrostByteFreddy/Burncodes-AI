@@ -1,0 +1,156 @@
+@layer components {
+
+  /* ── Root ──────────────────────────────────────────────── */
+  .knowledge-list { @apply flex flex-col gap-8; }
+
+  /* ── Two-column body ────────────────────────────────────── */
+  .kl-body {
+    @apply flex gap-8 items-start;
+  }
+  .kl-col-main  { @apply flex-1 min-w-0 flex flex-col gap-6; }
+  .kl-col-aside { @apply flex-shrink-0 flex flex-col gap-4; width: 260px; }
+
+  /* ── Section ────────────────────────────────────────────── */
+  .kl-section { @apply flex flex-col gap-4; }
+  .kl-section__title {
+    @apply flex items-center gap-2 text-xs font-bold uppercase tracking-widest
+           text-base-content/30;
+  }
+
+  /* ── Skeleton / Empty ────────────────────────────────────── */
+  .kl-skeleton { @apply flex flex-col gap-4; }
+  .skeleton-row { @apply h-28 bg-base-200 rounded-2xl animate-pulse; }
+  .kl-empty {
+    @apply flex flex-col items-center justify-center py-32 gap-4
+           text-center text-base-content/25;
+    font-size: 0.9rem;
+  }
+  .kl-empty svg { font-size: 2rem; }
+
+  /* ════════════════════════════════════════════════════════
+     JOB CARDS
+  ════════════════════════════════════════════════════════ */
+  .kl-jobs { @apply flex flex-col gap-5; }
+
+  .kl-job {
+    @apply rounded-2xl overflow-hidden border border-base-200 bg-base-100;
+  }
+
+  /* — Top bar: badge + delete — */
+  .kl-job__topbar {
+    @apply flex items-center justify-between px-6 pt-5;
+  }
+
+  .kl-job__badge {
+    @apply flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full;
+  }
+  .kl-job__badge--active { @apply bg-primary/10   text-primary; }
+  .kl-job__badge--done   { @apply bg-success/10   text-success; }
+  .kl-job__badge--failed { @apply bg-base-200     text-base-content/40; }
+
+  .kl-job__delete-btn {
+    @apply w-8 h-8 rounded-xl flex items-center justify-center text-sm
+           text-base-content/20 hover:text-error hover:bg-error/10
+           transition-all duration-150;
+  }
+  .kl-job__delete-btn:disabled { @apply opacity-40 cursor-not-allowed; }
+
+  /* — URL + date — */
+  .kl-job__body {
+    @apply pt-3 pb-6;
+  }
+  .kl-job__url {
+    @apply text-base font-semibold text-base-content leading-snug;
+    word-break: break-all;
+  }
+  .kl-job__meta {
+    @apply text-sm text-base-content/40 mt-1.5;
+  }
+
+  /* — Footer — */
+  .kl-job__footer {
+    @apply border-t border-base-200;
+  }
+
+  /* Segmented bar — 6px tall */
+  .kl-page-bar {
+    @apply flex w-full overflow-hidden;
+    height: 6px;
+    background: oklch(var(--b2));
+  }
+  .kl-page-bar__ok  { @apply h-full bg-success transition-all duration-700; }
+  .kl-page-bar__err { @apply h-full bg-error   transition-all duration-700; }
+
+  /* Stat row */
+  .kl-job__stats-row {
+    @apply flex items-center gap-5 px-6 py-4;
+  }
+
+  .kl-stat {
+    @apply flex items-center gap-2 text-sm font-medium;
+  }
+  .kl-stat--ok    { @apply text-success; }
+  .kl-stat--err   { @apply text-error; }
+  .kl-stat--facts { @apply text-base-content/40; }
+
+  .kl-stat__breakdown {
+    @apply text-xs font-normal opacity-70;
+  }
+
+  .kl-stats-spacer { @apply flex-1; }
+
+  /* ════════════════════════════════════════════════════════
+     DOCUMENT SIDEBAR
+  ════════════════════════════════════════════════════════ */
+  .kl-doc-list { @apply flex flex-col gap-1; }
+
+  .kl-doc-row {
+    @apply flex items-center gap-3 px-3 py-3 rounded-xl
+           hover:bg-base-200/60 transition-colors cursor-default;
+  }
+
+  .kl-doc-row__icon {
+    @apply w-10 h-10 rounded-xl flex items-center justify-center
+           text-base flex-shrink-0;
+  }
+  .kl-doc-row__icon--pdf        { @apply bg-red-50    text-red-500; }
+  .kl-doc-row__icon--doc,
+  .kl-doc-row__icon--docx       { @apply bg-blue-50   text-blue-500; }
+  .kl-doc-row__icon--xls,
+  .kl-doc-row__icon--xlsx       { @apply bg-green-50  text-green-600; }
+  .kl-doc-row__icon--ppt,
+  .kl-doc-row__icon--pptx       { @apply bg-orange-50 text-orange-500; }
+  .kl-doc-row__icon--txt,
+  .kl-doc-row__icon--md         { @apply bg-base-200  text-base-content/50; }
+  .kl-doc-row__icon--csv        { @apply bg-emerald-50 text-emerald-600; }
+  .kl-doc-row__icon--file       { @apply bg-base-200  text-base-content/40; }
+
+  .kl-doc-row__info { @apply flex-1 min-w-0; }
+
+  .kl-doc-row__name {
+    @apply text-sm font-medium text-base-content truncate;
+  }
+  .kl-doc-row__meta {
+    @apply flex items-center gap-1.5 text-xs text-base-content/40 mt-0.5;
+  }
+
+  .kl-doc-row__delete {
+    @apply w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0
+           text-base-content/20 hover:text-error hover:bg-error/10
+           transition-all duration-150 text-xs;
+    opacity: 0;
+  }
+  .kl-doc-row:hover .kl-doc-row__delete { opacity: 1; }
+
+  /* ── Shared dots ─────────────────────────────────────────── */
+  .status-dot {
+    @apply w-1.5 h-1.5 rounded-full flex-shrink-0;
+  }
+  .status-dot--success    { @apply bg-success; }
+  .status-dot--error      { @apply bg-error; }
+  .status-dot--processing { @apply bg-warning animate-pulse; }
+
+  .live-dot {
+    @apply w-1.5 h-1.5 rounded-full bg-primary animate-pulse;
+  }
+}

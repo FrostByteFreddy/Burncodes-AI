@@ -70,7 +70,11 @@ ssh "$SERVER" << EOF
   docker compose -f docker-compose.prod.yml build --no-cache frontend
 
   docker compose -f docker-compose.prod.yml up -d --force-recreate
-  
+
+  echo "🔓 Fixing data directory permissions..."
+  docker compose -f docker-compose.prod.yml exec -T backend \
+    sh -c 'chmod -R 777 /app/data && echo "✅ Permissions fixed on /app/data"'
+
   echo "✅ Containers are running!"
 EOF
 
