@@ -1,0 +1,53 @@
+/* ============================================================
+   SwiftAnswer Design Tokens — sourced from login screen brand
+   ============================================================ */
+
+:root {
+  /* Brand */
+  --brand-indigo:   #0A1FAB;
+  --brand-violet:   #3B1FA8;
+  --brand-magenta:  #FF2095;
+  --brand-cyan:     #50D3FC;
+
+  /* Surfaces (dark navy scale) */
+  --surface-0:      #0D0F1A;   /* app bg */
+  --surface-1:      #13162B;   /* cards, panels */
+  --surface-2:      #1C2040;   /* inputs, hover rows */
+  --surface-3:      #252A52;   /* borders, dividers */
+  --surface-muted:  #4A4F7A;   /* captions, placeholders */
+  --surface-text:   #E8EAF6;   /* body text */
+  --surface-heading:#FFFFFF;   /* headings */
+
+  /* Status */
+  --status-success: #00C9A7;
+  --status-warning: #F59E0B;
+  --status-error:   #FF4444;
+  --status-pending: #4A4F7A;
+
+  /* Gradients */
+  --gradient-brand:      linear-gradient(135deg, #0A1FAB 0%, #FF2095 100%);
+  --gradient-brand-soft: linear-gradient(135deg, rgba(10,31,171,0.12) 0%, rgba(255,32,149,0.08) 100%);
+  --gradient-brand-deep: linear-gradient(135deg, #0A1FAB 0%, #3B1FA8 40%, #FF2095 100%);
+  --gradient-surface:    linear-gradient(180deg, #13162B 0%, #0D0F1A 100%);
+
+  /* Shadows */
+  --shadow-card:  0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3);
+  --shadow-glow:  0 0 0 1px rgba(10,31,171,0.25), 0 8px 32px rgba(10,31,171,0.15);
+  --shadow-glow-active: 0 0 0 1px rgba(10,31,171,0.5), 0 8px 32px rgba(10,31,171,0.25);
+
+  /* Sidebar */
+  --sidebar-width: 240px;
+  --sidebar-bg:    #10132200;
+
+  /* Radii */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  18px;
+  --radius-pill: 999px;
+
+  /* Transitions */
+  --t-fast:   0.15s ease;
+  --t-normal: 0.2s ease;
+  --t-slow:   0.35s ease;
+}

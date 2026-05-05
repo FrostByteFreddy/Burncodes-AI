@@ -29,23 +29,30 @@
     }
   },
   "manageTenants": {
-    "title": "Gérer les locataires",
-    "subtitle": "Créez et gérez vos locataires et leurs configurations.",
-    "newTenant": "Nouveau locataire",
-    "noTenants": "Pas encore de locataires",
-    "startMessage": "Créez votre premier locataire pour commencer.",
-    "createTenant": "Créer un locataire",
+    "title": "Mes chatbots",
+    "subtitle": "Créez et gérez vos chatbots et leurs configurations.",
+    "newTenant": "Nouveau chatbot",
+    "newChatbot": "Nouveau chatbot",
+    "noTenants": "Pas encore de chatbots",
+    "noChatbots": "Pas encore de chatbots.",
+    "noChatbotsSubtitle": "Créez votre premier chatbot pour commencer à construire votre base de connaissances IA.",
+    "startMessage": "Créez votre premier chatbot pour commencer.",
+    "createTenant": "Créer un chatbot",
+    "createChatbot": "Créer un chatbot",
+    "sources": "{n} source | {n} sources",
+    "openChatbot": "Ouvrir le chatbot",
+    "configure": "Configurer",
     "delete": "Supprimer",
     "deleteModal": {
-      "title": "Supprimer le locataire",
-      "message": "Êtes-vous sûr de vouloir supprimer le locataire '{name}' ? Cette action est irréversible.",
+      "title": "Supprimer le chatbot",
+      "message": "Êtes-vous sûr de vouloir supprimer '{name}' ? Cette action est irréversible.",
       "confirm": "Supprimer"
     },
     "toast": {
-      "createSuccess": "Locataire créé avec succès !",
-      "createError": "Échec de la création du locataire.",
-      "deleteSuccess": "Locataire supprimé avec succès !",
-      "deleteError": "Échec de la suppression du locataire."
+      "createSuccess": "Chatbot créé avec succès !",
+      "createError": "Échec de la création du chatbot.",
+      "deleteSuccess": "Chatbot supprimé avec succès !",
+      "deleteError": "Échec de la suppression du chatbot."
     }
   },
   "analytics": {
@@ -365,19 +372,54 @@
     }
   },
   "sidebar": {
-    "selectTenant": "Sélectionner un locataire",
-    "sources": "Sources",
+    "selectTenant": "Sélectionner un chatbot",
+    "sources": "Connaissances",
     "configuration": "Configuration",
     "fineTune": "Ajustement",
     "analytics": "Analytique",
     "chatLogs": "Journaux de chat",
-    "chatbot": "Chatbot",
-    "noTenantSelected": "Sélectionnez un locataire pour voir les options de gestion.",
+    "chatbot": "Ouvrir le chatbot",
+    "noTenantSelected": "Sélectionnez un chatbot pour voir les options.",
     "settings": "Paramètres",
     "profile": "Profil",
-    "manageTenants": "Gérer les locataires",
-    "subscription": "Abonnement",
-    "logout": "Se déconnecter"
+    "manageTenants": "Mes chatbots",
+    "subscription": "Facturation",
+    "logout": "Se déconnecter",
+    "workspace": "Espace de travail",
+    "account": "Compte"
+  },
+  "profile": {
+    "title": "Profil utilisateur",
+    "subtitle": "Gérez vos informations personnelles et vos paramètres de sécurité.",
+    "accountDetails": "Détails du compte",
+    "changePassword": "Changer de mot de passe",
+    "dangerZone": "Zone de danger",
+    "deleteAccount": "Supprimer le compte",
+    "deleteAccountDesc": "La suppression de votre compte est permanente et irréversible.",
+    "tabs": {
+      "profile": "Détails du profil",
+      "security": "Sécurité"
+    },
+    "email": "Adresse e-mail",
+    "first_name": "Prénom",
+    "last_name": "Nom",
+    "phone_number": "Numéro de téléphone",
+    "language": "Langue",
+    "save_changes": "Enregistrer les modifications",
+    "saving": "Enregistrement",
+    "saved": "Enregistré",
+    "success": "Profil mis à jour avec succès !",
+    "error": "Échec de la mise à jour du profil.",
+    "security": {
+      "currentPassword": "Mot de passe actuel",
+      "newPassword": "Nouveau mot de passe",
+      "confirmPassword": "Confirmer le nouveau mot de passe",
+      "updatePassword": "Mettre à jour le mot de passe",
+      "updating": "Mise à jour",
+      "passwordMismatch": "Les nouveaux mots de passe ne correspondent pas.",
+      "success": "Mot de passe modifié avec succès !",
+      "error": "Échec du changement de mot de passe."
+    }
   },
   "modals": {
     "createTenant": {
