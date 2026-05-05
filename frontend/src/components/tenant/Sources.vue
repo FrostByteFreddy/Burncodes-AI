@@ -1,7 +1,5 @@
 <template>
-  <div class="grid grid-cols-1 xl:grid-cols-12 xl:rounded-3xl bg-base-100 xl:border border-base-200/50 xl:shadow-sm gap-0 min-h-[calc(100vh-10rem)]">
-
-    <!-- Left: knowledge list -->
+  <div class="sources-panel">
     <KnowledgeList
       :crawling-jobs="crawlingJobs"
       @delete="confirmDelete"
@@ -9,25 +7,20 @@
       @job-cancelled="handleJobCancelled"
     />
 
-    <!-- Right: clickable Add Knowledge zone -->
-    <div class="xl:col-span-5 border-t xl:border-t-0 xl:border-l border-base-200/50 p-6">
-      <div class="sticky top-6">
-        <button
-          @click="wizardOpen = true"
-          class="w-full border-2 border-dashed border-base-200 hover:border-primary/50 bg-base-200/20 hover:bg-primary/5 transition-all duration-300 rounded-2xl flex flex-col items-center justify-center gap-4 py-12 group cursor-pointer"
-        >
-          <div class="w-14 h-14 rounded-2xl bg-base-200 group-hover:bg-primary/10 transition-colors flex items-center justify-center text-2xl text-base-content/30 group-hover:text-primary">
+    <div class="sources-sidebar">
+      <div class="sources-sidebar__sticky">
+        <button @click="wizardOpen = true" class="add-knowledge-btn group">
+          <div class="add-knowledge-btn__icon">
             <font-awesome-icon :icon="['fas', 'plus']" />
           </div>
           <div class="text-center">
-            <p class="text-sm font-bold text-base-content/50 group-hover:text-base-content transition-colors">{{ $t('tenant.sources.wizard.addKnowledge') }}</p>
-            <p class="text-xs text-base-content/30 mt-1">Website or document</p>
+            <p class="add-knowledge-btn__label">{{ $t('tenant.sources.wizard.addKnowledge') }}</p>
+            <p class="add-knowledge-btn__sub">Website or document</p>
           </div>
         </button>
       </div>
     </div>
 
-    <!-- Wizard slide-over -->
     <AddKnowledgeWizard
       :open="wizardOpen"
       @close="wizardOpen = false"
@@ -35,7 +28,6 @@
       @upload-done="onUploadDone"
     />
 
-    <!-- Delete confirmation -->
     <ConfirmationModal
       :show="showConfirmationModal"
       :title="$t('tenant.sources.deleteModal.title')"

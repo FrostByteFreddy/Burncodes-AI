@@ -1,0 +1,35 @@
+@layer components {
+  .sources-panel {
+    @apply grid grid-cols-1 xl:grid-cols-12 xl:rounded-3xl bg-base-100
+           xl:border border-base-200/50 xl:shadow-sm gap-0;
+    min-height: calc(100vh - 10rem);
+  }
+
+  .sources-sidebar {
+    @apply xl:col-span-5 border-t xl:border-t-0 xl:border-l border-base-200/50 p-6;
+  }
+
+  .sources-sidebar__sticky {
+    @apply sticky top-6;
+  }
+
+  .add-knowledge-btn {
+    @apply w-full border-2 border-dashed border-base-200 hover:border-primary/50
+           bg-base-200/20 hover:bg-primary/5 transition-all duration-300
+           rounded-2xl flex flex-col items-center justify-center gap-4 py-12 cursor-pointer;
+  }
+
+  .add-knowledge-btn__icon {
+    @apply w-14 h-14 rounded-2xl bg-base-200 group-hover:bg-primary/10
+           transition-colors flex items-center justify-center text-2xl
+           text-base-content/30 group-hover:text-primary;
+  }
+
+  .add-knowledge-btn__label {
+    @apply text-sm font-bold text-base-content/50 group-hover:text-base-content transition-colors;
+  }
+
+  .add-knowledge-btn__sub {
+    @apply text-xs text-base-content/30 mt-1;
+  }
+}

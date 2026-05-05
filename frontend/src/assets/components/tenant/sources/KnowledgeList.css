@@ -1,0 +1,175 @@
+@layer components {
+  .knowledge-panel {
+    @apply xl:col-span-7 bg-base-100 p-6 flex flex-col h-full xl:border-r border-base-200/50;
+  }
+
+  .knowledge-header {
+    @apply mb-8;
+  }
+
+  .knowledge-title {
+    @apply text-3xl font-display font-bold text-base-content tracking-tight mb-2;
+  }
+
+  .knowledge-subtitle {
+    @apply text-base-content/60 text-sm;
+  }
+
+  /* Stats row */
+  .metric-grid {
+    @apply grid grid-cols-2 gap-4 mb-10 shrink-0;
+  }
+
+  .metric-card {
+    @apply rounded-2xl p-5 border;
+  }
+
+  .metric-card--primary {
+    @apply bg-primary/5 border-primary/10;
+  }
+
+  .metric-card--secondary {
+    @apply bg-secondary/5 border-secondary/10;
+  }
+
+  .metric-label {
+    @apply text-xs font-bold uppercase tracking-widest mb-1;
+  }
+
+  .metric-label--primary   { @apply text-primary/70; }
+  .metric-label--secondary { @apply text-secondary/70; }
+
+  .metric-value {
+    @apply text-4xl font-black font-display leading-none;
+  }
+
+  .metric-value--primary   { @apply text-primary; }
+  .metric-value--secondary { @apply text-secondary; }
+
+  /* Scrollable source list */
+  .source-scroll {
+    @apply flex-1 overflow-y-auto pr-2 space-y-10 pb-10;
+  }
+
+  /* Section group within the list */
+  .source-section {
+    @apply mb-10;
+  }
+
+  .source-section-title {
+    @apply text-xs font-bold uppercase tracking-wider text-base-content/50 mb-4;
+  }
+
+  .source-section-title--error {
+    @apply text-error/70 flex items-center gap-2;
+  }
+
+  .source-section-title--live {
+    @apply flex items-center gap-2;
+  }
+
+  /* Individual source row */
+  .source-item {
+    @apply group bg-base-100 hover:bg-base-200/50 border border-base-200
+           p-4 rounded-2xl flex justify-between items-center
+           transition-all duration-300;
+  }
+
+  .source-item--error {
+    @apply bg-error/5 hover:bg-error/10 border-error/20;
+  }
+
+  .source-item__body {
+    @apply min-w-0 pr-4;
+  }
+
+  .source-item__name {
+    @apply font-semibold text-sm truncate text-base-content flex items-center gap-3;
+  }
+
+  .source-item__name--struck {
+    @apply line-through opacity-70;
+  }
+
+  .source-item__meta {
+    @apply text-xs text-base-content/50 mt-1.5 flex items-center gap-2;
+  }
+
+  .source-item__meta--error {
+    @apply text-error/80 font-medium;
+  }
+
+  .source-item__delete {
+    @apply btn btn-ghost btn-sm btn-circle text-base-content/30
+           hover:text-error hover:bg-error/10
+           opacity-0 group-hover:opacity-100 transition-opacity;
+  }
+
+  .source-item__delete--error {
+    @apply text-error/50 hover:text-error hover:bg-error/20;
+  }
+
+  /* Status dot */
+  .status-dot {
+    @apply w-1.5 h-1.5 rounded-full;
+  }
+
+  .status-dot--success    { @apply bg-success; }
+  .status-dot--error      { @apply bg-error; }
+  .status-dot--processing { @apply bg-primary; }
+
+  /* Live job card */
+  .job-card {
+    @apply bg-base-100 border border-base-200 p-4 rounded-2xl shadow-sm
+           relative overflow-hidden;
+  }
+
+  .job-card__bar {
+    @apply absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b;
+  }
+
+  .job-card__bar--completed  { @apply from-success/80 to-success/40; }
+  .job-card__bar--processing { @apply from-primary/80 to-primary/40; }
+  .job-card__bar--failed     { @apply from-error/80 to-error/40; }
+  .job-card__bar--default    { @apply from-base-300 to-base-200; }
+
+  .job-card__body {
+    @apply pl-4;
+  }
+
+  .job-card__url {
+    @apply font-semibold text-sm truncate text-base-content;
+  }
+
+  .job-card__footer {
+    @apply flex justify-between items-center mt-2;
+  }
+
+  .job-status {
+    @apply text-xs font-bold tracking-wider;
+  }
+
+  .job-status--completed  { @apply text-success; }
+  .job-status--processing { @apply text-primary; }
+  .job-status--failed     { @apply text-error; }
+  .job-status--default    { @apply text-base-content/50; }
+
+  .job-card__time {
+    @apply text-xs text-base-content/40 font-medium;
+  }
+
+  .live-dot {
+    @apply w-2 h-2 rounded-full bg-primary animate-pulse;
+  }
+
+  /* Empty state */
+  .empty-state {
+    @apply text-base-content/40 text-sm italic bg-base-200/20
+           p-4 rounded-xl border border-base-200 border-dashed text-center;
+  }
+
+  /* Skeleton */
+  .skeleton-row {
+    @apply h-16 bg-base-200/50 rounded-xl animate-pulse;
+  }
+}

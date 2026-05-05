@@ -1,21 +1,20 @@
 <template>
   <div>
-    <!-- Tab switcher -->
-    <div class="flex items-center gap-1 p-1 bg-base-200/50 rounded-2xl mb-6 w-fit">
+    <div class="tab-bar">
       <button type="button" @click="activeTab = 'behavior'"
-        class="btn btn-sm rounded-xl transition-all duration-200"
-        :class="activeTab === 'behavior' ? 'btn-primary shadow-sm' : 'btn-ghost text-base-content'">
-        <font-awesome-icon :icon="['fas', 'sliders']" class="mr-2" />{{ $t("tenant.settings.tabs.behavior") }}
+        class="tab-bar__btn"
+        :class="activeTab === 'behavior' ? 'btn-primary shadow-sm' : 'btn-ghost'">
+        <font-awesome-icon :icon="['fas', 'sliders']" />{{ $t("tenant.settings.tabs.behavior") }}
       </button>
       <button type="button" @click="activeTab = 'appearance'"
-        class="btn btn-sm rounded-xl transition-all duration-200"
-        :class="activeTab === 'appearance' ? 'btn-primary shadow-sm' : 'btn-ghost text-base-content'">
-        <font-awesome-icon :icon="['fas', 'palette']" class="mr-2" />{{ $t("tenant.settings.tabs.appearance") }}
+        class="tab-bar__btn"
+        :class="activeTab === 'appearance' ? 'btn-primary shadow-sm' : 'btn-ghost'">
+        <font-awesome-icon :icon="['fas', 'palette']" />{{ $t("tenant.settings.tabs.appearance") }}
       </button>
       <button type="button" @click="activeTab = 'rules'"
-        class="btn btn-sm rounded-xl transition-all duration-200"
-        :class="activeTab === 'rules' ? 'btn-primary shadow-sm' : 'btn-ghost text-base-content'">
-        <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" class="mr-2" />{{ $t("tenant.settings.tabs.rules") }}
+        class="tab-bar__btn"
+        :class="activeTab === 'rules' ? 'btn-primary shadow-sm' : 'btn-ghost'">
+        <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" />{{ $t("tenant.settings.tabs.rules") }}
       </button>
     </div>
 
@@ -30,10 +29,9 @@
         <RulesTab />
       </div>
 
-      <!-- Save button (behavior only — appearance auto-saves on @change) -->
-      <div v-show="activeTab === 'behavior'" class="flex justify-end pt-4 border-t border-base-200/50">
+      <div v-show="activeTab === 'behavior'" class="settings-footer">
         <button type="submit" class="btn btn-primary" :disabled="tenantsStore.loading">
-          <font-awesome-icon :icon="['fas', 'floppy-disk']" class="mr-2" />
+          <font-awesome-icon :icon="['fas', 'floppy-disk']" />
           {{ $t("tenant.settings.actions.save") }}
         </button>
       </div>
@@ -66,9 +64,9 @@ const defaultWidgetConfig = () => ({
   input_placeholder: 'Send a message...',
   thinking_messages: ['Thinking...', 'Just a moment...', 'Let me check that for you...'],
   color_palette: [
-    { id: 'c_white',     name: t('tenant.settings.defaults.white'),   value: '#FFFFFF' },
-    { id: 'c_black',     name: t('tenant.settings.defaults.black'),   value: '#1F2937' },
-    { id: 'c_primary',   name: t('tenant.settings.defaults.primary'), value: '#A855F7' },
+    { id: 'c_white',     name: t('tenant.settings.defaults.white'),     value: '#FFFFFF' },
+    { id: 'c_black',     name: t('tenant.settings.defaults.black'),     value: '#1F2937' },
+    { id: 'c_primary',   name: t('tenant.settings.defaults.primary'),   value: '#A855F7' },
     { id: 'c_secondary', name: t('tenant.settings.defaults.secondary'), value: '#F3F4F6' },
   ],
   component_styles: {
@@ -89,15 +87,15 @@ const formData = ref({
 });
 
 watch(() => tenantsStore.currentTenant?.id, () => {
-  const t = tenantsStore.currentTenant;
-  if (!t) return;
-  const cfg = { ...defaultWidgetConfig(), ...(t.widget_config || {}) };
-  cfg.color_palette = t.widget_config?.color_palette || defaultWidgetConfig().color_palette;
-  cfg.component_styles = { ...defaultWidgetConfig().component_styles, ...(t.widget_config?.component_styles || {}) };
+  const tenant = tenantsStore.currentTenant;
+  if (!tenant) return;
+  const cfg = { ...defaultWidgetConfig(), ...(tenant.widget_config || {}) };
+  cfg.color_palette = tenant.widget_config?.color_palette || defaultWidgetConfig().color_palette;
+  cfg.component_styles = { ...defaultWidgetConfig().component_styles, ...(tenant.widget_config?.component_styles || {}) };
   formData.value = {
-    name: t.name, intro_message: t.intro_message, system_persona: t.system_persona,
-    rag_prompt_template: t.rag_prompt_template, doc_language: t.doc_language,
-    translation_target: t.translation_target, crawl_mode: t.crawl_mode || 'playwright_llm',
+    name: tenant.name, intro_message: tenant.intro_message, system_persona: tenant.system_persona,
+    rag_prompt_template: tenant.rag_prompt_template, doc_language: tenant.doc_language,
+    translation_target: tenant.translation_target, crawl_mode: tenant.crawl_mode || 'playwright_llm',
     widget_config: cfg,
   };
 }, { immediate: true });
