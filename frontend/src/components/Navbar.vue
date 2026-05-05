@@ -59,39 +59,18 @@
           {{ $t('sidebar.sources') }}
         </router-link>
         <router-link
-          :to="{ name: 'TenantManage', params: { tenantId: activeTenant.id } }"
+          :to="{ name: 'TenantConfigure', params: { tenantId: activeTenant.id } }"
           class="nav-link"
           active-class="nav-link-active"
         >
-          Manage
+          Configure
         </router-link>
         <router-link
-          :to="{ name: 'TenantSettings', params: { tenantId: activeTenant.id } }"
+          :to="{ name: 'TenantInsights', params: { tenantId: activeTenant.id } }"
           class="nav-link"
           active-class="nav-link-active"
         >
-          {{ $t('sidebar.configuration') }}
-        </router-link>
-        <router-link
-          :to="{ name: 'TenantFineTune', params: { tenantId: activeTenant.id } }"
-          class="nav-link"
-          active-class="nav-link-active"
-        >
-          {{ $t('sidebar.fineTune') }}
-        </router-link>
-        <router-link
-          :to="{ name: 'Analytics', params: { tenantId: activeTenant.id } }"
-          class="nav-link"
-          active-class="nav-link-active"
-        >
-          {{ $t('sidebar.analytics') }}
-        </router-link>
-        <router-link
-          :to="{ name: 'ChatLogs', params: { tenantId: activeTenant.id } }"
-          class="nav-link"
-          active-class="nav-link-active"
-        >
-          {{ $t('sidebar.chatLogs') }}
+          Insights
         </router-link>
         <a
           :href="`/chat/${activeTenant.id}`"
@@ -171,20 +150,11 @@
           <router-link :to="{ name: 'TenantSources', params: { tenantId: activeTenant.id } }" class="mobile-link" @click="mobileMenuOpen = false">
             <font-awesome-icon :icon="['fas', 'database']" class="w-4 h-4" /> {{ $t('sidebar.sources') }}
           </router-link>
-          <router-link :to="{ name: 'TenantManage', params: { tenantId: activeTenant.id } }" class="mobile-link" @click="mobileMenuOpen = false">
-            <font-awesome-icon :icon="['fas', 'sliders']" class="w-4 h-4" /> Manage
+          <router-link :to="{ name: 'TenantConfigure', params: { tenantId: activeTenant.id } }" class="mobile-link" @click="mobileMenuOpen = false">
+            <font-awesome-icon :icon="['fas', 'gear']" class="w-4 h-4" /> Configure
           </router-link>
-          <router-link :to="{ name: 'TenantSettings', params: { tenantId: activeTenant.id } }" class="mobile-link" @click="mobileMenuOpen = false">
-            <font-awesome-icon :icon="['fas', 'gear']" class="w-4 h-4" /> {{ $t('sidebar.configuration') }}
-          </router-link>
-          <router-link :to="{ name: 'TenantFineTune', params: { tenantId: activeTenant.id } }" class="mobile-link" @click="mobileMenuOpen = false">
-            <font-awesome-icon :icon="['fas', 'flask-vial']" class="w-4 h-4" /> {{ $t('sidebar.fineTune') }}
-          </router-link>
-          <router-link :to="{ name: 'Analytics', params: { tenantId: activeTenant.id } }" class="mobile-link" @click="mobileMenuOpen = false">
-            <font-awesome-icon :icon="['fas', 'chart-line']" class="w-4 h-4" /> {{ $t('sidebar.analytics') }}
-          </router-link>
-          <router-link :to="{ name: 'ChatLogs', params: { tenantId: activeTenant.id } }" class="mobile-link" @click="mobileMenuOpen = false">
-            <font-awesome-icon :icon="['fas', 'history']" class="w-4 h-4" /> {{ $t('sidebar.chatLogs') }}
+          <router-link :to="{ name: 'TenantInsights', params: { tenantId: activeTenant.id } }" class="mobile-link" @click="mobileMenuOpen = false">
+            <font-awesome-icon :icon="['fas', 'chart-line']" class="w-4 h-4" /> Insights
           </router-link>
           <a :href="`/chat/${activeTenant.id}`" target="_blank" class="mobile-link">
             <font-awesome-icon :icon="['fas', 'comments']" class="w-4 h-4" /> {{ $t('sidebar.chatbot') }}

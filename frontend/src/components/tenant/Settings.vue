@@ -25,6 +25,18 @@
         <font-awesome-icon :icon="['fas', 'fa-palette']" />
         <span>{{ $t("tenant.settings.tabs.appearance") }}</span>
       </a>
+      <a
+        class="btn border-0 rounded-full hover:cursor-pointer space-x-2"
+        :class="{
+ '!bg-primary-focus text-primary-content shadow':
+ activeTab === 'rules',
+ 'btn-ghost text-base-content': activeTab !== 'rules',
+ }"
+        @click="activeTab = 'rules'"
+      >
+        <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" />
+        <span>{{ $t("tenant.fineTune.title") }}</span>
+      </a>
     </div>
 
     <form @submit.prevent="handleUpdate" class="space-y-6 mt-6">
@@ -534,28 +546,121 @@
         </div>
       </div>
 
-      <div class="flex justify-end mt-8">
-        <button
-          type="submit"
-          :disabled="tenantsStore.loading"
-          class="btn btn-primary"
-        >
-          <span
-            v-if="tenantsStore.loading"
-            class="flex items-center justify-center"
+      <!-- ── Rules tab (absorbed from FineTune.vue) ─────────────── -->
+      <div v-show="activeTab === 'rules'">
+        <div class="flex justify-between items-center mb-8 border-b border-base-200/50 pb-6">
+          <h3 class="text-2xl font-bold text-base-content flex items-center">
+            <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" class="mr-3 text-primary" />
+            {{ $t("tenant.fineTune.title") }}
+          </h3>
+          <button type="button" @click="isRulesModalOpen = true" class="btn btn-primary">
+            <font-awesome-icon :icon="['fas', 'plus']" />
+            {{ $t("tenant.fineTune.addRule") || 'Add Rule' }}
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div
+            v-for="(rule, index) in rules"
+            :key="index"
+            :class="[
+              'p-6 rounded-xl flex flex-col transition-all duration-300 shadow-sm',
+              rule.isEditing
+                ? 'bg-base-100 ring-2 ring-primary shadow-lg border-transparent relative z-10'
+                : 'bg-base-100 border border-base-200/50 hover:shadow-md hover:border-base-300/50',
+            ]"
           >
-            <font-awesome-icon
-              :icon="['fas', 'spinner']"
-              class="w-5 h-5 mr-3 animate-spin"
-            />
-            {{ $t("tenant.settings.actions.saving") }}
-          </span>
-          <span v-else class="flex items-center">
-            <font-awesome-icon :icon="['fas', 'save']" class="mr-2" />
-            {{ $t("tenant.settings.actions.saveChanges") }}
-          </span>
-        </button>
+            <div class="flex-grow space-y-4">
+              <input
+                v-model="rule.trigger"
+                type="text"
+                :id="`trigger-${index}`"
+                :placeholder="$t('tenant.fineTune.trigger.placeholder')"
+                :disabled="!rule.isEditing"
+                :class="[
+                  'w-full p-3 mt-1 rounded-xl text-lg font-bold focus:outline-none transition-shadow',
+                  rule.isEditing
+                    ? 'bg-base-200 border-none focus:ring-2 focus:ring-primary/50'
+                    : 'bg-transparent border-transparent text-base-content px-0',
+                ]"
+              />
+              <div>
+                <AutoGrowTextarea
+                  v-model="rule.instruction"
+                  :id="`instruction-${index}`"
+                  rows="1"
+                  :placeholder="$t('tenant.fineTune.instruction.placeholder')"
+                  :disabled="!rule.isEditing"
+                  :class="[
+                    'w-full p-3 mt-1 rounded-xl focus:outline-none transition-shadow',
+                    rule.isEditing
+                      ? 'bg-base-200 border-none focus:ring-2 focus:ring-primary/50'
+                      : 'bg-transparent border-transparent text-base-content/70 px-0 resize-none',
+                  ]"
+                />
+              </div>
+            </div>
+            <div class="flex justify-end items-center pt-3 mt-auto space-x-1">
+              <template v-if="rule.isEditing">
+                <button type="button" @click="saveEditedRule(rule)" class="btn btn-ghost btn-xs text-success">
+                  <font-awesome-icon :icon="['fas', 'check']" class="h-4 w-4" />
+                </button>
+                <button type="button" @click="cancelEditing(index)" class="btn btn-ghost btn-xs">
+                  <font-awesome-icon :icon="['fas', 'xmark']" class="h-4 w-4" />
+                </button>
+              </template>
+              <template v-else>
+                <button type="button" @click="startEditing(rule, index)" class="btn btn-ghost btn-xs">
+                  <font-awesome-icon :icon="['fas', 'pen']" class="h-4 w-4" />
+                </button>
+                <button type="button" @click="removeRule(index)" class="btn btn-ghost btn-xs text-error">
+                  <font-awesome-icon :icon="['fas', 'trash']" class="h-4 w-4" />
+                </button>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <p v-if="rules.length === 0" class="text-base-content/50 text-center py-8">
+          {{ $t("tenant.fineTune.noRules") }}
+        </p>
+
+        <!-- Add Rule Modal -->
+        <Transition name="fade">
+          <div
+            v-if="isRulesModalOpen"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            @click="closeRulesModal"
+          >
+            <div
+              class="bg-base-100 rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8 m-4 border border-base-200/50"
+              @click.stop
+            >
+              <div class="flex justify-between items-center mb-6 border-b border-base-200/50 pb-4">
+                <h3 class="text-xl font-bold text-base-content">{{ $t("tenant.fineTune.addRule") }}</h3>
+                <button type="button" @click="closeRulesModal" class="btn btn-ghost btn-circle btn-sm">
+                  <font-awesome-icon :icon="['fas', 'xmark']" class="h-4 w-4" />
+                </button>
+              </div>
+              <form @submit.prevent="addRule" class="space-y-6">
+                <div>
+                  <label for="new-trigger" class="block text-sm font-medium text-base-content mb-2">{{ $t("tenant.fineTune.trigger.label") }}</label>
+                  <input v-model="newRule.trigger" type="text" id="new-trigger" :placeholder="$t('tenant.fineTune.trigger.example')" class="w-full p-3 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow" />
+                </div>
+                <div>
+                  <label for="new-instruction" class="block text-sm font-medium text-base-content mb-2">{{ $t("tenant.fineTune.instruction.label") }}</label>
+                  <AutoGrowTextarea v-model="newRule.instruction" id="new-instruction" rows="3" :placeholder="$t('tenant.fineTune.instruction.example')" class="w-full p-3 bg-base-200 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow resize-none" />
+                </div>
+                <div class="flex justify-end pt-4 space-x-3 border-t border-base-200/50 mt-6">
+                  <button type="button" @click="closeRulesModal" class="btn btn-ghost">{{ $t("tenant.fineTune.actions.cancel") }}</button>
+                  <button type="submit" class="btn btn-primary">{{ $t("tenant.fineTune.actions.add") }}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </Transition>
       </div>
+
     </form>
   </div>
 </template>
@@ -575,6 +680,76 @@ const tenantsStore = useTenantsStore();
 const { addToast } = useToast();
 const activeTab = ref("behavior");
 const previewKey = ref(0);
+
+// ── Rules (FineTune) state ───────────────────────────────────────────────────
+const isRulesModalOpen = ref(false);
+const rules = ref([]);
+const newRule = ref({ trigger: '', instruction: '' });
+let originalRuleState = null;
+
+watch(
+  () => tenantsStore.currentTenant,
+  (newTenant) => {
+    if (newTenant && newTenant.fine_tune_rules) {
+      rules.value = JSON.parse(JSON.stringify(newTenant.fine_tune_rules)).map(
+        (rule) => ({ ...rule, isEditing: false })
+      );
+    } else {
+      rules.value = [];
+    }
+  },
+  { immediate: true, deep: true }
+);
+
+const startEditing = (rule) => {
+  originalRuleState = JSON.parse(JSON.stringify(rule));
+  rule.isEditing = true;
+};
+const cancelEditing = (index) => {
+  if (originalRuleState) {
+    rules.value[index] = originalRuleState;
+    rules.value[index].isEditing = false;
+    originalRuleState = null;
+  }
+};
+const saveEditedRule = async (rule) => {
+  rule.isEditing = false;
+  originalRuleState = null;
+  await saveRules();
+};
+const closeRulesModal = () => {
+  isRulesModalOpen.value = false;
+  newRule.value = { trigger: '', instruction: '' };
+};
+const saveRules = async () => {
+  if (tenantsStore.currentTenant) {
+    const rulesToSave = rules.value.map(({ isEditing, ...rest }) => rest);
+    try {
+      await tenantsStore.updateTenant(tenantsStore.currentTenant.id, { fine_tune_rules: rulesToSave });
+      addToast(t('tenant.fineTune.actions.saveSuccess'), 'success');
+      return true;
+    } catch {
+      addToast(t('tenant.fineTune.actions.saveFailed'), 'error');
+      return false;
+    }
+  }
+  return false;
+};
+const addRule = async () => {
+  if (newRule.value.trigger.trim() && newRule.value.instruction.trim()) {
+    rules.value.push({ ...newRule.value, isEditing: false });
+    const success = await saveRules();
+    if (success) closeRulesModal();
+    else rules.value.pop();
+  }
+};
+const removeRule = async (index) => {
+  const backup = rules.value[index];
+  rules.value.splice(index, 1);
+  const success = await saveRules();
+  if (!success) rules.value.splice(index, 0, backup);
+};
+// ────────────────────────────────────────────────────────────────────────────
 
 const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
