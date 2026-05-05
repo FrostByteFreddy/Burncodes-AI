@@ -171,6 +171,56 @@ def get_crawling_job_progress(current_user, tenant_id, job_id):
         error_logger.error(f"Error getting job progress for job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to retrieve job progress", "details": str(e)}), 500
 
+@sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/cancel', methods=['POST'])
+@token_required
+def cancel_crawling_job(current_user, tenant_id, job_id):
+    """
+    Soft-cancel a crawl job.
+    Marks the job and all its PENDING / IN_PROGRESS tasks as FAILED so the
+    Celery scheduler stops picking up new pages for this job.
+    Already-running worker tasks will complete their current URL but will not
+    enqueue further sub-pages because the job status check will see FAILED.
+    """
+    try:
+        from app.models.database import CrawlingStatus
+        tenant_id_str = str(tenant_id)
+
+        # Auth check
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
+        if not tenant_check.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+
+        # Ownership check
+        job_check = supabase.table('crawling_jobs').select("id", "status").eq('id', job_id).eq('tenant_id', tenant_id_str).single().execute()
+        if not job_check.data:
+            return jsonify({"error": "Job not found or not part of this tenant"}), 404
+
+        job_status = job_check.data.get('status')
+        if job_status in (CrawlingStatus.COMPLETED.value, CrawlingStatus.FAILED.value):
+            return jsonify({"message": "Job is already finished.", "status": job_status}), 200
+
+        # 1. Mark ALL pending/in-progress tasks as FAILED — this prevents the
+        #    Celery scheduler from picking them up.
+        supabase.table('crawling_tasks') \
+            .update({"status": CrawlingStatus.FAILED.value}) \
+            .eq('job_id', job_id) \
+            .in_('status', [CrawlingStatus.PENDING.value, CrawlingStatus.IN_PROGRESS.value]) \
+            .execute()
+
+        # 2. Mark the job itself as FAILED
+        supabase.table('crawling_jobs') \
+            .update({"status": CrawlingStatus.FAILED.value}) \
+            .eq('id', job_id) \
+            .execute()
+
+        error_logger.info("Crawl job %s cancelled by user %s", job_id, current_user.id)
+        return jsonify({"message": "Crawl job cancelled successfully."}), 200
+
+    except Exception as e:
+        error_logger.error(f"Error cancelling crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to cancel crawl job", "details": str(e)}), 500
+
+
 @sources_bp.route('/<uuid:tenant_id>/sources/<int:source_id>', methods=['DELETE'])
 @token_required
 def delete_source(current_user, tenant_id, source_id):

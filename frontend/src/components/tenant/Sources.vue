@@ -60,7 +60,7 @@
                       </p>
                    </div>
                    <div class="mt-3" v-if="job.status === 'IN_PROGRESS'">
-                     <CrawlingJobProgress :job="job" :tenantId="tenantsStore.currentTenant.id" @job-completed="handleJobCompletion" />
+                     <CrawlingJobProgress :job="job" :tenantId="tenantsStore.currentTenant.id" @job-completed="handleJobCompletion" @job-cancelled="handleJobCancelled" />
                    </div>
                  </div>
               </div>
@@ -446,6 +446,10 @@ const handleDelete = async () => {
 const handleJobCompletion = async (jobId) => {
   addToast(t("tenant.sources.actions.crawlCompleted"), "success");
   await tenantsStore.refetch(tenantsStore.currentTenant.id);
+  await fetchCrawlingJobs();
+};
+
+const handleJobCancelled = async (jobId) => {
   await fetchCrawlingJobs();
 };
 
