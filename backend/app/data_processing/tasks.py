@@ -249,7 +249,7 @@ async def _get_document_chunks_from_content(content: str, source: str, source_id
         # Use the LLM cleaning path for unstructured data
         return await async_create_document_chunks_with_metadata(content, source, source_id, tenant_id)
 
-@shared_task
+@shared_task(queue='fast')
 def process_local_file(file_path: str, source_filename: str, source_id: int, tenant_id: UUID):
     """Celery task to process a file stored on the local filesystem."""
     embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
@@ -287,7 +287,7 @@ async def async_process_local_file(file_path: str, source_filename: str, source_
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
         return []
 
-@shared_task
+@shared_task(queue='fast')
 def process_urls(urls: list[tuple[str, int]], tenant_id: UUID):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
     docs = asyncio.run(process_urls_concurrently(urls, tenant_id))
@@ -400,7 +400,7 @@ def normalize_url(url):
     """Normalizes a URL by removing fragment and trailing slash."""
     return urldefrag(url)[0].rstrip('/')
 
-@shared_task(bind=True)
+@shared_task(bind=True, queue='fast')
 def crawl_links_task(self, tenant_id: UUID, start_url: str, single_page_only: bool = False, excluded_urls: list[str] = None, max_depth: int = 3):
     """
     Orchestrator Celery task to initiate a distributed web crawl.
@@ -447,7 +447,7 @@ def crawl_links_task(self, tenant_id: UUID, start_url: str, single_page_only: bo
         self.update_state(state='FAILURE', meta={'status': error_message})
         raise e
 
-@shared_task(bind=True, time_limit=600) # 5-minute hard time limit
+@shared_task(bind=True, queue='heavy', time_limit=600)
 def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str = None):
     """
     Worker Celery task to crawl a single URL, process its content, and discover new links.
@@ -648,7 +648,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         error_logger.error(error_message, exc_info=True)
         supabase.table('crawling_tasks').update({"status": CrawlingStatus.FAILED.value}).eq('id', task_id).execute()
 
-@shared_task(bind=True)
+@shared_task(bind=True, queue='fast')
 def job_scheduler_task(self):
     """
     Periodic task to schedule new crawling tasks and check for job completion.
@@ -697,7 +697,7 @@ def job_scheduler_task(self):
         error_logger.error("Error in job_scheduler_task: %s", e, exc_info=True)
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, queue='fast')
 def zombie_reaper_task(self):
     """
     Periodic Celery Beat task — the 'Zombie Reaper'.

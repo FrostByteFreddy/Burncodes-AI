@@ -20,11 +20,24 @@ services:
     depends_on:
       - redis
 
-  celery_worker:
+  celery_worker_fast:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: celery -A celery_worker.celery worker --loglevel=info
+    command: celery -A celery_worker.celery worker --loglevel=info --queues=fast --concurrency=8 --hostname=fast@%h
+    volumes:
+      - backend_data:/app/data
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - backend
+
+  celery_worker_heavy:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A celery_worker.celery worker --loglevel=info --queues=heavy --concurrency=2 --hostname=heavy@%h
     shm_size: '2gb'
     stop_grace_period: 60s
     volumes:

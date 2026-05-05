@@ -82,6 +82,13 @@ def create_app():
         broker_connection_retry_on_startup=True,
         task_acks_late=True,
         worker_prefetch_multiplier=1,
+        # --- Queue routing ---
+        # 'fast' handles everything except headless-browser crawling.
+        # 'heavy' is reserved for process_single_url_task (Playwright/Chromium).
+        task_default_queue='fast',
+        task_routes={
+            'app.data_processing.tasks.process_single_url_task': {'queue': 'heavy'},
+        },
     )
 
     celery.conf.beat_schedule = {

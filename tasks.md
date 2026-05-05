@@ -22,8 +22,11 @@ During deep crawls, large queues can instantly trigger the initialization of num
 - [x] **IPC Shared Memory Increased:** Set `shm_size: '2gb'` to prevent shared memory limits from crashing the Chromium driver.
 
 ### Proposed Solutions:
-- [ ] **Queue Separation**  
-  Separate fast tasks (text extraction, splitting) from heavy tasks (Playwright headless Chromium). Limit the heavy queue to `--concurrency=2` while allowing the fast queue to aggressively consume available cores.
+- [x] **Queue Separation**  
+  ✅ All tasks now carry an explicit `queue=` parameter. `process_single_url_task` is routed to `heavy`; everything else (chat, file processing, orchestrators, Beat jobs) goes to `fast`. Both compose files now run two separate worker containers:
+  - `celery_worker_fast` — concurrency 8 (dev) / 10 (prod), no shm needed
+  - `celery_worker_heavy` — concurrency 2, `shm_size: 2gb`, `stop_grace_period: 60s`
+  Celery config also sets `task_default_queue='fast'` and `task_routes` as a belt-and-suspenders fallback.
 
 ## 3. Vector DB Deletion
 - [x] **Delete from vector DB on source removal**  
