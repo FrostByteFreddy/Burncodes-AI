@@ -96,6 +96,7 @@ def discover_links(current_user, tenant_id):
         start_url = data.get('url')
         single_page_only = data.get('single_page_only', False)
         excluded_urls = data.get('excluded_urls', [])
+        crawl_mode = data.get('crawl_mode', 'playwright_llm')
         tenant_id_str = str(tenant_id)
 
         if not start_url:
@@ -104,6 +105,12 @@ def discover_links(current_user, tenant_id):
         tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
+
+        # Persist the selected crawl_mode so all worker tasks pick it up from the DB
+        valid_modes = {'soup', 'playwright', 'playwright_llm'}
+        if crawl_mode not in valid_modes:
+            crawl_mode = 'playwright_llm'
+        supabase.table('tenants').update({'crawl_mode': crawl_mode}).eq('id', tenant_id_str).execute()
 
         task = crawl_links_task.delay(
             tenant_id=tenant_id,
@@ -310,7 +317,8 @@ def delete_crawling_job(current_user, tenant_id, job_id):
                     embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
                     db = get_vectorstore(tenant_id, embeddings)
                     for sid in deleted_source_ids:
-                        db._collection.delete(where={"source_id": sid})
+                        db._collection.delete(where={"source_id": int(sid)})
+                    error_logger.info("delete_job: purged ChromaDB vectors for %d source(s) in job %s", len(deleted_source_ids), job_id)
                 except Exception as vec_err:
                     error_logger.warning("delete_job: vector store cleanup partial failure for job %s: %s", job_id, vec_err)
 
@@ -351,11 +359,12 @@ def delete_source(current_user, tenant_id, source_id):
         try:
             from app.data_processing.processor import get_vectorstore
             from langchain_google_genai import GoogleGenerativeAIEmbeddings
-            
+
             embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
             db = get_vectorstore(tenant_id, embeddings)
-            # Delete all chunks matching this source ID
-            db._collection.delete(where={"source_id": source_id})
+            # source_id is stored as int in metadata — cast to match exactly
+            db._collection.delete(where={"source_id": int(source_id)})
+            error_logger.info("Deleted ChromaDB vectors for source_id=%s tenant=%s", source_id, tenant_id)
         except Exception as vec_err:
             error_logger.error(f"Soft failure: Could not delete source {source_id} from vector store: {vec_err}")
 
