@@ -32,3 +32,4 @@ yarn-error.log*
 # Editor-specific
 frontend/.vscode/
 celerybeat-schedule*
+backend/crawled_markdown/
