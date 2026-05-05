@@ -110,22 +110,65 @@
                   </div>
                 </div>
 
-                <!-- Scope -->
-                <div class="rounded-2xl border border-base-200 overflow-hidden">
-                  <label for="wiz_single"
-                    class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/40 transition-colors"
-                    :class="singlePageOnly ? 'bg-base-200/30' : ''">
-                    <input type="checkbox" v-model="singlePageOnly" id="wiz_single"
-                      class="checkbox checkbox-sm checkbox-primary rounded" />
-                    <div>
-                      <p class="text-sm font-semibold text-base-content">{{ $t('tenant.sources.wizard.singlePageLabel') }}</p>
-                      <p class="text-xs text-base-content/40">Only index this exact URL, skip all links</p>
+                <!-- Scope + Exclusions in tabs -->
+                <div>
+                  <!-- Sub-tabs -->
+                  <div class="flex gap-1 p-1 bg-base-200/60 rounded-xl mb-4 w-fit">
+                    <button type="button" @click="configTab = 'general'"
+                      class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all"
+                      :class="configTab === 'general' ? 'bg-base-100 text-base-content shadow-sm' : 'text-base-content/50 hover:text-base-content'">
+                      General
+                    </button>
+                    <button type="button" @click="configTab = 'exclusions'"
+                      class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all"
+                      :class="configTab === 'exclusions' ? 'bg-base-100 text-base-content shadow-sm' : 'text-base-content/50 hover:text-base-content'">
+                      Exclusions
+                      <span v-if="excludedUrls.trim()" class="ml-1.5 w-1.5 h-1.5 rounded-full bg-primary inline-block"></span>
+                    </button>
+                  </div>
+
+                  <!-- General tab -->
+                  <div v-if="configTab === 'general'" class="rounded-2xl border border-base-200 overflow-hidden">
+                    <label for="wiz_single"
+                      class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/40 transition-colors"
+                      :class="singlePageOnly ? 'bg-base-200/30' : ''">
+                      <input type="checkbox" v-model="singlePageOnly" id="wiz_single"
+                        class="checkbox checkbox-sm checkbox-primary rounded" />
+                      <div>
+                        <p class="text-sm font-semibold text-base-content">{{ $t('tenant.sources.wizard.singlePageLabel') }}</p>
+                        <p class="text-xs text-base-content/40 mt-0.5">Only index this exact URL — skip all internal links</p>
+                      </div>
+                    </label>
+                  </div>
+
+                  <!-- Exclusions tab -->
+                  <div v-if="configTab === 'exclusions'" class="space-y-3">
+                    <!-- Explanation box -->
+                    <div class="bg-base-200/50 rounded-2xl p-4 border border-base-200 space-y-2">
+                      <p class="text-xs font-bold text-base-content/60 flex items-center gap-2">
+                        <font-awesome-icon :icon="['fas', 'circle-info']" class="text-primary" />
+                        What are exclusions?
+                      </p>
+                      <p class="text-xs text-base-content/50 leading-relaxed">
+                        Paths listed here will be skipped entirely during crawling — no content from those URLs will be indexed.
+                        Use this to ignore login pages, user dashboards, or any section you don't want in your knowledge base.
+                      </p>
+                      <p class="text-xs text-base-content/40 font-mono bg-base-100 rounded-lg p-2 leading-relaxed border border-base-200">
+                        /login<br>/dashboard<br>/account/settings
+                      </p>
                     </div>
-                  </label>
-                  <div v-if="!singlePageOnly" class="border-t border-base-200 p-4 bg-base-50 animate-fade-in">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-base-content/40 mb-2">{{ $t('tenant.sources.wizard.excludeLabel') }}</label>
-                    <textarea v-model="excludedUrls" :placeholder="$t('tenant.sources.wizard.excludePlaceholder')" rows="2"
-                      class="w-full p-3 bg-base-100 border border-base-200 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors resize-none font-mono"></textarea>
+
+                    <div :class="singlePageOnly ? 'opacity-40 pointer-events-none' : ''">
+                      <label class="block text-xs font-bold uppercase tracking-wider text-base-content/40 mb-2">
+                        {{ $t('tenant.sources.wizard.excludeLabel') }}
+                      </label>
+                      <textarea v-model="excludedUrls" :placeholder="$t('tenant.sources.wizard.excludePlaceholder')" rows="4"
+                        class="w-full p-3 bg-base-100 border border-base-200 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors resize-none font-mono leading-relaxed"></textarea>
+                      <p v-if="singlePageOnly" class="text-xs text-base-content/40 mt-1.5 flex items-center gap-1">
+                        <font-awesome-icon :icon="['fas', 'ban']" />
+                        Exclusions are ignored when "this page only" is active
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -149,6 +192,7 @@
                 </label>
               </div>
             </div>
+
 
             <!-- Step 2: Confirm -->
             <div v-if="step === 2">
@@ -227,6 +271,7 @@ const crawlModes = computed(() => [
 const url = ref('');
 const crawlMode = ref('soup');
 const singlePageOnly = ref(false);
+const configTab = ref('general'); // 'general' | 'exclusions'
 const excludedUrls = ref('');
 const selectedFile = ref(null);
 const submitting = ref(false);
@@ -258,6 +303,7 @@ const handleFileSelect = (e) => { selectedFile.value = e.target.files[0] || null
 const reset = () => {
   step.value = 0; type.value = null; url.value = ''; crawlMode.value = 'soup';
   singlePageOnly.value = false; excludedUrls.value = ''; selectedFile.value = null;
+  configTab.value = 'general';
 };
 
 const submit = async () => {

@@ -9,29 +9,19 @@
       @job-cancelled="handleJobCancelled"
     />
 
-    <!-- Right: Add Knowledge CTA -->
-    <div class="xl:col-span-5 bg-base-200/30 p-6 lg:p-10 flex flex-col h-full border-t xl:border-t-0 border-base-200/50">
-      <div class="mb-8">
-        <h2 class="text-2xl lg:text-3xl font-display font-bold text-base-content tracking-tight mb-2">Knowledge</h2>
-        <p class="text-base-content/60 text-sm">Add websites or documents to your AI's knowledge base.</p>
+    <!-- Right: clickable Add Knowledge zone -->
+    <button
+      @click="wizardOpen = true"
+      class="xl:col-span-5 bg-base-200/20 hover:bg-primary/5 border-t xl:border-t-0 border-base-200/50 border-2 border-dashed hover:border-primary/40 transition-all duration-300 flex flex-col items-center justify-center gap-6 p-10 group cursor-pointer"
+    >
+      <div class="w-16 h-16 rounded-3xl bg-base-200 group-hover:bg-primary/10 transition-colors flex items-center justify-center text-2xl text-base-content/30 group-hover:text-primary">
+        <font-awesome-icon :icon="['fas', 'plus']" />
       </div>
-
-      <div class="flex-1 flex flex-col items-center justify-center">
-        <div class="text-center max-w-xs">
-          <div class="w-20 h-20 mx-auto mb-6 rounded-3xl bg-primary/10 flex items-center justify-center text-primary text-3xl">
-            <font-awesome-icon :icon="['fas', 'plus']" />
-          </div>
-          <h3 class="text-xl font-bold text-base-content mb-2">Add Knowledge</h3>
-          <p class="text-sm text-base-content/50 mb-8 leading-relaxed">
-            Index websites or upload documents in a few quick steps.
-          </p>
-          <button @click="wizardOpen = true" class="btn btn-primary btn-lg w-full rounded-2xl">
-            <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
-            {{ $t('tenant.sources.wizard.addKnowledge') }}
-          </button>
-        </div>
+      <div class="text-center">
+        <p class="text-base font-bold text-base-content/50 group-hover:text-base-content transition-colors">{{ $t('tenant.sources.wizard.addKnowledge') }}</p>
+        <p class="text-xs text-base-content/30 mt-1">Website or document</p>
       </div>
-    </div>
+    </button>
 
     <!-- Wizard slide-over -->
     <AddKnowledgeWizard
