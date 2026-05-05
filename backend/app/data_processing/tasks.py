@@ -695,3 +695,52 @@ def job_scheduler_task(self):
 
     except Exception as e:
         error_logger.error("Error in job_scheduler_task: %s", e, exc_info=True)
+
+
+@shared_task(bind=True)
+def zombie_reaper_task(self):
+    """
+    Periodic Celery Beat task — the 'Zombie Reaper'.
+
+    Finds tenant_sources rows that have been stuck in PROCESSING for longer
+    than ZOMBIE_THRESHOLD_HOURS (default 4 h). This happens when a Celery worker
+    is killed mid-task before it can write the final status back to Supabase.
+
+    Action taken: mark the row as ERROR so the UI stops spinning and the user
+    knows they need to re-submit the source.
+    """
+    ZOMBIE_THRESHOLD_HOURS = 4
+
+    try:
+        from datetime import timedelta
+
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=ZOMBIE_THRESHOLD_HOURS)).isoformat()
+
+        # Find all sources stuck in PROCESSING older than the threshold
+        response = supabase.table('tenant_sources') \
+            .select('id, tenant_id, source_location, created_at') \
+            .eq('status', 'PROCESSING') \
+            .lt('created_at', cutoff) \
+            .execute()
+
+        zombies = response.data or []
+
+        if not zombies:
+            error_logger.debug("zombie_reaper: no stuck sources found.")
+            return
+
+        zombie_ids = [z['id'] for z in zombies]
+        error_logger.warning(
+            "zombie_reaper: found %d stuck PROCESSING source(s) older than %dh — marking ERROR. ids=%s",
+            len(zombie_ids), ZOMBIE_THRESHOLD_HOURS, zombie_ids,
+        )
+
+        supabase.table('tenant_sources') \
+            .update({'status': 'ERROR'}) \
+            .in_('id', zombie_ids) \
+            .execute()
+
+        error_logger.info("zombie_reaper: successfully marked %d source(s) as ERROR.", len(zombie_ids))
+
+    except Exception as e:
+        error_logger.error("zombie_reaper: unexpected error: %s", e, exc_info=True)

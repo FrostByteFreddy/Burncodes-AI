@@ -8,11 +8,11 @@ Currently, if a backend deploy occurs (e.g. `docker compose up --build`) while a
   Configure the Celery worker to only acknowledge a task as completed *after* it successfully runs. This way, if a container is abruptly restarted, the dropped task remains in the Redis queue and is gracefully retried upon startup.  
   ✅ Implemented in `app/__init__.py` — `task_acks_late=True` and `worker_prefetch_multiplier=1`.
 
-- [ ] **State Reconciliation Cron Job ("Zombie Reaper")**  
-  Since things inevitably crash, create a scheduled cleanup task (e.g., using Celery Beat) that queries `tenant_sources` for any row where `status = 'PROCESSING'` but the `created_at` timestamp is older than 2–6 hours. Automatically revert these to `ERROR` or resubmit them to `PENDING` to keep the UI in sync.
+- [x] **State Reconciliation Cron Job ("Zombie Reaper")**  
+  ✅ Implemented as `zombie_reaper_task` in `app/data_processing/tasks.py`. Runs every 30 min via Celery Beat. Finds `tenant_sources` rows stuck in `PROCESSING` for > 4 h and marks them `ERROR`.
 
-- [ ] **Increase Docker Grace Period**  
-  Update `docker-compose.yml` with `stop_grace_period: 60s` for the `celery_worker` to give running Playwright instances more time to successfully wrap up logging and state-saves before the final SIGKILL is dispatched.
+- [x] **Increase Docker Grace Period**  
+  ✅ Added `stop_grace_period: 60s` to `celery_worker` in both `docker-compose.yml` and `docker-compose.prod.yml`. Also fixed missing `shm_size: '2gb'` in the prod compose.
 
 ## 2. Headless Browser Concurrency Tuning
 During deep crawls, large queues can instantly trigger the initialization of numerous headless Browsers via `Playwright/Crawl4AI`. 

@@ -89,6 +89,10 @@ def create_app():
             'task': 'app.data_processing.tasks.job_scheduler_task',
             'schedule': 30.0,
         },
+        'zombie-reaper-every-30-minutes': {
+            'task': 'app.data_processing.tasks.zombie_reaper_task',
+            'schedule': 1800.0,  # 30 minutes
+        },
     }
 
     celery.autodiscover_tasks(['app.chat', 'app.data_processing'])
