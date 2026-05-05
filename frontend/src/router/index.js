@@ -20,13 +20,12 @@ const routes = [
     meta: { requiresAuth: true },
     props: true,
     children: [
-      { path: "", redirect: { name: "TenantSettings" } },
-      { path: "settings", name: "TenantSettings", component: () => import("../components/tenant/Settings.vue") },
-      { path: "sources", name: "TenantSources", component: () => import("../components/tenant/Sources.vue") },
-      { path: "fine-tune", name: "TenantFineTune", component: () => import("../components/tenant/FineTune.vue") },
-      { path: "analytics", name: "Analytics", component: () => import("@/views/Analytics.vue") },
-      { path: "chat-logs", name: "ChatLogs", component: () => import("@/views/ChatLogs.vue") },
+      { path: "", redirect: { name: "TenantSources" } },
+      { path: "sources",   name: "TenantSources",   component: () => import("../components/tenant/Sources.vue") },
+      { path: "configure", name: "TenantConfigure", component: () => import("../components/tenant/Settings.vue") },
+      { path: "insights",  name: "TenantInsights",  component: () => import("../views/Insights.vue") },
     ],
+
   },
   {
     path: "/profile",

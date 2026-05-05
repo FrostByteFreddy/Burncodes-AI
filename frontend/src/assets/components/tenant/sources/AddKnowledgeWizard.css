@@ -1,0 +1,133 @@
+@layer components {
+  /* Radio-style selection card — used for type, crawl mode, scope */
+  .radio-card {
+    @apply w-full flex items-start gap-4 p-4 rounded-2xl border-2
+           transition-all duration-150 text-left cursor-pointer
+           border-base-200 bg-base-100 hover:border-base-300;
+  }
+
+  .radio-card.is-selected {
+    @apply border-primary bg-primary/5 shadow-sm;
+  }
+
+  .radio-card__dot {
+    @apply w-4 h-4 rounded-full border-2 flex-shrink-0 mt-1
+           flex items-center justify-center border-base-300 transition-all;
+  }
+
+  .radio-card.is-selected .radio-card__dot {
+    @apply border-primary bg-primary;
+  }
+
+  .radio-card .radio-card__dot::after {
+    content: '';
+    @apply block w-1.5 h-1.5 rounded-full bg-white opacity-0 transition-opacity;
+  }
+
+  .radio-card.is-selected .radio-card__dot::after {
+    @apply opacity-100;
+  }
+
+  /* Field label above inputs */
+  .field-label {
+    @apply block text-xs font-bold uppercase tracking-wider text-base-content/50 mb-2;
+  }
+
+  /* Standard text input */
+  .field-input {
+    @apply w-full bg-base-200/60 border-2 border-transparent rounded-2xl
+           text-sm font-medium h-12 px-4
+           focus:border-primary focus:bg-base-100 focus:outline-none transition-all;
+  }
+
+  .field-input.has-error {
+    @apply border-error bg-error/5 focus:border-error;
+  }
+
+  /* Exclusion path chip */
+  .path-chip {
+    @apply flex items-center gap-1.5 bg-base-200 text-base-content/70
+           text-xs font-mono px-3 py-2 rounded-xl border border-base-200;
+  }
+
+  .path-chip__remove {
+    @apply text-base-content/30 hover:text-error transition-colors ml-1;
+  }
+
+  /* Step text */
+  .step-heading {
+    @apply text-sm font-semibold text-base-content mb-1;
+  }
+
+  .step-subtext {
+    @apply text-xs text-base-content/50 leading-relaxed;
+  }
+
+  /* Dashed "add a path" trigger button */
+  .add-row {
+    @apply flex items-center gap-2 text-sm text-base-content/50
+           hover:text-primary transition-colors cursor-pointer;
+  }
+
+  .add-row__icon {
+    @apply w-7 h-7 rounded-xl border-2 border-dashed border-base-300
+           hover:border-primary/50 flex items-center justify-center;
+  }
+
+  /* Inline add-path input + action buttons */
+  .path-input-row {
+    @apply flex gap-2;
+  }
+
+  /* Note: no @apply of DaisyUI component classes ('input') here — write properties directly */
+  .path-input-row input {
+    flex: 1;
+    padding-left: 1.5rem;
+    height: 2rem;
+    font-size: 0.875rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    background-color: theme('colors.base-200');
+    border: 2px solid theme('colors.primary' / 40%);
+    border-radius: 0.75rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .path-input-row input:focus {
+    border-color: theme('colors.primary');
+  }
+
+  /* Wizard confirm summary row */
+  .confirm-row {
+    @apply flex justify-between text-sm;
+  }
+
+  .confirm-row__label {
+    @apply text-base-content/50 font-medium;
+  }
+
+  .confirm-row__value {
+    @apply font-bold text-base-content;
+  }
+
+  .confirm-box {
+    @apply bg-base-200/50 rounded-2xl p-5 space-y-3 border border-base-200;
+  }
+
+  /* Progress bar dots header */
+  .wizard-progress {
+    @apply flex items-center gap-2 mt-2;
+  }
+
+  .wizard-progress__dot {
+    @apply h-1 rounded-full transition-all duration-300 bg-base-300;
+  }
+
+  .wizard-progress__dot.is-active {
+    @apply bg-primary w-8;
+  }
+
+  .wizard-progress__dot.is-done {
+    @apply bg-primary w-4;
+  }
+}

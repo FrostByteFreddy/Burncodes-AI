@@ -104,12 +104,12 @@
                     v-for="amount in [20, 50, 100]"
                     :key="amount"
                     @click="rechargeAmount = amount"
-                    class="btn transition-all duration-200 min-h-[3rem] h-auto py-2"
+                    class="btn duration-200 min-h-[3rem] h-auto py-2"
                     :class="
-                      rechargeAmount === amount
-                        ? 'btn-primary shadow-md scale-105'
-                        : 'btn-outline border-base-300 hover:border-primary hover:bg-primary/5 text-base-content'
-                    "
+ rechargeAmount === amount
+ ? 'btn-primary scale-105'
+ : 'btn-outline border-base-300 hover:border-primary hover:bg-primary/5 text-base-content'
+ "
                   >
                     CHF {{ amount }}
                   </button>
@@ -150,7 +150,7 @@
 
               <button
                 @click="handleRecharge"
-                class="btn btn-primary w-full shadow-lg shadow-primary/20 mt-2"
+                class="btn btn-primary w-full shadow-primary/20 mt-2"
                 :disabled="!!amountError || billingStore.loading"
               >
                 <span

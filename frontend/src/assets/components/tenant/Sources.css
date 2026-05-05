@@ -1,0 +1,36 @@
+@layer components {
+  /* Full-width page container */
+  .sources-page {
+    @apply flex flex-col gap-6 p-6;
+    min-height: calc(100vh - 8rem);
+  }
+
+  /* ── Banner add button ──────────────────────────────── */
+  .sources-add-banner {
+    @apply w-full flex items-center gap-5 px-8
+           border-2 border-dashed border-base-300
+           bg-base-100 hover:bg-primary/5 hover:border-primary/40
+           rounded-2xl transition-all duration-200 cursor-pointer;
+    min-height: 100px;
+  }
+
+  .sources-add-banner__icon {
+    @apply w-12 h-12 rounded-xl bg-base-200 flex items-center justify-center
+           text-xl text-base-content/40 transition-colors flex-shrink-0;
+  }
+  .sources-add-banner:hover .sources-add-banner__icon {
+    @apply bg-primary/10 text-primary;
+  }
+
+  .sources-add-banner__text {
+    @apply flex flex-col text-left;
+  }
+
+  .sources-add-banner__title {
+    @apply text-base font-bold text-base-content;
+  }
+
+  .sources-add-banner__sub {
+    @apply text-sm text-base-content/50 mt-0.5;
+  }
+}

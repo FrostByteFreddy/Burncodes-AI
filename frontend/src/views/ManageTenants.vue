@@ -71,7 +71,7 @@
           </router-link>
           <button
             @click="confirmDelete(tenant)"
-            class="btn btn-sm btn-ghost text-error hover:bg-error/10 hover:text-error border-none"
+            class="btn btn-sm btn-ghost text-error hover:bg-error/10 hover:text-error"
           >
             <font-awesome-icon :icon="['fas', 'trash']" class="mr-2" />
             {{ $t("manageTenants.delete") }}
