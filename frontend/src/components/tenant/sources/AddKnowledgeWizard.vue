@@ -65,60 +65,88 @@
             <!-- Step 1: Configure -->
             <div v-if="step === 1">
               <!-- Website form -->
-              <div v-if="type === 'website'" class="space-y-5">
+              <div v-if="type === 'website'" class="space-y-6">
+
+                <!-- URL -->
                 <div>
-                  <label class="block text-sm font-medium text-base-content mb-1">{{ $t('tenant.sources.wizard.urlLabel') }}</label>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-base-content/50 mb-2">{{ $t('tenant.sources.wizard.urlLabel') }}</label>
                   <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/40">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/30">
                       <font-awesome-icon :icon="['fas', 'link']" />
                     </div>
                     <input v-model="url" type="text" :placeholder="$t('tenant.sources.wizard.urlPlaceholder')"
-                      class="input w-full bg-base-200/50 border-transparent focus:border-primary focus:bg-base-100 transition-colors pl-12 rounded-2xl text-sm font-medium"
+                      class="input w-full bg-base-200/60 border-2 border-transparent focus:border-primary focus:bg-base-100 transition-all pl-11 rounded-2xl text-sm font-medium h-12"
                       :class="{ 'border-error bg-error/5 focus:border-error': !isUrlValid && url }" />
                   </div>
-                  <p v-if="!isUrlValid && url" class="text-error text-xs px-2 mt-1">{{ $t('tenant.sources.invalidUrl') }}</p>
-                </div>
-
-                <!-- Crawl Mode -->
-                <div>
-                  <label class="block text-sm font-medium text-base-content mb-1">{{ $t('tenant.sources.wizard.crawlModeLabel') }}</label>
-                  <p class="text-xs text-base-content/50 mb-2">{{ $t('tenant.sources.wizard.crawlModeHint') }}</p>
-                  <select v-model="crawlMode" class="select select-bordered w-full rounded-2xl bg-base-200 border-transparent focus:border-primary">
-                    <option value="soup">⚡ {{ $t('tenant.sources.wizard.modeSoup') }}</option>
-                    <option value="playwright">🌐 {{ $t('tenant.sources.wizard.modePlaywright') }}</option>
-                    <option value="playwright_llm">🧠 {{ $t('tenant.sources.wizard.modeLLM') }}</option>
-                  </select>
-                  <p class="text-xs text-base-content/40 mt-2 leading-relaxed">
-                    <span v-if="crawlMode === 'soup'">{{ $t('tenant.sources.wizard.modeSoupDesc') }}</span>
-                    <span v-else-if="crawlMode === 'playwright'">{{ $t('tenant.sources.wizard.modePlaywrightDesc') }}</span>
-                    <span v-else>{{ $t('tenant.sources.wizard.modeLLMDesc') }}</span>
+                  <p v-if="!isUrlValid && url" class="text-error text-xs px-1 mt-1.5 flex items-center gap-1">
+                    <font-awesome-icon :icon="['fas', 'circle-exclamation']" /> {{ $t('tenant.sources.invalidUrl') }}
                   </p>
                 </div>
 
-                <div class="bg-base-200/30 p-4 rounded-2xl space-y-3">
-                  <div class="flex items-center">
-                    <input type="checkbox" v-model="singlePageOnly" class="checkbox checkbox-sm checkbox-primary rounded" id="wiz_single" />
-                    <label for="wiz_single" class="ml-2 text-sm font-medium text-base-content/80 cursor-pointer">{{ $t('tenant.sources.wizard.singlePageLabel') }}</label>
+                <!-- Crawl Mode cards -->
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-base-content/50 mb-3">{{ $t('tenant.sources.wizard.crawlModeLabel') }}</label>
+                  <div class="space-y-2">
+                    <button v-for="mode in crawlModes" :key="mode.value" type="button"
+                      @click="crawlMode = mode.value"
+                      class="w-full flex items-start gap-4 p-4 rounded-2xl border-2 transition-all duration-150 text-left"
+                      :class="crawlMode === mode.value
+                        ? 'border-primary bg-primary/5 shadow-sm'
+                        : 'border-base-200 bg-base-100 hover:border-base-300'">
+                      <div class="text-xl leading-none mt-0.5 w-6 flex-shrink-0">{{ mode.emoji }}</div>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="text-sm font-bold" :class="crawlMode === mode.value ? 'text-primary' : 'text-base-content'">{{ mode.label }}</span>
+                          <span v-if="mode.badge" class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                            :class="mode.badgeClass">{{ mode.badge }}</span>
+                        </div>
+                        <p class="text-xs text-base-content/50 mt-0.5 leading-relaxed">{{ mode.desc }}</p>
+                      </div>
+                      <div class="w-4 h-4 rounded-full border-2 flex-shrink-0 mt-1 transition-all flex items-center justify-center"
+                        :class="crawlMode === mode.value ? 'border-primary bg-primary' : 'border-base-300'">
+                        <div v-if="crawlMode === mode.value" class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                      </div>
+                    </button>
                   </div>
-                  <div v-if="!singlePageOnly" class="animate-fade-in pt-1">
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-base-content/50 mb-2">{{ $t('tenant.sources.wizard.excludeLabel') }}</label>
+                </div>
+
+                <!-- Scope -->
+                <div class="rounded-2xl border border-base-200 overflow-hidden">
+                  <label for="wiz_single"
+                    class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/40 transition-colors"
+                    :class="singlePageOnly ? 'bg-base-200/30' : ''">
+                    <input type="checkbox" v-model="singlePageOnly" id="wiz_single"
+                      class="checkbox checkbox-sm checkbox-primary rounded" />
+                    <div>
+                      <p class="text-sm font-semibold text-base-content">{{ $t('tenant.sources.wizard.singlePageLabel') }}</p>
+                      <p class="text-xs text-base-content/40">Only index this exact URL, skip all links</p>
+                    </div>
+                  </label>
+                  <div v-if="!singlePageOnly" class="border-t border-base-200 p-4 bg-base-50 animate-fade-in">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-base-content/40 mb-2">{{ $t('tenant.sources.wizard.excludeLabel') }}</label>
                     <textarea v-model="excludedUrls" :placeholder="$t('tenant.sources.wizard.excludePlaceholder')" rows="2"
-                      class="w-full p-3 bg-base-100 border border-base-200 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors"></textarea>
+                      class="w-full p-3 bg-base-100 border border-base-200 rounded-xl text-sm focus:outline-none focus:border-primary/50 transition-colors resize-none font-mono"></textarea>
                   </div>
                 </div>
               </div>
 
               <!-- Document form -->
               <div v-if="type === 'document'" class="space-y-5">
-                <div class="relative border-2 border-dashed border-base-300 hover:border-primary/50 transition-colors p-8 rounded-2xl flex flex-col items-center justify-center bg-base-50 group">
-                  <input id="wiz-file-upload" type="file" @change="handleFileSelect" accept=".pdf,.txt,.csv"
-                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                  <div class="w-12 h-12 rounded-full bg-base-200 group-hover:bg-primary/10 group-hover:text-primary transition-colors flex items-center justify-center text-base-content/40 text-xl mb-3">
-                    <font-awesome-icon :icon="['fas', 'file-arrow-up']" />
+                <label for="wiz-file-upload"
+                  class="flex flex-col items-center justify-center gap-4 p-10 rounded-3xl border-2 border-dashed transition-all duration-200 cursor-pointer group"
+                  :class="selectedFile ? 'border-primary bg-primary/5' : 'border-base-300 hover:border-primary/50 bg-base-50'">
+                  <input id="wiz-file-upload" type="file" @change="handleFileSelect" accept=".pdf,.txt,.csv" class="sr-only" />
+                  <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-colors"
+                    :class="selectedFile ? 'bg-primary/20 text-primary' : 'bg-base-200 text-base-content/30 group-hover:bg-primary/10 group-hover:text-primary'">
+                    <font-awesome-icon :icon="selectedFile ? ['fas', 'file-check'] : ['fas', 'file-arrow-up']" />
                   </div>
-                  <p class="text-sm font-medium text-base-content/80 text-center" v-if="!selectedFile">PDF, TXT, CSV accepted</p>
-                  <p class="text-sm font-bold text-primary text-center" v-else>{{ selectedFile.name }}</p>
-                </div>
+                  <div class="text-center">
+                    <p class="text-sm font-bold" :class="selectedFile ? 'text-primary' : 'text-base-content/70'">
+                      {{ selectedFile ? selectedFile.name : 'Click to choose a file' }}
+                    </p>
+                    <p class="text-xs text-base-content/40 mt-1">PDF · TXT · CSV</p>
+                  </div>
+                </label>
               </div>
             </div>
 
@@ -190,6 +218,12 @@ const tenantsStore = useTenantsStore();
 const steps = [0, 1, 2];
 const step = ref(0);
 const type = ref(null);        // 'website' | 'document'
+
+const crawlModes = computed(() => [
+  { value: 'soup',          emoji: '⚡', label: t('tenant.sources.wizard.modeSoup'),      desc: t('tenant.sources.wizard.modeSoupDesc'),       badge: 'Fastest', badgeClass: 'bg-success/15 text-success' },
+  { value: 'playwright',    emoji: '🌐', label: t('tenant.sources.wizard.modePlaywright'), desc: t('tenant.sources.wizard.modePlaywrightDesc'),  badge: 'JS sites', badgeClass: 'bg-warning/15 text-warning' },
+  { value: 'playwright_llm',emoji: '🧠', label: t('tenant.sources.wizard.modeLLM'),        desc: t('tenant.sources.wizard.modeLLMDesc'),         badge: 'Best quality', badgeClass: 'bg-primary/15 text-primary' },
+]);
 const url = ref('');
 const crawlMode = ref('soup');
 const singlePageOnly = ref(false);
