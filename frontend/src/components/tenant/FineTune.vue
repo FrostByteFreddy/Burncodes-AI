@@ -10,7 +10,7 @@
       </h3>
       <button
         @click="isModalOpen = true"
-        class="btn btn-primary rounded-xl px-6 shadow-md hover:shadow-lg transition-all duration-300"
+        class="btn btn-primary px-6 hover:"
       >
         <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
         {{ $t("tenant.fineTune.addRule") || 'Add Rule' }}
@@ -152,13 +152,13 @@
             <button
               type="button"
               @click="closeModal"
-              class="btn btn-ghost rounded-xl px-6"
+              class="btn btn-ghost px-6"
             >
               {{ $t("tenant.fineTune.actions.cancel") }}
             </button>
             <button
               type="submit"
-              class="btn btn-primary rounded-xl px-6 shadow-md"
+              class="btn btn-primary px-6"
             >
               {{ $t("tenant.fineTune.actions.add") }}
             </button>

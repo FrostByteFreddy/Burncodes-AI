@@ -23,7 +23,7 @@
 
     <div v-else>
       <div v-if="selectedConversation" class="bg-base-100 rounded-xl p-6 shadow-sm border border-base-200/50">
-        <button @click="selectedConversation = null" class="btn btn-ghost rounded-xl px-4 hover:bg-base-200 transition-colors mb-6">
+        <button @click="selectedConversation = null" class="btn btn-ghost px-4 hover:bg-base-200 transition-colors mb-6">
           <font-awesome-icon :icon="['fas', 'arrow-left']" class="mr-2" />
           {{ $t("chatLogs.back") }}
         </button>

@@ -79,7 +79,7 @@
         <button
           @click="$emit('sendMessage')"
           :disabled="!userMessage.trim() || isThinking"
-          class="send-button font-bold py-2 px-4 btn-secondary btn-square rounded-custom aspect-square transition-all"
+          class="send-button font-bold py-2 px-4 btn-secondary btn-square rounded-custom aspect-square"
         >
           <font-awesome-icon :icon="['fas', 'paper-plane']" />
         </button>

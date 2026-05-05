@@ -2,24 +2,24 @@
   <div>
     <div class="inline-flex p-1 space-x-1 bg-base-200 rounded-full mb-6">
       <a
-        class="btn border-0 rounded-full transition-all duration-300 hover:cursor-pointer space-x-2"
+        class="btn border-0 rounded-full hover:cursor-pointer space-x-2"
         :class="{
-          '!bg-primary-focus text-primary-content shadow':
-            activeTab === 'behavior',
-          'btn-ghost text-base-content': activeTab !== 'behavior',
-        }"
+ '!bg-primary-focus text-primary-content shadow':
+ activeTab === 'behavior',
+ 'btn-ghost text-base-content': activeTab !== 'behavior',
+ }"
         @click="activeTab = 'behavior'"
       >
         <font-awesome-icon :icon="['fas', 'fa-brain']" />
         <span>{{ $t("tenant.settings.tabs.behavior") }}</span>
       </a>
       <a
-        class="btn border-0 rounded-full transition-all duration-300 hover:cursor-pointer space-x-2"
+        class="btn border-0 rounded-full hover:cursor-pointer space-x-2"
         :class="{
-          '!bg-primary-focus text-primary-content shadow':
-            activeTab === 'appearance',
-          'btn-ghost text-base-content': activeTab !== 'appearance',
-        }"
+ '!bg-primary-focus text-primary-content shadow':
+ activeTab === 'appearance',
+ 'btn-ghost text-base-content': activeTab !== 'appearance',
+ }"
         @click="activeTab = 'appearance'"
       >
         <font-awesome-icon :icon="['fas', 'fa-palette']" />
@@ -269,7 +269,7 @@
             </div>
             <button
               @click.prevent="addColor"
-              class="btn btn-primary btn-outline btn-sm mt-4 rounded-lg"
+              class="btn btn-primary btn-outline btn-sm mt-4"
             >
               <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
               {{ $t("tenant.settings.appearance.colorPalette.addColor") }}

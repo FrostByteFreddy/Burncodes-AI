@@ -181,7 +181,7 @@
              <p class="text-sm font-bold text-primary text-center px-4" v-else>{{ selectedFile.name }}</p>
           </div>
           
-          <button @click="handleUpload" :disabled="!selectedFile || loading" class="btn btn-primary w-full rounded-xl shadow-sm group">
+          <button @click="handleUpload" :disabled="!selectedFile || loading" class="btn btn-primary w-full group">
             <font-awesome-icon :icon="['fas', 'upload']" :class="{'mr-2': !loading, 'animate-bounce': loading}" />
             {{ loading ? 'Ingesting...' : 'Ingest Document' }}
           </button>
@@ -224,7 +224,7 @@
               </div>
             </div>
 
-            <button @click="startCrawl" :disabled="!startUrl.trim() || loading || !isUrlValid" class="btn btn-secondary w-full rounded-xl shadow-sm mt-2">
+            <button @click="startCrawl" :disabled="!startUrl.trim() || loading || !isUrlValid" class="btn btn-secondary w-full mt-2">
               <font-awesome-icon :icon="['fas', 'spider']" class="mr-2" v-if="!loading"/>
               {{ loading ? 'Starting Crawl...' : 'Start Crawl' }}
             </button>

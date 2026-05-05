@@ -19,22 +19,21 @@
         </div>
       </div>
 
-      <!-- 3-mode toggle -->
+      <!-- 3-mode toggle (segmented control) -->
       <div class="inline-flex p-1 bg-base-200 rounded-xl gap-1">
         <button
           v-for="mode in crawlModes"
           :key="mode.value"
           type="button"
           @click="selectedMode = mode.value"
-          class="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2"
-          :class="selectedMode === mode.value
-            ? `${mode.activeClass} shadow-sm`
-            : 'text-base-content/60 hover:text-base-content'"
+          class="btn btn-sm"
+          :class="selectedMode === mode.value ? mode.activeClass : 'btn-ghost text-base-content/60'"
         >
           <font-awesome-icon :icon="['fas', mode.icon]" />
           {{ mode.label }}
         </button>
       </div>
+
 
       <!-- Description for selected mode -->
       <div class="text-sm text-base-content/60 bg-base-200/40 rounded-xl p-4 space-y-1">
@@ -58,7 +57,7 @@
         <button
           @click="saveCrawlMode"
           :disabled="saving || selectedMode === currentSavedMode"
-          class="btn btn-primary btn-sm rounded-xl"
+          class="btn btn-primary btn-sm"
         >
           <font-awesome-icon v-if="saving" :icon="['fas', 'spinner']" class="animate-spin mr-1" />
           <font-awesome-icon v-else :icon="['fas', 'floppy-disk']" class="mr-1" />
