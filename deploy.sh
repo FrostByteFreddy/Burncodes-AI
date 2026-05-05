@@ -62,9 +62,13 @@ ssh "$SERVER" << EOF
       echo "✅ SSL Certificates already exist for $DOMAIN."
   fi
 
-  # Start the app
-  echo "🚀 Building and starting Docker containers..."
-  docker compose -f docker-compose.prod.yml build --no-cache
+  # Build backend with layer cache (pip + playwright only reinstall when requirements.txt changes)
+  docker compose -f docker-compose.prod.yml build backend celery_worker_fast celery_worker_heavy celery_beat
+
+  # Always force-rebuild the frontend so Vue code changes are never skipped
+  # (no Playwright here, so this is fast: just npm ci + vite build)
+  docker compose -f docker-compose.prod.yml build --no-cache frontend
+
   docker compose -f docker-compose.prod.yml up -d --force-recreate
   
   echo "✅ Containers are running!"
