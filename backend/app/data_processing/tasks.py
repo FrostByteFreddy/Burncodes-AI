@@ -682,7 +682,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             if docs:
                 embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
                 process_documents(docs, tenant_id, embeddings)
-                supabase.table('tenant_sources').update({"status": "DONE"}).eq('id', source_id).execute()
+                supabase.table('tenant_sources').update({"status": "COMPLETED"}).eq('id', source_id).execute()
 
             # Discover + enqueue internal links via BeautifulSoup (no browser needed)
             found_links = set(extract_internal_links(html, url))
