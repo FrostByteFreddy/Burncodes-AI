@@ -87,10 +87,86 @@
 
 
   .send-button > svg {
-
     position: relative;
     transform: rotate(45deg);
     left: -3px;
+  }
+
+  /* ── Wizard / Sources ───────────────────────────────────────────── */
+
+  /* Radio-card: shared base for crawl-mode, scope, type picker cards */
+  .radio-card {
+    @apply w-full flex items-start gap-4 p-4 rounded-2xl border-2
+           transition-all duration-150 text-left cursor-pointer
+           border-base-200 bg-base-100 hover:border-base-300;
+  }
+  .radio-card.is-selected {
+    @apply border-primary bg-primary/5 shadow-sm;
+  }
+  .radio-card .radio-card__dot {
+    @apply w-4 h-4 rounded-full border-2 flex-shrink-0 mt-1
+           flex items-center justify-center border-base-300 transition-all;
+  }
+  .radio-card.is-selected .radio-card__dot {
+    @apply border-primary bg-primary;
+  }
+  .radio-card .radio-card__dot::after {
+    content: '';
+    @apply w-1.5 h-1.5 rounded-full bg-white opacity-0 transition-opacity;
+  }
+  .radio-card.is-selected .radio-card__dot::after {
+    @apply opacity-100;
+  }
+
+  /* Field label */
+  .field-label {
+    @apply block text-xs font-bold uppercase tracking-wider text-base-content/50 mb-2;
+  }
+
+  /* Text input with icon slot */
+  .field-input {
+    @apply input w-full bg-base-200/60 border-2 border-transparent
+           focus:border-primary focus:bg-base-100
+           transition-all rounded-2xl text-sm font-medium h-12;
+  }
+  .field-input.has-error {
+    @apply border-error bg-error/5 focus:border-error;
+  }
+
+  /* Exclusion path chip */
+  .path-chip {
+    @apply flex items-center gap-1.5 bg-base-200 text-base-content/70
+           text-xs font-mono px-3 py-2 rounded-xl border border-base-200;
+  }
+  .path-chip__remove {
+    @apply text-base-content/30 hover:text-error transition-colors ml-1;
+  }
+
+  /* Step section heading + subtitle */
+  .step-heading {
+    @apply text-sm font-semibold text-base-content mb-1;
+  }
+  .step-subtext {
+    @apply text-xs text-base-content/50 leading-relaxed;
+  }
+
+  /* Dashed add-row trigger */
+  .add-row {
+    @apply flex items-center gap-2 text-sm text-base-content/50
+           hover:text-primary transition-colors cursor-pointer;
+  }
+  .add-row__icon {
+    @apply w-7 h-7 rounded-xl border-2 border-dashed border-base-300
+           hover:border-primary/50 flex items-center justify-center;
+  }
+
+  /* Inline path-add input row */
+  .path-input-row {
+    @apply flex gap-2;
+  }
+  .path-input-row input {
+    @apply input input-sm flex-1 bg-base-200 border-2 border-primary/40
+           focus:border-primary rounded-xl font-mono text-sm pl-6;
   }
 }
 
