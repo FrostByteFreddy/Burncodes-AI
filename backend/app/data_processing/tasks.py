@@ -240,14 +240,103 @@ async def _get_document_chunks_from_content(content: str, source: str, source_id
     """Internal helper to decide which chunking strategy to use based on file extension."""
     structured_extensions = ['.csv', '.ics']
     if ext in structured_extensions:
-        # Use the direct path for structured data
         return await async_create_document_chunks_for_structured_data(content, source, source_id)
     elif ext == '.pdf':
-        # Use the RecursiveCharacterTextSplitter for PDFs
         return await async_create_document_chunks_for_pdf(content, source, source_id, tenant_id)
     else:
-        # Use the LLM cleaning path for unstructured data
         return await async_create_document_chunks_with_metadata(content, source, source_id, tenant_id)
+
+# ---------------------------------------------------------------------------
+# Fast (no-LLM) indexing path
+# ---------------------------------------------------------------------------
+
+async def async_create_document_chunks_fast(content: str, source: str, source_id: int, tenant_id: UUID) -> list[Document]:
+    """
+    Token-free indexing path.
+
+    Skips the LLM cleaning step entirely. The raw markdown/text is split using
+    RecursiveCharacterTextSplitter with sensible defaults. Significantly faster
+    and uses zero billing tokens — ideal for large knowledge bases where speed
+    matters more than per-chunk semantic cleanliness.
+    """
+    loop = asyncio.get_running_loop()
+    try:
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "PROCESSING"}).eq('id', source_id).execute())
+
+        sanitized = content.replace('\x00', '')
+
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1500,
+            chunk_overlap=150,
+            separators=["\n\n", "\n", ". ", " ", ""],
+            length_function=len,
+        )
+        raw_chunks = splitter.split_text(sanitized)
+
+        timestamp = datetime.now(timezone.utc).isoformat()
+        documents = [
+            Document(
+                page_content=chunk,
+                metadata={"source": source, "source_id": source_id, "chunk": i, "last_updated": timestamp},
+            )
+            for i, chunk in enumerate(raw_chunks)
+            if chunk.strip()
+        ]
+
+        # Zero token cost — write explicit zeros so the UI stays accurate
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cost_chf": 0.0,
+        }).eq('id', source_id).execute())
+
+        error_logger.info(
+            "fast-index: created %d chunks for source_id=%s (no LLM, no cost)",
+            len(documents), source_id,
+        )
+        return documents
+
+    except Exception as e:
+        error_logger.error("fast-index: error for source_id=%s: %s", source_id, e, exc_info=True)
+        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
+        return []
+
+
+async def _resolve_indexing_mode(tenant_id: UUID) -> str:
+    """Returns the tenant's indexing_mode ('llm' or 'fast'). Defaults to 'llm'."""
+    loop = asyncio.get_running_loop()
+    try:
+        response = await loop.run_in_executor(
+            None,
+            lambda: supabase.table('tenants').select('indexing_mode').eq('id', str(tenant_id)).single().execute()
+        )
+        return (response.data or {}).get('indexing_mode') or 'llm'
+    except Exception:
+        return 'llm'
+
+
+async def _get_document_chunks(content: str, source: str, source_id: int, ext: str, tenant_id: UUID) -> list[Document]:
+    """
+    Unified chunking dispatcher. Reads the tenant's indexing_mode and routes to:
+      - 'fast': RecursiveCharacterTextSplitter, no LLM, no billing cost
+      - 'llm'  (default): LLM-cleaned semantic chunks, billed to the tenant
+    Structured data (CSV, ICS) always bypasses the LLM regardless of mode.
+    """
+    structured_extensions = ['.csv', '.ics']
+    if ext in structured_extensions:
+        return await async_create_document_chunks_for_structured_data(content, source, source_id)
+
+    indexing_mode = await _resolve_indexing_mode(tenant_id)
+
+    if indexing_mode == 'fast':
+        error_logger.info("indexing_mode=fast for source_id=%s — skipping LLM", source_id)
+        return await async_create_document_chunks_fast(content, source, source_id, tenant_id)
+
+    # Default LLM path
+    if ext == '.pdf':
+        return await async_create_document_chunks_for_pdf(content, source, source_id, tenant_id)
+    return await async_create_document_chunks_with_metadata(content, source, source_id, tenant_id)
+
 
 @shared_task(queue='fast')
 def process_local_file(file_path: str, source_filename: str, source_id: int, tenant_id: UUID):
@@ -278,7 +367,7 @@ async def async_process_local_file(file_path: str, source_filename: str, source_
 
         # Concatenate content from all pages
         content = "\n\n".join([doc.page_content for doc in docs_from_loader])
-        return await _get_document_chunks_from_content(content, source_filename, source_id, ext, tenant_id)
+        return await _get_document_chunks(content, source_filename, source_id, ext, tenant_id)
 
     except Exception as e:
         error_logger.error("Error processing local file %s: %s", file_path, e, exc_info=True)
@@ -334,7 +423,8 @@ async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]], t
                     # Update status_code for successful fetches
                     loop = asyncio.get_running_loop()
                     await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status_code": status_code}).eq('id', source_id).execute())
-                    return await async_create_document_chunks_with_metadata(result.markdown, result.url, source_id, tenant_id)
+                    ext = os.path.splitext(urlparse(result.url).path)[1].lower() or '.html'
+                    return await _get_document_chunks(result.markdown, result.url, source_id, ext, tenant_id)
                 else:
                     # Mark as error immediately without hitting LLM
                     loop = asyncio.get_running_loop()
@@ -587,7 +677,8 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             source_response = supabase.table('tenant_sources').insert(source_data).execute()
             source_id = source_response.data[0]['id']
 
-            docs = asyncio.run(async_create_document_chunks_with_metadata(crawl_result.markdown, crawl_result.url, source_id, tenant_id))
+            ext = os.path.splitext(urlparse(crawl_result.url).path)[1].lower() or '.html'
+            docs = asyncio.run(_get_document_chunks(crawl_result.markdown, crawl_result.url, source_id, ext, tenant_id))
             embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
             process_documents(docs, tenant_id, embeddings)
 

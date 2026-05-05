@@ -93,6 +93,36 @@
                 </select>
               </div>
             </div>
+
+            <!-- Indexing Mode -->
+            <div class="pt-2">
+              <label class="block text-sm font-medium text-base-content mb-2">Indexing Mode</label>
+              <p class="text-xs text-base-content/50 mb-3">
+                Controls how ingested content is processed.
+                <strong>LLM</strong> produces semantic, cleaned chunks but uses tokens.
+                <strong>Fast</strong> skips the LLM and uses a text splitter — instant and token-free.
+              </p>
+              <div class="inline-flex p-1 bg-base-200 rounded-xl gap-1">
+                <button
+                  type="button"
+                  @click="formData.indexing_mode = 'llm'"
+                  class="px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+                  :class="formData.indexing_mode !== 'fast' ? 'bg-primary text-primary-content shadow-sm' : 'text-base-content/60 hover:text-base-content'"
+                >
+                  <font-awesome-icon :icon="['fas', 'brain']" class="mr-2" />
+                  LLM (Accurate)
+                </button>
+                <button
+                  type="button"
+                  @click="formData.indexing_mode = 'fast'"
+                  class="px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+                  :class="formData.indexing_mode === 'fast' ? 'bg-success text-success-content shadow-sm' : 'text-base-content/60 hover:text-base-content'"
+                >
+                  <font-awesome-icon :icon="['fas', 'bolt']" class="mr-2" />
+                  Fast (No LLM)
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -600,6 +630,7 @@ const formData = ref({
   rag_prompt_template: "",
   doc_language: "en",
   translation_target: "en",
+  indexing_mode: "llm",
   widget_config: defaultWidgetConfig(),
 });
 
@@ -678,6 +709,7 @@ watch(
         rag_prompt_template: newTenant.rag_prompt_template,
         doc_language: newTenant.doc_language,
         translation_target: newTenant.translation_target,
+        indexing_mode: newTenant.indexing_mode || 'llm',
         widget_config: newConfig,
       };
     }
