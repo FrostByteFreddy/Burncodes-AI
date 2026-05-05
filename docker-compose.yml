@@ -14,6 +14,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
+      - ./backend:/app        # live reload — code changes without rebuild
       - backend_data:/app/data
     env_file:
       - .env
@@ -26,6 +27,7 @@ services:
       dockerfile: Dockerfile
     command: celery -A celery_worker.celery worker --loglevel=info --queues=fast --concurrency=8 --hostname=fast@%h
     volumes:
+      - ./backend:/app        # live reload
       - backend_data:/app/data
     env_file:
       - .env
@@ -41,6 +43,7 @@ services:
     shm_size: '2gb'
     stop_grace_period: 60s
     volumes:
+      - ./backend:/app        # live reload
       - backend_data:/app/data
     env_file:
       - .env
@@ -54,6 +57,7 @@ services:
       dockerfile: Dockerfile
     command: celery -A celery_worker.celery beat --loglevel=info
     volumes:
+      - ./backend:/app        # live reload
       - backend_data:/app/data
     env_file:
       - .env

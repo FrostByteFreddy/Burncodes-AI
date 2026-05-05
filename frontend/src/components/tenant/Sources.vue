@@ -5,6 +5,7 @@
       @delete="confirmDelete"
       @job-completed="handleJobCompletion"
       @job-cancelled="handleJobCancelled"
+      @job-deleted="handleJobDeleted"
     />
 
     <div class="sources-sidebar">
@@ -79,6 +80,10 @@ const handleJobCompletion = async () => {
   await fetchCrawlingJobs();
 };
 const handleJobCancelled = async () => { await fetchCrawlingJobs(); };
+const handleJobDeleted = async () => {
+  await fetchCrawlingJobs();
+  await tenantsStore.refetch(tenantsStore.currentTenant.id);
+};
 
 const confirmDelete = (source) => { sourceToDelete.value = source; showConfirmationModal.value = true; };
 const cancelDelete  = () => { sourceToDelete.value = null; showConfirmationModal.value = false; };

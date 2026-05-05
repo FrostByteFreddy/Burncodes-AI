@@ -221,6 +221,86 @@ def cancel_crawling_job(current_user, tenant_id, job_id):
         return jsonify({"error": "Failed to cancel crawl job", "details": str(e)}), 500
 
 
+@sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>', methods=['DELETE'])
+@token_required
+def delete_crawling_job(current_user, tenant_id, job_id):
+    """
+    Delete a crawl job and ALL data it produced:
+      1. Cancel any in-flight tasks (mark FAILED so workers stop)
+      2. Bulk-delete every tenant_sources row whose source_location was
+         crawled by this job (identified via crawling_tasks.url)
+      3. Delete those vectors from ChromaDB
+      4. Delete crawling_tasks rows
+      5. Delete the crawling_jobs row
+    """
+    try:
+        from app.models.database import CrawlingStatus
+        tenant_id_str = str(tenant_id)
+
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
+        if not tenant_check.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+
+        job_check = supabase.table('crawling_jobs').select("id", "status").eq('id', job_id).eq('tenant_id', tenant_id_str).single().execute()
+        if not job_check.data:
+            return jsonify({"error": "Job not found or not part of this tenant"}), 404
+
+        # 1. Stop any in-flight tasks
+        job_status = job_check.data.get('status')
+        if job_status == CrawlingStatus.IN_PROGRESS.value:
+            supabase.table('crawling_tasks') \
+                .update({"status": CrawlingStatus.FAILED.value}) \
+                .eq('job_id', job_id) \
+                .in_('status', [CrawlingStatus.PENDING.value, CrawlingStatus.IN_PROGRESS.value]) \
+                .execute()
+            supabase.table('crawling_jobs').update({"status": CrawlingStatus.FAILED.value}).eq('id', job_id).execute()
+
+        # 2. Collect all URLs that this job crawled
+        tasks_resp = supabase.table('crawling_tasks').select("url").eq('job_id', job_id).execute()
+        crawled_urls = [t['url'] for t in (tasks_resp.data or [])]
+
+        # 3. Find + delete matching tenant_sources rows
+        deleted_source_ids = []
+        if crawled_urls:
+            sources_resp = supabase.table('tenant_sources') \
+                .select("id") \
+                .eq('tenant_id', tenant_id_str) \
+                .in_('source_location', crawled_urls) \
+                .execute()
+            deleted_source_ids = [s['id'] for s in (sources_resp.data or [])]
+
+            if deleted_source_ids:
+                supabase.table('tenant_sources').delete().in_('id', deleted_source_ids).execute()
+
+                # 4. Purge from ChromaDB — soft-fail so the job row still gets cleaned up
+                try:
+                    from app.data_processing.processor import get_vectorstore
+                    from langchain_google_genai import GoogleGenerativeAIEmbeddings
+                    embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+                    db = get_vectorstore(tenant_id, embeddings)
+                    for sid in deleted_source_ids:
+                        db._collection.delete(where={"source_id": sid})
+                except Exception as vec_err:
+                    error_logger.warning("delete_job: vector store cleanup partial failure for job %s: %s", job_id, vec_err)
+
+        # 5. Delete crawling_tasks + job row
+        supabase.table('crawling_tasks').delete().eq('job_id', job_id).execute()
+        supabase.table('crawling_jobs').delete().eq('id', job_id).execute()
+
+        error_logger.info(
+            "Crawl job %s deleted by user %s — removed %d source(s)",
+            job_id, current_user.id, len(deleted_source_ids)
+        )
+        return jsonify({
+            "message": "Crawl job and all associated data deleted.",
+            "deleted_sources": len(deleted_source_ids)
+        }), 200
+
+    except Exception as e:
+        error_logger.error(f"Error deleting crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to delete crawl job", "details": str(e)}), 500
+
+
 @sources_bp.route('/<uuid:tenant_id>/sources/<int:source_id>', methods=['DELETE'])
 @token_required
 def delete_source(current_user, tenant_id, source_id):

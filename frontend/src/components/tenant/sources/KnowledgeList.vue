@@ -49,10 +49,11 @@
                     }">{{ job.status }}</span>
                   <p class="job-card__time">{{ new Date(job.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) }}</p>
                 </div>
-                <div class="mt-3" v-if="job.status === 'IN_PROGRESS'">
+                <div class="mt-3">
                   <CrawlingJobProgress :job="job" :tenantId="tenantsStore.currentTenant.id"
                     @job-completed="$emit('job-completed', job.id)"
-                    @job-cancelled="$emit('job-cancelled', job.id)" />
+                    @job-cancelled="$emit('job-cancelled', job.id)"
+                    @job-deleted="$emit('job-deleted', job.id)" />
                 </div>
               </div>
             </div>
@@ -142,7 +143,7 @@ import { useTenantsStore } from '../../../stores/tenants';
 import CrawlingJobProgress from '../CrawlingJobProgress.vue';
 
 const props = defineProps({ crawlingJobs: { type: Array, default: () => [] } });
-defineEmits(['delete', 'job-completed', 'job-cancelled']);
+defineEmits(['delete', 'job-completed', 'job-cancelled', 'job-deleted']);
 
 const tenantsStore = useTenantsStore();
 
