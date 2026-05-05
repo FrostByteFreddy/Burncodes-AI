@@ -115,7 +115,7 @@
               <div class="inline-flex p-1 bg-base-200 rounded-xl gap-1">
                 <button
                   type="button"
-                  @click="formData.crawl_mode = 'soup'"
+                  @click="formData.crawl_mode = 'soup'; handleUpdate()"
                   class="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
                   :class="formData.crawl_mode === 'soup' ? 'bg-success text-success-content shadow-sm' : 'text-base-content/60 hover:text-base-content'"
                 >
@@ -124,7 +124,7 @@
                 </button>
                 <button
                   type="button"
-                  @click="formData.crawl_mode = 'playwright'"
+                  @click="formData.crawl_mode = 'playwright'; handleUpdate()"
                   class="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
                   :class="formData.crawl_mode === 'playwright' ? 'bg-warning text-warning-content shadow-sm' : 'text-base-content/60 hover:text-base-content'"
                 >
@@ -133,7 +133,7 @@
                 </button>
                 <button
                   type="button"
-                  @click="formData.crawl_mode = 'playwright_llm'"
+                  @click="formData.crawl_mode = 'playwright_llm'; handleUpdate()"
                   class="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
                   :class="formData.crawl_mode === 'playwright_llm' ? 'bg-primary text-primary-content shadow-sm' : 'text-base-content/60 hover:text-base-content'"
                 >
