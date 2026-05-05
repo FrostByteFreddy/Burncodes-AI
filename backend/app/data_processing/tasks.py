@@ -255,12 +255,10 @@ async def _get_document_chunks_from_content(content: str, source: str, source_id
 
 async def async_create_document_chunks_fast(content: str, source: str, source_id: int, tenant_id: UUID) -> list[Document]:
     """
-    Token-free indexing path.
+    Token-free indexing path — shared by 'soup' and 'playwright' modes.
 
-    Skips the LLM cleaning step entirely. The raw markdown/text is split using
-    RecursiveCharacterTextSplitter with sensible defaults. Significantly faster
-    and uses zero billing tokens — ideal for large knowledge bases where speed
-    matters more than per-chunk semantic cleanliness.
+    Raw content is sanitized, split with RecursiveCharacterTextSplitter,
+    and passed through a heuristic quality filter. No LLM, zero token cost.
     """
     loop = asyncio.get_running_loop()
     try:
@@ -276,13 +274,16 @@ async def async_create_document_chunks_fast(content: str, source: str, source_id
         )
         raw_chunks = splitter.split_text(sanitized)
 
+        # Heuristic quality filter — removes nav noise, boilerplate, etc.
+        clean_chunks = await loop.run_in_executor(None, lambda: filter_chunks(raw_chunks))
+
         timestamp = datetime.now(timezone.utc).isoformat()
         documents = [
             Document(
                 page_content=chunk,
                 metadata={"source": source, "source_id": source_id, "chunk": i, "last_updated": timestamp},
             )
-            for i, chunk in enumerate(raw_chunks)
+            for i, chunk in enumerate(clean_chunks)
             if chunk.strip()
         ]
 
@@ -294,7 +295,7 @@ async def async_create_document_chunks_fast(content: str, source: str, source_id
         }).eq('id', source_id).execute())
 
         error_logger.info(
-            "fast-index: created %d chunks for source_id=%s (no LLM, no cost)",
+            "fast-index: %d chunks for source_id=%s (no LLM, no cost)",
             len(documents), source_id,
         )
         return documents
@@ -351,20 +352,17 @@ async def async_fetch_and_chunk_soup(
     tenant_id: UUID,
 ) -> list[Document]:
     """
-    Full soup pipeline: httpx fetch → trafilatura/BS4 extraction →
-    heuristic quality filter → RecursiveCharacterTextSplitter.
+    Soup pipeline: httpx fetch → trafilatura/BS4 extraction →
+    delegates to async_create_document_chunks_fast for splitting + filtering.
     No Playwright, no LLM.
     """
     loop = asyncio.get_running_loop()
     try:
-        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "PROCESSING"}).eq('id', source_id).execute())
-
         html, status_code = await loop.run_in_executor(None, lambda: fetch_html(url))
-
         await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status_code": status_code}).eq('id', source_id).execute())
 
-        if not html:
-            error_logger.warning("soup: empty response for %s (status=%s)", url, status_code)
+        if not html or status_code >= 400:
+            error_logger.warning("soup: empty/error response for %s (status=%s)", url, status_code)
             await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
             return []
 
@@ -374,33 +372,8 @@ async def async_fetch_and_chunk_soup(
             await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({"status": "ERROR"}).eq('id', source_id).execute())
             return []
 
-        # Split into raw chunks
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1500,
-            chunk_overlap=150,
-            separators=["\n\n", "\n", ". ", " ", ""],
-            length_function=len,
-        )
-        raw_chunks = splitter.split_text(content)
-
-        # Apply heuristic quality filter
-        clean_chunks = await loop.run_in_executor(None, lambda: filter_chunks(raw_chunks))
-
-        timestamp = datetime.now(timezone.utc).isoformat()
-        documents = [
-            Document(
-                page_content=chunk,
-                metadata={"source": url, "source_id": source_id, "chunk": i, "last_updated": timestamp},
-            )
-            for i, chunk in enumerate(clean_chunks)
-        ]
-
-        await loop.run_in_executor(None, lambda: supabase.table('tenant_sources').update({
-            "input_tokens": 0, "output_tokens": 0, "cost_chf": 0.0,
-        }).eq('id', source_id).execute())
-
-        error_logger.info("soup: %d chunks from %s (status=%s)", len(documents), url, status_code)
-        return documents
+        error_logger.info("soup: fetched %s (status=%s) — handing off to fast chunker", url, status_code)
+        return await async_create_document_chunks_fast(content, url, source_id, tenant_id)
 
     except Exception as e:
         error_logger.error("soup: error processing %s: %s", url, e, exc_info=True)
