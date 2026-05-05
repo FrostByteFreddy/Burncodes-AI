@@ -1,0 +1,27 @@
+@layer components {
+  .crawl-progress {
+    @apply mt-2;
+  }
+
+  .crawl-progress__header {
+    @apply flex justify-between text-sm font-medium text-base-content/70 mb-1;
+  }
+
+  .crawl-progress__bar-track {
+    @apply w-full bg-base-300 rounded-full;
+    height: 0.625rem; /* h-2.5 */
+  }
+
+  .crawl-progress__bar-fill {
+    @apply bg-success rounded-full transition-all duration-500;
+    height: 0.625rem;
+  }
+
+  .crawl-progress__footer {
+    @apply flex items-center justify-between mt-2;
+  }
+
+  .crawl-progress__polling-label {
+    @apply text-xs text-base-content/50 animate-pulse;
+  }
+}

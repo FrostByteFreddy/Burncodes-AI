@@ -1,0 +1,101 @@
+@layer components {
+  /* Two-column layout */
+  .appearance-grid {
+    @apply grid grid-cols-1 lg:grid-cols-2 gap-8;
+  }
+
+  .appearance-preview-col {
+    @apply lg:sticky top-8 space-y-6;
+  }
+
+  .appearance-preview__label {
+    @apply text-sm font-medium text-base-content/70 mb-2;
+  }
+
+  /* Color palette swatch */
+  .palette-swatches {
+    @apply flex flex-wrap gap-3;
+  }
+
+  .palette-swatch {
+    @apply relative group flex flex-col items-center gap-1.5;
+  }
+
+  .palette-swatch__color {
+    @apply block w-12 h-12 rounded-xl shadow-sm ring-1 ring-black/10
+           transition-transform group-hover:scale-105;
+  }
+
+  .palette-swatch__remove {
+    @apply absolute -top-1.5 -right-1.5 w-4 h-4 bg-error text-white
+           rounded-full hidden group-hover:flex items-center justify-center leading-none;
+    font-size: 10px;
+  }
+
+  .palette-swatch__name {
+    @apply w-12 text-xs text-center bg-transparent border-none
+           focus:outline-none focus:ring-1 focus:ring-primary/50 rounded p-0
+           disabled:cursor-default;
+  }
+
+  .palette-add-btn {
+    @apply w-12 h-12 rounded-xl border-2 border-dashed border-base-300
+           flex items-center justify-center text-base-content/30
+           hover:border-primary/50 hover:text-primary/50 transition-colors;
+  }
+
+  .palette-add-label {
+    @apply w-12 text-xs text-center text-base-content/30;
+  }
+
+  /* File upload field */
+  .file-input-row {
+    @apply flex items-center space-x-2 mt-1;
+  }
+
+  .file-input {
+    @apply w-full p-2 bg-base-200 border-none rounded-xl
+           file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0
+           file:text-sm file:font-semibold file:bg-primary/10 file:text-primary
+           hover:file:bg-primary/20;
+  }
+
+  .file-preview-img {
+    @apply mt-4 max-h-20 rounded-lg shadow-sm;
+  }
+
+  .launcher-icon-preview {
+    @apply w-12 h-12 rounded-full object-cover shadow-sm bg-base-200 p-1;
+  }
+
+  .launcher-icon-caption {
+    @apply text-xs text-base-content/50 mb-2;
+  }
+
+  /* Checkbox row */
+  .checkbox-field {
+    @apply flex items-center;
+  }
+
+  .checkbox-field__input {
+    @apply h-4 w-4 rounded border-base-200 text-primary focus:ring-primary/50 bg-base-200;
+  }
+
+  .checkbox-field__label {
+    @apply ml-2 block text-sm text-base-content;
+  }
+
+  /* Installation script block */
+  .install-script-block {
+    @apply relative;
+  }
+
+  .install-script-pre {
+    @apply bg-base-200/50 p-4 rounded-lg overflow-x-auto text-sm font-mono
+           text-base-content border border-base-200;
+  }
+
+  .install-script-copy {
+    @apply absolute top-2 right-2 btn btn-sm btn-ghost text-primary hover:bg-base-300;
+  }
+}
