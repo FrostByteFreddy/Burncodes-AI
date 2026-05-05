@@ -59,6 +59,13 @@
           {{ $t('sidebar.sources') }}
         </router-link>
         <router-link
+          :to="{ name: 'TenantManage', params: { tenantId: activeTenant.id } }"
+          class="nav-link"
+          active-class="nav-link-active"
+        >
+          Manage
+        </router-link>
+        <router-link
           :to="{ name: 'TenantSettings', params: { tenantId: activeTenant.id } }"
           class="nav-link"
           active-class="nav-link-active"
@@ -164,8 +171,11 @@
           <router-link :to="{ name: 'TenantSources', params: { tenantId: activeTenant.id } }" class="mobile-link" @click="mobileMenuOpen = false">
             <font-awesome-icon :icon="['fas', 'database']" class="w-4 h-4" /> {{ $t('sidebar.sources') }}
           </router-link>
+          <router-link :to="{ name: 'TenantManage', params: { tenantId: activeTenant.id } }" class="mobile-link" @click="mobileMenuOpen = false">
+            <font-awesome-icon :icon="['fas', 'sliders']" class="w-4 h-4" /> Manage
+          </router-link>
           <router-link :to="{ name: 'TenantSettings', params: { tenantId: activeTenant.id } }" class="mobile-link" @click="mobileMenuOpen = false">
-            <font-awesome-icon :icon="['fas', 'sliders']" class="w-4 h-4" /> {{ $t('sidebar.configuration') }}
+            <font-awesome-icon :icon="['fas', 'gear']" class="w-4 h-4" /> {{ $t('sidebar.configuration') }}
           </router-link>
           <router-link :to="{ name: 'TenantFineTune', params: { tenantId: activeTenant.id } }" class="mobile-link" @click="mobileMenuOpen = false">
             <font-awesome-icon :icon="['fas', 'flask-vial']" class="w-4 h-4" /> {{ $t('sidebar.fineTune') }}
