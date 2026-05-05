@@ -456,6 +456,17 @@ async def process_urls_concurrently(urls: list[tuple[str, int]], tenant_id: UUID
     urls_to_crawl = []
     file_urls_to_process = []
 
+    # Resolve crawl mode once for all URLs in this batch
+    loop = asyncio.get_running_loop()
+    try:
+        mode_resp = await loop.run_in_executor(
+            None,
+            lambda: supabase.table('tenants').select('crawl_mode').eq('id', str(tenant_id)).single().execute()
+        )
+        crawl_mode = (mode_resp.data or {}).get('crawl_mode') or 'playwright_llm'
+    except Exception:
+        crawl_mode = 'playwright_llm'
+
     for url, source_id in urls:
         ext = os.path.splitext(urlparse(url).path)[1].lower()
         if ext in SUPPORTED_FILE_EXTENSIONS:
@@ -464,8 +475,15 @@ async def process_urls_concurrently(urls: list[tuple[str, int]], tenant_id: UUID
             urls_to_crawl.append((url, source_id))
 
     tasks = []
+
     if urls_to_crawl:
-        tasks.append(async_crawl_urls_for_content(urls_to_crawl, tenant_id))
+        if crawl_mode == 'soup':
+            # Soup mode: lightweight httpx fetch + BS4, no Playwright, no LLM
+            error_logger.info("process_urls: crawl_mode=soup — routing %d URL(s) to soup pipeline", len(urls_to_crawl))
+            for url, source_id in urls_to_crawl:
+                tasks.append(async_fetch_and_chunk_soup(url, source_id, tenant_id))
+        else:
+            tasks.append(async_crawl_urls_for_content(urls_to_crawl, tenant_id))
 
     for file_url, source_id in file_urls_to_process:
         tasks.append(async_process_file_url(file_url, tenant_id, source_id))
@@ -474,9 +492,11 @@ async def process_urls_concurrently(urls: list[tuple[str, int]], tenant_id: UUID
 
     all_docs = []
     for result_list in results:
-        all_docs.extend(result_list)
+        if result_list:
+            all_docs.extend(result_list)
 
     return all_docs
+
 
 async def async_crawl_urls_for_content(urls_to_process: list[tuple[str, int]], tenant_id: UUID) -> list[Document]:
     """Crawls URLs and processes their content concurrently using the shared crawler."""
