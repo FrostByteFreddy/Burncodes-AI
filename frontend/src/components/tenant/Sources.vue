@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-1 xl:grid-cols-12 xl:rounded-3xl bg-base-100 xl:border border-base-200/50 xl:shadow-sm overflow-hidden min-h-[calc(100vh-10rem)]">
+  <div class="grid grid-cols-1 xl:grid-cols-12 xl:rounded-3xl bg-base-100 xl:border border-base-200/50 xl:shadow-sm gap-0 min-h-[calc(100vh-10rem)]">
 
     <!-- Left: knowledge list -->
     <KnowledgeList
@@ -10,18 +10,22 @@
     />
 
     <!-- Right: clickable Add Knowledge zone -->
-    <button
-      @click="wizardOpen = true"
-      class="xl:col-span-5 bg-base-200/20 hover:bg-primary/5 border-t xl:border-t-0 border-base-200/50 border-2 border-dashed hover:border-primary/40 transition-all duration-300 flex flex-col items-center justify-center gap-6 p-10 group cursor-pointer"
-    >
-      <div class="w-16 h-16 rounded-3xl bg-base-200 group-hover:bg-primary/10 transition-colors flex items-center justify-center text-2xl text-base-content/30 group-hover:text-primary">
-        <font-awesome-icon :icon="['fas', 'plus']" />
+    <div class="xl:col-span-5 border-t xl:border-t-0 xl:border-l border-base-200/50 p-6">
+      <div class="sticky top-6">
+        <button
+          @click="wizardOpen = true"
+          class="w-full border-2 border-dashed border-base-200 hover:border-primary/50 bg-base-200/20 hover:bg-primary/5 transition-all duration-300 rounded-2xl flex flex-col items-center justify-center gap-4 py-12 group cursor-pointer"
+        >
+          <div class="w-14 h-14 rounded-2xl bg-base-200 group-hover:bg-primary/10 transition-colors flex items-center justify-center text-2xl text-base-content/30 group-hover:text-primary">
+            <font-awesome-icon :icon="['fas', 'plus']" />
+          </div>
+          <div class="text-center">
+            <p class="text-sm font-bold text-base-content/50 group-hover:text-base-content transition-colors">{{ $t('tenant.sources.wizard.addKnowledge') }}</p>
+            <p class="text-xs text-base-content/30 mt-1">Website or document</p>
+          </div>
+        </button>
       </div>
-      <div class="text-center">
-        <p class="text-base font-bold text-base-content/50 group-hover:text-base-content transition-colors">{{ $t('tenant.sources.wizard.addKnowledge') }}</p>
-        <p class="text-xs text-base-content/30 mt-1">Website or document</p>
-      </div>
-    </button>
+    </div>
 
     <!-- Wizard slide-over -->
     <AddKnowledgeWizard

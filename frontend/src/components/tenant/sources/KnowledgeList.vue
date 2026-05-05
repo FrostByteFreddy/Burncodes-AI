@@ -1,5 +1,5 @@
 <template>
-  <div class="xl:col-span-7 bg-base-100 p-6 lg:p-10 flex flex-col h-full xl:border-r border-base-200/50">
+  <div class="xl:col-span-7 bg-base-100 p-6 flex flex-col h-full xl:border-r border-base-200/50">
     <div class="mb-8">
       <h2 class="text-3xl font-display font-bold text-base-content tracking-tight mb-2">Active Sources</h2>
       <p class="text-base-content/60 text-sm">Manage the knowledge base context that trains your AI.</p>
