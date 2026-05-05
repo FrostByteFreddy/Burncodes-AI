@@ -2,7 +2,9 @@ import axios from 'axios';
 import { supabase } from '../supabase';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+  // Prod: VITE_API_BASE_URL is injected at build time (e.g. https://ai.burn.codes/api)
+  // Local: relative '/api' is forwarded by Vite's dev-server proxy to Flask on :5000
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
 });
 
 // Auto-attach auth token to every request securely via the Supabase client.
