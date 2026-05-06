@@ -1,26 +1,68 @@
-@layer components {
-  .settings-section {
-    @apply bg-base-100 p-6 rounded-xl border border-base-200/50 shadow-sm;
-  }
-
-  .settings-section__title {
-    @apply text-xl font-bold text-base-content mb-6 flex items-center;
-  }
-
-  .settings-section__icon {
-    @apply mr-3 text-primary;
-  }
-
-  .form-field {
-    @apply block text-sm font-medium text-base-content;
-  }
-
-  .form-input {
-    @apply w-full p-3 mt-1 bg-base-200 border-none rounded-xl
-           focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow;
-  }
-
-  .form-input--mono {
-    @apply font-mono text-sm resize-none;
-  }
+/* Settings section card — dark surface matching the app shell */
+.settings-section {
+  background: var(--surface-1);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 16px;
 }
+
+.settings-section__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--surface-heading);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-section__icon {
+  color: var(--brand-indigo);
+  opacity: 0.9;
+}
+
+.form-field {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--surface-muted);
+  margin-bottom: 6px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  margin-top: 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  color: var(--surface-text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+  font-family: inherit;
+}
+
+.form-input:focus {
+  border-color: var(--brand-indigo);
+  box-shadow: 0 0 0 3px rgba(10, 31, 171, 0.15);
+}
+
+.form-input--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  resize: none;
+}
+
+/* Select styling */
+select.form-input {
+  appearance: none;
+  cursor: pointer;
+}
+
+/* Space-y-8 helper */
+.space-y-8 > * + * { margin-top: 0; }
+.space-y-6 > * + * { margin-top: 24px; }

@@ -2,7 +2,7 @@
   <div class="page">
     <div class="page-header">
       <p class="page-label">{{ $t('manageTenants.title').toUpperCase() }}</p>
-      <button v-if="tenantsStore.tenants.length > 0" @click="showCreateModal = true" class="btn-primary-pill">
+      <button v-if="tenantsStore.tenants.length > 0" @click="showCreateModal = true" class="btn-add">
         <font-awesome-icon :icon="['fas', 'plus']" />
         {{ $t('manageTenants.newChatbot') }}
       </button>
@@ -17,7 +17,7 @@
     <div v-else-if="!tenantsStore.loading && tenantsStore.tenants.length === 0" class="empty-state">
       <p class="empty-state__title">{{ $t('manageTenants.noChatbots') }}</p>
       <p class="empty-state__sub">{{ $t('manageTenants.noChatbotsSubtitle') }}</p>
-      <button @click="showCreateModal = true" class="btn-primary-pill">
+      <button @click="showCreateModal = true" class="btn-add">
         <font-awesome-icon :icon="['fas', 'plus']" />
         {{ $t('manageTenants.createChatbot') }}
       </button>
@@ -136,21 +136,21 @@ const deleteTenant = async () => {
   color: var(--surface-muted);
 }
 
-.btn-primary-pill {
+.btn-add {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 18px;
+  padding: 8px 16px;
   background: var(--gradient-brand);
   color: white;
   font-size: 13px;
   font-weight: 600;
   border: none;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: opacity var(--t-fast), transform var(--t-fast);
 }
-.btn-primary-pill:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-add:hover { opacity: 0.9; transform: translateY(-1px); }
 
 .btn-ghost-sm {
   display: inline-flex;

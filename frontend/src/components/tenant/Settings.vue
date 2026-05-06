@@ -1,20 +1,23 @@
 <template>
   <div>
-    <div class="tab-bar">
+    <div class="settings-tabs">
       <button type="button" @click="activeTab = 'behavior'"
-        class="tab-bar__btn"
-        :class="activeTab === 'behavior' ? 'btn-primary shadow-sm' : 'btn-ghost'">
-        <font-awesome-icon :icon="['fas', 'sliders']" />{{ $t("tenant.settings.tabs.behavior") }}
+        class="settings-tabs__btn"
+        :class="{ 'settings-tabs__btn--active': activeTab === 'behavior' }">
+        <font-awesome-icon :icon="['fas', 'sliders']" />
+        {{ $t("tenant.settings.tabs.behavior") }}
       </button>
       <button type="button" @click="activeTab = 'appearance'"
-        class="tab-bar__btn"
-        :class="activeTab === 'appearance' ? 'btn-primary shadow-sm' : 'btn-ghost'">
-        <font-awesome-icon :icon="['fas', 'palette']" />{{ $t("tenant.settings.tabs.appearance") }}
+        class="settings-tabs__btn"
+        :class="{ 'settings-tabs__btn--active': activeTab === 'appearance' }">
+        <font-awesome-icon :icon="['fas', 'palette']" />
+        {{ $t("tenant.settings.tabs.appearance") }}
       </button>
       <button type="button" @click="activeTab = 'rules'"
-        class="tab-bar__btn"
-        :class="activeTab === 'rules' ? 'btn-primary shadow-sm' : 'btn-ghost'">
-        <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" />{{ $t("tenant.settings.tabs.rules") }}
+        class="settings-tabs__btn"
+        :class="{ 'settings-tabs__btn--active': activeTab === 'rules' }">
+        <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" />
+        {{ $t("tenant.settings.tabs.rules") }}
       </button>
     </div>
 
@@ -30,7 +33,7 @@
       </div>
 
       <div v-show="activeTab === 'behavior'" class="settings-footer">
-        <button type="submit" class="btn btn-primary" :disabled="tenantsStore.loading">
+        <button type="submit" class="btn-save" :disabled="tenantsStore.loading">
           <font-awesome-icon :icon="['fas', 'floppy-disk']" />
           {{ $t("tenant.settings.actions.save") }}
         </button>
@@ -111,3 +114,61 @@ const handleUpdate = async () => {
   }
 };
 </script>
+
+<style scoped>
+.settings-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--surface-3);
+  margin-bottom: 24px;
+}
+
+.settings-tabs__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--surface-muted);
+  cursor: pointer;
+  transition: color var(--t-fast), border-color var(--t-fast);
+}
+
+.settings-tabs__btn:hover {
+  color: var(--surface-text);
+}
+
+.settings-tabs__btn--active {
+  color: var(--surface-heading);
+  border-bottom-color: var(--brand-indigo);
+}
+
+.settings-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.btn-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 20px;
+  background: var(--gradient-brand);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: opacity var(--t-fast);
+}
+
+.btn-save:hover:not(:disabled) { opacity: 0.9; }
+.btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>

@@ -4,19 +4,19 @@
       <div v-if="open" class="fixed inset-0 z-50 flex justify-end">
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="$emit('close')"></div>
 
-        <div class="relative w-full max-w-md bg-base-100 h-full flex flex-col shadow-2xl">
+        <div class="wizard-panel">
 
           <!-- Header -->
-          <div class="flex items-center justify-between p-6 border-b border-base-200/50">
+          <div class="wizard-header">
             <div>
-              <h2 class="text-xl font-bold text-base-content">{{ $t('tenant.sources.wizard.addKnowledge') }}</h2>
-              <div class="flex items-center gap-2 mt-2">
+              <h2 class="wizard-title">{{ $t('tenant.sources.wizard.addKnowledge') }}</h2>
+              <div class="wizard-progress">
                 <div v-for="i in lastStep + 1" :key="i"
-                  class="h-1 rounded-full transition-all duration-300"
-                  :class="[i - 1 <= step ? 'bg-primary' : 'bg-base-300', i - 1 === step ? 'w-8' : 'w-4']"></div>
+                  class="wizard-progress__dot"
+                  :class="{ 'is-active': i - 1 === step, 'is-done': i - 1 < step }"></div>
               </div>
             </div>
-            <button @click="$emit('close')" class="btn btn-ghost btn-circle btn-sm">
+            <button @click="$emit('close')" class="wizard-close">
               <font-awesome-icon :icon="['fas', 'xmark']" />
             </button>
           </div>
@@ -31,8 +31,8 @@
                 <button @click="selectType('website')"
                   class="radio-card flex-col items-start gap-3 p-6"
                   :class="{ 'is-selected': type === 'website' }">
-                  <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-                    :class="type === 'website' ? 'bg-primary/20 text-primary' : 'bg-base-200 text-base-content/50'">
+                  <div class="type-icon"
+                    :class="type === 'website' ? 'type-icon--active' : ''">
                     <font-awesome-icon :icon="['fas', 'globe']" />
                   </div>
                   <div>
@@ -43,8 +43,8 @@
                 <button @click="selectType('document')"
                   class="radio-card flex-col items-start gap-3 p-6"
                   :class="{ 'is-selected': type === 'document' }">
-                  <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-                    :class="type === 'document' ? 'bg-secondary/20 text-secondary' : 'bg-base-200 text-base-content/50'">
+                  <div class="type-icon"
+                    :class="type === 'document' ? 'type-icon--active' : ''">
                     <font-awesome-icon :icon="['fas', 'file-lines']" />
                   </div>
                   <div>
@@ -53,13 +53,14 @@
                   </div>
                 </button>
               </div>
-              <div class="mt-6 bg-base-200/50 rounded-2xl p-4 border border-base-200">
-                <p class="field-label mb-2 flex items-center gap-2 normal-case tracking-normal">
-                  <font-awesome-icon :icon="['fas', 'circle-info']" /> {{ $t('tenant.sources.wizard.infoTitle') }}
-                </p>
-                <p class="step-subtext">
-                  {{ type === 'document' ? $t('tenant.sources.wizard.infoDocument') : $t('tenant.sources.wizard.infoWebsite') }}
-                </p>
+              <div class="info-box" style="margin-top:20px;">
+                <font-awesome-icon :icon="['fas', 'circle-info']" class="info-box__icon" />
+                <div>
+                  <p class="info-box__title">{{ $t('tenant.sources.wizard.infoTitle') }}</p>
+                  <p class="step-subtext">
+                    {{ type === 'document' ? $t('tenant.sources.wizard.infoDocument') : $t('tenant.sources.wizard.infoWebsite') }}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -107,19 +108,16 @@
 
               <!-- Document -->
               <div v-if="type === 'document'">
-                <label for="wiz-file-upload"
-                  class="flex flex-col items-center justify-center gap-4 p-10 rounded-3xl border-2 border-dashed transition-all duration-200 cursor-pointer group"
-                  :class="selectedFile ? 'border-primary bg-primary/5' : 'border-base-300 hover:border-primary/50'">
+                <label for="wiz-file-upload" class="file-drop" :class="{ 'file-drop--active': selectedFile }">
                   <input id="wiz-file-upload" type="file" @change="handleFileSelect" accept=".pdf,.txt,.csv" class="sr-only" />
-                  <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-colors"
-                    :class="selectedFile ? 'bg-primary/20 text-primary' : 'bg-base-200 text-base-content/30 group-hover:bg-primary/10 group-hover:text-primary'">
+                  <div class="file-drop__icon" :class="{ 'file-drop__icon--active': selectedFile }">
                     <font-awesome-icon :icon="selectedFile ? ['fas', 'file-check'] : ['fas', 'file-arrow-up']" />
                   </div>
                   <div class="text-center">
-                    <p class="text-sm font-bold" :class="selectedFile ? 'text-primary' : 'text-base-content/70'">
-                      {{ selectedFile ? selectedFile.name : 'Click to choose a file' }}
+                    <p class="file-drop__name" :class="{ 'file-drop__name--active': selectedFile }">
+                      {{ selectedFile ? selectedFile.name : $t('tenant.sources.wizard.chooseFile') }}
                     </p>
-                    <p class="step-subtext mt-1">PDF · TXT · CSV</p>
+                    <p class="step-subtext" style="margin-top:4px;">PDF · TXT · CSV</p>
                   </div>
                 </label>
               </div>
@@ -194,33 +192,33 @@
             <!-- Confirm -->
             <div v-if="step === lastStep">
               <p class="step-subtext mb-6">{{ $t('tenant.sources.wizard.confirmTitle') }}</p>
-              <div class="bg-base-200/50 rounded-2xl p-5 space-y-3 border border-base-200">
-                <div class="flex justify-between text-sm">
-                  <span class="text-base-content/50 font-medium">{{ $t('tenant.sources.wizard.confirmType') }}</span>
-                  <span class="font-bold text-base-content capitalize">{{ type === 'website' ? $t('tenant.sources.wizard.typeWebsite') : $t('tenant.sources.wizard.typeDocument') }}</span>
+              <div class="confirm-box">
+                <div class="confirm-row">
+                  <span class="confirm-row__label">{{ $t('tenant.sources.wizard.confirmType') }}</span>
+                  <span class="confirm-row__value">{{ type === 'website' ? $t('tenant.sources.wizard.typeWebsite') : $t('tenant.sources.wizard.typeDocument') }}</span>
                 </div>
                 <template v-if="type === 'website'">
-                  <div class="flex justify-between text-sm">
-                    <span class="text-base-content/50 font-medium">{{ $t('tenant.sources.wizard.confirmUrl') }}</span>
-                    <span class="font-bold text-base-content truncate max-w-[200px]">{{ finalUrl }}</span>
+                  <div class="confirm-row">
+                    <span class="confirm-row__label">{{ $t('tenant.sources.wizard.confirmUrl') }}</span>
+                    <span class="confirm-row__value" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">{{ finalUrl }}</span>
                   </div>
-                  <div class="flex justify-between text-sm">
-                    <span class="text-base-content/50 font-medium">{{ $t('tenant.sources.wizard.confirmMode') }}</span>
-                    <span class="font-bold text-base-content">{{ crawlMode }}</span>
+                  <div class="confirm-row">
+                    <span class="confirm-row__label">{{ $t('tenant.sources.wizard.confirmMode') }}</span>
+                    <span class="confirm-row__value">{{ crawlMode }}</span>
                   </div>
-                  <div class="flex justify-between text-sm">
-                    <span class="text-base-content/50 font-medium">Scope</span>
-                    <span class="font-bold text-base-content">{{ singlePageOnly ? $t('tenant.sources.wizard.confirmSinglePage') : $t('tenant.sources.wizard.confirmFullSite') }}</span>
+                  <div class="confirm-row">
+                    <span class="confirm-row__label">{{ $t('tenant.sources.wizard.confirmScope') }}</span>
+                    <span class="confirm-row__value">{{ singlePageOnly ? $t('tenant.sources.wizard.confirmSinglePage') : $t('tenant.sources.wizard.confirmFullSite') }}</span>
                   </div>
-                  <div v-if="!singlePageOnly && excludedPaths.length > 0" class="flex justify-between text-sm">
-                    <span class="text-base-content/50 font-medium">Excluded</span>
-                    <span class="font-bold text-base-content font-mono text-right">{{ excludedPaths.join(', ') }}</span>
+                  <div v-if="!singlePageOnly && excludedPaths.length > 0" class="confirm-row">
+                    <span class="confirm-row__label">{{ $t('tenant.sources.wizard.confirmExcluded') }}</span>
+                    <span class="confirm-row__value" style="font-family:monospace;">{{ excludedPaths.join(', ') }}</span>
                   </div>
                 </template>
                 <template v-else>
-                  <div class="flex justify-between text-sm">
-                    <span class="text-base-content/50 font-medium">{{ $t('tenant.sources.wizard.confirmFile') }}</span>
-                    <span class="font-bold text-base-content truncate max-w-[200px]">{{ selectedFile?.name }}</span>
+                  <div class="confirm-row">
+                    <span class="confirm-row__label">{{ $t('tenant.sources.wizard.confirmFile') }}</span>
+                    <span class="confirm-row__value" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">{{ selectedFile?.name }}</span>
                   </div>
                 </template>
               </div>
@@ -228,15 +226,15 @@
           </div>
 
           <!-- Footer -->
-          <div class="p-6 border-t border-base-200/50 flex gap-3">
-            <button v-if="step > 0" @click="step--" class="btn btn-ghost flex-1">
-              <font-awesome-icon :icon="['fas', 'arrow-left']" class="mr-2" />{{ $t('tenant.sources.wizard.back') }}
+          <div class="wizard-footer">
+            <button v-if="step > 0" @click="step--" class="wiz-btn wiz-btn--ghost">
+              <font-awesome-icon :icon="['fas', 'arrow-left']" /> {{ $t('tenant.sources.wizard.back') }}
             </button>
-            <button v-if="step < lastStep" @click="nextStep" :disabled="!canProceed" class="btn btn-primary flex-1">
-              {{ $t('tenant.sources.wizard.next') }}<font-awesome-icon :icon="['fas', 'arrow-right']" class="ml-2" />
+            <button v-if="step < lastStep" @click="nextStep" :disabled="!canProceed" class="wiz-btn wiz-btn--primary">
+              {{ $t('tenant.sources.wizard.next') }} <font-awesome-icon :icon="['fas', 'arrow-right']" />
             </button>
-            <button v-if="step === lastStep" @click="submit" :disabled="submitting" class="btn btn-primary flex-1">
-              <font-awesome-icon v-if="submitting" :icon="['fas', 'spinner']" class="animate-spin mr-2" />
+            <button v-if="step === lastStep" @click="submit" :disabled="submitting" class="wiz-btn wiz-btn--primary">
+              <font-awesome-icon v-if="submitting" :icon="['fas', 'spinner']" class="spin" />
               {{ type === 'website' ? $t('tenant.sources.wizard.startCrawl') : $t('tenant.sources.wizard.uploadFile') }}
             </button>
           </div>
@@ -358,15 +356,162 @@ const submit = async () => {
 </script>
 
 <style scoped>
+/* ── Slide transition ─────────────────────────────────────────────── */
 .slide-over-enter-active, .slide-over-leave-active { transition: opacity 0.25s ease; }
-.slide-over-enter-active .relative, .slide-over-leave-active .relative { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+.slide-over-enter-active .wizard-panel, .slide-over-leave-active .wizard-panel { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
 .slide-over-enter-from { opacity: 0; }
-.slide-over-enter-from .relative { transform: translateX(100%); }
+.slide-over-enter-from .wizard-panel { transform: translateX(100%); }
 .slide-over-leave-to { opacity: 0; }
-.slide-over-leave-to .relative { transform: translateX(100%); }
+.slide-over-leave-to .wizard-panel { transform: translateX(100%); }
 
-.fade-down-enter-active { transition: opacity 0.2s ease, transform 0.2s ease; }
-.fade-down-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
-.fade-down-enter-from { opacity: 0; transform: translateY(-6px); }
-.fade-down-leave-to { opacity: 0; transform: translateY(-6px); }
+/* ── Panel shell ─────────────────────────────────────────────────── */
+.wizard-panel {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-1);
+  border-left: 1px solid var(--surface-3);
+  box-shadow: -8px 0 40px rgba(0,0,0,0.4);
+}
+
+/* ── Header ──────────────────────────────────────────────────────── */
+.wizard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--surface-3);
+}
+
+.wizard-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--surface-heading);
+}
+
+.wizard-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  color: var(--surface-muted);
+  cursor: pointer;
+  transition: color var(--t-fast), border-color var(--t-fast);
+}
+.wizard-close:hover { color: var(--surface-text); border-color: var(--surface-muted); }
+
+/* ── Type icons ──────────────────────────────────────────────────── */
+.type-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: var(--surface-2);
+  color: var(--surface-muted);
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.type-icon--active {
+  background: rgba(10, 31, 171, 0.15);
+  color: var(--brand-indigo);
+}
+
+/* ── Info box ─────────────────────────────────────────────────────── */
+.info-box {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+}
+.info-box__icon { color: var(--brand-indigo); flex-shrink: 0; margin-top: 2px; }
+.info-box__title { font-size: 12px; font-weight: 600; color: var(--surface-text); margin-bottom: 4px; }
+
+/* ── Field position icon ─────────────────────────────────────────── */
+.field-icon {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  padding-left: 14px;
+  pointer-events: none;
+  color: var(--surface-muted);
+}
+
+/* ── File drop zone ──────────────────────────────────────────────── */
+.file-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 36px 20px;
+  border-radius: var(--radius-lg);
+  border: 1.5px dashed var(--surface-3);
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.file-drop:hover { border-color: var(--brand-indigo); background: rgba(10,31,171,0.04); }
+.file-drop--active { border-color: var(--brand-indigo); background: rgba(10,31,171,0.06); }
+
+.file-drop__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: var(--surface-2);
+  color: var(--surface-muted);
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.file-drop:hover .file-drop__icon,
+.file-drop__icon--active { background: rgba(10,31,171,0.15); color: var(--brand-indigo); }
+
+.file-drop__name { font-size: 13px; font-weight: 600; color: var(--surface-muted); }
+.file-drop__name--active { color: var(--brand-indigo); }
+
+/* ── Footer ──────────────────────────────────────────────────────── */
+.wizard-footer {
+  display: flex;
+  gap: 10px;
+  padding: 20px 24px;
+  border-top: 1px solid var(--surface-3);
+}
+
+.wiz-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: opacity var(--t-fast), background var(--t-fast);
+}
+.wiz-btn--primary { background: var(--gradient-brand); color: white; }
+.wiz-btn--primary:hover:not(:disabled) { opacity: 0.9; }
+.wiz-btn--primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.wiz-btn--ghost { background: var(--surface-2); border: 1px solid var(--surface-3); color: var(--surface-text); }
+.wiz-btn--ghost:hover { border-color: var(--surface-muted); }
+
+.spin { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
+
