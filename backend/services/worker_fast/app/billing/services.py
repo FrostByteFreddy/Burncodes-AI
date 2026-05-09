@@ -4,7 +4,6 @@ from app.database.supabase_client import supabase
 from app.logging_config import error_logger
 
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
-STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip('/')
 
 class BillingService:
