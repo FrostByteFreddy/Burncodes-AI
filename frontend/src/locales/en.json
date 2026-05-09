@@ -29,23 +29,30 @@
     }
   },
   "manageTenants": {
-    "title": "Manage Tenants",
-    "subtitle": "Create and manage your tenants and their configurations.",
-    "newTenant": "New Tenant",
-    "noTenants": "No tenants yet",
-    "startMessage": "Create your first tenant to get started.",
-    "createTenant": "Create a Tenant",
+    "title": "My Chatbots",
+    "subtitle": "Create and manage your chatbots and their configurations.",
+    "newTenant": "New Chatbot",
+    "newChatbot": "New Chatbot",
+    "noTenants": "No chatbots yet",
+    "noChatbots": "No chatbots yet.",
+    "noChatbotsSubtitle": "Create your first one to start building your AI knowledge base.",
+    "startMessage": "Create your first chatbot to get started.",
+    "createTenant": "Create Chatbot",
+    "createChatbot": "Create Chatbot",
+    "sources": "{n} source | {n} sources",
+    "openChatbot": "Open chatbot",
+    "configure": "Configure",
     "delete": "Delete",
     "deleteModal": {
-      "title": "Delete Tenant",
-      "message": "Are you sure you want to delete the tenant '{name}'? This action cannot be undone.",
+      "title": "Delete Chatbot",
+      "message": "Are you sure you want to delete '{name}'? This action cannot be undone.",
       "confirm": "Delete"
     },
     "toast": {
-      "createSuccess": "Tenant created successfully!",
-      "createError": "Failed to create tenant.",
-      "deleteSuccess": "Tenant deleted successfully!",
-      "deleteError": "Failed to delete tenant."
+      "createSuccess": "Chatbot created successfully!",
+      "createError": "Failed to create chatbot.",
+      "deleteSuccess": "Chatbot deleted successfully!",
+      "deleteError": "Failed to delete chatbot."
     }
   },
   "analytics": {
@@ -138,7 +145,8 @@
     "settings": {
       "tabs": {
         "behavior": "Behavior",
-        "appearance": "Appearance"
+        "appearance": "Appearance",
+        "rules": "Rules"
       },
       "behavior": {
         "name": "Tenant Name",
@@ -204,6 +212,7 @@
         }
       },
       "actions": {
+        "save": "Save",
         "saving": "Saving...",
         "saveChanges": "Save Changes",
         "savedSuccess": "Settings saved successfully!",
@@ -296,6 +305,9 @@
         "confirmMode": "Mode",
         "confirmSinglePage": "Single page only",
         "confirmFullSite": "Full site crawl",
+        "confirmScope": "Scope",
+        "confirmExcluded": "Excluded",
+        "chooseFile": "Click to choose a file",
         "back": "Back",
         "next": "Next",
         "startCrawl": "Start Crawl",
@@ -365,19 +377,54 @@
     }
   },
   "sidebar": {
-    "selectTenant": "Select a Tenant",
-    "sources": "Sources",
+    "selectTenant": "Select a Chatbot",
+    "sources": "Knowledge",
     "configuration": "Configuration",
     "fineTune": "Fine Tune",
     "analytics": "Analytics",
     "chatLogs": "Chat Logs",
-    "chatbot": "Chatbot",
-    "noTenantSelected": "Select a tenant to see management options.",
+    "chatbot": "Open Chatbot",
+    "noTenantSelected": "Select a chatbot to see management options.",
     "settings": "Settings",
     "profile": "Profile",
-    "manageTenants": "Manage Tenants",
-    "subscription": "Subscription",
-    "logout": "Logout"
+    "manageTenants": "My Chatbots",
+    "subscription": "Billing",
+    "logout": "Logout",
+    "workspace": "Workspace",
+    "account": "Account"
+  },
+  "profile": {
+    "title": "User Profile",
+    "subtitle": "Manage your personal information and security settings.",
+    "accountDetails": "Account Details",
+    "changePassword": "Change Password",
+    "dangerZone": "Danger Zone",
+    "deleteAccount": "Delete Account",
+    "deleteAccountDesc": "Deleting your account is permanent and cannot be undone.",
+    "tabs": {
+      "profile": "Profile Details",
+      "security": "Security"
+    },
+    "email": "Email Address",
+    "first_name": "First Name",
+    "last_name": "Last Name",
+    "phone_number": "Phone Number",
+    "language": "Language",
+    "save_changes": "Save Changes",
+    "saving": "Saving",
+    "saved": "Saved",
+    "success": "Profile updated successfully!",
+    "error": "Failed to update profile.",
+    "security": {
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm New Password",
+      "updatePassword": "Update Password",
+      "updating": "Updating",
+      "passwordMismatch": "New passwords do not match.",
+      "success": "Password changed successfully!",
+      "error": "Failed to change password."
+    }
   },
   "modals": {
     "createTenant": {

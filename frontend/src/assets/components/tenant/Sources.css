@@ -1,36 +1,114 @@
-@layer components {
-  /* Full-width page container */
-  .sources-page {
-    @apply flex flex-col gap-6 p-6;
-    min-height: calc(100vh - 8rem);
-  }
+/* Full-width page container */
+.sources-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: calc(100vh - 8rem);
+}
 
-  /* ── Banner add button ──────────────────────────────── */
-  .sources-add-banner {
-    @apply w-full flex items-center gap-5 px-8
-           border-2 border-dashed border-base-300
-           bg-base-100 hover:bg-primary/5 hover:border-primary/40
-           rounded-2xl transition-all duration-200 cursor-pointer;
-    min-height: 100px;
-  }
+/* ── KPI strip ──────────────────────────────────────── */
+.sources-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
 
-  .sources-add-banner__icon {
-    @apply w-12 h-12 rounded-xl bg-base-200 flex items-center justify-center
-           text-xl text-base-content/40 transition-colors flex-shrink-0;
-  }
-  .sources-add-banner:hover .sources-add-banner__icon {
-    @apply bg-primary/10 text-primary;
-  }
+.sources-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  background: var(--surface-1);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-xl);
+  transition: background var(--t-fast);
+}
 
-  .sources-add-banner__text {
-    @apply flex flex-col text-left;
-  }
+.sources-kpi--error {
+  border-color: rgba(255, 68, 68, 0.3);
+  background: rgba(255, 68, 68, 0.06);
+}
 
-  .sources-add-banner__title {
-    @apply text-base font-bold text-base-content;
-  }
+.sources-kpi__value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--surface-heading);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
 
-  .sources-add-banner__sub {
-    @apply text-sm text-base-content/50 mt-0.5;
-  }
+.sources-kpi--error .sources-kpi__value {
+  color: var(--status-error);
+}
+
+.sources-kpi__value--success {
+  color: var(--status-success);
+}
+
+.sources-kpi__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--surface-muted);
+}
+
+/* ── Banner add button ──────────────────────────────── */
+.sources-add-banner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 32px;
+  border: 2px dashed var(--surface-3);
+  background: var(--surface-1);
+  border-radius: var(--radius-xl);
+  transition: background var(--t-fast), border-color var(--t-fast);
+  cursor: pointer;
+  min-height: 100px;
+}
+
+.sources-add-banner:hover {
+  background: rgba(10, 31, 171, 0.06);
+  border-color: rgba(10, 31, 171, 0.4);
+}
+
+.sources-add-banner__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--surface-muted);
+  flex-shrink: 0;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+
+.sources-add-banner:hover .sources-add-banner__icon {
+  background: rgba(10, 31, 171, 0.15);
+  color: var(--brand-indigo);
+}
+
+.sources-add-banner__text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.sources-add-banner__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--surface-heading);
+}
+
+.sources-add-banner__sub {
+  font-size: 13px;
+  color: var(--surface-muted);
+  margin-top: 2px;
 }

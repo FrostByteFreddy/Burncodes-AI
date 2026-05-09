@@ -281,7 +281,7 @@ const widgetCssVariables = computed(() => {
     ),
     "--chat-background-color": findColor(
       styles.chat_background_color,
-      "#FFFFFF"
+      "transparent"
     ),
     "--chat-reset-button-background-color": findColor(
       styles.reset_button_color,
@@ -324,7 +324,7 @@ const widgetCssVariables = computed(() => {
 }
 
 .chat-main {
-  background-color: var(--chat-background-color);
+  background-color: transparent;
   padding: 1rem;
   flex-grow: 1;
   overflow-y: auto;

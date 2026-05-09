@@ -1,125 +1,88 @@
 <template>
-  <div>
-    <!-- Internal tab switcher -->
-    <div class="inline-flex p-1 space-x-1 bg-base-200 rounded-full mb-6">
-      <a
-        class="btn border-0 rounded-full hover:cursor-pointer space-x-2"
-        :class="activeTab === 'analytics' ? '!bg-primary-focus text-primary-content shadow' : 'btn-ghost text-base-content'"
-        @click="activeTab = 'analytics'"
-      >
-        <font-awesome-icon :icon="['fas', 'chart-line']" />
-        <span>{{ $t('analytics.title') }}</span>
-      </a>
-      <a
-        class="btn border-0 rounded-full hover:cursor-pointer space-x-2"
-        :class="activeTab === 'chatlogs' ? '!bg-primary-focus text-primary-content shadow' : 'btn-ghost text-base-content'"
-        @click="activeTab = 'chatlogs'; fetchConversations()"
-      >
+  <div class="page">
+    <div class="page-header">
+      <p class="page-label">{{ $t('analytics.title').toUpperCase() }}</p>
+      <div class="header-controls">
+        <select v-model="selectedInterval" @change="fetchAnalytics" class="field__select">
+          <option v-for="item in intervals" :key="item.value" :value="item.value">{{ item.label }}</option>
+        </select>
+        <select v-model="selectedTimeframe" @change="fetchAnalytics" class="field__select">
+          <option v-for="frame in timeframes" :key="frame.value" :value="frame.value">{{ frame.label }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Chart panel -->
+    <div class="chart-card">
+      <div v-if="analyticsLoading" class="chart-loading">
+        <font-awesome-icon :icon="['fas', 'spinner']" class="spin" />
+      </div>
+      <div v-else-if="analyticsError" class="chart-error">
+        <font-awesome-icon :icon="['fas', 'triangle-exclamation']" />
+        <p>{{ $t('analytics.error') }}</p>
+      </div>
+      <div v-else class="chart-wrap">
+        <Line :data="chartData" :options="chartOptions" />
+      </div>
+    </div>
+
+    <!-- Chat logs section -->
+    <div class="section-header" style="margin-top:32px; margin-bottom:20px;">
+      <span class="section-label">{{ $t('chatLogs.title').toUpperCase() }}</span>
+      <div class="section-line"></div>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="logsLoading" class="skeleton-block" style="height:200px;"></div>
+
+    <!-- Error -->
+    <div v-else-if="logsError" class="chart-error card">
+      <font-awesome-icon :icon="['fas', 'triangle-exclamation']" />
+      <p>{{ logsError }}</p>
+    </div>
+
+    <!-- Conversation detail -->
+    <div v-else-if="selectedConversation" class="card log-detail">
+      <button @click="selectedConversation = null" class="btn-back">
+        <font-awesome-icon :icon="['fas', 'arrow-left']" />
+        {{ $t('chatLogs.back') }}
+      </button>
+      <div ref="chatContainer" class="chat-scroll">
+        <div v-for="log in conversationLogs" :key="log.id" class="chat-pair">
+          <div v-if="log.user_message" class="bubble bubble--user">{{ log.user_message }}</div>
+          <div v-if="log.ai_message" class="bubble bubble--bot" v-html="processBotMessage(log.ai_message).html"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Conversation list -->
+    <div v-else class="card log-list">
+      <div v-if="!conversations.length" class="empty-logs">
         <font-awesome-icon :icon="['fas', 'comments']" />
-        <span>{{ $t('chatLogs.title') }}</span>
-      </a>
-    </div>
-
-    <!-- ── Analytics ──────────────────────────────────────────── -->
-    <div v-show="activeTab === 'analytics'">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 border-b border-base-200/50 pb-6 gap-4">
-        <h3 class="text-2xl font-bold text-base-content flex items-center">
-          <font-awesome-icon :icon="['fas', 'chart-line']" class="mr-3 text-primary" />
-          {{ $t('analytics.title') }}
-        </h3>
-        <div class="flex flex-wrap items-center gap-3">
-          <select v-model="selectedInterval" @change="fetchAnalytics" class="select select-bordered rounded-xl bg-base-100 font-medium focus:ring-2 focus:ring-primary/50 border-base-200">
-            <option v-for="item in intervals" :key="item.value" :value="item.value">{{ item.label }}</option>
-          </select>
-          <select v-model="selectedTimeframe" @change="fetchAnalytics" class="select select-bordered rounded-xl bg-base-100 font-medium focus:ring-2 focus:ring-primary/50 border-base-200">
-            <option v-for="frame in timeframes" :key="frame.value" :value="frame.value">{{ frame.label }}</option>
-          </select>
-        </div>
+        <p>{{ $t('chatLogs.conversations') }}</p>
       </div>
-
-      <div v-if="analyticsLoading" class="flex justify-center items-center h-80 bg-base-100 rounded-xl border border-base-200/50 shadow-sm animate-pulse">
-        <span class="loading loading-spinner text-primary loading-lg"></span>
-      </div>
-      <div v-else-if="analyticsError" class="flex justify-center items-center h-80 bg-error/10 text-error rounded-xl border border-error/20 p-6">
-        <div class="text-center">
-          <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-4xl mb-3" />
-          <p class="font-bold text-lg">{{ $t('analytics.error') }}</p>
-        </div>
-      </div>
-      <div v-else class="bg-base-100 p-6 rounded-xl shadow-sm border border-base-200/50">
-        <div class="chart-container">
-          <Line :data="chartData" :options="chartOptions" />
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Chat Logs ──────────────────────────────────────────── -->
-    <div v-show="activeTab === 'chatlogs'">
-      <div class="flex justify-between items-center mb-8 border-b border-base-200/50 pb-6">
-        <h3 class="text-2xl font-bold text-base-content flex items-center">
-          <font-awesome-icon :icon="['fas', 'comments']" class="mr-3 text-primary" />
-          {{ $t('chatLogs.title') }}
-        </h3>
-      </div>
-
-      <div v-if="logsLoading" class="flex justify-center items-center h-80 bg-base-100 rounded-xl border border-base-200/50 shadow-sm animate-pulse">
-        <span class="loading loading-spinner text-primary loading-lg"></span>
-      </div>
-      <div v-else-if="logsError" class="flex justify-center items-center h-80 bg-error/10 text-error rounded-xl border border-error/20 p-6">
-        <div class="text-center">
-          <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-4xl mb-3" />
-          <p class="font-bold text-lg">{{ logsError }}</p>
-        </div>
-      </div>
-      <div v-else>
-        <!-- Conversation detail -->
-        <div v-if="selectedConversation" class="bg-base-100 rounded-xl p-6 shadow-sm border border-base-200/50">
-          <button @click="selectedConversation = null" class="btn btn-ghost mb-6">
-            <font-awesome-icon :icon="['fas', 'arrow-left']" />
-            {{ $t('chatLogs.back') }}
-          </button>
-          <div ref="chatContainer" class="max-h-[60vh] overflow-y-auto space-y-6 px-2 scroll-smooth">
-            <div v-for="log in conversationLogs" :key="log.id">
-              <div v-if="log.user_message" class="chat chat-end">
-                <div class="chat-bubble bg-gradient-to-r from-primary to-secondary text-primary-content shadow-md">{{ log.user_message }}</div>
-              </div>
-              <div v-if="log.ai_message" class="chat chat-start">
-                <div class="chat-bubble bg-base-200 text-base-content shadow-sm prose max-w-none text-sm leading-relaxed" v-html="processBotMessage(log.ai_message).html"></div>
-              </div>
-            </div>
+      <div
+        v-for="convo in conversations"
+        :key="convo.conversation_id"
+        @click="selectConversation(convo.conversation_id)"
+        class="log-row"
+      >
+        <div class="log-row__content">
+          <p class="log-row__preview">{{ convo.first_message || $t('chatLogs.noMessage') }}</p>
+          <div class="log-row__meta">
+            <span class="meta-chip">
+              <font-awesome-icon :icon="['fas', 'comments']" />
+              {{ convo.message_count }}
+            </span>
+            <span class="meta-chip">
+              <font-awesome-icon :icon="['fas', 'coins']" />
+              CHF {{ (convo.total_cost || 0).toFixed(4) }}
+            </span>
           </div>
         </div>
-
-        <!-- Conversation list -->
-        <div v-else class="bg-base-100 rounded-xl shadow-sm border border-base-200/50 overflow-hidden">
-          <div class="divide-y divide-base-200/50">
-            <div
-              v-for="convo in conversations"
-              :key="convo.conversation_id"
-              @click="selectConversation(convo.conversation_id)"
-              class="flex items-center justify-between p-6 cursor-pointer hover:bg-base-200/30 transition-all duration-300 group"
-            >
-              <div class="min-w-0 flex-1">
-                <p class="font-bold text-lg text-base-content truncate group-hover:text-primary transition-colors pb-1">{{ convo.first_message || $t('chatLogs.noMessage') }}</p>
-                <div class="flex gap-6 mt-2">
-                  <span class="flex items-center gap-2 text-sm font-medium text-base-content/60 bg-base-200 px-3 py-1 rounded-full">
-                    <font-awesome-icon :icon="['fas', 'comments']" class="text-primary/70" />
-                    {{ convo.message_count }} Messages
-                  </span>
-                  <span class="flex items-center gap-2 text-sm font-medium text-base-content/60 bg-base-200 px-3 py-1 rounded-full">
-                    <font-awesome-icon :icon="['fas', 'coins']" class="text-warning/70" />
-                    CHF {{ (convo.total_cost || 0).toFixed(4) }}
-                  </span>
-                </div>
-              </div>
-              <div class="flex items-center gap-4 ml-6 shrink-0">
-                <span class="text-sm font-semibold text-base-content/40 bg-base-200/50 px-3 py-1 rounded-lg">{{ new Date(convo.last_active).toLocaleString() }}</span>
-                <div class="w-10 h-10 rounded-full bg-base-200 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-content transition-colors">
-                  <font-awesome-icon :icon="['fas', 'chevron-right']" class="w-4 h-4" />
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="log-row__right">
+          <span class="log-row__time">{{ new Date(convo.last_active).toLocaleString() }}</span>
+          <font-awesome-icon :icon="['fas', 'chevron-right']" class="log-row__arrow" />
         </div>
       </div>
     </div>
@@ -127,7 +90,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/api'
@@ -146,8 +109,6 @@ const { t } = useI18n()
 const route = useRoute()
 const tenantsStore = useTenantsStore()
 const { addToast } = useToast()
-
-const activeTab = ref('analytics')
 
 // ── Analytics ────────────────────────────────────────────────────────────────
 const analyticsData = ref([])
@@ -180,7 +141,7 @@ const fetchAnalytics = async () => {
       params: { timeframe: selectedTimeframe.value, interval: selectedInterval.value },
     })
     analyticsData.value = response.data
-  } catch (err) {
+  } catch {
     analyticsError.value = t('analytics.error')
   } finally {
     analyticsLoading.value = false
@@ -192,9 +153,9 @@ const chartData = computed(() => {
     labels: [],
     datasets: [{
       label: t('analytics.chartLabel'),
-      backgroundColor: 'rgba(10, 31, 171, 0.15)',
-      borderColor: 'rgba(10, 31, 171, 1)',
-      borderWidth: 3,
+      backgroundColor: 'rgba(10, 31, 171, 0.10)',
+      borderColor: 'rgba(10, 31, 171, 0.9)',
+      borderWidth: 2,
       pointBackgroundColor: 'rgba(10, 31, 171, 1)',
       pointBorderColor: '#fff',
       pointHoverBackgroundColor: '#fff',
@@ -205,7 +166,6 @@ const chartData = computed(() => {
     }],
   }
   if (!analyticsData.value.length) return data
-
   const allBuckets = new Map()
   const now = new Date()
   const interval = selectedInterval.value
@@ -237,8 +197,19 @@ const chartData = computed(() => {
 })
 
 const chartOptions = {
-  responsive: true, maintainAspectRatio: false,
-  scales: { y: { beginAtZero: true } },
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    y: {
+      beginAtZero: true,
+      grid: { color: 'rgba(255,255,255,0.05)' },
+      ticks: { color: 'rgba(160,168,200,0.8)' },
+    },
+    x: {
+      grid: { color: 'rgba(255,255,255,0.05)' },
+      ticks: { color: 'rgba(160,168,200,0.8)', maxTicksLimit: 12 },
+    },
+  },
   plugins: { legend: { display: false } },
 }
 
@@ -257,7 +228,7 @@ const fetchConversations = async () => {
     logsError.value = null
     const response = await apiClient.get(`/chat/${tenantsStore.currentTenant.id}/conversations`)
     conversations.value = response.data
-  } catch (err) {
+  } catch {
     logsError.value = t('chatLogs.errors.loadConversations')
   } finally {
     logsLoading.value = false
@@ -281,11 +252,147 @@ const selectConversation = async (conversationId) => {
 }
 
 watch(() => tenantsStore.currentTenant, (tenant) => {
-  if (tenant) { fetchAnalytics(); selectedConversation.value = null; conversations.value = [] }
+  if (tenant) {
+    fetchAnalytics()
+    fetchConversations()
+    selectedConversation.value = null
+    conversations.value = []
+  }
 }, { immediate: true })
 </script>
 
 <style scoped>
-.chart-container { height: 400px; min-width: 100%; }
-.chat-bubble { hyphens: auto; }
+.page-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 24px;
+}
+.page-label {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; color: var(--surface-muted);
+}
+.header-controls { display: flex; gap: 8px; }
+.field__select {
+  padding: 7px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  color: var(--surface-text);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; outline: none;
+  transition: border-color var(--t-fast);
+}
+.field__select:focus { border-color: var(--brand-indigo); }
+
+/* Chart */
+.chart-card {
+  background: var(--surface-1);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  min-height: 340px;
+  display: flex; align-items: center; justify-content: center;
+}
+.chart-wrap { width: 100%; height: 300px; }
+.chart-loading { font-size: 28px; color: var(--brand-indigo); }
+.chart-error {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  color: var(--status-error); font-size: 22px;
+}
+.chart-error p { font-size: 13px; }
+.spin { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Section header */
+.section-header { display: flex; align-items: center; gap: 12px; }
+.section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--surface-muted); white-space: nowrap; }
+.section-line { flex: 1; height: 1px; background: var(--surface-3); }
+
+/* Skeleton */
+.skeleton-block {
+  background: var(--surface-1);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-lg);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+/* Card */
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* Back button */
+.btn-back {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: none; border: none;
+  color: var(--surface-muted);
+  font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  transition: color var(--t-fast);
+}
+.btn-back:hover { color: var(--surface-text); }
+
+/* Chat scroll */
+.chat-scroll { max-height: 60vh; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; }
+.chat-pair { display: flex; flex-direction: column; gap: 8px; }
+.bubble {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  font-size: 14px; line-height: 1.6;
+}
+.bubble--user {
+  align-self: flex-end;
+  background: var(--gradient-brand);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+.bubble--bot {
+  align-self: flex-start;
+  background: var(--surface-2);
+  color: var(--surface-text);
+  border-bottom-left-radius: 4px;
+}
+
+/* Log list */
+.log-list { }
+.empty-logs {
+  padding: 40px; text-align: center;
+  color: var(--surface-muted);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  font-size: 28px;
+}
+.empty-logs p { font-size: 13px; }
+.log-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--surface-3);
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.log-row:last-child { border-bottom: none; }
+.log-row:hover { background: var(--surface-2); }
+.log-row__content { flex: 1; min-width: 0; }
+.log-row__preview {
+  font-size: 14px; font-weight: 600; color: var(--surface-heading);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 6px;
+}
+.log-row__meta { display: flex; gap: 8px; }
+.meta-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-pill);
+  font-size: 11px; font-weight: 500; color: var(--surface-muted);
+}
+.log-row__right { display: flex; align-items: center; gap: 10px; margin-left: 16px; flex-shrink: 0; }
+.log-row__time { font-size: 11px; color: var(--surface-muted); }
+.log-row__arrow { font-size: 12px; color: var(--surface-muted); transition: color var(--t-fast); }
+.log-row:hover .log-row__arrow { color: var(--brand-indigo); }
 </style>

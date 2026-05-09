@@ -1,15 +1,14 @@
 <template>
   <div>
-    <div class="rules-header">
-      <h3 class="rules-title">
-        <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" class="mr-3 text-primary" />
-        {{ $t("tenant.fineTune.title") }}
-      </h3>
-      <button type="button" @click="isModalOpen = true" class="btn btn-primary">
-        <font-awesome-icon :icon="['fas', 'plus']" />
-        {{ $t("tenant.fineTune.addRule") || 'Add Rule' }}
-      </button>
-    </div>
+    <button type="button" class="sources-add-banner" @click="isModalOpen = true">
+      <div class="sources-add-banner__icon">
+        <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" />
+      </div>
+      <div class="sources-add-banner__text">
+        <span class="sources-add-banner__title">{{ $t("tenant.fineTune.addRule") }}</span>
+        <span class="sources-add-banner__sub">{{ $t("tenant.fineTune.title") }}</span>
+      </div>
+    </button>
 
     <div class="rules-grid">
       <div v-for="(rule, index) in rules" :key="index"
@@ -55,31 +54,32 @@
         <div class="rule-modal" @click.stop>
           <div class="rule-modal__header">
             <h3 class="rule-modal__title">{{ $t("tenant.fineTune.addRule") }}</h3>
-            <button type="button" @click="closeModal" class="btn btn-ghost btn-circle btn-sm">
-              <font-awesome-icon :icon="['fas', 'xmark']" class="h-4 w-4" />
+            <button type="button" @click="closeModal" class="modal-close-btn">
+              <font-awesome-icon :icon="['fas', 'xmark']" />
             </button>
           </div>
-          <form @submit.prevent="addRule" class="space-y-6">
+          <form @submit.prevent="addRule" style="display:flex;flex-direction:column;gap:20px;">
             <div>
               <label for="new-trigger" class="form-field">{{ $t("tenant.fineTune.trigger.label") }}</label>
               <input v-model="newRule.trigger" type="text" id="new-trigger"
                 :placeholder="$t('tenant.fineTune.trigger.example')"
-                class="form-input mt-2" />
+                class="form-input" style="margin-top:8px;" />
             </div>
             <div>
               <label for="new-instruction" class="form-field">{{ $t("tenant.fineTune.instruction.label") }}</label>
               <AutoGrowTextarea v-model="newRule.instruction" id="new-instruction" rows="3"
                 :placeholder="$t('tenant.fineTune.instruction.example')"
-                class="form-input mt-2" />
+                class="form-input" style="margin-top:8px;" />
             </div>
             <div class="rule-modal__footer">
-              <button type="button" @click="closeModal" class="btn btn-ghost">{{ $t("tenant.fineTune.actions.cancel") }}</button>
-              <button type="submit" class="btn btn-primary">{{ $t("tenant.fineTune.actions.add") }}</button>
+              <button type="button" @click="closeModal" class="modal-btn modal-btn--ghost">{{ $t("tenant.fineTune.actions.cancel") }}</button>
+              <button type="submit" class="modal-btn modal-btn--primary">{{ $t("tenant.fineTune.actions.add") }}</button>
             </div>
           </form>
         </div>
       </div>
     </Transition>
+
   </div>
 </template>
 

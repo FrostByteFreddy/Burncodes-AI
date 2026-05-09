@@ -1,133 +1,261 @@
-@layer components {
-  /* Radio-style selection card — used for type, crawl mode, scope */
-  .radio-card {
-    @apply w-full flex items-start gap-4 p-4 rounded-2xl border-2
-           transition-all duration-150 text-left cursor-pointer
-           border-base-200 bg-base-100 hover:border-base-300;
-  }
+/* ── Radio-style selection card ─────────────────────────────────────── */
+.radio-card {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--surface-3);
+  background: var(--surface-2);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast), box-shadow var(--t-fast);
+}
 
-  .radio-card.is-selected {
-    @apply border-primary bg-primary/5 shadow-sm;
-  }
+.radio-card:hover {
+  border-color: var(--surface-muted);
+  background: var(--surface-2);
+}
 
-  .radio-card__dot {
-    @apply w-4 h-4 rounded-full border-2 flex-shrink-0 mt-1
-           flex items-center justify-center border-base-300 transition-all;
-  }
+.radio-card.is-selected {
+  border-color: var(--brand-indigo);
+  background: rgba(10, 31, 171, 0.08);
+  box-shadow: 0 0 0 1px rgba(10, 31, 171, 0.25);
+}
 
-  .radio-card.is-selected .radio-card__dot {
-    @apply border-primary bg-primary;
-  }
+.radio-card__dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--surface-muted);
+  flex-shrink: 0;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
 
-  .radio-card .radio-card__dot::after {
-    content: '';
-    @apply block w-1.5 h-1.5 rounded-full bg-white opacity-0 transition-opacity;
-  }
+.radio-card.is-selected .radio-card__dot {
+  border-color: var(--brand-indigo);
+  background: var(--brand-indigo);
+}
 
-  .radio-card.is-selected .radio-card__dot::after {
-    @apply opacity-100;
-  }
+.radio-card .radio-card__dot::after {
+  content: '';
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: white;
+  opacity: 0;
+  transition: opacity var(--t-fast);
+}
 
-  /* Field label above inputs */
-  .field-label {
-    @apply block text-xs font-bold uppercase tracking-wider text-base-content/50 mb-2;
-  }
+.radio-card.is-selected .radio-card__dot::after {
+  opacity: 1;
+}
 
-  /* Standard text input */
-  .field-input {
-    @apply w-full bg-base-200/60 border-2 border-transparent rounded-2xl
-           text-sm font-medium h-12 px-4
-           focus:border-primary focus:bg-base-100 focus:outline-none transition-all;
-  }
+/* ── Field label ─────────────────────────────────────────────────────── */
+.field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--surface-muted);
+  margin-bottom: 8px;
+}
 
-  .field-input.has-error {
-    @apply border-error bg-error/5 focus:border-error;
-  }
+/* ── Standard text input ─────────────────────────────────────────────── */
+.field-input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  color: var(--surface-text);
+  font-size: 14px;
+  font-weight: 500;
+  height: 44px;
+  padding: 0 14px;
+  outline: none;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
 
-  /* Exclusion path chip */
-  .path-chip {
-    @apply flex items-center gap-1.5 bg-base-200 text-base-content/70
-           text-xs font-mono px-3 py-2 rounded-xl border border-base-200;
-  }
+.field-input:focus {
+  border-color: var(--brand-indigo);
+  box-shadow: 0 0 0 3px rgba(10, 31, 171, 0.15);
+}
 
-  .path-chip__remove {
-    @apply text-base-content/30 hover:text-error transition-colors ml-1;
-  }
+.field-input.has-error {
+  border-color: var(--status-error);
+  background: rgba(255, 68, 68, 0.05);
+}
 
-  /* Step text */
-  .step-heading {
-    @apply text-sm font-semibold text-base-content mb-1;
-  }
+/* ── Path exclusion chip ─────────────────────────────────────────────── */
+.path-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  color: var(--surface-muted);
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+}
 
-  .step-subtext {
-    @apply text-xs text-base-content/50 leading-relaxed;
-  }
+.path-chip__remove {
+  background: none;
+  border: none;
+  color: var(--surface-muted);
+  cursor: pointer;
+  margin-left: 4px;
+  padding: 0;
+  transition: color var(--t-fast);
+}
 
-  /* Dashed "add a path" trigger button */
-  .add-row {
-    @apply flex items-center gap-2 text-sm text-base-content/50
-           hover:text-primary transition-colors cursor-pointer;
-  }
+.path-chip__remove:hover { color: var(--status-error); }
 
-  .add-row__icon {
-    @apply w-7 h-7 rounded-xl border-2 border-dashed border-base-300
-           hover:border-primary/50 flex items-center justify-center;
-  }
+/* ── Step text ───────────────────────────────────────────────────────── */
+.step-heading {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--surface-heading);
+  margin-bottom: 4px;
+}
 
-  /* Inline add-path input + action buttons */
-  .path-input-row {
-    @apply flex gap-2;
-  }
+.step-subtext {
+  font-size: 12px;
+  color: var(--surface-muted);
+  line-height: 1.6;
+}
 
-  /* Note: no @apply of DaisyUI component classes ('input') here — write properties directly */
-  .path-input-row input {
-    flex: 1;
-    padding-left: 1.5rem;
-    height: 2rem;
-    font-size: 0.875rem;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    background-color: theme('colors.base-200');
-    border: 2px solid theme('colors.primary' / 40%);
-    border-radius: 0.75rem;
-    outline: none;
-    transition: border-color 0.15s;
-  }
+/* ── Add-path trigger ────────────────────────────────────────────────── */
+.add-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--surface-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color var(--t-fast);
+}
 
-  .path-input-row input:focus {
-    border-color: theme('colors.primary');
-  }
+.add-row:hover { color: var(--brand-indigo); }
 
-  /* Wizard confirm summary row */
-  .confirm-row {
-    @apply flex justify-between text-sm;
-  }
+.add-row__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--surface-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--t-fast);
+}
 
-  .confirm-row__label {
-    @apply text-base-content/50 font-medium;
-  }
+.add-row:hover .add-row__icon { border-color: var(--brand-indigo); }
 
-  .confirm-row__value {
-    @apply font-bold text-base-content;
-  }
+/* ── Inline path input ───────────────────────────────────────────────── */
+.path-input-row {
+  display: flex;
+  gap: 8px;
+}
 
-  .confirm-box {
-    @apply bg-base-200/50 rounded-2xl p-5 space-y-3 border border-base-200;
-  }
+.path-input-row input {
+  flex: 1;
+  padding-left: 1.5rem;
+  height: 36px;
+  font-size: 13px;
+  font-family: ui-monospace, monospace;
+  background: var(--surface-2);
+  border: 1px solid var(--brand-indigo);
+  border-radius: var(--radius-md);
+  color: var(--surface-text);
+  outline: none;
+  transition: box-shadow var(--t-fast);
+}
 
-  /* Progress bar dots header */
-  .wizard-progress {
-    @apply flex items-center gap-2 mt-2;
-  }
+.path-input-row input:focus {
+  box-shadow: 0 0 0 3px rgba(10, 31, 171, 0.15);
+}
 
-  .wizard-progress__dot {
-    @apply h-1 rounded-full transition-all duration-300 bg-base-300;
-  }
+/* ── Confirm summary card ────────────────────────────────────────────── */
+.confirm-card {
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
 
-  .wizard-progress__dot.is-active {
-    @apply bg-primary w-8;
-  }
+.confirm-item {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--surface-3);
+  font-size: 13px;
+}
+.confirm-item:last-child { border-bottom: none; }
 
-  .wizard-progress__dot.is-done {
-    @apply bg-primary w-4;
-  }
+.confirm-item__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px; height: 28px;
+  border-radius: var(--radius-md);
+  background: var(--surface-3);
+  font-size: 11px;
+  color: var(--surface-muted);
+  flex-shrink: 0;
+}
+.confirm-item__label { color: var(--surface-muted); font-weight: 500; }
+.confirm-item__value {
+  color: var(--surface-heading);
+  font-weight: 700;
+  text-align: right;
+  word-break: break-all;
+}
+.confirm-item__value--mono { font-family: monospace; font-size: 12px; }
+
+/* Exclusion list — subtle inline items */
+.confirm-exclusions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+}
+
+.confirm-exclusion {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--surface-muted);
+  font-weight: 500;
+}
+
+/* ── Progress bar ────────────────────────────────────────────────────── */
+.wizard-progress { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+
+.wizard-progress__dot {
+  height: 4px;
+  width: 16px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  transition: all 0.3s ease;
+}
+
+.wizard-progress__dot.is-active {
+  background: var(--brand-indigo);
+  width: 32px;
+}
+
+.wizard-progress__dot.is-done {
+  background: var(--brand-indigo);
+  width: 16px;
 }

@@ -1,69 +1,190 @@
-@layer components {
-  .rule-card {
-    @apply p-6 rounded-xl flex flex-col transition-all duration-300 shadow-sm
-           bg-base-100 border border-base-200/50 hover:shadow-md hover:border-base-300/50;
-  }
+/* ── Shared modal button classes ─────────────────────────── */
+.modal-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 20px; font-size: 13px; font-weight: 600;
+  border: none; border-radius: var(--radius-md);
+  cursor: pointer; transition: opacity var(--t-fast), background var(--t-fast);
+}
+.modal-btn--ghost { background: var(--surface-2); color: var(--surface-muted); }
+.modal-btn--ghost:hover { background: var(--surface-3); color: var(--surface-text); }
+.modal-btn--primary { background: var(--gradient-brand); color: white; }
+.modal-btn--primary:hover { opacity: 0.9; }
 
-  .rule-card.is-editing {
-    @apply ring-2 ring-primary shadow-lg border-transparent relative z-10;
-  }
+.modal-close-btn {
+  width: 32px; height: 32px;
+  border-radius: var(--radius-md);
+  border: none; background: none;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--surface-muted); font-size: 14px;
+  cursor: pointer; transition: color var(--t-fast), background var(--t-fast);
+}
+.modal-close-btn:hover { color: var(--surface-text); background: var(--surface-2); }
 
-  .rule-card__trigger {
-    @apply w-full p-3 mt-1 rounded-xl text-lg font-bold focus:outline-none transition-shadow
-           bg-transparent border-transparent text-base-content px-0;
-  }
+/* ── Rule cards ───────────────────────────────────────────── */
 
-  .rule-card__trigger.is-editing {
-    @apply bg-base-200 border-none focus:ring-2 focus:ring-primary/50;
-  }
+.rule-card {
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  transition: all var(--t-normal);
+  background: var(--surface-1);
+  border: 1px solid var(--surface-3);
+}
 
-  .rule-card__instruction {
-    @apply w-full p-3 mt-1 rounded-xl focus:outline-none transition-shadow
-           bg-transparent border-transparent text-base-content/70 px-0 resize-none;
-  }
+.rule-card:hover {
+  border-color: rgba(10, 31, 171, 0.35);
+  box-shadow: var(--shadow-glow);
+}
 
-  .rule-card__instruction.is-editing {
-    @apply bg-base-200 border-none focus:ring-2 focus:ring-primary/50;
-  }
+.rule-card.is-editing {
+  border-color: var(--brand-indigo);
+  box-shadow: var(--shadow-glow-active);
+  position: relative;
+  z-index: 10;
+}
 
-  .rule-card__actions {
-    @apply flex justify-end items-center pt-3 mt-auto space-x-1;
-  }
+.rule-card__trigger {
+  width: 100%;
+  padding: 12px 0;
+  margin-top: 4px;
+  border-radius: var(--radius-lg);
+  font-size: 17px;
+  font-weight: 700;
+  outline: none;
+  transition: box-shadow var(--t-fast);
+  background: transparent;
+  border: transparent;
+  color: var(--surface-heading);
+  padding-left: 0;
+}
 
-  .rules-header {
-    @apply flex justify-between items-center mb-8 border-b border-base-200/50 pb-6;
-  }
+.rule-card__trigger.is-editing {
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  padding-left: 12px;
+  border-radius: var(--radius-md);
+}
+.rule-card__trigger.is-editing:focus {
+  border-color: var(--brand-indigo);
+  box-shadow: 0 0 0 3px rgba(10, 31, 171, 0.15);
+}
 
-  .rules-title {
-    @apply text-2xl font-bold text-base-content flex items-center;
-  }
+.rule-card__instruction {
+  width: 100%;
+  padding: 12px 0;
+  margin-top: 4px;
+  border-radius: var(--radius-lg);
+  outline: none;
+  transition: box-shadow var(--t-fast);
+  background: transparent;
+  border: transparent;
+  color: var(--surface-muted);
+  padding-left: 0;
+  resize: none;
+}
 
-  .rules-grid {
-    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
-  }
+.rule-card__instruction.is-editing {
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  padding-left: 12px;
+  border-radius: var(--radius-md);
+  color: var(--surface-text);
+}
+.rule-card__instruction.is-editing:focus {
+  border-color: var(--brand-indigo);
+  box-shadow: 0 0 0 3px rgba(10, 31, 171, 0.15);
+}
 
-  .rules-empty {
-    @apply text-base-content/50 text-center py-8;
-  }
+.rule-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-top: 12px;
+  margin-top: auto;
+  gap: 4px;
+}
 
-  /* Add rule modal */
-  .rule-modal-backdrop {
-    @apply fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm;
-  }
+.rules-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
 
-  .rule-modal {
-    @apply bg-base-100 rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8 m-4 border border-base-200/50;
+  textarea {
+    height: auto !important;
   }
+}
+@media (min-width: 768px) { .rules-grid { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1024px) { .rules-grid { grid-template-columns: 1fr 1fr 1fr; } }
 
-  .rule-modal__header {
-    @apply flex justify-between items-center mb-6 border-b border-base-200/50 pb-4;
-  }
+.rules-empty {
+  color: var(--surface-muted);
+  text-align: center;
+  padding: 32px 0;
+  font-size: 14px;
+}
 
-  .rule-modal__title {
-    @apply text-xl font-bold text-base-content;
-  }
+/* ── Add rule modal ────────────────────────────────────── */
+.rule-modal-backdrop {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+}
 
-  .rule-modal__footer {
-    @apply flex justify-end pt-4 space-x-3 border-t border-base-200/50 mt-6;
-  }
+.rule-modal {
+  background: var(--surface-1);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  width: 100%; max-width: 440px;
+  padding: 28px 32px;
+  margin: 16px;
+}
+
+.rule-modal__header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--surface-3);
+}
+
+.rule-modal__title {
+  font-size: 18px; font-weight: 700;
+  color: var(--surface-heading);
+}
+
+.rule-modal__footer {
+  display: flex; justify-content: flex-end; gap: 12px;
+  padding-top: 16px;
+  margin-top: 24px;
+  border-top: 1px solid var(--surface-3);
+}
+
+/* ── Shared modal form classes (used by rule-modal) ───── */
+.form-field {
+  display: block;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--surface-muted);
+  margin-bottom: 8px;
+}
+
+.form-input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  color: var(--surface-text);
+  font-size: 14px;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+  resize: vertical;
+}
+
+.form-input:focus {
+  border-color: var(--brand-indigo);
+  box-shadow: 0 0 0 3px rgba(10, 31, 171, 0.15);
 }

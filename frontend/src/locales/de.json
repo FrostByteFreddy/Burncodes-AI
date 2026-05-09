@@ -29,23 +29,30 @@
     }
   },
   "manageTenants": {
-    "title": "Mandanten verwalten",
-    "subtitle": "Erstellen und verwalten Sie Ihre Mandanten und deren Konfigurationen.",
-    "newTenant": "Neuer Mandant",
-    "noTenants": "Noch keine Mandanten",
-    "startMessage": "Erstellen Sie Ihren ersten Mandanten, um zu beginnen.",
-    "createTenant": "Mandant erstellen",
+    "title": "Meine Chatbots",
+    "subtitle": "Erstellen und verwalten Sie Ihre Chatbots und deren Konfigurationen.",
+    "newTenant": "Neuer Chatbot",
+    "newChatbot": "Neuer Chatbot",
+    "noTenants": "Noch keine Chatbots",
+    "noChatbots": "Noch keine Chatbots.",
+    "noChatbotsSubtitle": "Erstellen Sie Ihren ersten Chatbot, um Ihre KI-Wissensdatenbank aufzubauen.",
+    "startMessage": "Erstellen Sie Ihren ersten Chatbot, um zu beginnen.",
+    "createTenant": "Chatbot erstellen",
+    "createChatbot": "Chatbot erstellen",
+    "sources": "{n} Quelle | {n} Quellen",
+    "openChatbot": "Chatbot öffnen",
+    "configure": "Konfigurieren",
     "delete": "Löschen",
     "deleteModal": {
-      "title": "Mandant löschen",
-      "message": "Sind Sie sicher, dass Sie den Mandanten '{name}' löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+      "title": "Chatbot löschen",
+      "message": "Sind Sie sicher, dass Sie '{name}' löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
       "confirm": "Löschen"
     },
     "toast": {
-      "createSuccess": "Mandant erfolgreich erstellt!",
-      "createError": "Fehler beim Erstellen des Mandanten.",
-      "deleteSuccess": "Mandant erfolgreich gelöscht!",
-      "deleteError": "Fehler beim Löschen des Mandanten."
+      "createSuccess": "Chatbot erfolgreich erstellt!",
+      "createError": "Fehler beim Erstellen des Chatbots.",
+      "deleteSuccess": "Chatbot erfolgreich gelöscht!",
+      "deleteError": "Fehler beim Löschen des Chatbots."
     }
   },
   "analytics": {
@@ -138,7 +145,8 @@
     "settings": {
       "tabs": {
         "behavior": "Verhalten",
-        "appearance": "Erscheinungsbild"
+        "appearance": "Erscheinungsbild",
+        "rules": "Regeln"
       },
       "behavior": {
         "name": "Mandantenname",
@@ -205,6 +213,7 @@
       },
       "actions": {
         "saving": "Speichern...",
+        "save": "Speichern",
         "saveChanges": "Änderungen speichern",
         "savedSuccess": "Einstellungen erfolgreich gespeichert!",
         "saveFailed": "Fehler beim Speichern der Einstellungen.",
@@ -296,6 +305,9 @@
         "confirmMode": "Modus",
         "confirmSinglePage": "Nur diese Seite",
         "confirmFullSite": "Vollständiger Crawl",
+        "confirmScope": "Umfang",
+        "confirmExcluded": "Ausgeschlossen",
+        "chooseFile": "Datei auswählen",
         "back": "Zurück",
         "next": "Weiter",
         "startCrawl": "Crawl starten",
@@ -365,19 +377,54 @@
     }
   },
   "sidebar": {
-    "selectTenant": "Mandanten wählen",
-    "sources": "Quellen",
+    "selectTenant": "Chatbot auswählen",
+    "sources": "Wissen",
     "configuration": "Konfiguration",
     "fineTune": "Feinabstimmung",
     "analytics": "Analysen",
     "chatLogs": "Chat-Protokolle",
-    "chatbot": "Chatbot",
-    "noTenantSelected": "Wählen Sie einen Mandanten, um Verwaltungsoptionen zu sehen.",
+    "chatbot": "Chatbot öffnen",
+    "noTenantSelected": "Chatbot auswählen, um Optionen zu sehen.",
     "settings": "Einstellungen",
     "profile": "Profil",
-    "manageTenants": "Mandanten verwalten",
-    "subscription": "Abonnement",
-    "logout": "Abmelden"
+    "manageTenants": "Meine Chatbots",
+    "subscription": "Abrechnung",
+    "logout": "Abmelden",
+    "workspace": "Arbeitsbereich",
+    "account": "Konto"
+  },
+  "profile": {
+    "title": "Benutzerprofil",
+    "subtitle": "Verwalten Sie Ihre persönlichen Informationen und Sicherheitseinstellungen.",
+    "accountDetails": "Kontodetails",
+    "changePassword": "Passwort ändern",
+    "dangerZone": "Gefahrenzone",
+    "deleteAccount": "Konto löschen",
+    "deleteAccountDesc": "Das Löschen Ihres Kontos ist dauerhaft und kann nicht rückgängig gemacht werden.",
+    "tabs": {
+      "profile": "Profildetails",
+      "security": "Sicherheit"
+    },
+    "email": "E-Mail-Adresse",
+    "first_name": "Vorname",
+    "last_name": "Nachname",
+    "phone_number": "Telefonnummer",
+    "language": "Sprache",
+    "save_changes": "Änderungen speichern",
+    "saving": "Speichern",
+    "saved": "Gespeichert",
+    "success": "Profil erfolgreich aktualisiert!",
+    "error": "Fehler beim Aktualisieren des Profils.",
+    "security": {
+      "currentPassword": "Aktuelles Passwort",
+      "newPassword": "Neues Passwort",
+      "confirmPassword": "Neues Passwort bestätigen",
+      "updatePassword": "Passwort aktualisieren",
+      "updating": "Aktualisiere",
+      "passwordMismatch": "Die neuen Passwörter stimmen nicht überein.",
+      "success": "Passwort erfolgreich geändert!",
+      "error": "Fehler beim Ändern des Passworts."
+    }
   },
   "modals": {
     "createTenant": {
