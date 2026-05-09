@@ -145,7 +145,8 @@
     "settings": {
       "tabs": {
         "behavior": "Verhalten",
-        "appearance": "Erscheinungsbild"
+        "appearance": "Erscheinungsbild",
+        "rules": "Regeln"
       },
       "behavior": {
         "name": "Mandantenname",
@@ -212,6 +213,7 @@
       },
       "actions": {
         "saving": "Speichern...",
+        "save": "Speichern",
         "saveChanges": "Änderungen speichern",
         "savedSuccess": "Einstellungen erfolgreich gespeichert!",
         "saveFailed": "Fehler beim Speichern der Einstellungen.",

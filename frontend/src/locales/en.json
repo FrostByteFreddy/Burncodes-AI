@@ -145,7 +145,8 @@
     "settings": {
       "tabs": {
         "behavior": "Behavior",
-        "appearance": "Appearance"
+        "appearance": "Appearance",
+        "rules": "Rules"
       },
       "behavior": {
         "name": "Tenant Name",
@@ -211,6 +212,7 @@
         }
       },
       "actions": {
+        "save": "Save",
         "saving": "Saving...",
         "saveChanges": "Save Changes",
         "savedSuccess": "Settings saved successfully!",

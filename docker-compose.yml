@@ -1,82 +1,81 @@
-version: "3.8"
-
 services:
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    networks:
+      - app_network
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: ./backend/services/api
     command: python run.py
     ports:
       - "5000:5000"
     volumes:
-      - ./backend:/app        # live reload — code changes without rebuild
       - backend_data:/app/data
     env_file:
       - .env
     depends_on:
       - redis
+    networks:
+      - app_network
+    restart: on-failure
 
   celery_worker_fast:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: celery -A celery_worker.celery worker --loglevel=info --queues=fast --concurrency=8 --hostname=fast@%h
+      context: ./backend/services/worker_fast
     volumes:
-      - ./backend:/app        # live reload
       - backend_data:/app/data
     env_file:
       - .env
     depends_on:
       - redis
       - backend
+    networks:
+      - app_network
+    restart: on-failure
 
   celery_worker_heavy:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: celery -A celery_worker.celery worker --loglevel=info --queues=heavy --concurrency=2 --hostname=heavy@%h
+      context: ./backend/services/worker_heavy
     shm_size: '2gb'
     stop_grace_period: 60s
     volumes:
-      - ./backend:/app        # live reload
       - backend_data:/app/data
     env_file:
       - .env
     depends_on:
       - redis
       - backend
+    networks:
+      - app_network
+    restart: on-failure
 
   celery_worker_chat:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: celery -A celery_worker.celery worker --loglevel=info --queues=chat --concurrency=4 --hostname=chat@%h
+      context: ./backend/services/worker_chat
     volumes:
-      - ./backend:/app        # live reload
       - backend_data:/app/data
     env_file:
       - .env
     depends_on:
       - redis
       - backend
+    networks:
+      - app_network
+    restart: on-failure
 
   celery_beat:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: celery -A celery_worker.celery beat --loglevel=info
-    volumes:
-      - ./backend:/app        # live reload
-      - backend_data:/app/data
+      context: ./backend/services/beat
     env_file:
       - .env
     depends_on:
       - redis
+    networks:
+      - app_network
+    restart: on-failure
 
   frontend:
     image: node:20-alpine
@@ -88,6 +87,14 @@ services:
       - "5173:5173"
     env_file:
       - .env
+    depends_on:
+      - backend
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
 
 volumes:
   backend_data:

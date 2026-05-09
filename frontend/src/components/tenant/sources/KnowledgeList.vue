@@ -15,68 +15,62 @@
           </h3>
 
           <div class="kl-jobs">
-            <div v-for="job in crawlingJobs" :key="job.id" class="kl-job">
+            <div v-for="job in crawlingJobs" :key="job.id" class="kl-job-row">
 
-              <!-- Top row: badge + delete -->
-              <div class="kl-job__topbar">
-                <span class="kl-job__badge"
-                  :class="{
-                    'kl-job__badge--active': job.status === 'IN_PROGRESS',
-                    'kl-job__badge--done':   job.status === 'COMPLETED',
-                    'kl-job__badge--failed': job.status === 'FAILED',
-                  }">
-                  <span v-if="job.status === 'IN_PROGRESS'" class="live-dot"></span>
-                  {{ job.status === 'IN_PROGRESS' ? 'Live' : job.status === 'COMPLETED' ? 'Done' : 'Stopped' }}
-                </span>
+              <!-- Icon -->
+              <div class="kl-job-row__icon">
+                <font-awesome-icon :icon="['fas', 'globe']" />
+              </div>
+
+              <!-- Info -->
+              <div class="kl-job-row__info">
+                <p class="kl-job-row__url">{{ job.start_url }}</p>
+                <p class="kl-job-row__meta">
+                  Started {{ fmtDate(job.created_at) }}
+                  <template v-if="job.sources && job.sources.length > 0">
+                    &middot; {{ successCount(job) }} page{{ successCount(job) !== 1 ? 's' : '' }}
+                    &middot; {{ factsCount(job).toLocaleString() }} facts
+                    <span v-if="errorCount(job) > 0" class="kl-job-row__errors">
+                      &middot; {{ errorCount(job) }} error{{ errorCount(job) !== 1 ? 's' : '' }}
+                      <span class="kl-job-row__breakdown">({{ errorBreakdown(job) }})</span>
+                    </span>
+                  </template>
+                </p>
+
+                <!-- Inline progress — only renders when IN_PROGRESS -->
+                <CrawlingJobProgress
+                  :job="job"
+                  :tenantId="tenantsStore.currentTenant?.id"
+                  @job-completed="onJobCompleted(job.id)"
+                  @job-cancelled="onJobCancelled(job.id)"
+                />
+              </div>
+
+              <!-- Status badge + actions -->
+              <div class="kl-job-row__actions">
+                <!-- Stop — only visible while IN_PROGRESS -->
+                <button
+                  v-if="job.status === 'IN_PROGRESS'"
+                  @click="stopJob(job)"
+                  :disabled="stoppingJobId === job.id"
+                  class="kl-job-row__stop"
+                  title="Stop crawl"
+                >
+                  <font-awesome-icon v-if="stoppingJobId === job.id" :icon="['fas', 'spinner']" class="animate-spin" />
+                  <font-awesome-icon v-else :icon="['fas', 'stop']" />
+                  {{ stoppingJobId === job.id ? 'Stopping…' : 'Stop' }}
+                </button>
+
+                <!-- Delete -->
                 <button
                   @click="confirmDeleteJob(job)"
                   :disabled="deletingJobId === job.id"
-                  class="kl-job__delete-btn"
+                  class="kl-job-row__delete"
                   title="Delete job and all indexed data"
                 >
                   <font-awesome-icon v-if="deletingJobId === job.id" :icon="['fas', 'spinner']" class="animate-spin" />
                   <font-awesome-icon v-else :icon="['fas', 'trash-alt']" />
                 </button>
-              </div>
-
-              <!-- URL + date -->
-              <div class="kl-job__body">
-                <p class="kl-job__url">{{ job.start_url }}</p>
-                <p class="kl-job__meta">Started {{ fmtDate(job.created_at) }}</p>
-              </div>
-
-              <!-- Progress (live only) -->
-              <CrawlingJobProgress
-                :job="job"
-                :tenantId="tenantsStore.currentTenant?.id"
-                @job-completed="onJobCompleted(job.id)"
-                @job-cancelled="onJobCancelled(job.id)"
-              />
-
-              <!-- Stats footer — only when there are sources -->
-              <div v-if="job.sources && job.sources.length > 0" class="kl-job__footer">
-                <!-- Segmented bar -->
-                <div class="kl-page-bar">
-                  <div class="kl-page-bar__ok"  :style="{ width: barWidth(job, 'ok') }"></div>
-                  <div class="kl-page-bar__err" :style="{ width: barWidth(job, 'err') }"></div>
-                </div>
-                <!-- Stat row -->
-                <div class="kl-job__stats-row">
-                  <span class="kl-stat kl-stat--ok">
-                    <font-awesome-icon :icon="['fas', 'circle-check']" />
-                    {{ successCount(job) }} page{{ successCount(job) !== 1 ? 's' : '' }}
-                  </span>
-                  <span v-if="errorCount(job) > 0" class="kl-stat kl-stat--err">
-                    <font-awesome-icon :icon="['fas', 'circle-xmark']" />
-                    {{ errorCount(job) }} error{{ errorCount(job) !== 1 ? 's' : '' }}
-                    <span class="kl-stat__breakdown">({{ errorBreakdown(job) }})</span>
-                  </span>
-                  <span class="kl-stats-spacer"></span>
-                  <span class="kl-stat kl-stat--facts">
-                    <font-awesome-icon :icon="['fas', 'bolt']" />
-                    {{ factsCount(job).toLocaleString() }} Facts
-                  </span>
-                </div>
               </div>
 
             </div>
@@ -103,8 +97,8 @@
                 <span class="status-dot"
                   :class="source.status === 'COMPLETED' ? 'status-dot--success'
                         : source.status === 'ERROR'     ? 'status-dot--error'
-                        :                                 'status-dot--processing'">
-                </span>
+                        :                                 'status-dot--processing'"
+                ></span>
                 {{ fileExt(source).toUpperCase() }}
               </p>
             </div>
@@ -145,12 +139,27 @@ const tenantsStore = useTenantsStore();
 const { addToast }  = useToast();
 
 const deletingJobId      = ref(null);
+const stoppingJobId      = ref(null);
 const showDeleteJobModal = ref(false);
 const jobToDelete        = ref(null);
 
 const hasActiveJob    = computed(() => props.crawlingJobs.some(j => j.status === 'IN_PROGRESS'));
 const allTenantSources = computed(() => tenantsStore.currentTenant?.tenant_sources || []);
 const fileSources      = computed(() => allTenantSources.value.filter(s => s.source_type === 'FILE'));
+
+const stopJob = async (job) => {
+  if (stoppingJobId.value) return;
+  stoppingJobId.value = job.id;
+  try {
+    await apiClient.post(`/tenants/${tenantsStore.currentTenant.id}/crawling_jobs/${job.id}/cancel`);
+    addToast('Crawl stopped — already-indexed pages are kept.', 'success');
+    emit('job-cancelled', job.id);
+  } catch {
+    addToast('Failed to stop the crawl.', 'error');
+  } finally {
+    stoppingJobId.value = null;
+  }
+};
 
 // ── File helpers ──────────────────────────────────────
 const fileName = (s) => s.source_location.split('/').pop().split('?')[0] || s.source_location;
@@ -177,11 +186,6 @@ const errorBreakdown = (job) => {
     const c = s.status_code || '?'; codes[c] = (codes[c] || 0) + 1;
   });
   return Object.entries(codes).map(([c, n]) => `${n}× ${c}`).join(', ');
-};
-const barWidth = (job, type) => {
-  const total = (job?.sources || []).length;
-  if (!total) return '0%';
-  return `${Math.round(((type === 'ok' ? successCount(job) : errorCount(job)) / total) * 100)}%`;
 };
 
 const fmtDate = (iso) => new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });

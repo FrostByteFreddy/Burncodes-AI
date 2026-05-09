@@ -1,5 +1,45 @@
 <template>
   <div class="sources-page">
+
+    <!-- KPI strip -->
+    <div class="sources-kpis">
+      <div class="sources-kpi">
+        <span class="sources-kpi__value">{{ kpis.pages.toLocaleString() }}</span>
+        <span class="sources-kpi__label">
+          <font-awesome-icon :icon="['fas', 'globe']" />
+          Crawled Pages
+        </span>
+      </div>
+      <div class="sources-kpi">
+        <span class="sources-kpi__value">{{ kpis.documents.toLocaleString() }}</span>
+        <span class="sources-kpi__label">
+          <font-awesome-icon :icon="['fas', 'file']" />
+          Documents
+        </span>
+      </div>
+      <div class="sources-kpi">
+        <span class="sources-kpi__value">{{ kpis.facts.toLocaleString() }}</span>
+        <span class="sources-kpi__label">
+          <font-awesome-icon :icon="['fas', 'bolt']" />
+          Total Facts
+        </span>
+      </div>
+      <div class="sources-kpi sources-kpi--error" v-if="kpis.errors > 0">
+        <span class="sources-kpi__value">{{ kpis.errors.toLocaleString() }}</span>
+        <span class="sources-kpi__label">
+          <font-awesome-icon :icon="['fas', 'circle-xmark']" />
+          Errors
+        </span>
+      </div>
+      <div class="sources-kpi" v-else>
+        <span class="sources-kpi__value sources-kpi__value--success">{{ kpis.pages + kpis.documents > 0 ? '100%' : '—' }}</span>
+        <span class="sources-kpi__label">
+          <font-awesome-icon :icon="['fas', 'circle-check']" />
+          Success Rate
+        </span>
+      </div>
+    </div>
+
     <!-- Banner add button -->
     <button @click="wizardOpen = true" class="sources-add-banner">
       <div class="sources-add-banner__icon">
@@ -39,7 +79,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useTenantsStore } from '../../stores/tenants';
 import { useToast } from '../../composables/useToast';
 import { useI18n } from 'vue-i18n';
@@ -56,6 +96,17 @@ const wizardOpen            = ref(false);
 const crawlingJobs          = ref([]);
 const sourceToDelete        = ref(null);
 const showConfirmationModal = ref(false);
+
+const kpis = computed(() => {
+  const sources = tenantsStore.currentTenant?.tenant_sources || [];
+  const completed = sources.filter(s => s.status === 'COMPLETED');
+  return {
+    pages:     completed.filter(s => s.source_type === 'URL').length,
+    documents: completed.filter(s => s.source_type === 'FILE').length,
+    facts:     completed.reduce((sum, s) => sum + (s.chunk_count || 0), 0),
+    errors:    sources.filter(s => s.status === 'ERROR').length,
+  };
+});
 
 const fetchCrawlingJobs = async () => {
   if (!tenantsStore.currentTenant) return;

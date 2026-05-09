@@ -8,6 +8,8 @@ set -e
 SERVER="root@142.132.206.182"
 APP_DIR="/var/www/burncodes-ai"
 DOMAIN="ai.burn.codes"
+HEAVY_WORKERS=10   # number of worker_heavy containers (each runs 1 Chromium)
+
 
 echo "=========================================================="
 echo "🚀 Deploying Burncodes AI to $DOMAIN ($SERVER)"
@@ -62,14 +64,29 @@ ssh "$SERVER" << EOF
       echo "✅ SSL Certificates already exist for $DOMAIN."
   fi
 
-  # Build backend with layer cache (pip + playwright only reinstall when requirements.txt changes)
-  docker compose -f docker-compose.prod.yml build backend celery_worker_fast celery_worker_heavy celery_beat
+  # Build all services using layer cache where possible.
+  # worker_heavy uses --no-cache because Playwright binaries must be
+  # re-fetched if the base image or system deps have changed on the server.
+  docker compose -f docker-compose.prod.yml build \
+    backend celery_worker_fast celery_worker_chat celery_beat
+
+  docker compose -f docker-compose.prod.yml build --no-cache \
+    celery_worker_heavy
 
   # Always force-rebuild the frontend so Vue code changes are never skipped
-  # (no Playwright here, so this is fast: just npm ci + vite build)
   docker compose -f docker-compose.prod.yml build --no-cache frontend
 
-  docker compose -f docker-compose.prod.yml up -d --force-recreate
+  # Tear down stale containers cleanly before bringing up new ones.
+  # Keeps named volumes (app_data, uploads) intact.
+  docker compose -f docker-compose.prod.yml down --remove-orphans
+
+  # Flush the default Celery queue to discard any tasks from before
+  # the routing fix (they would have gone to the 'celery' queue which
+  # no worker consumes — flushing prevents phantom task accumulation).
+  docker run --rm --network host redis:7-alpine redis-cli -h 127.0.0.1 DEL celery || true
+
+  docker compose -f docker-compose.prod.yml up -d \
+    --scale celery_worker_heavy=$HEAVY_WORKERS
 
   echo "🔓 Fixing data directory permissions..."
   docker compose -f docker-compose.prod.yml exec -T backend \

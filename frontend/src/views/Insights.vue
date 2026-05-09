@@ -262,8 +262,6 @@ watch(() => tenantsStore.currentTenant, (tenant) => {
 </script>
 
 <style scoped>
-.page { max-width: 860px; }
-
 .page-header {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 24px;

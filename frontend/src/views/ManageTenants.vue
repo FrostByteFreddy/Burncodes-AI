@@ -119,8 +119,6 @@ const deleteTenant = async () => {
 </script>
 
 <style scoped>
-.page { max-width: 720px; }
-
 .page-header {
   display: flex;
   align-items: center;
@@ -133,7 +131,7 @@ const deleteTenant = async () => {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--surface-muted);
+  color: var(--brand-cyan);
 }
 
 .btn-add {

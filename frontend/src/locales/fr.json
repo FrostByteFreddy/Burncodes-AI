@@ -145,7 +145,8 @@
     "settings": {
       "tabs": {
         "behavior": "Comportement",
-        "appearance": "Apparence"
+        "appearance": "Apparence",
+        "rules": "Règles"
       },
       "behavior": {
         "name": "Nom du locataire",
@@ -212,6 +213,7 @@
       },
       "actions": {
         "saving": "Enregistrement...",
+        "save": "Enregistrer",
         "saveChanges": "Enregistrer les modifications",
         "savedSuccess": "Paramètres enregistrés avec succès !",
         "saveFailed": "Échec de l'enregistrement des paramètres.",

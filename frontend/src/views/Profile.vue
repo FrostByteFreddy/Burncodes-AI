@@ -177,13 +177,11 @@ const handleChangePassword = async () => {
 </script>
 
 <style scoped>
-.page { max-width: 560px; }
-
 .page-header { margin-bottom: 24px; }
 .page-label {
   font-size: 11px; font-weight: 700;
   letter-spacing: 0.08em;
-  color: var(--surface-muted);
+  color: var(--brand-cyan);
 }
 
 .avatar-row {

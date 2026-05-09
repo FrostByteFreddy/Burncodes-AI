@@ -36,7 +36,7 @@
                     <font-awesome-icon :icon="['fas', 'globe']" />
                   </div>
                   <div>
-                    <p class="font-bold text-base-content text-sm">{{ $t('tenant.sources.wizard.typeWebsite') }}</p>
+                    <p class="font-bold text-white text-sm">{{ $t('tenant.sources.wizard.typeWebsite') }}</p>
                     <p class="step-subtext mt-1">{{ $t('tenant.sources.wizard.typeWebsiteDesc') }}</p>
                   </div>
                 </button>
@@ -48,7 +48,7 @@
                     <font-awesome-icon :icon="['fas', 'file-lines']" />
                   </div>
                   <div>
-                    <p class="font-bold text-base-content text-sm">{{ $t('tenant.sources.wizard.typeDocument') }}</p>
+                    <p class="font-bold text-white text-sm">{{ $t('tenant.sources.wizard.typeDocument') }}</p>
                     <p class="step-subtext mt-1">{{ $t('tenant.sources.wizard.typeDocumentDesc') }}</p>
                   </div>
                 </button>
@@ -69,6 +69,28 @@
               <!-- Website -->
               <div v-if="type === 'website'" class="space-y-6">
                 <div>
+                  <label class="field-label">{{ $t('tenant.sources.wizard.crawlModeLabel') }}</label>
+                  <div class="space-y-2">
+                    <button v-for="mode in crawlModes" :key="mode.value" type="button"
+                      @click="crawlMode = mode.value"
+                      class="radio-card"
+                      :class="{ 'is-selected': crawlMode === mode.value }">
+                      <div class="text-xl leading-none mt-0.5 w-6 flex-shrink-0">{{ mode.emoji }}</div>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="text-sm font-bold text-white">{{ mode.label }}</span>
+                          <span v-if="mode.badge"
+                            class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                            :class="mode.badgeClass">{{ mode.badge }}</span>
+                        </div>
+                        <p class="step-subtext mt-0.5">{{ mode.desc }}</p>
+                      </div>
+                      <div class="radio-card__dot"></div>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
                   <label class="field-label">{{ $t('tenant.sources.wizard.urlLabel') }}</label>
                   <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/30">
@@ -80,29 +102,6 @@
                   <p v-if="!isUrlValid && url" class="text-error text-xs px-1 mt-1.5 flex items-center gap-1">
                     <font-awesome-icon :icon="['fas', 'circle-exclamation']" /> {{ $t('tenant.sources.invalidUrl') }}
                   </p>
-                </div>
-
-                <div>
-                  <label class="field-label">{{ $t('tenant.sources.wizard.crawlModeLabel') }}</label>
-                  <div class="space-y-2">
-                    <button v-for="mode in crawlModes" :key="mode.value" type="button"
-                      @click="crawlMode = mode.value"
-                      class="radio-card"
-                      :class="{ 'is-selected': crawlMode === mode.value }">
-                      <div class="text-xl leading-none mt-0.5 w-6 flex-shrink-0">{{ mode.emoji }}</div>
-                      <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2">
-                          <span class="text-sm font-bold"
-                            :class="crawlMode === mode.value ? 'text-primary' : 'text-base-content'">{{ mode.label }}</span>
-                          <span v-if="mode.badge"
-                            class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                            :class="mode.badgeClass">{{ mode.badge }}</span>
-                        </div>
-                        <p class="step-subtext mt-0.5">{{ mode.desc }}</p>
-                      </div>
-                      <div class="radio-card__dot"></div>
-                    </button>
-                  </div>
                 </div>
               </div>
 
@@ -151,10 +150,10 @@
             <!-- Step 3: Exclusions -->
             <div v-if="step === 3 && type === 'website' && !singlePageOnly" class="space-y-5">
               <div>
-                <p class="step-heading">Exclude paths</p>
+                <p class="step-heading">Exclude paths &amp; subdomains</p>
                 <p class="step-subtext">
-                  These paths will be skipped entirely during crawling.
-                  Useful for login pages, dashboards, or sections you don't want indexed.
+                  These paths or subdomains will be skipped entirely during crawling.
+                  Useful for login pages, dashboards, staging subdomains, or any section you don't want indexed.
                 </p>
               </div>
 
@@ -169,11 +168,11 @@
 
               <div v-if="addingExclusion" class="path-input-row">
                 <div class="relative flex-1">
-                  <div class="absolute inset-y-0 left-3 flex items-center text-base-content/30 text-xs pointer-events-none">/</div>
+                  <div v-if="!exclusionDraft.startsWith('http')" class="absolute inset-y-0 left-3 flex items-center text-base-content/30 text-xs pointer-events-none">/</div>
                   <input ref="exclusionInput" v-model="exclusionDraft"
                     @keydown.enter.prevent="confirmExclusion"
                     @keydown.escape="addingExclusion = false; exclusionDraft = ''"
-                    placeholder="login" />
+                    placeholder="login  or  shop.example.com" />
                 </div>
                 <button type="button" @click="confirmExclusion" class="btn btn-sm btn-primary rounded-xl px-4">Add</button>
                 <button type="button" @click="addingExclusion = false; exclusionDraft = ''" class="btn btn-sm btn-ghost rounded-xl">Cancel</button>
@@ -181,7 +180,7 @@
 
               <button v-if="!addingExclusion" type="button" @click="addExclusion" class="add-row">
                 <span class="add-row__icon"><font-awesome-icon :icon="['fas', 'plus']" class="text-xs" /></span>
-                Add a path
+                Add a path or subdomain
               </button>
 
               <p v-if="excludedPaths.length === 0 && !addingExclusion" class="step-subtext italic">
@@ -190,37 +189,59 @@
             </div>
 
             <!-- Confirm -->
-            <div v-if="step === lastStep">
+            <div v-if="step === lastStep" class="confirm-summary">
               <p class="step-subtext mb-6">{{ $t('tenant.sources.wizard.confirmTitle') }}</p>
-              <div class="confirm-box">
-                <div class="confirm-row">
-                  <span class="confirm-row__label">{{ $t('tenant.sources.wizard.confirmType') }}</span>
-                  <span class="confirm-row__value">{{ type === 'website' ? $t('tenant.sources.wizard.typeWebsite') : $t('tenant.sources.wizard.typeDocument') }}</span>
+
+              <div class="confirm-card">
+
+                <!-- Type -->
+                <div class="confirm-item">
+                  <span class="confirm-item__icon"><font-awesome-icon :icon="type === 'website' ? ['fas', 'globe'] : ['fas', 'file']" /></span>
+                  <span class="confirm-item__label">{{ $t('tenant.sources.wizard.confirmType') }}</span>
+                  <span class="confirm-item__value">{{ type === 'website' ? $t('tenant.sources.wizard.typeWebsite') : $t('tenant.sources.wizard.typeDocument') }}</span>
                 </div>
+
                 <template v-if="type === 'website'">
-                  <div class="confirm-row">
-                    <span class="confirm-row__label">{{ $t('tenant.sources.wizard.confirmUrl') }}</span>
-                    <span class="confirm-row__value" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">{{ finalUrl }}</span>
+                  <!-- URL -->
+                  <div class="confirm-item">
+                    <span class="confirm-item__icon"><font-awesome-icon :icon="['fas', 'link']" /></span>
+                    <span class="confirm-item__label">{{ $t('tenant.sources.wizard.confirmUrl') }}</span>
+                    <span class="confirm-item__value confirm-item__value--mono">{{ finalUrl }}</span>
                   </div>
-                  <div class="confirm-row">
-                    <span class="confirm-row__label">{{ $t('tenant.sources.wizard.confirmMode') }}</span>
-                    <span class="confirm-row__value">{{ crawlMode }}</span>
+
+                  <!-- Mode -->
+                  <div class="confirm-item">
+                    <span class="confirm-item__icon"><font-awesome-icon :icon="['fas', 'bolt']" /></span>
+                    <span class="confirm-item__label">{{ $t('tenant.sources.wizard.confirmMode') }}</span>
+                    <span class="confirm-item__value">{{ crawlMode }}</span>
                   </div>
-                  <div class="confirm-row">
-                    <span class="confirm-row__label">{{ $t('tenant.sources.wizard.confirmScope') }}</span>
-                    <span class="confirm-row__value">{{ singlePageOnly ? $t('tenant.sources.wizard.confirmSinglePage') : $t('tenant.sources.wizard.confirmFullSite') }}</span>
+
+                  <!-- Scope -->
+                  <div class="confirm-item">
+                    <span class="confirm-item__icon"><font-awesome-icon :icon="['fas', 'sitemap']" /></span>
+                    <span class="confirm-item__label">{{ $t('tenant.sources.wizard.confirmScope') }}</span>
+                    <span class="confirm-item__value">{{ singlePageOnly ? $t('tenant.sources.wizard.confirmSinglePage') : $t('tenant.sources.wizard.confirmFullSite') }}</span>
                   </div>
-                  <div v-if="!singlePageOnly && excludedPaths.length > 0" class="confirm-row">
-                    <span class="confirm-row__label">{{ $t('tenant.sources.wizard.confirmExcluded') }}</span>
-                    <span class="confirm-row__value" style="font-family:monospace;">{{ excludedPaths.join(', ') }}</span>
+
+                  <!-- Exclusions -->
+                  <div v-if="!singlePageOnly && excludedPaths.length > 0" class="confirm-item">
+                    <span class="confirm-item__icon"><font-awesome-icon :icon="['fas', 'ban']" /></span>
+                    <span class="confirm-item__label">{{ $t('tenant.sources.wizard.confirmExcluded') }}</span>
+                    <div class="confirm-exclusions">
+                      <span v-for="(path, i) in excludedPaths" :key="i" class="confirm-exclusion">{{ path }}</span>
+                    </div>
                   </div>
                 </template>
+
                 <template v-else>
-                  <div class="confirm-row">
-                    <span class="confirm-row__label">{{ $t('tenant.sources.wizard.confirmFile') }}</span>
-                    <span class="confirm-row__value" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">{{ selectedFile?.name }}</span>
+                  <!-- File -->
+                  <div class="confirm-item">
+                    <span class="confirm-item__icon"><font-awesome-icon :icon="['fas', 'file-arrow-up']" /></span>
+                    <span class="confirm-item__label">{{ $t('tenant.sources.wizard.confirmFile') }}</span>
+                    <span class="confirm-item__value confirm-item__value--mono">{{ selectedFile?.name }}</span>
                   </div>
                 </template>
+
               </div>
             </div>
           </div>
@@ -345,12 +366,12 @@ const submit = async () => {
       addToast(t('tenant.sources.actions.uploadSuccess'), 'success');
       emit('upload-done');
     }
-    reset();
-    emit('close');
   } catch (err) {
-    addToast(`${t('tenant.sources.actions.crawlFailed')} ${err.response?.data?.error || ''}`, 'error');
+    addToast(`${t('tenant.sources.actions.crawlFailed')} ${err.response?.data?.error || err.message || ''}`, 'error');
   } finally {
     submitting.value = false;
+    reset();
+    emit('close');
   }
 };
 </script>

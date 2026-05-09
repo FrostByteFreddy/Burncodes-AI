@@ -214,8 +214,6 @@ const handleManageBilling = async () => {
 </script>
 
 <style scoped>
-.page { max-width: 860px; }
-
 .page-header { margin-bottom: 28px; }
 .page-label {
   font-size: 11px; font-weight: 700;

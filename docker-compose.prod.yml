@@ -7,8 +7,7 @@ services:
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: ./backend/services/api
     command: gunicorn --workers 8 --bind 0.0.0.0:5000 --timeout 120 "app:create_app()"
     restart: always
     volumes:
@@ -21,9 +20,7 @@ services:
 
   celery_worker_fast:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: celery -A celery_worker.celery worker --loglevel=info --queues=fast --concurrency=10 --hostname=fast@%h
+      context: ./backend/services/worker_fast
     restart: always
     volumes:
       - app_data:/app/data
@@ -36,9 +33,7 @@ services:
 
   celery_worker_heavy:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: celery -A celery_worker.celery worker --loglevel=info --queues=heavy --concurrency=2 --hostname=heavy@%h
+      context: ./backend/services/worker_heavy
     restart: always
     shm_size: '2gb'
     stop_grace_period: 60s
@@ -53,9 +48,7 @@ services:
 
   celery_worker_chat:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: celery -A celery_worker.celery worker --loglevel=info --queues=chat --concurrency=6 --hostname=chat@%h
+      context: ./backend/services/worker_chat
     restart: always
     volumes:
       - app_data:/app/data
@@ -68,9 +61,7 @@ services:
 
   celery_beat:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: celery -A celery_worker.celery beat --loglevel=info
+      context: ./backend/services/beat
     restart: always
     volumes:
       - app_data:/app/data
