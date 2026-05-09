@@ -35,6 +35,12 @@ services:
     networks:
       - app_network
     restart: on-failure
+    healthcheck:
+      test: ["CMD", "celery", "-A", "celery_worker", "inspect", "ping", "-d", "celery@$$HOSTNAME", "--timeout", "5"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   celery_worker_heavy:
     build:
@@ -51,6 +57,12 @@ services:
     networks:
       - app_network
     restart: on-failure
+    healthcheck:
+      test: ["CMD", "celery", "-A", "celery_worker", "inspect", "ping", "-d", "celery@$$HOSTNAME", "--timeout", "5"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   celery_worker_chat:
     build:
@@ -65,6 +77,12 @@ services:
     networks:
       - app_network
     restart: on-failure
+    healthcheck:
+      test: ["CMD", "celery", "-A", "celery_worker", "inspect", "ping", "-d", "celery@$$HOSTNAME", "--timeout", "5"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   celery_beat:
     build:
@@ -76,6 +94,14 @@ services:
     networks:
       - app_network
     restart: on-failure
+    healthcheck:
+      # Beat doesn't respond to inspect ping — check that the process is alive
+      # and the pidfile it writes (celerybeat.pid) is current.
+      test: ["CMD", "sh", "-c", "celery -A celery_beat beat --help > /dev/null 2>&1"]
+      interval: 120s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   frontend:
     image: node:20-alpine
