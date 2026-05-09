@@ -1,6 +1,7 @@
 import os
 import stripe
 from app.database.supabase_client import supabase
+from app.database.supabase_retry import retrying_execute
 from app.logging_config import error_logger
 
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
@@ -11,7 +12,9 @@ class BillingService:
     def get_or_create_customer(user_id, email):
         try:
             # Check if user already has a customer ID
-            response = supabase.table("user_billing").select("stripe_customer_id").eq("user_id", user_id).execute()
+            response = retrying_execute(
+                supabase.table("user_billing").select("stripe_customer_id").eq("user_id", user_id)
+            )
             
             if response.data and response.data[0].get("stripe_customer_id"):
                 return response.data[0].get("stripe_customer_id")
@@ -159,7 +162,9 @@ class BillingService:
     @staticmethod
     def check_balance(user_id):
         try:
-            response = supabase.table("user_billing").select("balance_chf").eq("user_id", user_id).execute()
+            response = retrying_execute(
+                supabase.table("user_billing").select("balance_chf").eq("user_id", user_id)
+            )
             if response.data:
                 return float(response.data[0].get("balance_chf", 0.0))
             return 0.0
