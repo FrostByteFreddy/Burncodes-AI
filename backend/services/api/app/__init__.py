@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from celery import Celery
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
 from app.logging_config import error_logger
 from uuid import UUID
 
@@ -34,6 +35,12 @@ class CustomJSONEncoder(json.JSONEncoder):
 def create_app():
     app = Flask(__name__)
     app.json_encoder = CustomJSONEncoder
+
+    # Trust exactly one proxy hop (our Nginx container).
+    # This makes request.remote_addr return the real client IP from
+    # X-Forwarded-For instead of always returning the Nginx container IP,
+    # which would cause all users to share a single rate-limit bucket.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     cors_origins = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://localhost:3000').split(',')
     cors_origins = [o.strip() for o in cors_origins if o.strip()]
