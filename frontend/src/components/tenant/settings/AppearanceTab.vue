@@ -45,7 +45,7 @@
               <div class="file-input-row">
                 <input @change="handleFileUpload($event, 'logo')" type="file" id="logo" accept="image/*,.svg" class="file-input" />
                 <button v-if="local.widget_config.logo" @click.prevent="removeFile('logo')"
-                  class="btn btn-square btn-ghost text-error hover:bg-error/10">
+                  class="starter-delete-btn">
                   <font-awesome-icon :icon="['fas', 'trash']" />
                 </button>
               </div>
@@ -116,10 +116,11 @@
               </div>
 
               <!-- Delete -->
-              <button type="button" @click.prevent="removeStarter(starter.id)"
-                class="btn btn-square btn-ghost text-error hover:bg-error/10">
-                <font-awesome-icon :icon="['fas', 'trash']" />
-              </button>
+              <div class="starter-row-actions">
+                <button type="button" @click.prevent="removeStarter(starter.id)" class="starter-delete-btn">
+                  <font-awesome-icon :icon="['fas', 'trash']" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -157,7 +158,7 @@
               <div class="file-input-row">
                 <input @change="handleFileUpload($event, 'launcher_icon')" type="file" id="launcher_icon" accept="image/*,.svg" class="file-input" />
                 <button v-if="local.widget_config.launcher_icon" @click.prevent="removeFile('launcher_icon')"
-                  class="btn btn-square btn-ghost text-error hover:bg-error/10">
+                  class="starter-delete-btn">
                   <font-awesome-icon :icon="['fas', 'trash']" />
                 </button>
               </div>
