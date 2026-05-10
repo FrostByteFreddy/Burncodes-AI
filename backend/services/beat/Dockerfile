@@ -7,10 +7,10 @@ RUN addgroup --system appgroup && \
     adduser --system --ingroup appgroup appuser && \
     mkdir -p /home/appuser && chown -R appuser:appgroup /home/appuser
 
-COPY requirements.txt .
+COPY services/beat/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY celery_beat.py .
+COPY services/beat/celery_beat.py .
 RUN chown -R appuser:appgroup $APP_HOME
 
 USER appuser

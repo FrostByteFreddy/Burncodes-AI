@@ -8,7 +8,8 @@ services:
 
   backend:
     build:
-      context: ./backend/services/api
+      context: ./backend
+      dockerfile: services/api/Dockerfile
     command: python run.py
     ports:
       - "5000:5000"
@@ -24,7 +25,8 @@ services:
 
   celery_worker_fast:
     build:
-      context: ./backend/services/worker_fast
+      context: ./backend
+      dockerfile: services/worker_fast/Dockerfile
     volumes:
       - backend_data:/app/data
     env_file:
@@ -44,7 +46,8 @@ services:
 
   celery_worker_heavy:
     build:
-      context: ./backend/services/worker_heavy
+      context: ./backend
+      dockerfile: services/worker_heavy/Dockerfile
     shm_size: '2gb'
     stop_grace_period: 60s
     volumes:
@@ -66,7 +69,8 @@ services:
 
   celery_worker_chat:
     build:
-      context: ./backend/services/worker_chat
+      context: ./backend
+      dockerfile: services/worker_chat/Dockerfile
     volumes:
       - backend_data:/app/data
     env_file:
@@ -86,7 +90,8 @@ services:
 
   celery_beat:
     build:
-      context: ./backend/services/beat
+      context: ./backend
+      dockerfile: services/beat/Dockerfile
     env_file:
       - .env
     depends_on:
