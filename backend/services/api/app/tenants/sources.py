@@ -308,19 +308,23 @@ def delete_crawling_job(current_user, tenant_id, job_id):
             deleted_source_ids = [s['id'] for s in (sources_resp.data or [])]
 
             if deleted_source_ids:
+                # Fetch gemini_document_name for each source before deletion
+                sources_full = supabase.table('tenant_sources') \
+                    .select("id, gemini_document_name") \
+                    .in_('id', deleted_source_ids) \
+                    .execute()
                 supabase.table('tenant_sources').delete().in_('id', deleted_source_ids).execute()
 
-                # 4. Purge from ChromaDB — soft-fail so the job row still gets cleaned up
+                # 4. Delete each document from the Gemini File Search Store — soft-fail
                 try:
-                    from app.data_processing.processor import get_vectorstore
-                    from langchain_google_genai import GoogleGenerativeAIEmbeddings
-                    embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
-                    db = get_vectorstore(tenant_id, embeddings)
-                    for sid in deleted_source_ids:
-                        db._collection.delete(where={"source_id": int(sid)})
-                    error_logger.info("delete_job: purged ChromaDB vectors for %d source(s) in job %s", len(deleted_source_ids), job_id)
+                    from app.gemini_store.service import GeminiStoreService
+                    for src in (sources_full.data or []):
+                        doc_name = src.get('gemini_document_name')
+                        if doc_name:
+                            GeminiStoreService.delete_document(doc_name)
+                    error_logger.info("delete_job: purged %d Gemini document(s) for job %s", len(deleted_source_ids), job_id)
                 except Exception as vec_err:
-                    error_logger.warning("delete_job: vector store cleanup partial failure for job %s: %s", job_id, vec_err)
+                    error_logger.warning("delete_job: Gemini store cleanup partial failure for job %s: %s", job_id, vec_err)
 
         # 5. Delete crawling_tasks + job row
         supabase.table('crawling_tasks').delete().eq('job_id', job_id).execute()
