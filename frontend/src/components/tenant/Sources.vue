@@ -1,86 +1,109 @@
 <template>
   <div class="sources-page">
 
-    <!-- KPI strip -->
-    <div class="sources-kpis">
-      <div class="sources-kpi">
-        <span class="sources-kpi__value">{{ kpis.pages.toLocaleString() }}</span>
-        <span class="sources-kpi__label">
-          <font-awesome-icon :icon="['fas', 'globe']" />
-          Crawled Pages
-        </span>
-      </div>
-      <div class="sources-kpi">
-        <span class="sources-kpi__value">{{ kpis.files.toLocaleString() }}</span>
-        <span class="sources-kpi__label">
-          <font-awesome-icon :icon="['fas', 'file']" />
-          Indexed Documents
-        </span>
-      </div>
-      <div class="sources-kpi sources-kpi--error" v-if="kpis.errors > 0">
-        <span class="sources-kpi__value">{{ kpis.errors.toLocaleString() }}</span>
-        <span class="sources-kpi__label">
-          <font-awesome-icon :icon="['fas', 'circle-xmark']" />
-          Errors
-        </span>
-      </div>
-      <div class="sources-kpi" v-else>
-        <span class="sources-kpi__value sources-kpi__value--success">{{ kpis.pages + kpis.files > 0 ? '100%' : '—' }}</span>
-        <span class="sources-kpi__label">
-          <font-awesome-icon :icon="['fas', 'circle-check']" />
-          Success Rate
-        </span>
-      </div>
-    </div>
+    <!-- ═══════════════════════════════════════════════════
+         PANEL 1 — Crawls & Documents
+    ════════════════════════════════════════════════════ -->
+    <div class="knowledge-panel">
 
-    <!-- Banner add button -->
-    <button @click="wizardOpen = true" class="sources-add-banner">
-      <div class="sources-add-banner__icon">
-        <font-awesome-icon :icon="['fas', 'plus']" />
-      </div>
-      <div class="sources-add-banner__text">
-        <span class="sources-add-banner__title">{{ $t('tenant.sources.wizard.addKnowledge') }}</span>
-        <span class="sources-add-banner__sub">Crawl a website · Upload a PDF or document</span>
-      </div>
-    </button>
+      <!-- Panel header -->
+      <div class="knowledge-panel__header">
+        <div class="knowledge-panel__header-left">
+          <div class="knowledge-panel__icon">
+            <font-awesome-icon :icon="['fas', 'database']" />
+          </div>
+          <div>
+            <h2 class="knowledge-panel__title">Crawls &amp; Documents</h2>
+            <p class="knowledge-panel__sub">Indexed pages, uploaded PDFs and files</p>
+          </div>
+        </div>
 
-    <!-- Danger zone -->
-    <div class="sources-danger" v-if="kpis.pages + kpis.files > 0">
-      <button @click="showDeleteAllModal = true" class="sources-danger__btn" :disabled="deletingAll">
-        <font-awesome-icon :icon="['fas', deletingAll ? 'spinner' : 'trash-can']" :spin="deletingAll" />
-        {{ deletingAll ? 'Clearing…' : 'Delete All Knowledge' }}
+        <!-- KPIs inline in header -->
+        <div class="knowledge-panel__kpis">
+          <div class="sources-kpi">
+            <span class="sources-kpi__value">{{ kpis.pages.toLocaleString() }}</span>
+            <span class="sources-kpi__label">
+              <font-awesome-icon :icon="['fas', 'globe']" />
+              Pages
+            </span>
+          </div>
+          <div class="sources-kpi">
+            <span class="sources-kpi__value">{{ kpis.files.toLocaleString() }}</span>
+            <span class="sources-kpi__label">
+              <font-awesome-icon :icon="['fas', 'file']" />
+              Docs
+            </span>
+          </div>
+          <div class="sources-kpi sources-kpi--error" v-if="kpis.errors > 0">
+            <span class="sources-kpi__value">{{ kpis.errors.toLocaleString() }}</span>
+            <span class="sources-kpi__label">
+              <font-awesome-icon :icon="['fas', 'circle-xmark']" />
+              Errors
+            </span>
+          </div>
+          <div class="sources-kpi" v-else>
+            <span class="sources-kpi__value sources-kpi__value--success">{{ kpis.pages + kpis.files > 0 ? '100%' : '—' }}</span>
+            <span class="sources-kpi__label">
+              <font-awesome-icon :icon="['fas', 'circle-check']" />
+              Rate
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="knowledge-panel__divider"></div>
+
+      <!-- Add banner -->
+      <button @click="wizardOpen = true" class="sources-add-banner">
+        <div class="sources-add-banner__icon">
+          <font-awesome-icon :icon="['fas', 'plus']" />
+        </div>
+        <div class="sources-add-banner__text">
+          <span class="sources-add-banner__title">{{ $t('tenant.sources.wizard.addKnowledge') }}</span>
+          <span class="sources-add-banner__sub">Crawl a website · Upload a PDF or document</span>
+        </div>
       </button>
-    </div>
 
-    <!-- Section header: Crawls & Files -->
-    <div class="knowledge-section-header">
-      <font-awesome-icon :icon="['fas', 'database']" class="knowledge-section-header__icon" />
-      <div>
-        <h2 class="knowledge-section-header__title">Crawls &amp; Documents</h2>
-        <p class="knowledge-section-header__sub">Indexed pages, uploaded PDFs and files</p>
+      <!-- Danger zone -->
+      <div class="sources-danger" v-if="kpis.pages + kpis.files > 0">
+        <button @click="showDeleteAllModal = true" class="sources-danger__btn" :disabled="deletingAll">
+          <font-awesome-icon :icon="['fas', deletingAll ? 'spinner' : 'trash-can']" :spin="deletingAll" />
+          {{ deletingAll ? 'Clearing…' : 'Delete All Knowledge' }}
+        </button>
       </div>
+
+      <!-- List -->
+      <KnowledgeList
+        :crawling-jobs="crawlingJobs"
+        @delete-source="confirmDelete"
+        @job-completed="handleJobCompletion"
+        @job-cancelled="handleJobCancelled"
+        @job-deleted="handleJobDeleted"
+      />
     </div>
 
-    <!-- Main list -->
-    <KnowledgeList
-      :crawling-jobs="crawlingJobs"
-      @delete-source="confirmDelete"
-      @job-completed="handleJobCompletion"
-      @job-cancelled="handleJobCancelled"
-      @job-deleted="handleJobDeleted"
-    />
+    <!-- ═══════════════════════════════════════════════════
+         PANEL 2 — Custom Knowledge (Fine-tuning Rules)
+    ════════════════════════════════════════════════════ -->
+    <div class="knowledge-panel">
 
-    <!-- Section header: Custom Knowledge -->
-    <div class="knowledge-section-header knowledge-section-header--second">
-      <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" class="knowledge-section-header__icon" />
-      <div>
-        <h2 class="knowledge-section-header__title">Custom Knowledge</h2>
-        <p class="knowledge-section-header__sub">Fine-tuning rules that guide how the bot responds to specific triggers</p>
+      <!-- Panel header -->
+      <div class="knowledge-panel__header knowledge-panel__header--solo">
+        <div class="knowledge-panel__icon knowledge-panel__icon--accent">
+          <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" />
+        </div>
+        <div>
+          <h2 class="knowledge-panel__title">Custom Knowledge</h2>
+          <p class="knowledge-panel__sub">Fine-tuning rules that guide how the bot responds to specific triggers</p>
+        </div>
       </div>
-    </div>
 
-    <!-- Fine-tuning rules (moved from Configure → Rules tab) -->
-    <RulesTab />
+      <div class="knowledge-panel__divider"></div>
+
+      <!-- Rules -->
+      <RulesTab />
+    </div>
 
     <AddKnowledgeWizard
       :open="wizardOpen"
