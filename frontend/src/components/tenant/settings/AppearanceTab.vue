@@ -1,8 +1,6 @@
 <template>
   <div class="space-y-8">
-    <div class="appearance-grid">
-      <!-- Left column -->
-      <div class="space-y-8">
+
         <!-- Color Palette -->
         <div class="settings-section">
           <h3 class="settings-section__title">
@@ -173,21 +171,17 @@
                 <option v-for="color in local.widget_config.color_palette" :key="color.id" :value="color.id">{{ color.name }}</option>
               </select>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Right column: sticky preview -->
-      <div>
-        <div class="appearance-preview-col">
-          <ChatPreview :tenantId="tenantId" :key="previewKey" />
-          <div class="mb-4">
-            <h4 class="appearance-preview__label">{{ $t("tenant.settings.appearance.preview.launcher") }}</h4>
-            <LauncherPreview :icon="local.widget_config.launcher_icon" :background-color="getPaletteColor(local.widget_config.component_styles.launcher_background_color)" />
+            <!-- Live launcher preview -->
+            <div class="launcher-inline-preview">
+              <span class="form-field">{{ $t("tenant.settings.appearance.preview.launcher") }}</span>
+              <LauncherPreview
+                :icon="local.widget_config.launcher_icon"
+                :background-color="getPaletteColor(local.widget_config.component_styles.launcher_background_color)"
+              />
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
     <!-- Installation Script -->
     <div class="settings-section mt-2">
@@ -213,7 +207,6 @@ import { useI18n } from 'vue-i18n';
 import { useToast } from '../../../composables/useToast';
 import { v4 as uuidv4 } from 'uuid';
 import AutoGrowTextarea from '../../AutoGrowTextarea.vue';
-import ChatPreview from '../ChatPreview.vue';
 import LauncherPreview from '../LauncherPreview.vue';
 
 const props = defineProps({
