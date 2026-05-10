@@ -225,6 +225,21 @@
             {{ $t('tenant.settings.appearance.launcher.title') }}
           </h3>
           <div class="space-y-6">
+            <!-- Widget enabled toggle -->
+            <div class="checkbox-field">
+              <input
+                v-model="local.widget_config.widget_enabled"
+                type="checkbox"
+                id="widget_enabled"
+                class="checkbox-field__input"
+              />
+              <label for="widget_enabled" class="checkbox-field__label">
+                {{ $t('tenant.settings.appearance.launcher.widgetEnabled') }}
+              </label>
+            </div>
+            <p class="step-subtext -mt-4">{{ $t('tenant.settings.appearance.launcher.widgetEnabledHint') }}</p>
+
+            <div :class="{ 'opacity-50 pointer-events-none': local.widget_config.widget_enabled === false }">
             <div>
               <label for="launcher_icon" class="form-field">{{ $t('tenant.settings.appearance.launcher.icon') }}</label>
               <div class="file-input-row">
@@ -251,6 +266,7 @@
                 :background-color="getPaletteColor(local.widget_config.component_styles.launcher_background_color)"
               />
             </div>
+            </div> <!-- /conditional dimmer -->
           </div>
         </div>
 

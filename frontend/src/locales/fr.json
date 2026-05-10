@@ -210,6 +210,8 @@
         },
         "launcher": {
           "title": "Lanceur",
+          "widgetEnabled": "Afficher le widget sur le site",
+          "widgetEnabledHint": "Désactivé, le lanceur n'apparaîtra pas sur votre site. La balise script peut rester en place.",
           "icon": "Icône du lanceur",
           "removeIcon": "Supprimer l'icône",
           "currentIcon": "Icône actuelle :",

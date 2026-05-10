@@ -57,6 +57,12 @@ def get_widget_script():
             }}
 
             const config = data.widget_config || {{}};
+
+            // Respect the hide/show toggle set in the dashboard
+            if (config.widget_enabled === false) {{
+                return;
+            }}
+
             const styles = config.component_styles || {{}};
             const palette = config.color_palette || [];
 

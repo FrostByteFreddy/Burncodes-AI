@@ -210,6 +210,8 @@
         },
         "launcher": {
           "title": "Launcher",
+          "widgetEnabled": "Show widget on website",
+          "widgetEnabledHint": "When disabled, the chatbot launcher won't appear on your site. The script tag can stay in place.",
           "icon": "Launcher Icon",
           "removeIcon": "Remove Icon",
           "currentIcon": "Current Icon:",

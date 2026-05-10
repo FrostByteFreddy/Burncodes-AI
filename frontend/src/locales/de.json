@@ -210,6 +210,8 @@
         },
         "launcher": {
           "title": "Launcher",
+          "widgetEnabled": "Widget auf Website anzeigen",
+          "widgetEnabledHint": "Wenn deaktiviert, erscheint der Chatbot-Launcher nicht auf Ihrer Website. Der Script-Tag kann bestehen bleiben.",
           "icon": "Launcher-Icon",
           "removeIcon": "Icon entfernen",
           "currentIcon": "Aktuelles Icon:",
