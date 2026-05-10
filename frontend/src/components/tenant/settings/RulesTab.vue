@@ -1,6 +1,5 @@
 <template>
   <div>
-
     <div class="rules-grid">
       <div v-for="(rule, index) in rules" :key="index"
         class="rule-card"
@@ -40,37 +39,11 @@
 
     <p v-if="rules.length === 0" class="rules-empty">{{ $t("tenant.fineTune.noRules") }}</p>
 
-    <Transition name="fade">
-      <div v-if="isModalOpen" class="rule-modal-backdrop" @click="closeModal">
-        <div class="rule-modal" @click.stop>
-          <div class="rule-modal__header">
-            <h3 class="rule-modal__title">{{ $t("tenant.fineTune.addRule") }}</h3>
-            <button type="button" @click="closeModal" class="modal-close-btn">
-              <font-awesome-icon :icon="['fas', 'xmark']" />
-            </button>
-          </div>
-          <form @submit.prevent="addRule" style="display:flex;flex-direction:column;gap:20px;">
-            <div>
-              <label for="new-trigger" class="form-field">{{ $t("tenant.fineTune.trigger.label") }}</label>
-              <input v-model="newRule.trigger" type="text" id="new-trigger"
-                :placeholder="$t('tenant.fineTune.trigger.example')"
-                class="form-input" style="margin-top:8px;" />
-            </div>
-            <div>
-              <label for="new-instruction" class="form-field">{{ $t("tenant.fineTune.instruction.label") }}</label>
-              <AutoGrowTextarea v-model="newRule.instruction" id="new-instruction" rows="3"
-                :placeholder="$t('tenant.fineTune.instruction.example')"
-                class="form-input" style="margin-top:8px;" />
-            </div>
-            <div class="rule-modal__footer">
-              <button type="button" @click="closeModal" class="modal-btn modal-btn--ghost">{{ $t("tenant.fineTune.actions.cancel") }}</button>
-              <button type="submit" class="modal-btn modal-btn--primary">{{ $t("tenant.fineTune.actions.add") }}</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </Transition>
-
+    <AddRuleWizard
+      :open="isWizardOpen"
+      @close="isWizardOpen = false"
+      @add-rule="addRule"
+    />
   </div>
 </template>
 
@@ -80,14 +53,14 @@ import { useI18n } from 'vue-i18n';
 import { useToast } from '../../../composables/useToast';
 import { useTenantsStore } from '../../../stores/tenants';
 import AutoGrowTextarea from '../../AutoGrowTextarea.vue';
+import AddRuleWizard from '../sources/AddRuleWizard.vue';
 
 const tenantsStore = useTenantsStore();
 const { t } = useI18n();
 const { addToast } = useToast();
 
 const rules = ref([]);
-const newRule = ref({ trigger: '', instruction: '' });
-const isModalOpen = ref(false);
+const isWizardOpen = ref(false);
 let originalRuleState = null;
 
 watch(() => tenantsStore.currentTenant, (tenant) => {
@@ -112,14 +85,11 @@ const saveRules = async () => {
 const startEditing   = (rule)  => { originalRuleState = JSON.parse(JSON.stringify(rule)); rule.isEditing = true; };
 const cancelEditing  = (index) => { if (originalRuleState) { rules.value[index] = originalRuleState; rules.value[index].isEditing = false; originalRuleState = null; } };
 const saveEditedRule = async (rule) => { rule.isEditing = false; originalRuleState = null; await saveRules(); };
-const closeModal     = ()      => { isModalOpen.value = false; newRule.value = { trigger: '', instruction: '' }; };
 
-const addRule = async () => {
-  if (newRule.value.trigger.trim() && newRule.value.instruction.trim()) {
-    rules.value.push({ ...newRule.value, isEditing: false });
-    const ok = await saveRules();
-    if (ok) closeModal(); else rules.value.pop();
-  }
+const addRule = async ({ trigger, instruction }) => {
+  rules.value.push({ trigger, instruction, isEditing: false });
+  const ok = await saveRules();
+  if (!ok) rules.value.pop();
 };
 
 const removeRule = async (index) => {
@@ -129,5 +99,5 @@ const removeRule = async (index) => {
   if (!ok) rules.value.splice(index, 0, backup);
 };
 
-defineExpose({ openModal: () => { isModalOpen.value = true; } });
+defineExpose({ openModal: () => { isWizardOpen.value = true; } });
 </script>

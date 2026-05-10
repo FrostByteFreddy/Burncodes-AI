@@ -334,6 +334,19 @@
         "add": "Regel hinzufügen",
         "saveSuccess": "Feinabstimmungsregeln erfolgreich gespeichert!",
         "saveFailed": "Fehler beim Speichern der Feinabstimmungsregeln."
+      },
+      "wizard": {
+        "step1of2": "Schritt 1 von 2",
+        "step2of2": "Schritt 2 von 2",
+        "triggerTitle": "Was soll diese Regel auslösen?",
+        "triggerDesc": "Der Auslöser ist ein Thema oder eine Absicht, die diese Regel aktiviert. Wenn ein Nutzer etwas fragt, das diesem Auslöser entspricht, greift Ihre Anweisung. Halten Sie ihn kurz und beschreibend.",
+        "triggerExample": "z.B. 'Frage zur Preisgestaltung'",
+        "triggerPreview": "Vorschau",
+        "actionTitle": "Was soll der Bot tun?",
+        "actionDesc": "Sagen Sie dem Bot genau, was er tun oder sagen soll, wenn dieser Auslöser zutrifft. Seien Sie konkret — z.B. 'Verweisen Sie den Nutzer für alle Preisfragen auf example.com/pricing.'",
+        "actionExample": "z.B. 'Verweisen Sie den Nutzer immer auf example.com/pricing für Preisfragen.'",
+        "next": "Weiter",
+        "back": "Zurück"
       }
     }
   },
