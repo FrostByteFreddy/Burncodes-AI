@@ -416,3 +416,64 @@ def get_task_status(current_user, task_id):
     except Exception as e:
         error_logger.error(f"Error getting task status for task {task_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to get task status", "details": str(e)}), 500
+
+
+@sources_bp.route('/<uuid:tenant_id>/store-stats', methods=['GET'])
+@token_required
+def get_store_stats(current_user, tenant_id):
+    """
+    Returns real stats from the tenant's Gemini File Search Store:
+      - document_count   total documents indexed in the store
+      - active_count     documents with state ACTIVE
+      - indexing_count   documents still being processed
+      - failed_count     documents that failed indexing
+      - has_store        whether a store exists yet
+    Falls back gracefully if the store hasn't been created yet.
+    """
+    try:
+        tenant_id_str = str(tenant_id)
+        tenant_resp = (
+            supabase.table('tenants')
+            .select("gemini_file_store_name")
+            .eq('id', tenant_id_str)
+            .eq('user_id', current_user.id)
+            .single()
+            .execute()
+        )
+        if not tenant_resp.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+
+        store_name = (tenant_resp.data or {}).get('gemini_file_store_name')
+        if not store_name:
+            return jsonify({
+                "has_store": False,
+                "document_count": 0,
+                "active_count": 0,
+                "indexing_count": 0,
+                "failed_count": 0,
+            }), 200
+
+        from google import genai
+        client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
+
+        # List all documents in the store and aggregate their states
+        docs = list(client.file_search_stores.documents.list(parent=store_name))
+
+        active   = sum(1 for d in docs if str(getattr(d, 'state', '')).upper() in ('ACTIVE', 'STATE_ACTIVE'))
+        indexing = sum(1 for d in docs if str(getattr(d, 'state', '')).upper() in ('INDEXING', 'STATE_INDEXING', 'PROCESSING'))
+        failed   = sum(1 for d in docs if str(getattr(d, 'state', '')).upper() in ('FAILED', 'STATE_FAILED', 'ERROR'))
+
+        return jsonify({
+            "has_store": True,
+            "document_count": len(docs),
+            "active_count":   active,
+            "indexing_count": indexing,
+            "failed_count":   failed,
+        }), 200
+
+    except Exception as e:
+        error_logger.error(
+            f"Error fetching store stats for tenant {tenant_id}: {e}",
+            extra={'user_id': current_user.id}, exc_info=True
+        )
+        return jsonify({"error": "Failed to fetch store stats", "details": str(e)}), 500
