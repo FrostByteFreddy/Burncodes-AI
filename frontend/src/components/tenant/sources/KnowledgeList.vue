@@ -29,7 +29,6 @@
                   Started {{ fmtDate(job.created_at) }}
                   <template v-if="job.sources && job.sources.length > 0">
                     &middot; {{ successCount(job) }} page{{ successCount(job) !== 1 ? 's' : '' }}
-                    &middot; {{ factsCount(job).toLocaleString() }} facts
                     <span v-if="errorCount(job) > 0" class="kl-job-row__errors">
                       &middot; {{ errorCount(job) }} error{{ errorCount(job) !== 1 ? 's' : '' }}
                       <span class="kl-job-row__breakdown">({{ errorBreakdown(job) }})</span>
@@ -179,7 +178,6 @@ const fileIcon = (s) => {
 // ── Job stat helpers ──────────────────────────────────
 const successCount   = (job) => (job?.sources || []).filter(s => s.status === 'COMPLETED').length;
 const errorCount     = (job) => (job?.sources || []).filter(s => s.status === 'ERROR').length;
-const factsCount     = (job) => (job?.sources || []).reduce((sum, s) => sum + (s.chunk_count || 0), 0);
 const errorBreakdown = (job) => {
   const codes = {};
   (job?.sources || []).filter(s => s.status === 'ERROR').forEach(s => {

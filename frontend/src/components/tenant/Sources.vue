@@ -14,35 +14,9 @@
         <span class="sources-kpi__value">{{ kpis.files.toLocaleString() }}</span>
         <span class="sources-kpi__label">
           <font-awesome-icon :icon="['fas', 'file']" />
-          Files
+          Indexed Documents
         </span>
       </div>
-
-      <!-- Gemini store: indexed document count -->
-      <div class="sources-kpi" :class="{ 'sources-kpi--loading': storeStats.loading }">
-        <span class="sources-kpi__value">
-          <template v-if="storeStats.loading">
-            <font-awesome-icon :icon="['fas', 'spinner']" spin />
-          </template>
-          <template v-else>
-            {{ storeStats.document_count.toLocaleString() }}
-          </template>
-        </span>
-        <span class="sources-kpi__label">
-          <font-awesome-icon :icon="['fas', 'database']" />
-          Indexed in Gemini
-        </span>
-      </div>
-
-      <!-- Indexing in progress (from Gemini) -->
-      <div class="sources-kpi sources-kpi--warning" v-if="!storeStats.loading && storeStats.indexing_count > 0">
-        <span class="sources-kpi__value">{{ storeStats.indexing_count.toLocaleString() }}</span>
-        <span class="sources-kpi__label">
-          <font-awesome-icon :icon="['fas', 'circle-notch']" spin />
-          Indexing
-        </span>
-      </div>
-
       <div class="sources-kpi sources-kpi--error" v-if="kpis.errors > 0">
         <span class="sources-kpi__value">{{ kpis.errors.toLocaleString() }}</span>
         <span class="sources-kpi__label">
@@ -50,7 +24,7 @@
           Errors
         </span>
       </div>
-      <div class="sources-kpi" v-else-if="!storeStats.loading && storeStats.indexing_count === 0">
+      <div class="sources-kpi" v-else>
         <span class="sources-kpi__value sources-kpi__value--success">{{ kpis.pages + kpis.files > 0 ? '100%' : '—' }}</span>
         <span class="sources-kpi__label">
           <font-awesome-icon :icon="['fas', 'circle-check']" />
@@ -149,31 +123,6 @@ const kpis = computed(() => {
 });
 
 // ---------------------------------------------------------------------------
-// Real Gemini store stats (fetched from backend → Gemini API)
-// ---------------------------------------------------------------------------
-const storeStats = ref({
-  loading: false,
-  has_store: false,
-  document_count: 0,
-  active_count: 0,
-  indexing_count: 0,
-  failed_count: 0,
-});
-
-const fetchStoreStats = async () => {
-  if (!tenantsStore.currentTenant) return;
-  storeStats.value.loading = true;
-  try {
-    const r = await apiClient.get(`/tenants/${tenantsStore.currentTenant.id}/store-stats`);
-    Object.assign(storeStats.value, r.data);
-  } catch {
-    // Non-fatal — KPIs degrade gracefully
-  } finally {
-    storeStats.value.loading = false;
-  }
-};
-
-// ---------------------------------------------------------------------------
 // Data fetching
 // ---------------------------------------------------------------------------
 const fetchCrawlingJobs = async () => {
@@ -187,30 +136,23 @@ const fetchCrawlingJobs = async () => {
 watch(() => tenantsStore.currentTenant, (tenant) => {
   if (tenant) {
     fetchCrawlingJobs();
-    fetchStoreStats();
   } else {
     crawlingJobs.value = [];
-    Object.assign(storeStats.value, { loading: false, has_store: false, document_count: 0, active_count: 0, indexing_count: 0, failed_count: 0 });
   }
 }, { immediate: true });
 
 const onCrawlStarted = async () => { await fetchCrawlingJobs(); };
-const onUploadDone   = async () => {
-  await tenantsStore.refetch(tenantsStore.currentTenant.id);
-  await fetchStoreStats();
-};
+const onUploadDone   = async () => { await tenantsStore.refetch(tenantsStore.currentTenant.id); };
 
 const handleJobCompletion = async () => {
   addToast(t('tenant.sources.actions.crawlCompleted'), 'success');
   await tenantsStore.refetch(tenantsStore.currentTenant.id);
   await fetchCrawlingJobs();
-  await fetchStoreStats();
 };
 const handleJobCancelled = async () => { await fetchCrawlingJobs(); };
 const handleJobDeleted   = async () => {
   await fetchCrawlingJobs();
   await tenantsStore.refetch(tenantsStore.currentTenant.id);
-  await fetchStoreStats();
 };
 
 const confirmDelete = (source) => { sourceToDelete.value = source; showConfirmationModal.value = true; };
@@ -225,7 +167,6 @@ const handleDelete = async () => {
   try {
     await apiClient.delete(`/tenants/${tenantsStore.currentTenant.id}/sources/${id}`);
     addToast(t('tenant.sources.actions.deleteSuccess'), 'success');
-    await fetchStoreStats();
   } catch {
     tenantsStore.currentTenant.tenant_sources = orig;
     addToast(t('tenant.sources.actions.deleteFailed'), 'error');
@@ -241,7 +182,6 @@ const handleDeleteAll = async () => {
     addToast('All knowledge deleted.', 'success');
     await tenantsStore.refetch(tenantsStore.currentTenant.id);
     await fetchCrawlingJobs();
-    Object.assign(storeStats.value, { has_store: false, document_count: 0, active_count: 0, indexing_count: 0, failed_count: 0 });
   } catch {
     addToast('Failed to delete all knowledge.', 'error');
   } finally {
