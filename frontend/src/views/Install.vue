@@ -106,22 +106,17 @@ const copyScript = () => {
 
 .install-step {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: baseline;
+  gap: 8px;
   font-size: 13px;
   color: var(--surface-text);
 }
 
 .install-step__num {
-  width: 20px; height: 20px; flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--gradient-brand);
-  color: white;
-  font-size: 11px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--surface-muted);
 }
 
 /* ── Preview link ── uses starter-add-btn from AppearanceTab.css */
