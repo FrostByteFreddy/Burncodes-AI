@@ -231,7 +231,11 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             text = trafilatura.extract(html, url=url, output_format="markdown",
                                        include_links=False, include_images=False)
             if text:
-                _upload_page_to_store(text, url, source_id, str(tenant_id))
+                try:
+                    _upload_page_to_store(text, url, source_id, str(tenant_id))
+                except Exception as upload_err:
+                    error_logger.error("soup: Gemini upload failed for %s (source %s): %s", url, source_id, upload_err, exc_info=True)
+                    supabase.table("tenant_sources").update({"status": "ERROR"}).eq("id", source_id).execute()
             else:
                 error_logger.warning("soup: no content extracted from %s", url)
                 supabase.table("tenant_sources").update({"status": "ERROR"}).eq("id", source_id).execute()
@@ -305,7 +309,14 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             }).execute()
             source_id = source_response.data[0]["id"]
 
-            _upload_page_to_store(crawl_result.markdown, url, source_id, str(tenant_id))
+            try:
+                _upload_page_to_store(crawl_result.markdown, url, source_id, str(tenant_id))
+            except Exception as upload_err:
+                error_logger.error(
+                    "playwright: Gemini upload failed for %s (source %s): %s",
+                    url, source_id, upload_err, exc_info=True
+                )
+                supabase.table("tenant_sources").update({"status": "ERROR"}).eq("id", source_id).execute()
 
             # Link discovery: use BeautifulSoup on the rendered HTML for maximum coverage
             rendered_html = getattr(crawl_result, "html", None) or ""
