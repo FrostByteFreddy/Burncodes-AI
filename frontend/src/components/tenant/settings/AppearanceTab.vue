@@ -92,18 +92,7 @@
                   <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
                 </select>
               </div>
-              <div>
-                <label for="user_message_background_color" class="form-field">{{ $t('tenant.settings.appearance.componentStyles.labels.user_message_background_color') }}</label>
-                <select v-model="local.widget_config.component_styles.user_message_background_color" id="user_message_background_color" class="form-input">
-                  <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
-                </select>
-              </div>
-              <div>
-                <label for="user_message_text_color" class="form-field">{{ $t('tenant.settings.appearance.componentStyles.labels.user_message_text_color') }}</label>
-                <select v-model="local.widget_config.component_styles.user_message_text_color" id="user_message_text_color" class="form-input">
-                  <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
-                </select>
-              </div>
+              <div></div>
               <div>
                 <label for="bot_message_background_color" class="form-field">{{ $t('tenant.settings.appearance.componentStyles.labels.bot_message_background_color') }}</label>
                 <select v-model="local.widget_config.component_styles.bot_message_background_color" id="bot_message_background_color" class="form-input">
@@ -111,8 +100,20 @@
                 </select>
               </div>
               <div>
+                <label for="user_message_background_color" class="form-field">{{ $t('tenant.settings.appearance.componentStyles.labels.user_message_background_color') }}</label>
+                <select v-model="local.widget_config.component_styles.user_message_background_color" id="user_message_background_color" class="form-input">
+                  <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
+                </select>
+              </div>
+              <div>
                 <label for="bot_message_text_color" class="form-field">{{ $t('tenant.settings.appearance.componentStyles.labels.bot_message_text_color') }}</label>
                 <select v-model="local.widget_config.component_styles.bot_message_text_color" id="bot_message_text_color" class="form-input">
+                  <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
+                </select>
+              </div>
+              <div>
+                <label for="user_message_text_color" class="form-field">{{ $t('tenant.settings.appearance.componentStyles.labels.user_message_text_color') }}</label>
+                <select v-model="local.widget_config.component_styles.user_message_text_color" id="user_message_text_color" class="form-input">
                   <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
                 </select>
               </div>
