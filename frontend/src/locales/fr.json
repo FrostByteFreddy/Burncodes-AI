@@ -348,21 +348,21 @@
         "next": "Suivant",
         "back": "Retour"
       }
-    }
-  },
-  "install": {
+    },
+    "install": {
       "title": "Votre chatbot est prêt à être mis en ligne",
       "description": "Intégrez votre chatbot IA sur n'importe quel site web avec une seule ligne HTML. Il se charge de manière asynchrone sans ralentir votre page.",
       "step1": "Copiez la balise script depuis le panneau de droite",
-      "step2": "Collez-la dans le code HTML de votre site, juste avant la balise fermante </body>",
+      "step2": "Collez-la juste avant la balise fermante </body> de votre site",
       "step3": "Votre chatbot apparaîtra automatiquement pour vos visiteurs",
       "previewLink": "Ouvrir le chatbot",
       "scriptTitle": "Script d'intégration",
-      "scriptDesc": "Placez cette balise script dans le HTML de votre site. Aucune étape de compilation requise — fonctionne sur toutes les plateformes.",
-      "scriptHint": "Le widget se charge depuis notre CDN et est toujours à jour. Remplacez le data-tenant-id uniquement si vous changez de chatbot.",
+      "scriptDesc": "Placez cette balise dans votre HTML. Aucune étape de compilation requise.",
+      "scriptHint": "Le widget est toujours à jour. Remplacez le data-tenant-id uniquement si vous changez de chatbot.",
       "copy": "Copier dans le presse-papiers",
       "copied": "Copié !"
-    },
+    }
+  },
   "chatLogs": {
     "title": "Journaux de chat",
     "back": "Retour",
