@@ -13,12 +13,6 @@
         <font-awesome-icon :icon="['fas', 'palette']" />
         {{ $t("tenant.settings.tabs.appearance") }}
       </button>
-      <button type="button" @click="activeTab = 'rules'"
-        class="settings-tabs__btn"
-        :class="{ 'settings-tabs__btn--active': activeTab === 'rules' }">
-        <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" />
-        {{ $t("tenant.settings.tabs.rules") }}
-      </button>
     </div>
 
     <form @submit.prevent="handleUpdate" class="space-y-6 mt-6">
@@ -27,9 +21,6 @@
       </div>
       <div v-show="activeTab === 'appearance'" @change="handleUpdate">
         <AppearanceTab v-model="formData" :tenant-id="tenantsStore.currentTenant?.id" :preview-key="previewKey" :api-url="apiUrl" />
-      </div>
-      <div v-show="activeTab === 'rules'">
-        <RulesTab />
       </div>
 
       <div v-show="activeTab === 'behavior'" class="settings-footer">
@@ -49,7 +40,6 @@ import { useToast } from '../../composables/useToast';
 import { useI18n } from 'vue-i18n';
 import BehaviorTab from './settings/BehaviorTab.vue';
 import AppearanceTab from './settings/AppearanceTab.vue';
-import RulesTab from './settings/RulesTab.vue';
 
 const tenantsStore = useTenantsStore();
 const { addToast } = useToast();

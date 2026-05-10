@@ -52,6 +52,15 @@
       </button>
     </div>
 
+    <!-- Section header: Crawls & Files -->
+    <div class="knowledge-section-header">
+      <font-awesome-icon :icon="['fas', 'database']" class="knowledge-section-header__icon" />
+      <div>
+        <h2 class="knowledge-section-header__title">Crawls &amp; Documents</h2>
+        <p class="knowledge-section-header__sub">Indexed pages, uploaded PDFs and files</p>
+      </div>
+    </div>
+
     <!-- Main list -->
     <KnowledgeList
       :crawling-jobs="crawlingJobs"
@@ -60,6 +69,18 @@
       @job-cancelled="handleJobCancelled"
       @job-deleted="handleJobDeleted"
     />
+
+    <!-- Section header: Custom Knowledge -->
+    <div class="knowledge-section-header knowledge-section-header--second">
+      <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" class="knowledge-section-header__icon" />
+      <div>
+        <h2 class="knowledge-section-header__title">Custom Knowledge</h2>
+        <p class="knowledge-section-header__sub">Fine-tuning rules that guide how the bot responds to specific triggers</p>
+      </div>
+    </div>
+
+    <!-- Fine-tuning rules (moved from Configure → Rules tab) -->
+    <RulesTab />
 
     <AddKnowledgeWizard
       :open="wizardOpen"
@@ -97,6 +118,7 @@ import apiClient from '@/utils/api';
 import KnowledgeList from './sources/KnowledgeList.vue';
 import AddKnowledgeWizard from './sources/AddKnowledgeWizard.vue';
 import ConfirmationModal from '../ConfirmationModal.vue';
+import RulesTab from './settings/RulesTab.vue';
 
 const tenantsStore = useTenantsStore();
 const { addToast } = useToast();
