@@ -129,10 +129,18 @@ class GeminiStoreService:
             config=config,
         )
 
-        # Poll until Gemini finishes chunking + embedding
-        while not operation.done:
+        # Poll until Gemini finishes chunking + embedding.
+        # Cap at 100 attempts (≈ 5 minutes) to prevent runaway tasks.
+        max_attempts = 100
+        for attempt in range(max_attempts):
+            if operation.done:
+                break
             time.sleep(3)
             operation = client.operations.get(operation)
+        else:
+            raise TimeoutError(
+                f"Gemini indexing did not complete after {max_attempts * 3}s for '{display_name}'"
+            )
 
         # Extract the document resource name from the completed operation
         doc_name = GeminiStoreService._extract_doc_name(operation, store_name, display_name)
