@@ -1,6 +1,5 @@
 <template>
   <div
-    v-if="show"
     class="fixed inset-0 z-50 flex justify-center items-center"
     style="background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);"
   >
@@ -67,7 +66,7 @@ import { ref } from "vue";
 import { useTenantsStore } from "../stores/tenants";
 import { useRouter } from "vue-router";
 
-defineProps({ show: Boolean });
+defineProps({});
 const emit = defineEmits(["close"]);
 
 const tenantsStore = useTenantsStore();
