@@ -28,11 +28,10 @@
         :href="`/chat/${tenantId}`"
         target="_blank"
         rel="noopener"
-        class="install-preview-link"
+        class="starter-add-btn"
       >
         <font-awesome-icon :icon="['fas', 'comments']" />
         {{ $t('tenant.install.previewLink') }}
-        <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" class="install-preview-link__ext" />
       </a>
     </div>
 
@@ -122,25 +121,5 @@ const copyScript = () => {
   justify-content: center;
 }
 
-/* ── Preview link — reuses nav-item--external pattern */
-.install-preview-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: var(--radius-md);
-  background: var(--surface-2);
-  border: 1px solid var(--surface-3);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--surface-text);
-  text-decoration: none;
-  transition: border-color var(--t-fast), color var(--t-fast), background var(--t-fast);
-}
-.install-preview-link:hover {
-  border-color: var(--brand-indigo);
-  color: var(--surface-heading);
-  background: var(--surface-2);
-}
-.install-preview-link__ext { font-size: 10px; opacity: 0.5; }
+/* ── Preview link ── uses starter-add-btn from AppearanceTab.css */
 </style>
