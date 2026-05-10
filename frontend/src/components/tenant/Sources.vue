@@ -16,39 +16,6 @@
             <h2 class="knowledge-panel__title">Crawls &amp; Documents</h2>
             <p class="knowledge-panel__sub">Indexed pages, uploaded PDFs and files</p>
           </div>
-        </div>
-
-        <!-- KPIs inline in header -->
-        <div class="knowledge-panel__kpis">
-          <div class="sources-kpi">
-            <span class="sources-kpi__value">{{ kpis.pages.toLocaleString() }}</span>
-            <span class="sources-kpi__label">
-              <font-awesome-icon :icon="['fas', 'globe']" />
-              Pages
-            </span>
-          </div>
-          <div class="sources-kpi">
-            <span class="sources-kpi__value">{{ kpis.files.toLocaleString() }}</span>
-            <span class="sources-kpi__label">
-              <font-awesome-icon :icon="['fas', 'file']" />
-              Docs
-            </span>
-          </div>
-          <div class="sources-kpi sources-kpi--error" v-if="kpis.errors > 0">
-            <span class="sources-kpi__value">{{ kpis.errors.toLocaleString() }}</span>
-            <span class="sources-kpi__label">
-              <font-awesome-icon :icon="['fas', 'circle-xmark']" />
-              Errors
-            </span>
-          </div>
-          <div class="sources-kpi" v-else>
-            <span class="sources-kpi__value sources-kpi__value--success">{{ kpis.pages + kpis.files > 0 ? '100%' : '—' }}</span>
-            <span class="sources-kpi__label">
-              <font-awesome-icon :icon="['fas', 'circle-check']" />
-              Rate
-            </span>
-          </div>
-        </div>
       </div>
 
       <!-- Divider -->
@@ -159,17 +126,6 @@ watch(hasActiveJobs, (active) => { active ? startLiveRefresh() : stopLiveRefresh
 onUnmounted(stopLiveRefresh);
 
 // ---------------------------------------------------------------------------
-// Local KPIs (derived from tenant_sources already loaded in the store)
-// ---------------------------------------------------------------------------
-const kpis = computed(() => {
-  const sources = tenantsStore.currentTenant?.tenant_sources || [];
-  const completed = sources.filter(s => s.status === 'COMPLETED');
-  return {
-    pages:  completed.filter(s => s.source_type === 'URL').length,
-    files:  completed.filter(s => s.source_type === 'FILE' || s.source_type === 'FILE_URL').length,
-    errors: sources.filter(s => s.status === 'ERROR' || s.status === 'UNSUPPORTED').length,
-  };
-});
 
 // ---------------------------------------------------------------------------
 // Data fetching

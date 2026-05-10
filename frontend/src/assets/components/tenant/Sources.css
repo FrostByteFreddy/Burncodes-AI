@@ -20,7 +20,6 @@
 .knowledge-panel__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
 }
 
@@ -66,67 +65,10 @@
   margin: 2px 0 0;
 }
 
-.knowledge-panel__kpis {
-  display: flex;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
 .knowledge-panel__divider {
   height: 1px;
   background: var(--surface-3);
   margin: 0 -4px;
-}
-
-/* ── KPI strip ──────────────────────────────────────── */
-.sources-kpis {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-
-.sources-kpi {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 16px;
-  background: var(--surface-2);
-  border: 1px solid var(--surface-3);
-  border-radius: var(--radius-lg);
-  min-width: 72px;
-  transition: background var(--t-fast);
-}
-
-.sources-kpi--error {
-  border-color: rgba(255, 68, 68, 0.3);
-  background: rgba(255, 68, 68, 0.06);
-}
-
-.sources-kpi__value {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--surface-heading);
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-.sources-kpi--error .sources-kpi__value {
-  color: var(--status-error);
-}
-
-.sources-kpi__value--success {
-  color: var(--status-success);
-}
-
-.sources-kpi__label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--surface-muted);
 }
 
 /* ── Banner add button ──────────────────────────────── */
