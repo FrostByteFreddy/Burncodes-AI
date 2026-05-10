@@ -69,6 +69,66 @@
           </div>
         </div>
 
+        <!-- Conversation Starters -->
+        <div class="settings-section">
+          <h3 class="settings-section__title">
+            <font-awesome-icon :icon="['fas', 'bolt']" class="settings-section__icon" />
+            Conversation Starters
+          </h3>
+          <p class="step-subtext mb-4">Clickable prompt chips shown before the first user message. Each starter can have its own color from your palette.</p>
+
+          <div class="starters-list">
+            <div
+              v-for="starter in local.widget_config.conversation_starters"
+              :key="starter.id"
+              class="starter-row"
+            >
+              <!-- Live chip preview -->
+              <div
+                class="starter-chip-preview"
+                :style="{ backgroundColor: getPaletteColor(starter.background_color), color: getPaletteColor(starter.text_color) }"
+              >
+                {{ starter.label || 'Preview…' }}
+              </div>
+
+              <!-- Label -->
+              <input
+                v-model="starter.label"
+                type="text"
+                placeholder="What can I help you with?"
+                class="form-input"
+              />
+
+              <!-- Color selects -->
+              <div class="starter-colors">
+                <div>
+                  <label class="form-field">Background</label>
+                  <select v-model="starter.background_color" class="form-input">
+                    <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-field">Text</label>
+                  <select v-model="starter.text_color" class="form-input">
+                    <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Delete -->
+              <button type="button" @click.prevent="removeStarter(starter.id)"
+                class="btn btn-square btn-ghost text-error hover:bg-error/10">
+                <font-awesome-icon :icon="['fas', 'trash']" />
+              </button>
+            </div>
+          </div>
+
+          <button type="button" @click.prevent="addStarter" class="starter-add-btn">
+            <font-awesome-icon :icon="['fas', 'plus']" />
+            Add Starter
+          </button>
+        </div>
+
         <!-- Component Styles -->
         <div class="settings-section">
           <h3 class="settings-section__title">
@@ -206,6 +266,21 @@ const addColor    = () => { local.value.widget_config.color_palette.push({ id: u
 const removeColor = (idToRemove) => {
   if (local.value.widget_config.color_palette.length <= 2) { addToast(t('tenant.settings.appearance.colorPalette.removeBaseColorError'), 'warning'); return; }
   local.value.widget_config.color_palette = local.value.widget_config.color_palette.filter(c => c.id !== idToRemove);
+};
+const addStarter = () => {
+  if (!local.value.widget_config.conversation_starters) {
+    local.value.widget_config.conversation_starters = [];
+  }
+  local.value.widget_config.conversation_starters.push({
+    id: uuidv4(),
+    label: '',
+    background_color: local.value.widget_config.color_palette[2]?.id || 'c_primary',
+    text_color: local.value.widget_config.color_palette[0]?.id || 'c_white',
+  });
+};
+const removeStarter = (id) => {
+  local.value.widget_config.conversation_starters =
+    local.value.widget_config.conversation_starters.filter(s => s.id !== id);
 };
 const removeFile = (field) => {
   local.value.widget_config[field] = null;

@@ -104,4 +104,30 @@
   .install-script-copy {
     @apply absolute top-2 right-2 btn btn-sm btn-ghost text-primary hover:bg-base-300;
   }
+
+  /* ── Conversation Starters ─────────────────────────────────── */
+  .starters-list {
+    @apply flex flex-col gap-4 mb-3;
+  }
+
+  .starter-row {
+    @apply flex flex-col gap-2 p-3 rounded-xl border border-base-200 bg-base-200/40;
+  }
+
+  .starter-chip-preview {
+    @apply inline-block self-start px-4 py-2 rounded-full text-sm font-medium
+           transition-all select-none;
+    min-width: 80px;
+    text-align: center;
+  }
+
+  .starter-colors {
+    @apply grid grid-cols-2 gap-3;
+  }
+
+  .starter-add-btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-dashed
+           border-base-300 text-sm font-semibold text-base-content/50
+           hover:border-primary/50 hover:text-primary transition-colors;
+  }
 }

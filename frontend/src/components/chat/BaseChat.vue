@@ -47,6 +47,23 @@
         </div>
       </div>
 
+      <!-- Conversation starters: shown before first user message -->
+      <div
+        v-if="startersVisible"
+        class="starters-container"
+      >
+        <button
+          v-for="starter in config.conversation_starters"
+          :key="starter.id"
+          type="button"
+          class="starter-chip"
+          :style="getStarterStyle(starter)"
+          @click="handleStarterClick(starter)"
+        >
+          {{ starter.label }}
+        </button>
+      </div>
+
       <div v-if="isThinking" class="flex justify-start">
         <div
           class="max-w-xl lg:max-w-2xl px-5 py-3 shadow-md flex items-center space-x-2 bot-message"
@@ -118,6 +135,28 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["update:userMessage", "sendMessage", "reset"]);
+
+// Starters: show only when no user message has been sent yet
+const hasUserMessages = computed(() => props.chatHistory.some(m => m.isUser));
+const startersVisible = computed(() =>
+  !hasUserMessages.value &&
+  Array.isArray(props.config.conversation_starters) &&
+  props.config.conversation_starters.length > 0
+);
+
+const getStarterStyle = (starter) => {
+  const palette = props.config.color_palette || [];
+  const find = (id) => palette.find(c => c.id === id)?.value;
+  return {
+    backgroundColor: find(starter.background_color) || starter.background_color || '#A855F7',
+    color: find(starter.text_color) || starter.text_color || '#FFFFFF',
+  };
+};
+
+const handleStarterClick = (starter) => {
+  emit('update:userMessage', starter.label);
+  nextTick(() => emit('sendMessage'));
+};
 
 const chatContainer = ref(null);
 const textareaRef = ref(null); // Ref for the textarea
@@ -420,5 +459,35 @@ const widgetCssVariables = computed(() => {
 .reset-button {
   background-color: var(--chat-reset-button-background-color) !important;
   color: var(--chat-header-text-color) !important;
+}
+
+/* ── Conversation starters ────────────────────────────────────── */
+.starters-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0 12px;
+}
+
+.starter-chip {
+  padding: 8px 18px;
+  border-radius: var(--chat-custom-radius);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.starter-chip:hover {
+  opacity: 0.85;
+  transform: translateY(-2px);
+}
+
+.starter-chip:active {
+  transform: translateY(0);
+  opacity: 0.7;
 }
 </style>

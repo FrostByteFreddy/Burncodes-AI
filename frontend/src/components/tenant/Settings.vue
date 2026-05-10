@@ -66,6 +66,7 @@ const defaultWidgetConfig = () => ({
   show_reset_button: true,
   input_placeholder: 'Send a message...',
   thinking_messages: ['Thinking...', 'Just a moment...', 'Let me check that for you...'],
+  conversation_starters: [],
   color_palette: [
     { id: 'c_white',     name: t('tenant.settings.defaults.white'),     value: '#FFFFFF' },
     { id: 'c_black',     name: t('tenant.settings.defaults.black'),     value: '#1F2937' },
@@ -95,6 +96,7 @@ watch(() => tenantsStore.currentTenant?.id, () => {
   const cfg = { ...defaultWidgetConfig(), ...(tenant.widget_config || {}) };
   cfg.color_palette = tenant.widget_config?.color_palette || defaultWidgetConfig().color_palette;
   cfg.component_styles = { ...defaultWidgetConfig().component_styles, ...(tenant.widget_config?.component_styles || {}) };
+  cfg.conversation_starters = tenant.widget_config?.conversation_starters || [];
   formData.value = {
     name: tenant.name, intro_message: tenant.intro_message, system_persona: tenant.system_persona,
     rag_prompt_template: tenant.rag_prompt_template, doc_language: tenant.doc_language,
