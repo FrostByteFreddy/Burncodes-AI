@@ -22,4 +22,4 @@ python-magic==0.4.27
 trafilatura==2.0.0
 beautifulsoup4==4.13.4
 lxml==5.4.0
-tenacity==9.1.2
+tenacity>=8.2.3,<9.0.0
