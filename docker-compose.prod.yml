@@ -33,7 +33,7 @@ services:
       - redis
       - backend
     healthcheck:
-      test: ["CMD", "celery", "-A", "celery_worker", "inspect", "ping", "-d", "celery@$$HOSTNAME", "--timeout", "5"]
+      test: ["CMD", "celery", "-A", "celery_worker", "inspect", "ping", "-d", "fast@$$HOSTNAME", "--timeout", "5"]
       interval: 60s
       timeout: 10s
       retries: 3
@@ -55,7 +55,7 @@ services:
       - redis
       - backend
     healthcheck:
-      test: ["CMD", "celery", "-A", "celery_worker", "inspect", "ping", "-d", "celery@$$HOSTNAME", "--timeout", "5"]
+      test: ["CMD", "celery", "-A", "celery_worker", "inspect", "ping", "-d", "heavy@$$HOSTNAME", "--timeout", "5"]
       interval: 60s
       timeout: 10s
       retries: 3
@@ -75,7 +75,7 @@ services:
       - redis
       - backend
     healthcheck:
-      test: ["CMD", "celery", "-A", "celery_worker", "inspect", "ping", "-d", "celery@$$HOSTNAME", "--timeout", "5"]
+      test: ["CMD", "celery", "-A", "celery_worker", "inspect", "ping", "-d", "chat@$$HOSTNAME", "--timeout", "5"]
       interval: 60s
       timeout: 10s
       retries: 3
