@@ -350,6 +350,19 @@
       }
     }
   },
+  "install": {
+      "title": "Ihr Chatbot ist bereit zum Einsatz",
+      "description": "Betten Sie Ihren KI-Chatbot mit einer einzigen HTML-Zeile auf jeder Website ein. Er lädt asynchron und verlangsamt Ihre Seite nicht.",
+      "step1": "Kopieren Sie den Script-Tag aus dem Bereich rechts",
+      "step2": "Fügen Sie ihn in den HTML-Code Ihrer Website ein, direkt vor dem schließenden </body>-Tag",
+      "step3": "Ihr Chatbot erscheint automatisch für Ihre Besucher",
+      "previewLink": "Chatbot öffnen",
+      "scriptTitle": "Einbettungs-Script",
+      "scriptDesc": "Fügen Sie diesen Script-Tag in den HTML-Code Ihrer Website ein. Kein Build-Schritt erforderlich — funktioniert auf jeder Plattform.",
+      "scriptHint": "Das Widget wird von unserem CDN geladen und ist immer aktuell. Ersetzen Sie die data-tenant-id nur, wenn Sie den Chatbot wechseln.",
+      "copy": "In Zwischenablage kopieren",
+      "copied": "Kopiert!"
+    },
   "chatLogs": {
     "title": "Chat-Protokolle",
     "back": "Zurück",
@@ -389,6 +402,7 @@
   },
   "sidebar": {
     "selectTenant": "Chatbot auswählen",
+    "install": "Einbinden",
     "sources": "Wissen",
     "configuration": "Konfiguration",
     "fineTune": "Feinabstimmung",

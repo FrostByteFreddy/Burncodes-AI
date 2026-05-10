@@ -194,22 +194,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Installation Script -->
-    <div class="settings-section mt-2">
-      <h3 class="settings-section__title">
-        <font-awesome-icon :icon="['fas', 'code']" class="settings-section__icon" />
-        {{ $t('tenant.settings.appearance.installation.title') }}
-      </h3>
-      <p class="step-subtext mb-4">{{ $t('tenant.settings.appearance.installation.instruction') }}</p>
-      <div class="install-script-block">
-        <pre class="install-script-pre"><code>&lt;script src="{{ apiUrl }}/tenants/widget.js" data-tenant-id="{{ tenantId }}"&gt;&lt;/script&gt;</code></pre>
-        <button @click.prevent="copyScript" class="install-script-copy">
-          <font-awesome-icon :icon="['fas', 'copy']" />
-          <span class="ml-1">{{ $t('tenant.settings.appearance.installation.copy') }}</span>
-        </button>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -226,7 +210,6 @@ const props = defineProps({
   modelValue: { type: Object, required: true },
   tenantId: { type: String, required: true },
   previewKey: { type: Number, default: 0 },
-  apiUrl: { type: String, default: '' },
 });
 const emit = defineEmits(['update:modelValue']);
 const { t } = useI18n();
@@ -300,11 +283,5 @@ const handleFileUpload = async (event, field) => {
   reader.onload  = () => { local.value.widget_config[field] = reader.result; addToast(t('tenant.settings.actions.imageUpdated'), 'success'); };
   reader.onerror = () => addToast(t('tenant.settings.actions.readFailed'), 'error');
   reader.readAsDataURL(file);
-};
-const copyScript = () => {
-  const script = `<script src="${props.apiUrl}/tenants/widget.js" data-tenant-id="${props.tenantId}"><\/script>`;
-  navigator.clipboard.writeText(script)
-    .then(() => addToast(t('tenant.settings.actions.scriptCopied'), 'success'))
-    .catch(() => addToast(t('tenant.settings.actions.copyFailed'), 'error'));
 };
 </script>

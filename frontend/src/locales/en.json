@@ -350,6 +350,19 @@
       }
     }
   },
+  "install": {
+      "title": "Your chatbot is ready to go live",
+      "description": "Embed your AI chatbot on any website with a single line of HTML. It loads asynchronously and won't slow down your page.",
+      "step1": "Copy the script tag from the panel on the right",
+      "step2": "Paste it into your website's HTML, just before the closing </body> tag",
+      "step3": "Your chatbot will appear automatically for your visitors",
+      "previewLink": "Open Chatbot",
+      "scriptTitle": "Embed Script",
+      "scriptDesc": "Place this script tag in your site's HTML. No build step required — it works on any platform.",
+      "scriptHint": "The widget loads from our CDN and is always up to date. Replace the data-tenant-id only if you switch chatbots.",
+      "copy": "Copy to clipboard",
+      "copied": "Copied!"
+    },
   "chatLogs": {
     "title": "Chat Logs",
     "back": "Back",
@@ -389,6 +402,7 @@
   },
   "sidebar": {
     "selectTenant": "Select a Chatbot",
+    "install": "Install",
     "sources": "Knowledge",
     "configuration": "Configuration",
     "fineTune": "Fine Tune",

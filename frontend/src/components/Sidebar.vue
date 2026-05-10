@@ -58,6 +58,13 @@
         <font-awesome-icon :icon="['fas', 'chart-line']" class="nav-item__icon" />
         <span>Insights</span>
       </router-link>
+      <router-link
+        :to="{ name: 'TenantInstall', params: { tenantId: activeTenant.id } }"
+        class="nav-item" active-class="nav-item--active"
+      >
+        <font-awesome-icon :icon="['fas', 'code']" class="nav-item__icon" />
+        <span>{{ $t('sidebar.install') }}</span>
+      </router-link>
       <a
         :href="`/chat/${activeTenant.id}`"
         target="_blank"

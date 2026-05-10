@@ -24,6 +24,7 @@ const routes = [
       { path: "sources",   name: "TenantSources",   component: () => import("../components/tenant/Sources.vue") },
       { path: "configure", name: "TenantConfigure", component: () => import("../components/tenant/Settings.vue") },
       { path: "insights",  name: "TenantInsights",  component: () => import("../views/Insights.vue") },
+      { path: "install",   name: "TenantInstall",   component: () => import("../views/Install.vue") },
     ],
 
   },
