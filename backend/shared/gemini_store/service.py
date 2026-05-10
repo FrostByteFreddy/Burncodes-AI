@@ -228,8 +228,9 @@ class GeminiStoreService:
         """
         # Try the most likely attribute paths from the SDK
         for attr_path in [
+            ("response", "document_name"),        # UploadToFileSearchStoreResponse.document_name
             ("metadata", "document_resource_name"),
-            ("response", "name"),
+            ("response", "name"),                  # fallback in case the SDK changes
         ]:
             obj = operation
             try:
