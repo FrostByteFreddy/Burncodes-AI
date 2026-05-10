@@ -182,7 +182,7 @@
         "componentStyles": {
           "title": "Komponenten-Stile",
           "labels": {
-            "header_background_color": "Header-Hintergrund",
+            "header_background_color": "Header & Footer Hintergrund",
             "header_text_color": "Header-Text",
             "user_message_background_color": "Benutzernachricht-Hintergrund",
             "user_message_text_color": "Benutzernachricht-Text",
@@ -199,7 +199,8 @@
           }
         },
         "header": {
-          "title": "Header"
+          "title": "Header",
+          "bgHint": "Wird auch für den Hintergrund hinter dem Eingabefeld verwendet."
         },
         "messages": {
           "title": "Nachrichten"

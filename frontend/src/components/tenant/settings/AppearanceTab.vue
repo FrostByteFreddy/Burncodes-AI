@@ -43,6 +43,7 @@
                 <select v-model="local.widget_config.component_styles.header_background_color" id="header_background_color" class="form-input">
                   <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
                 </select>
+                <p class="step-subtext mt-1">{{ $t('tenant.settings.appearance.header.bgHint') }}</p>
               </div>
               <div>
                 <label for="header_text_color" class="form-field">{{ $t('tenant.settings.appearance.componentStyles.labels.header_text_color') }}</label>

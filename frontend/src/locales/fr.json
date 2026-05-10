@@ -182,7 +182,7 @@
         "componentStyles": {
           "title": "Styles des composants",
           "labels": {
-            "header_background_color": "Arrière-plan de l'en-tête",
+            "header_background_color": "Fond en-tête & pied",
             "header_text_color": "Texte de l'en-tête",
             "user_message_background_color": "Arrière-plan du message utilisateur",
             "user_message_text_color": "Texte du message utilisateur",
@@ -199,7 +199,8 @@
           }
         },
         "header": {
-          "title": "En-tête"
+          "title": "En-tête",
+          "bgHint": "Appliqué aussi en arrière-plan de la zone de saisie."
         },
         "messages": {
           "title": "Messages"

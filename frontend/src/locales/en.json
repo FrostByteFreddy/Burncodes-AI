@@ -182,7 +182,7 @@
         "componentStyles": {
           "title": "Component Styles",
           "labels": {
-            "header_background_color": "Header Background",
+            "header_background_color": "Header & Footer Background",
             "header_text_color": "Header Text",
             "user_message_background_color": "User Message Background",
             "user_message_text_color": "User Message Text",
@@ -199,7 +199,8 @@
           }
         },
         "header": {
-          "title": "Header"
+          "title": "Header",
+          "bgHint": "Also applies to the background behind the input field."
         },
         "messages": {
           "title": "Messages"
