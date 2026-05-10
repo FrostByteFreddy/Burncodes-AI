@@ -1,14 +1,5 @@
 <template>
   <div>
-    <button type="button" class="sources-add-banner" @click="isModalOpen = true">
-      <div class="sources-add-banner__icon">
-        <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" />
-      </div>
-      <div class="sources-add-banner__text">
-        <span class="sources-add-banner__title">{{ $t("tenant.fineTune.addRule") }}</span>
-        <span class="sources-add-banner__sub">{{ $t("tenant.fineTune.title") }}</span>
-      </div>
-    </button>
 
     <div class="rules-grid">
       <div v-for="(rule, index) in rules" :key="index"
@@ -137,4 +128,6 @@ const removeRule = async (index) => {
   const ok = await saveRules();
   if (!ok) rules.value.splice(index, 0, backup);
 };
+
+defineExpose({ openModal: () => { isModalOpen.value = true; } });
 </script>

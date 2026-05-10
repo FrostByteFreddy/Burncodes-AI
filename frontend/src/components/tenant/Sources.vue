@@ -17,21 +17,13 @@
             <p class="knowledge-panel__sub">Indexed pages, uploaded PDFs and files</p>
           </div>
         </div>
+        <button @click="wizardOpen = true" class="panel-add-btn" :title="$t('tenant.sources.wizard.addKnowledge')">
+          <font-awesome-icon :icon="['fas', 'plus']" />
+        </button>
       </div>
 
       <!-- Divider -->
       <div class="knowledge-panel__divider"></div>
-
-      <!-- Add banner -->
-      <button @click="wizardOpen = true" class="sources-add-banner">
-        <div class="sources-add-banner__icon">
-          <font-awesome-icon :icon="['fas', 'plus']" />
-        </div>
-        <div class="sources-add-banner__text">
-          <span class="sources-add-banner__title">{{ $t('tenant.sources.wizard.addKnowledge') }}</span>
-          <span class="sources-add-banner__sub">Crawl a website · Upload a PDF or document</span>
-        </div>
-      </button>
 
       <!-- List -->
       <KnowledgeList
@@ -49,20 +41,25 @@
     <div class="knowledge-panel">
 
       <!-- Panel header -->
-      <div class="knowledge-panel__header knowledge-panel__header--solo">
-        <div class="knowledge-panel__icon knowledge-panel__icon--accent">
-          <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" />
+      <div class="knowledge-panel__header">
+        <div class="knowledge-panel__header-left">
+          <div class="knowledge-panel__icon knowledge-panel__icon--accent">
+            <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" />
+          </div>
+          <div>
+            <h2 class="knowledge-panel__title">Custom Knowledge</h2>
+            <p class="knowledge-panel__sub">Fine-tuning rules that guide how the bot responds to specific triggers</p>
+          </div>
         </div>
-        <div>
-          <h2 class="knowledge-panel__title">Custom Knowledge</h2>
-          <p class="knowledge-panel__sub">Fine-tuning rules that guide how the bot responds to specific triggers</p>
-        </div>
+        <button @click="rulesTabRef?.openModal()" class="panel-add-btn panel-add-btn--accent" title="Add rule">
+          <font-awesome-icon :icon="['fas', 'plus']" />
+        </button>
       </div>
 
       <div class="knowledge-panel__divider"></div>
 
       <!-- Rules -->
-      <RulesTab />
+      <RulesTab ref="rulesTabRef" />
     </div>
 
     <AddKnowledgeWizard
@@ -102,6 +99,7 @@ const wizardOpen            = ref(false);
 const crawlingJobs          = ref([]);
 const sourceToDelete        = ref(null);
 const showConfirmationModal = ref(false);
+const rulesTabRef           = ref(null);
 
 // ---------------------------------------------------------------------------
 // Live polling — refresh sources every 5 s while a crawl is active
