@@ -89,7 +89,7 @@ import apiClient from '@/utils/api';
 import KnowledgeList from './sources/KnowledgeList.vue';
 import AddKnowledgeWizard from './sources/AddKnowledgeWizard.vue';
 import ConfirmationModal from '../ConfirmationModal.vue';
-import RulesTab from './settings/RulesTab.vue';
+import RulesTab from './sources/RulesTab.vue';
 
 const tenantsStore = useTenantsStore();
 const { addToast } = useToast();

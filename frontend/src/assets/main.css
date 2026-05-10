@@ -7,7 +7,7 @@
 @import './components/tenant/sources/AddKnowledgeWizard.css';
 @import './components/tenant/settings/AppearanceTab.css';
 @import './components/tenant/settings/BehaviorTab.css';
-@import './components/tenant/settings/RulesTab.css';
+@import './components/tenant/sources/RulesTab.css';
 
 @tailwind base;
 @tailwind components;
