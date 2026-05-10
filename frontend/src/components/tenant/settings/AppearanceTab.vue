@@ -203,12 +203,10 @@
                 :style="{ backgroundColor: getPaletteColor(local.widget_config.starter_background_color), color: getPaletteColor(local.widget_config.starter_text_color) }">
                 {{ starter.label || 'Preview…' }}
               </div>
-              <input v-model="starter.label" type="text" placeholder="What can I help you with?" class="form-input" />
-              <div class="starter-row-actions">
-                <button type="button" @click.prevent="removeStarter(starter.id)" class="starter-delete-btn">
-                  <font-awesome-icon :icon="['fas', 'trash']" />
-                </button>
-              </div>
+              <input v-model="starter.label" type="text" placeholder="What can I help you with?" class="form-input flex-1" />
+              <button type="button" @click.prevent="removeStarter(starter.id)" class="starter-delete-btn">
+                <font-awesome-icon :icon="['fas', 'trash']" />
+              </button>
             </div>
           </div>
 
