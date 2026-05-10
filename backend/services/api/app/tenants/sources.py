@@ -389,6 +389,78 @@ def delete_source(current_user, tenant_id, source_id):
         return jsonify({"error": "Failed to delete source", "details": str(e)}), 500
 
 
+@sources_bp.route('/<uuid:tenant_id>/sources', methods=['DELETE'])
+@token_required
+def delete_all_sources(current_user, tenant_id):
+    """
+    Nukes ALL knowledge for a tenant:
+      1. Deletes the entire Gemini File Search Store (all documents in one shot)
+      2. Clears gemini_file_store_name on the tenant (fresh store on next upload)
+      3. Deletes all tenant_sources rows
+      4. Deletes all crawling_jobs + crawling_tasks rows
+      5. Removes all uploaded files from disk
+    """
+    try:
+        tenant_id_str = str(tenant_id)
+        tenant_resp = (
+            supabase.table('tenants')
+            .select("id, gemini_file_store_name")
+            .eq('id', tenant_id_str)
+            .eq('user_id', current_user.id)
+            .single()
+            .execute()
+        )
+        if not tenant_resp.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+
+        # 1. Delete the Gemini File Search Store (drops all indexed documents at once)
+        store_name = (tenant_resp.data or {}).get('gemini_file_store_name')
+        if store_name:
+            try:
+                from app.gemini_store.service import GeminiStoreService
+                GeminiStoreService.delete_store(store_name)
+                error_logger.info("delete_all: deleted Gemini store %s for tenant %s", store_name, tenant_id_str)
+            except Exception as store_err:
+                error_logger.warning(
+                    "delete_all: soft failure deleting Gemini store %s: %s",
+                    store_name, store_err
+                )
+
+        # 2. Clear the store reference on the tenant so a fresh one is created next upload
+        supabase.table('tenants') \
+            .update({"gemini_file_store_name": None}) \
+            .eq('id', tenant_id_str) \
+            .execute()
+
+        # 3. Delete all source records
+        supabase.table('tenant_sources').delete().eq('tenant_id', tenant_id_str).execute()
+
+        # 4. Delete crawling jobs + tasks
+        jobs_resp = supabase.table('crawling_jobs').select("id").eq('tenant_id', tenant_id_str).execute()
+        job_ids = [j['id'] for j in (jobs_resp.data or [])]
+        if job_ids:
+            supabase.table('crawling_tasks').delete().in_('job_id', job_ids).execute()
+        supabase.table('crawling_jobs').delete().eq('tenant_id', tenant_id_str).execute()
+
+        # 5. Remove uploaded files from disk
+        tenant_upload_dir = os.path.join(UPLOADS_DIR, tenant_id_str)
+        if os.path.isdir(tenant_upload_dir):
+            import shutil
+            shutil.rmtree(tenant_upload_dir, ignore_errors=True)
+
+        error_logger.info(
+            "delete_all: tenant %s knowledge fully cleared by user %s",
+            tenant_id_str, current_user.id
+        )
+        return jsonify({"message": "All knowledge deleted successfully."}), 200
+
+    except Exception as e:
+        error_logger.error(
+            f"Error deleting all sources for tenant {tenant_id}: {e}",
+            extra={'user_id': current_user.id}, exc_info=True
+        )
+        return jsonify({"error": "Failed to delete all knowledge", "details": str(e)}), 500
+
 @sources_bp.route('/tasks/<string:task_id>', methods=['GET'])
 @token_required
 def get_task_status(current_user, task_id):

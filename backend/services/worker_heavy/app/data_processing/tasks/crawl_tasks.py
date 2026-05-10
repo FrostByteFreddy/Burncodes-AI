@@ -339,26 +339,17 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         if depth < max_depth and found_links:
             found_list = list(found_links)
 
-            # Build a seen-URL set from two sources in parallel queries:
-            #   1. crawling_tasks for this job   — already queued/processing this crawl
-            #   2. tenant_sources for this tenant — already indexed (any status) by any previous crawl
-            # We only query for the specific URLs we found (not a full table scan).
-            tasks_resp   = supabase.table("crawling_tasks") \
+            # Deduplicate within the current job only — URLs already in crawling_tasks
+            # for this job_id are skipped. We do NOT check tenant_sources so that
+            # re-crawling the same site across separate jobs works correctly.
+            tasks_resp = supabase.table("crawling_tasks") \
                 .select("url") \
                 .eq("job_id", job_id) \
                 .in_("url", found_list) \
                 .execute()
-            sources_resp = supabase.table("tenant_sources") \
-                .select("source_location") \
-                .eq("tenant_id", str(tenant_id)) \
-                .in_("source_location", found_list) \
-                .execute()
 
-            seen_urls = (
-                {item["url"] for item in (tasks_resp.data or [])} |
-                {item["source_location"] for item in (sources_resp.data or [])}
-            )
-            new_links = found_links - seen_urls
+            already_queued = {item["url"] for item in (tasks_resp.data or [])}
+            new_links = found_links - already_queued
 
             if new_links:
                 new_task_rows = supabase.table("crawling_tasks").insert([
