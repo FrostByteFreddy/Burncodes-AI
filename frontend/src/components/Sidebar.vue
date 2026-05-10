@@ -397,6 +397,7 @@ watch(
   }
   .sidebar--mobile-open {
     transform: translateX(0);
+    top: 56px;
   }
 }
 </style>
