@@ -84,7 +84,7 @@ const copyScript = () => {
 <style scoped>
 .install-page {
   display: grid;
-  grid-template-columns: minmax(260px, 340px) 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
   align-items: start;
 }
