@@ -89,7 +89,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { useTenantsStore } from '../../stores/tenants';
 import { useToast } from '../../composables/useToast';
 import { useI18n } from 'vue-i18n';
@@ -108,6 +108,29 @@ const sourceToDelete        = ref(null);
 const showConfirmationModal = ref(false);
 const showDeleteAllModal    = ref(false);
 const deletingAll           = ref(false);
+
+// ---------------------------------------------------------------------------
+// Live polling — refresh sources every 5 s while a crawl is active
+// KPIs are computed from the Pinia store, so they update automatically.
+// ---------------------------------------------------------------------------
+const liveInterval = ref(null);
+const hasActiveJobs = computed(() => crawlingJobs.value.some(j => j.status === 'IN_PROGRESS'));
+
+const startLiveRefresh = () => {
+  if (liveInterval.value) return;
+  liveInterval.value = setInterval(async () => {
+    if (tenantsStore.currentTenant) {
+      await tenantsStore.refetch(tenantsStore.currentTenant.id);
+    }
+  }, 5000);
+};
+
+const stopLiveRefresh = () => {
+  if (liveInterval.value) { clearInterval(liveInterval.value); liveInterval.value = null; }
+};
+
+watch(hasActiveJobs, (active) => { active ? startLiveRefresh() : stopLiveRefresh(); });
+onUnmounted(stopLiveRefresh);
 
 // ---------------------------------------------------------------------------
 // Local KPIs (derived from tenant_sources already loaded in the store)
