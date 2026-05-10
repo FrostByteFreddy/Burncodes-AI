@@ -337,11 +337,29 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
 
         # Enqueue discovered page links (file links already dispatched in _check_and_add_link)
         if depth < max_depth and found_links:
-            existing_urls_response = (
-                supabase.table("crawling_tasks").select("url").eq("job_id", job_id).execute()
+            found_list = list(found_links)
+
+            # Build a seen-URL set from two sources in parallel queries:
+            #   1. crawling_tasks for this job   — already queued/processing this crawl
+            #   2. tenant_sources for this tenant — already indexed (any status) by any previous crawl
+            # We only query for the specific URLs we found (not a full table scan).
+            tasks_resp   = supabase.table("crawling_tasks") \
+                .select("url") \
+                .eq("job_id", job_id) \
+                .in_("url", found_list) \
+                .execute()
+            sources_resp = supabase.table("tenant_sources") \
+                .select("source_location") \
+                .eq("tenant_id", str(tenant_id)) \
+                .in_("source_location", found_list) \
+                .execute()
+
+            seen_urls = (
+                {item["url"] for item in (tasks_resp.data or [])} |
+                {item["source_location"] for item in (sources_resp.data or [])}
             )
-            existing_urls = {item["url"] for item in existing_urls_response.data}
-            new_links = found_links - existing_urls
+            new_links = found_links - seen_urls
+
             if new_links:
                 new_task_rows = supabase.table("crawling_tasks").insert([
                     {
