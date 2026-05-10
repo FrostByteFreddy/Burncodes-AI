@@ -20,6 +20,7 @@ COPY shared/auth/         app/auth/
 COPY shared/database/     app/database/
 COPY shared/models/       app/models/
 COPY shared/logging_config.py app/logging_config.py
+COPY shared/gemini_store/    app/gemini_store/
 
 COPY services/worker_fast/celery_worker.py .
 RUN chown -R appuser:appgroup $APP_HOME

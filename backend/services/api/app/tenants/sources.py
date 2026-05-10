@@ -349,29 +349,41 @@ def delete_source(current_user, tenant_id, source_id):
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
-        source_check = supabase.table('tenant_sources').select("id").eq('id', source_id).eq('tenant_id', tenant_id_str).single().execute()
-        if not source_check.data:
+        source_resp = supabase.table('tenant_sources').select("*").eq('id', source_id).eq('tenant_id', tenant_id_str).single().execute()
+        if not source_resp.data:
             return jsonify({"error": "Source not found or access denied"}), 404
 
+        source = source_resp.data
+
+        # Delete the document from the Gemini File Search Store
+        gemini_doc_name = source.get('gemini_document_name')
+        if gemini_doc_name:
+            try:
+                from app.gemini_store.service import GeminiStoreService
+                GeminiStoreService.delete_document(gemini_doc_name)
+            except Exception as vec_err:
+                error_logger.error(
+                    "Soft failure: could not delete Gemini document %s for source %s: %s",
+                    gemini_doc_name, source_id, vec_err
+                )
+
+        # Delete the local file if this was a user upload
+        if source.get('source_type') == 'FILE':
+            local_path = source.get('source_location')
+            if local_path and os.path.exists(local_path):
+                try:
+                    os.remove(local_path)
+                    error_logger.info("Deleted local file %s for source %s", local_path, source_id)
+                except OSError as file_err:
+                    error_logger.error("Could not delete local file %s: %s", local_path, file_err)
+
         supabase.table('tenant_sources').delete().eq('id', source_id).execute()
-        
-        # Attempt to delete from ChromaDB Vector Store
-        try:
-            from app.data_processing.processor import get_vectorstore
-            from langchain_google_genai import GoogleGenerativeAIEmbeddings
+        return jsonify({"message": "Source deleted successfully."}), 200
 
-            embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
-            db = get_vectorstore(tenant_id, embeddings)
-            # source_id is stored as int in metadata — cast to match exactly
-            db._collection.delete(where={"source_id": int(source_id)})
-            error_logger.info("Deleted ChromaDB vectors for source_id=%s tenant=%s", source_id, tenant_id)
-        except Exception as vec_err:
-            error_logger.error(f"Soft failure: Could not delete source {source_id} from vector store: {vec_err}")
-
-        return jsonify({"message": "Source and associated vector data deleted successfully."}), 200
     except Exception as e:
         error_logger.error(f"Error deleting source {source_id} for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to delete source", "details": str(e)}), 500
+
 
 @sources_bp.route('/tasks/<string:task_id>', methods=['GET'])
 @token_required

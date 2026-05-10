@@ -1,175 +1,218 @@
-from celery import shared_task
-from app.database.supabase_client import supabase
-from app.data_processing.processor import get_vectorstore
-from app.logging_config import error_logger
-from app.billing.services import BillingService
+"""
+worker_chat/app/chat/tasks.py
+
+Chat task using the Gemini API (google-genai SDK) with the File Search tool.
+Replaces the LangChain/ChromaDB retrieval chain entirely.
+
+Key changes:
+- Single generate_content() call handles retrieval + generation atomically
+- Conversation history passed natively (no LangChain message wrappers)
+- Token usage read from response.usage_metadata (no callback needed)
+- Fine-tune rules injected directly into the system instruction
+- Citations extracted from grounding_metadata and returned to the frontend
+"""
 import os
+from celery import shared_task
+from google import genai
 
-# --- LangChain Core Imports ---
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from app.database.supabase_client import supabase
+from app.billing.services import BillingService
+from app.logging_config import error_logger
+from app.prompts import FINE_TUNE_RULE_PROMPTS
 
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains.retrieval import create_retrieval_chain
-from langchain.chains.history_aware_retriever import create_history_aware_retriever
+CHAT_GEMINI_MODEL = os.getenv("CHAT_GEMINI_MODEL", "gemini-3.1-flash-lite-preview")
 
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain_core.callbacks import BaseCallbackHandler
-from app.prompts import REPHRASE_PROMPTS, FINE_TUNE_RULE_PROMPTS
-
-CHAT_GEMINI_MODEL = os.getenv("CHAT_GEMINI_MODEL")
-
-# --- Shared LLM Clients (reused across Celery tasks) ---
-_embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
-_answer_llm = ChatGoogleGenerativeAI(model=CHAT_GEMINI_MODEL, temperature=0.2, convert_system_message_to_human=True)
-_query_rewrite_llm = ChatGoogleGenerativeAI(model=CHAT_GEMINI_MODEL, temperature=0, convert_system_message_to_human=True)
+_client: genai.Client | None = None
 
 
-class TokenUsageCallback(BaseCallbackHandler):
-    """Callback handler that captures token usage from LLM responses."""
-    def __init__(self):
-        self.input_tokens = 0
-        self.output_tokens = 0
+def _get_client() -> genai.Client:
+    global _client
+    if _client is None:
+        _client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
+    return _client
 
-    def on_llm_end(self, response, **kwargs):
-        """Accumulate token usage from each LLM generation."""
-        for generations in response.generations:
-            for gen in generations:
-                usage = getattr(gen, 'generation_info', {}) or {}
-                usage_metadata = usage.get('usage_metadata', {})
-                self.input_tokens += usage_metadata.get('prompt_token_count', 0)
-                self.output_tokens += usage_metadata.get('candidates_token_count', 0)
 
-@shared_task(bind=True, queue='chat')
+def _build_contents(chat_history_json: list, query: str) -> list:
+    """
+    Converts the chat history + current query into the google-genai contents format:
+    [{"role": "user"|"model", "parts": [{"text": "..."}]}, ...]
+    """
+    contents = []
+    for msg in chat_history_json:
+        role = "user" if msg["type"] == "human" else "model"
+        contents.append({"role": role, "parts": [{"text": msg["content"]}]})
+    # Gemini requires the last message to be from "user"
+    contents.append({"role": "user", "parts": [{"text": query}]})
+    return contents
+
+
+def _build_system_instruction(tenant_config: dict, fine_tune_rules: list) -> str:
+    """
+    Assembles the full system instruction from the tenant's RAG prompt template,
+    persona, and fine-tune rules.
+    """
+    translation_target = tenant_config.get("translation_target", "en")
+    fine_tune_prompt_template = FINE_TUNE_RULE_PROMPTS.get(
+        translation_target, FINE_TUNE_RULE_PROMPTS["en"]
+    )
+    fine_tune_instructions = "\n".join([
+        fine_tune_prompt_template.format(
+            trigger=rule["trigger"], instruction=rule["instruction"]
+        )
+        for rule in fine_tune_rules
+    ])
+
+    system_text = (
+        tenant_config.get("rag_prompt_template", "")
+        .replace("{persona}", tenant_config.get("system_persona", ""))
+        .replace("{fine_tune_instructions}", fine_tune_instructions)
+    )
+    return system_text
+
+
+def _extract_citations(response) -> list[dict]:
+    """
+    Pulls grounding metadata from the Gemini response.
+    Returns a list of citation dicts with title, page_number, and snippet.
+    """
+    citations = []
+    try:
+        grounding = response.candidates[0].grounding_metadata
+        if not grounding:
+            return citations
+        for chunk in grounding.grounding_chunks:
+            ctx = getattr(chunk, "retrieved_context", None)
+            if not ctx:
+                continue
+            citations.append({
+                "title": getattr(ctx, "title", None),
+                "page_number": getattr(ctx, "page_number", None),
+                "snippet": (getattr(ctx, "text", None) or "")[:200] or None,
+            })
+    except (AttributeError, IndexError):
+        pass
+    return citations
+
+
+@shared_task(bind=True, queue="chat")
 def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_id=None):
     """
-    Celery task to handle the chat logic synchronously.
+    Celery task to handle a chat turn using Gemini with the File Search tool.
+
+    Returns:
+        {
+            "answer": str,
+            "chat_history": [...],   # updated history including this turn
+            "citations": [...],      # grounding sources used by the model
+        }
     """
     try:
-        
-        # --- Per-task token callback (not shared) ---
-        token_cb = TokenUsageCallback()
-        embeddings = _embeddings
-        answer_llm = _answer_llm.with_config(callbacks=[token_cb])
-        query_rewrite_llm = _query_rewrite_llm.with_config(callbacks=[token_cb])
+        client = _get_client()
 
-        # --- Get Tenant Info ---
-        tenant_response = supabase.table('tenants').select("*").eq('id', str(tenant_id)).single().execute()
+        # --- Fetch tenant config ---
+        tenant_response = (
+            supabase.table("tenants")
+            .select("*")
+            .eq("id", str(tenant_id))
+            .single()
+            .execute()
+        )
         if not tenant_response.data:
             raise Exception(f"Tenant '{tenant_id}' not found")
         tenant_config = tenant_response.data
 
-        # --- Get Fine-Tuning Rules ---
-        fine_tune_response = supabase.table('tenant_fine_tune').select("*").eq('tenant_id', str(tenant_id)).execute()
+        # --- Fetch fine-tune rules ---
+        fine_tune_response = (
+            supabase.table("tenant_fine_tune")
+            .select("*")
+            .eq("tenant_id", str(tenant_id))
+            .execute()
+        )
         fine_tune_rules = fine_tune_response.data or []
 
-        # Determine the language for translation, defaulting to 'en'
-        translation_target = tenant_config.get('translation_target', 'en')
-        error_logger.debug("Using translation_target: %s for tenant %s", translation_target, tenant_id)
+        # --- Build system instruction ---
+        system_instruction = _build_system_instruction(tenant_config, fine_tune_rules)
 
-        # --- Construct Fine-Tuning Instructions String ---
-        fine_tune_prompt_template = FINE_TUNE_RULE_PROMPTS.get(translation_target, FINE_TUNE_RULE_PROMPTS['en'])
-        fine_tune_instructions = "\n".join([
-            fine_tune_prompt_template.format(trigger=rule['trigger'], instruction=rule['instruction'])
-            for rule in fine_tune_rules
-        ])
+        # --- Build tool config ---
+        # Only attach file_search if the tenant has an indexed store
+        tools = []
+        store_name = tenant_config.get("gemini_file_store_name")
+        if store_name:
+            tools = [{"file_search": {"file_search_store_names": [store_name]}}]
+        else:
+            error_logger.info(
+                "chat_task: no File Search store for tenant %s — answering from base knowledge",
+                tenant_id,
+            )
 
-        # --- Get Vector Store ---
-        db = get_vectorstore(tenant_id, embeddings)
-        if db._collection.count() == 0:
-            raise Exception(f"No documents have been processed for tenant '{tenant_id}'.")
+        # --- Build contents (conversation history + current query) ---
+        # Strip leading model messages — Gemini requires first message to be "user"
+        history = list(chat_history_json)
+        while history and history[0].get("type") != "human":
+            history.pop(0)
 
-        # --- Build Chains ---
-        chat_history = [HumanMessage(content=msg['content']) if msg['type'] == 'human' else AIMessage(content=msg['content']) for msg in chat_history_json]
+        contents = _build_contents(history, query)
 
-        # Strip leading AIMessages (e.g. the intro greeting) for Gemini ONLY — Gemini requires
-        # the first message after a SystemMessage to be a HumanMessage. We use a copy of the
-        # list so we don't drop the intro_message from the history returned to the frontend.
-        gemini_history = list(chat_history)
-        while gemini_history and isinstance(gemini_history[0], AIMessage):
-            gemini_history.pop(0)
-
-        # Select the rephrase prompt based on the translation target
-        rephrase_prompt_tuple = REPHRASE_PROMPTS.get(translation_target, REPHRASE_PROMPTS['en'])
-        history_aware_prompt = ChatPromptTemplate.from_messages([
-            rephrase_prompt_tuple,
-            MessagesPlaceholder(variable_name="chat_history"),
-            ("human", "{input}"),
-        ])
-
-        # --- Use a single, efficient MMR retriever ---
-        retriever = db.as_retriever(
-            search_type="mmr",
-            search_kwargs={'k': 5, 'fetch_k': 15} 
-        )
-        
-        history_aware_retriever_chain = create_history_aware_retriever(
-            query_rewrite_llm, 
-            retriever, # Use the single MMR retriever
-            history_aware_prompt
+        # --- Generate ---
+        response = client.models.generate_content(
+            model=CHAT_GEMINI_MODEL,
+            contents=contents,
+            config={
+                "system_instruction": system_instruction,
+                "tools": tools,
+            },
         )
 
-        # --- Build the answer prompt WITH chat history ---
-        # The tenant's rag_prompt_template becomes the system instruction,
-        # then we inject the full chat history so the LLM has conversational context.
-        rag_system_template = tenant_config['rag_prompt_template']
-        # Partially fill in the persona and fine-tune instructions
-        rag_system_text = rag_system_template.replace(
-            '{persona}', tenant_config.get('system_persona', '')
-        ).replace(
-            '{fine_tune_instructions}', fine_tune_instructions
-        )
+        ai_message = response.text
 
-        final_rag_prompt = ChatPromptTemplate.from_messages([
-            ("system", rag_system_text),
-            MessagesPlaceholder(variable_name="chat_history"),
-            ("human", "Context:\n{context}\n\nQuestion: {input}"),
-        ])
-
-        document_chain = create_stuff_documents_chain(answer_llm, final_rag_prompt)
-        conversational_rag_chain = create_retrieval_chain(history_aware_retriever_chain, document_chain)
-
-        # --- Invoke Chain ---
-        response = conversational_rag_chain.invoke({"chat_history": gemini_history, "input": query})
-        ai_message = response["answer"]
-
-        # --- Calculate Usage and Deduct Cost ---
-        # Use actual token counts from the callback handler
-        input_tokens = token_cb.input_tokens
-        output_tokens = token_cb.output_tokens
-
-        # Fallback to estimation if callback didn't capture (shouldn't happen)
-        if input_tokens == 0 and output_tokens == 0:
-            input_text = query + str(chat_history_json) + str(fine_tune_instructions)
-            input_tokens = len(input_text) // 4
+        # --- Token usage ---
+        usage = getattr(response, "usage_metadata", None)
+        if usage:
+            input_tokens = getattr(usage, "prompt_token_count", 0) or 0
+            output_tokens = getattr(usage, "candidates_token_count", 0) or 0
+        else:
+            # Fallback estimation
+            input_tokens = len(query + str(chat_history_json)) // 4
             output_tokens = len(ai_message) // 4
-            error_logger.warning(f"Token callback empty for tenant {tenant_id}, using estimation")
-        
+            error_logger.warning("chat_task: usage_metadata unavailable for tenant %s — estimating", tenant_id)
+
+        # --- Citations ---
+        citations = _extract_citations(response)
+
+        # --- Billing ---
         cost = 0.0
         if user_id:
-             cost = BillingService.deduct_cost(user_id, CHAT_GEMINI_MODEL, input_tokens, output_tokens)
+            cost = BillingService.deduct_cost(user_id, CHAT_GEMINI_MODEL, input_tokens, output_tokens)
 
-        # --- Log Chat to Database ---
+        # --- Log to DB ---
         try:
-            supabase.table('chat_logs').insert({
-                'tenant_id': tenant_id,
-                'conversation_id': conversation_id,
-                'user_message': query,
-                'ai_message': ai_message,
-                'model_used': CHAT_GEMINI_MODEL,
-                'input_tokens': input_tokens,
-                'output_tokens': output_tokens,
-                'cost_chf': cost
+            supabase.table("chat_logs").insert({
+                "tenant_id": tenant_id,
+                "conversation_id": conversation_id,
+                "user_message": query,
+                "ai_message": ai_message,
+                "model_used": CHAT_GEMINI_MODEL,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "cost_chf": cost,
             }).execute()
         except Exception as db_error:
-            error_logger.error(f"Database Error in chat_task for tenant {tenant_id}: {db_error}", exc_info=True)
+            error_logger.error(
+                "chat_task: DB log failed for tenant %s: %s", tenant_id, db_error, exc_info=True
+            )
 
-        # --- Format Response ---
-        updated_history = chat_history + [HumanMessage(content=query), AIMessage(content=ai_message)]
-        updated_history_json = [{"type": "human" if isinstance(msg, HumanMessage) else "ai", "content": msg.content} for msg in updated_history]
+        # --- Build updated history ---
+        updated_history = list(chat_history_json) + [
+            {"type": "human", "content": query},
+            {"type": "ai", "content": ai_message},
+        ]
 
-        return {"answer": ai_message, "chat_history": updated_history_json}
+        return {
+            "answer": ai_message,
+            "chat_history": updated_history,
+            "citations": citations,
+        }
 
     except Exception as e:
-        error_logger.error(f"Error in chat task for tenant {tenant_id}: {e}", exc_info=True)
+        error_logger.error("chat_task: error for tenant %s: %s", tenant_id, e, exc_info=True)
         raise

@@ -11,8 +11,4 @@ charset-normalizer>=2,<4
 nest_asyncio==1.6.0
 icalendar==6.3.1
 # LLM / RAG stack
-chromadb==1.3.0
-langchain==0.1.0
-langchain-community==0.0.20
-langchain-google-genai==1.0.1
-tenacity>=8.2.3,<9.0.0
+google-genai>=1.13.0
