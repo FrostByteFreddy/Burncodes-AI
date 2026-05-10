@@ -57,7 +57,7 @@
           :key="starter.id"
           type="button"
           class="starter-chip"
-          :style="getStarterStyle(starter)"
+          :style="getStarterStyle()"
           @click="handleStarterClick(starter)"
         >
           {{ starter.label }}
@@ -144,12 +144,12 @@ const startersVisible = computed(() =>
   props.config.conversation_starters.length > 0
 );
 
-const getStarterStyle = (starter) => {
+const getStarterStyle = () => {
   const palette = props.config.color_palette || [];
   const find = (id) => palette.find(c => c.id === id)?.value;
   return {
-    backgroundColor: find(starter.background_color) || starter.background_color || '#A855F7',
-    color: find(starter.text_color) || starter.text_color || '#FFFFFF',
+    backgroundColor: find(props.config.starter_background_color) || props.config.starter_background_color || '#A855F7',
+    color:           find(props.config.starter_text_color)        || props.config.starter_text_color        || '#FFFFFF',
   };
 };
 
@@ -465,6 +465,7 @@ const widgetCssVariables = computed(() => {
 .starters-container {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
   padding: 4px 0 12px;
 }

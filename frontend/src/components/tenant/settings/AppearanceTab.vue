@@ -75,7 +75,23 @@
             <font-awesome-icon :icon="['fas', 'bolt']" class="settings-section__icon" />
             Conversation Starters
           </h3>
-          <p class="step-subtext mb-4">Clickable prompt chips shown before the first user message. Each starter can have its own color from your palette.</p>
+          <p class="step-subtext mb-4">Clickable prompt chips shown before the first user message, aligned to the right.</p>
+
+          <!-- Global chip colors -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-5">
+            <div>
+              <label for="starter_bg" class="form-field">Chip Background</label>
+              <select v-model="local.widget_config.starter_background_color" id="starter_bg" class="form-input">
+                <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+            </div>
+            <div>
+              <label for="starter_text" class="form-field">Chip Text</label>
+              <select v-model="local.widget_config.starter_text_color" id="starter_text" class="form-input">
+                <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+            </div>
+          </div>
 
           <div class="starters-list">
             <div
@@ -86,7 +102,7 @@
               <!-- Live chip preview -->
               <div
                 class="starter-chip-preview"
-                :style="{ backgroundColor: getPaletteColor(starter.background_color), color: getPaletteColor(starter.text_color) }"
+                :style="{ backgroundColor: getPaletteColor(local.widget_config.starter_background_color), color: getPaletteColor(local.widget_config.starter_text_color) }"
               >
                 {{ starter.label || 'Preview…' }}
               </div>
@@ -98,22 +114,6 @@
                 placeholder="What can I help you with?"
                 class="form-input"
               />
-
-              <!-- Color selects -->
-              <div class="starter-colors">
-                <div>
-                  <label class="form-field">Background</label>
-                  <select v-model="starter.background_color" class="form-input">
-                    <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="form-field">Text</label>
-                  <select v-model="starter.text_color" class="form-input">
-                    <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
-                  </select>
-                </div>
-              </div>
 
               <!-- Delete -->
               <div class="starter-row-actions">
@@ -275,8 +275,6 @@ const addStarter = () => {
   local.value.widget_config.conversation_starters.push({
     id: uuidv4(),
     label: '',
-    background_color: local.value.widget_config.color_palette[2]?.id || 'c_primary',
-    text_color: local.value.widget_config.color_palette[0]?.id || 'c_white',
   });
 };
 const removeStarter = (id) => {
