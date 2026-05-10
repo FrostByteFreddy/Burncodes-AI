@@ -22,7 +22,6 @@ from app.logging_config import error_logger
 INDEXABLE_FILE_EXTENSIONS: set[str] = {
     ".pdf", ".docx", ".doc", ".txt", ".md",
     ".png", ".jpg", ".jpeg", ".gif", ".webp",
-    ".html",
 }
 
 # Extensions we explicitly reject (not supported by File Search)

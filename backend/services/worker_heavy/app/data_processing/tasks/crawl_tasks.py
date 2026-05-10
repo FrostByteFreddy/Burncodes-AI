@@ -318,17 +318,14 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
                 )
                 supabase.table("tenant_sources").update({"status": "ERROR"}).eq("id", source_id).execute()
 
-            # Link discovery: use BeautifulSoup on the rendered HTML for maximum coverage
-            rendered_html = getattr(crawl_result, "html", None) or ""
-            raw_links = (
-                extract_internal_links(rendered_html, url)
-                if rendered_html
-                else [normalize_url(lnk["href"]) for lnk in crawl_result.links.get("internal", [])]
-            )
-
-            for href in raw_links:
-                _check_and_add_link(href, normalized_excluded_list, found_links,
-                                    str(tenant_id), job_id, depth, max_depth, url)
+            # Link discovery — use Crawl4AI's pre-filtered internal link list.
+            # Do NOT use raw BS4 on rendered_html: it picks up every <a> tag
+            # (nav, footer, JS-modal links) and generates hundreds of spurious URLs.
+            for lnk in crawl_result.links.get("internal", []):
+                href = lnk.get("href", "").split("#")[0].strip()  # strip fragments
+                if href:
+                    _check_and_add_link(href, normalized_excluded_list, found_links,
+                                        str(tenant_id), job_id, depth, max_depth, url)
 
             error_logger.info("playwright: found %d page links on %s", len(found_links), url)
         else:
