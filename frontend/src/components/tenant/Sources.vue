@@ -65,14 +65,6 @@
         </div>
       </button>
 
-      <!-- Danger zone -->
-      <div class="sources-danger" v-if="kpis.pages + kpis.files > 0">
-        <button @click="showDeleteAllModal = true" class="sources-danger__btn" :disabled="deletingAll">
-          <font-awesome-icon :icon="['fas', deletingAll ? 'spinner' : 'trash-can']" :spin="deletingAll" />
-          {{ deletingAll ? 'Clearing…' : 'Delete All Knowledge' }}
-        </button>
-      </div>
-
       <!-- List -->
       <KnowledgeList
         :crawling-jobs="crawlingJobs"
@@ -120,15 +112,6 @@
       @confirm="handleDelete"
       @cancel="cancelDelete"
     />
-
-    <ConfirmationModal
-      :show="showDeleteAllModal"
-      title="Delete All Knowledge?"
-      message="This will permanently remove all sources from the database AND delete the entire Gemini index. This cannot be undone."
-      confirmButtonText="Yes, delete everything"
-      @confirm="handleDeleteAll"
-      @cancel="showDeleteAllModal = false"
-    />
   </div>
 </template>
 
@@ -151,8 +134,6 @@ const wizardOpen            = ref(false);
 const crawlingJobs          = ref([]);
 const sourceToDelete        = ref(null);
 const showConfirmationModal = ref(false);
-const showDeleteAllModal    = ref(false);
-const deletingAll           = ref(false);
 
 // ---------------------------------------------------------------------------
 // Live polling — refresh sources every 5 s while a crawl is active
@@ -239,21 +220,5 @@ const handleDelete = async () => {
     tenantsStore.currentTenant.tenant_sources = orig;
     addToast(t('tenant.sources.actions.deleteFailed'), 'error');
   } finally { cancelDelete(); }
-};
-
-const handleDeleteAll = async () => {
-  if (!tenantsStore.currentTenant) return;
-  showDeleteAllModal.value = false;
-  deletingAll.value = true;
-  try {
-    await apiClient.delete(`/tenants/${tenantsStore.currentTenant.id}/sources`);
-    addToast('All knowledge deleted.', 'success');
-    await tenantsStore.refetch(tenantsStore.currentTenant.id);
-    await fetchCrawlingJobs();
-  } catch {
-    addToast('Failed to delete all knowledge.', 'error');
-  } finally {
-    deletingAll.value = false;
-  }
 };
 </script>
