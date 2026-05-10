@@ -85,7 +85,7 @@ const defaultWidgetConfig = () => ({
 
 const formData = ref({
   name: '', intro_message: '', system_persona: '', rag_prompt_template: '',
-  doc_language: 'en', translation_target: 'en', crawl_mode: 'playwright_llm',
+  doc_language: 'en', translation_target: 'en', crawl_mode: 'playwright',
   widget_config: defaultWidgetConfig(),
 });
 

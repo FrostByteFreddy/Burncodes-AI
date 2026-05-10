@@ -308,19 +308,23 @@ def delete_crawling_job(current_user, tenant_id, job_id):
             deleted_source_ids = [s['id'] for s in (sources_resp.data or [])]
 
             if deleted_source_ids:
+                # Fetch gemini_document_name for each source before deletion
+                sources_full = supabase.table('tenant_sources') \
+                    .select("id, gemini_document_name") \
+                    .in_('id', deleted_source_ids) \
+                    .execute()
                 supabase.table('tenant_sources').delete().in_('id', deleted_source_ids).execute()
 
-                # 4. Purge from ChromaDB — soft-fail so the job row still gets cleaned up
+                # 4. Delete each document from the Gemini File Search Store — soft-fail
                 try:
-                    from app.data_processing.processor import get_vectorstore
-                    from langchain_google_genai import GoogleGenerativeAIEmbeddings
-                    embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
-                    db = get_vectorstore(tenant_id, embeddings)
-                    for sid in deleted_source_ids:
-                        db._collection.delete(where={"source_id": int(sid)})
-                    error_logger.info("delete_job: purged ChromaDB vectors for %d source(s) in job %s", len(deleted_source_ids), job_id)
+                    from app.gemini_store.service import GeminiStoreService
+                    for src in (sources_full.data or []):
+                        doc_name = src.get('gemini_document_name')
+                        if doc_name:
+                            GeminiStoreService.delete_document(doc_name)
+                    error_logger.info("delete_job: purged %d Gemini document(s) for job %s", len(deleted_source_ids), job_id)
                 except Exception as vec_err:
-                    error_logger.warning("delete_job: vector store cleanup partial failure for job %s: %s", job_id, vec_err)
+                    error_logger.warning("delete_job: Gemini store cleanup partial failure for job %s: %s", job_id, vec_err)
 
         # 5. Delete crawling_tasks + job row
         supabase.table('crawling_tasks').delete().eq('job_id', job_id).execute()
@@ -349,29 +353,113 @@ def delete_source(current_user, tenant_id, source_id):
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
-        source_check = supabase.table('tenant_sources').select("id").eq('id', source_id).eq('tenant_id', tenant_id_str).single().execute()
-        if not source_check.data:
+        source_resp = supabase.table('tenant_sources').select("*").eq('id', source_id).eq('tenant_id', tenant_id_str).single().execute()
+        if not source_resp.data:
             return jsonify({"error": "Source not found or access denied"}), 404
 
+        source = source_resp.data
+
+        # Delete the document from the Gemini File Search Store
+        gemini_doc_name = source.get('gemini_document_name')
+        if gemini_doc_name:
+            try:
+                from app.gemini_store.service import GeminiStoreService
+                GeminiStoreService.delete_document(gemini_doc_name)
+            except Exception as vec_err:
+                error_logger.error(
+                    "Soft failure: could not delete Gemini document %s for source %s: %s",
+                    gemini_doc_name, source_id, vec_err
+                )
+
+        # Delete the local file if this was a user upload
+        if source.get('source_type') == 'FILE':
+            local_path = source.get('source_location')
+            if local_path and os.path.exists(local_path):
+                try:
+                    os.remove(local_path)
+                    error_logger.info("Deleted local file %s for source %s", local_path, source_id)
+                except OSError as file_err:
+                    error_logger.error("Could not delete local file %s: %s", local_path, file_err)
+
         supabase.table('tenant_sources').delete().eq('id', source_id).execute()
-        
-        # Attempt to delete from ChromaDB Vector Store
-        try:
-            from app.data_processing.processor import get_vectorstore
-            from langchain_google_genai import GoogleGenerativeAIEmbeddings
+        return jsonify({"message": "Source deleted successfully."}), 200
 
-            embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
-            db = get_vectorstore(tenant_id, embeddings)
-            # source_id is stored as int in metadata — cast to match exactly
-            db._collection.delete(where={"source_id": int(source_id)})
-            error_logger.info("Deleted ChromaDB vectors for source_id=%s tenant=%s", source_id, tenant_id)
-        except Exception as vec_err:
-            error_logger.error(f"Soft failure: Could not delete source {source_id} from vector store: {vec_err}")
-
-        return jsonify({"message": "Source and associated vector data deleted successfully."}), 200
     except Exception as e:
         error_logger.error(f"Error deleting source {source_id} for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to delete source", "details": str(e)}), 500
+
+
+@sources_bp.route('/<uuid:tenant_id>/sources', methods=['DELETE'])
+@token_required
+def delete_all_sources(current_user, tenant_id):
+    """
+    Nukes ALL knowledge for a tenant:
+      1. Deletes the entire Gemini File Search Store (all documents in one shot)
+      2. Clears gemini_file_store_name on the tenant (fresh store on next upload)
+      3. Deletes all tenant_sources rows
+      4. Deletes all crawling_jobs + crawling_tasks rows
+      5. Removes all uploaded files from disk
+    """
+    try:
+        tenant_id_str = str(tenant_id)
+        tenant_resp = (
+            supabase.table('tenants')
+            .select("id, gemini_file_store_name")
+            .eq('id', tenant_id_str)
+            .eq('user_id', current_user.id)
+            .single()
+            .execute()
+        )
+        if not tenant_resp.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+
+        # 1. Delete the Gemini File Search Store (drops all indexed documents at once)
+        store_name = (tenant_resp.data or {}).get('gemini_file_store_name')
+        if store_name:
+            try:
+                from app.gemini_store.service import GeminiStoreService
+                GeminiStoreService.delete_store(store_name)
+                error_logger.info("delete_all: deleted Gemini store %s for tenant %s", store_name, tenant_id_str)
+            except Exception as store_err:
+                error_logger.warning(
+                    "delete_all: soft failure deleting Gemini store %s: %s",
+                    store_name, store_err
+                )
+
+        # 2. Clear the store reference on the tenant so a fresh one is created next upload
+        supabase.table('tenants') \
+            .update({"gemini_file_store_name": None}) \
+            .eq('id', tenant_id_str) \
+            .execute()
+
+        # 3. Delete all source records
+        supabase.table('tenant_sources').delete().eq('tenant_id', tenant_id_str).execute()
+
+        # 4. Delete crawling jobs + tasks
+        jobs_resp = supabase.table('crawling_jobs').select("id").eq('tenant_id', tenant_id_str).execute()
+        job_ids = [j['id'] for j in (jobs_resp.data or [])]
+        if job_ids:
+            supabase.table('crawling_tasks').delete().in_('job_id', job_ids).execute()
+        supabase.table('crawling_jobs').delete().eq('tenant_id', tenant_id_str).execute()
+
+        # 5. Remove uploaded files from disk
+        tenant_upload_dir = os.path.join(UPLOADS_DIR, tenant_id_str)
+        if os.path.isdir(tenant_upload_dir):
+            import shutil
+            shutil.rmtree(tenant_upload_dir, ignore_errors=True)
+
+        error_logger.info(
+            "delete_all: tenant %s knowledge fully cleared by user %s",
+            tenant_id_str, current_user.id
+        )
+        return jsonify({"message": "All knowledge deleted successfully."}), 200
+
+    except Exception as e:
+        error_logger.error(
+            f"Error deleting all sources for tenant {tenant_id}: {e}",
+            extra={'user_id': current_user.id}, exc_info=True
+        )
+        return jsonify({"error": "Failed to delete all knowledge", "details": str(e)}), 500
 
 @sources_bp.route('/tasks/<string:task_id>', methods=['GET'])
 @token_required
@@ -400,3 +488,64 @@ def get_task_status(current_user, task_id):
     except Exception as e:
         error_logger.error(f"Error getting task status for task {task_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to get task status", "details": str(e)}), 500
+
+
+@sources_bp.route('/<uuid:tenant_id>/store-stats', methods=['GET'])
+@token_required
+def get_store_stats(current_user, tenant_id):
+    """
+    Returns real stats from the tenant's Gemini File Search Store:
+      - document_count   total documents indexed in the store
+      - active_count     documents with state ACTIVE
+      - indexing_count   documents still being processed
+      - failed_count     documents that failed indexing
+      - has_store        whether a store exists yet
+    Falls back gracefully if the store hasn't been created yet.
+    """
+    try:
+        tenant_id_str = str(tenant_id)
+        tenant_resp = (
+            supabase.table('tenants')
+            .select("gemini_file_store_name")
+            .eq('id', tenant_id_str)
+            .eq('user_id', current_user.id)
+            .single()
+            .execute()
+        )
+        if not tenant_resp.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+
+        store_name = (tenant_resp.data or {}).get('gemini_file_store_name')
+        if not store_name:
+            return jsonify({
+                "has_store": False,
+                "document_count": 0,
+                "active_count": 0,
+                "indexing_count": 0,
+                "failed_count": 0,
+            }), 200
+
+        from google import genai
+        client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
+
+        # List all documents in the store and aggregate their states
+        docs = list(client.file_search_stores.documents.list(parent=store_name))
+
+        active   = sum(1 for d in docs if str(getattr(d, 'state', '')).upper() in ('ACTIVE', 'STATE_ACTIVE'))
+        indexing = sum(1 for d in docs if str(getattr(d, 'state', '')).upper() in ('INDEXING', 'STATE_INDEXING', 'PROCESSING'))
+        failed   = sum(1 for d in docs if str(getattr(d, 'state', '')).upper() in ('FAILED', 'STATE_FAILED', 'ERROR'))
+
+        return jsonify({
+            "has_store": True,
+            "document_count": len(docs),
+            "active_count":   active,
+            "indexing_count": indexing,
+            "failed_count":   failed,
+        }), 200
+
+    except Exception as e:
+        error_logger.error(
+            f"Error fetching store stats for tenant {tenant_id}: {e}",
+            extra={'user_id': current_user.id}, exc_info=True
+        )
+        return jsonify({"error": "Failed to fetch store stats", "details": str(e)}), 500

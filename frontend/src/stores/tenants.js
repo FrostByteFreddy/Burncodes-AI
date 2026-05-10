@@ -75,6 +75,7 @@ export const useTenantsStore = defineStore("tenants", () => {
         headers: getAuthHeaders(),
       });
       tenants.value.push(response.data);
+      return response.data;
     } catch (e) {
       error.value = e.response?.data?.error || "Failed to create tenant";
       throw e;

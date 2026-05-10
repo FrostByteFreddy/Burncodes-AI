@@ -3,7 +3,12 @@
     <div class="crawl-progress__bar-track">
       <div class="crawl-progress__bar-fill" :style="{ width: progressPercentage + '%' }"></div>
     </div>
-    <span class="crawl-progress__label">{{ progress.completed }} / {{ progress.total }} pages · {{ progressPercentage.toFixed(0) }}%</span>
+    <span class="crawl-progress__label">
+      {{ progress.completed }} / {{ progress.total }} pages · {{ progressPercentage.toFixed(0) }}%
+      <span v-if="progress.failed > 0" class="crawl-progress__errors">
+        · {{ progress.failed }} error{{ progress.failed !== 1 ? 's' : '' }}
+      </span>
+    </span>
   </div>
 </template>
 

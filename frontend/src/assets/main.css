@@ -85,7 +85,7 @@ body {
 
 @media screen and (max-width: 768px) {
   #app-layout > main:not(:has(#test-chat)) {
-    padding: 2rem 20px;
+    padding: 5rem 20px 2rem;
   }
 }
 

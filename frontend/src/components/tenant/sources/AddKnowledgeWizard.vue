@@ -289,9 +289,8 @@ const lastStep = computed(() => {
 });
 
 const crawlModes = computed(() => [
-  { value: 'soup',          emoji: '⚡', label: t('tenant.sources.wizard.modeSoup'),      desc: t('tenant.sources.wizard.modeSoupDesc'),       badge: 'Fastest', badgeClass: 'bg-success/15 text-success' },
-  { value: 'playwright',    emoji: '🌐', label: t('tenant.sources.wizard.modePlaywright'), desc: t('tenant.sources.wizard.modePlaywrightDesc'),  badge: 'JS sites', badgeClass: 'bg-warning/15 text-warning' },
-  { value: 'playwright_llm',emoji: '🧠', label: t('tenant.sources.wizard.modeLLM'),        desc: t('tenant.sources.wizard.modeLLMDesc'),         badge: 'Best quality', badgeClass: 'bg-primary/15 text-primary' },
+  { value: 'soup',       emoji: '⚡', label: t('tenant.sources.wizard.modeSoup'),       desc: t('tenant.sources.wizard.modeSoupDesc'),      badge: 'Fastest',  badgeClass: 'bg-success/15 text-success' },
+  { value: 'playwright', emoji: '🌐', label: t('tenant.sources.wizard.modePlaywright'), desc: t('tenant.sources.wizard.modePlaywrightDesc'), badge: 'JS sites', badgeClass: 'bg-warning/15 text-warning'  },
 ]);
 const url = ref('');
 const crawlMode = ref('soup');

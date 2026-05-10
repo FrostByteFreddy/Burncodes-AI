@@ -80,10 +80,8 @@ ssh "$SERVER" << EOF
   # Keeps named volumes (app_data, uploads) intact.
   docker compose -f docker-compose.prod.yml down --remove-orphans
 
-  # Flush the default Celery queue to discard any tasks from before
-  # the routing fix (they would have gone to the 'celery' queue which
-  # no worker consumes — flushing prevents phantom task accumulation).
-  docker run --rm --network host redis:7-alpine redis-cli -h 127.0.0.1 DEL celery || true
+  # Flush all Celery queues to discard stale tasks from the previous deploy.
+  docker run --rm --network host redis:7-alpine redis-cli -h 127.0.0.1 DEL celery fast heavy chat || true
 
   docker compose -f docker-compose.prod.yml up -d \
     --scale celery_worker_heavy=$HEAVY_WORKERS

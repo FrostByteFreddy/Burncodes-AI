@@ -7,7 +7,8 @@ services:
 
   backend:
     build:
-      context: ./backend/services/api
+      context: ./backend
+      dockerfile: services/api/Dockerfile
     command: gunicorn --workers 8 --bind 0.0.0.0:5000 --timeout 120 "app:create_app()"
     restart: always
     volumes:
@@ -20,7 +21,8 @@ services:
 
   celery_worker_fast:
     build:
-      context: ./backend/services/worker_fast
+      context: ./backend
+      dockerfile: services/worker_fast/Dockerfile
     restart: always
     volumes:
       - app_data:/app/data
@@ -31,7 +33,7 @@ services:
       - redis
       - backend
     healthcheck:
-      test: ["CMD", "celery", "-A", "celery_worker", "inspect", "ping", "-d", "celery@$$HOSTNAME", "--timeout", "5"]
+      test: ["CMD", "celery", "-A", "celery_worker", "inspect", "ping", "-d", "fast@$$HOSTNAME", "--timeout", "5"]
       interval: 60s
       timeout: 10s
       retries: 3
@@ -39,7 +41,8 @@ services:
 
   celery_worker_heavy:
     build:
-      context: ./backend/services/worker_heavy
+      context: ./backend
+      dockerfile: services/worker_heavy/Dockerfile
     restart: always
     shm_size: '2gb'
     stop_grace_period: 60s
@@ -52,7 +55,7 @@ services:
       - redis
       - backend
     healthcheck:
-      test: ["CMD", "celery", "-A", "celery_worker", "inspect", "ping", "-d", "celery@$$HOSTNAME", "--timeout", "5"]
+      test: ["CMD", "celery", "-A", "celery_worker", "inspect", "ping", "-d", "heavy@$$HOSTNAME", "--timeout", "5"]
       interval: 60s
       timeout: 10s
       retries: 3
@@ -60,7 +63,8 @@ services:
 
   celery_worker_chat:
     build:
-      context: ./backend/services/worker_chat
+      context: ./backend
+      dockerfile: services/worker_chat/Dockerfile
     restart: always
     volumes:
       - app_data:/app/data
@@ -71,7 +75,7 @@ services:
       - redis
       - backend
     healthcheck:
-      test: ["CMD", "celery", "-A", "celery_worker", "inspect", "ping", "-d", "celery@$$HOSTNAME", "--timeout", "5"]
+      test: ["CMD", "celery", "-A", "celery_worker", "inspect", "ping", "-d", "chat@$$HOSTNAME", "--timeout", "5"]
       interval: 60s
       timeout: 10s
       retries: 3
@@ -79,7 +83,8 @@ services:
 
   celery_beat:
     build:
-      context: ./backend/services/beat
+      context: ./backend
+      dockerfile: services/beat/Dockerfile
     restart: always
     volumes:
       - app_data:/app/data

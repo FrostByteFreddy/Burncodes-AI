@@ -53,3 +53,8 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.crawl-progress__errors {
+  color: var(--status-error, #f87171);
+  font-weight: 600;
+}

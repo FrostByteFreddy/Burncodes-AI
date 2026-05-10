@@ -1,6 +1,5 @@
 <template>
   <div
-    v-if="show"
     class="fixed inset-0 z-50 flex justify-center items-center"
     style="background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);"
   >
@@ -47,13 +46,14 @@
         </div>
 
         <div class="modal-box__footer">
-          <button type="button" @click="$emit('close')" class="modal-btn modal-btn--ghost">
+          <p v-if="error" class="modal-error">{{ error }}</p>
+          <button type="button" @click="$emit('close')" class="modal-btn modal-btn--ghost" :disabled="submitting">
             <font-awesome-icon :icon="['fas', 'times']" />
             {{ $t("modals.createTenant.cancel") }}
           </button>
-          <button type="submit" class="modal-btn modal-btn--primary">
-            <font-awesome-icon :icon="['fas', 'check']" />
-            {{ $t("modals.createTenant.create") }}
+          <button type="submit" class="modal-btn modal-btn--primary" :disabled="submitting">
+            <font-awesome-icon :icon="['fas', submitting ? 'spinner' : 'check']" :spin="submitting" />
+            {{ submitting ? 'Creating…' : $t("modals.createTenant.create") }}
           </button>
         </div>
       </form>
@@ -63,9 +63,17 @@
 
 <script setup>
 import { ref } from "vue";
+import { useTenantsStore } from "../stores/tenants";
+import { useRouter } from "vue-router";
 
-defineProps({ show: Boolean });
-const emit = defineEmits(["close", "create"]);
+defineProps({});
+const emit = defineEmits(["close"]);
+
+const tenantsStore = useTenantsStore();
+const router = useRouter();
+
+const submitting = ref(false);
+const error      = ref("");
 
 const languageOptions = ref([
   { value: "de", text: "German" },
@@ -82,7 +90,22 @@ const formData = ref({
   translation_target: "de",
 });
 
-const handleSubmit = () => emit("create", { ...formData.value });
+const handleSubmit = async () => {
+  error.value = "";
+  submitting.value = true;
+  try {
+    const newTenant = await tenantsStore.createTenant({ ...formData.value });
+    emit("close");
+    // Navigate to the new tenant's dashboard
+    if (newTenant?.id) {
+      router.push(`/tenant/${newTenant.id}`);
+    }
+  } catch (e) {
+    error.value = tenantsStore.error || "Failed to create chatbot.";
+  } finally {
+    submitting.value = false;
+  }
+};
 </script>
 
 <style scoped>
@@ -139,4 +162,11 @@ const handleSubmit = () => emit("create", { ...formData.value });
 .modal-btn--ghost:hover { background: var(--surface-3); color: var(--surface-text); }
 .modal-btn--primary { background: var(--gradient-brand); color: white; }
 .modal-btn--primary:hover { opacity: 0.9; }
+.modal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.modal-error {
+  flex: 1;
+  font-size: 13px;
+  color: var(--color-error, #f87171);
+  margin: 0;
+}
 </style>

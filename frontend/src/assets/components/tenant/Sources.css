@@ -112,3 +112,35 @@
   color: var(--surface-muted);
   margin-top: 2px;
 }
+
+/* ── Danger zone ──────────────────────────────────────────────── */
+.sources-danger {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.sources-danger__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-error, #f87171);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--color-error, #f87171) 30%, transparent);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.sources-danger__btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-error, #f87171) 10%, transparent);
+  border-color: var(--color-error, #f87171);
+}
+
+.sources-danger__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -2,8 +2,6 @@ from flask import Blueprint, request, jsonify
 from app.database.supabase_client import supabase
 from app.auth.decorators import token_required
 from app.models.database import Tenant, TenantFineTune
-from app.data_processing.processor import process_fine_tune_rules, delete_fine_tune_vectors
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from app.logging_config import error_logger
 from uuid import uuid4
 import os
@@ -20,37 +18,27 @@ def create_tenant(current_user):
 
         tenant_id = uuid4()
         tenant_data = {
-            "id": str(tenant_id), 
-            "user_id": str(current_user.id), 
+            "id": str(tenant_id),
+            "user_id": str(current_user.id),
             "name": data['name'],
-            "intro_message": data['intro_message'], 
+            "intro_message": data['intro_message'],
             "system_persona": data['system_persona'],
-            "rag_prompt_template": data['rag_prompt_template'], 
+            "rag_prompt_template": data['rag_prompt_template'],
             "doc_language": data.get('doc_language'),
             "translation_target": data.get('translation_target'),
             "crawl_mode": data.get('crawl_mode', 'playwright_llm'),
         }
         supabase.table('tenants').insert(tenant_data).execute()
 
+        # Fine-tune rules are stored in DB only — injected into the system
+        # prompt at chat time. No vector embedding needed.
         fine_tune_rules_data = data.get('fine_tune_rules', [])
         if fine_tune_rules_data:
-            rules_to_insert = [{"tenant_id": str(tenant_id), "trigger": r['trigger'], "instruction": r['instruction']} for r in fine_tune_rules_data]
-            inserted_rules_response = supabase.table('tenant_fine_tune').insert(rules_to_insert).execute()
-
-            inserted_rules = inserted_rules_response.data
-
-            # Convert dicts to TenantFineTune objects
-            fine_tune_rules_models = [TenantFineTune(**rule) for rule in inserted_rules]
-
-            # Initialize embeddings
-            embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-
-            # Process rules and get vector IDs
-            vector_ids = process_fine_tune_rules(fine_tune_rules_models, tenant_id, embeddings)
-
-            # Update each rule in tenant_fine_tune with the vector_id
-            for rule, vector_id in zip(inserted_rules, vector_ids):
-                supabase.table('tenant_fine_tune').update({"vector_id": vector_id}).eq('id', rule['id']).execute()
+            rules_to_insert = [
+                {"tenant_id": str(tenant_id), "trigger": r['trigger'], "instruction": r['instruction']}
+                for r in fine_tune_rules_data
+            ]
+            supabase.table('tenant_fine_tune').insert(rules_to_insert).execute()
 
         return jsonify({"message": "Tenant created successfully", "id": str(tenant_id)}), 201
     except Exception as e:
@@ -109,7 +97,8 @@ def update_tenant(current_user, tenant_id):
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
         tenant_update_data = {}
-        allowed_fields = ['name', 'intro_message', 'system_persona', 'rag_prompt_template', 'doc_language', 'translation_target', 'widget_config', 'crawl_mode']
+        allowed_fields = ['name', 'intro_message', 'system_persona', 'rag_prompt_template',
+                          'doc_language', 'translation_target', 'widget_config', 'crawl_mode']
         for field in allowed_fields:
             if field in data:
                 tenant_update_data[field] = data[field]
@@ -118,26 +107,15 @@ def update_tenant(current_user, tenant_id):
             supabase.table('tenants').update(tenant_update_data).eq('id', tenant_id_str).execute()
 
         if 'fine_tune_rules' in data:
-            new_rules_data = data['fine_tune_rules']
-            existing_rules_response = supabase.table('tenant_fine_tune').select('id, vector_id').eq('tenant_id', tenant_id_str).execute()
-            existing_rules = existing_rules_response.data
-
-            vector_ids_to_delete = [rule['vector_id'] for rule in existing_rules if rule.get('vector_id')]
-            embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-
-            if vector_ids_to_delete:
-                delete_fine_tune_vectors(vector_ids_to_delete, tenant_id, embeddings)
-
+            # Replace all fine-tune rules — no vector store involved, just DB rows
             supabase.table('tenant_fine_tune').delete().eq('tenant_id', tenant_id_str).execute()
-
+            new_rules_data = data['fine_tune_rules']
             if new_rules_data:
-                rules_to_insert = [{"tenant_id": tenant_id_str, "trigger": r['trigger'], "instruction": r['instruction']} for r in new_rules_data]
-                inserted_rules_response = supabase.table('tenant_fine_tune').insert(rules_to_insert).execute()
-                inserted_rules = inserted_rules_response.data
-                fine_tune_rules_models = [TenantFineTune(**rule) for rule in inserted_rules]
-                vector_ids = process_fine_tune_rules(fine_tune_rules_models, tenant_id, embeddings)
-                for rule, vector_id in zip(inserted_rules, vector_ids):
-                    supabase.table('tenant_fine_tune').update({"vector_id": vector_id}).eq('id', rule['id']).execute()
+                rules_to_insert = [
+                    {"tenant_id": tenant_id_str, "trigger": r['trigger'], "instruction": r['instruction']}
+                    for r in new_rules_data
+                ]
+                supabase.table('tenant_fine_tune').insert(rules_to_insert).execute()
 
         return jsonify({"message": "Tenant updated successfully"}), 200
     except Exception as e:
@@ -149,17 +127,21 @@ def update_tenant(current_user, tenant_id):
 def delete_tenant(current_user, tenant_id):
     try:
         tenant_id_str = str(tenant_id)
-        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
-        if not tenant_check.data:
+        tenant_resp = supabase.table('tenants').select("*").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
+        if not tenant_resp.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
-        existing_rules_response = supabase.table('tenant_fine_tune').select('id, vector_id').eq('tenant_id', tenant_id_str).execute()
-        existing_rules = existing_rules_response.data
-        vector_ids_to_delete = [rule['vector_id'] for rule in existing_rules if rule.get('vector_id')]
-
-        if vector_ids_to_delete:
-            embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-            delete_fine_tune_vectors(vector_ids_to_delete, tenant_id, embeddings)
+        # Delete the Gemini File Search Store (and all its documents) if it exists
+        store_name = (tenant_resp.data or {}).get('gemini_file_store_name')
+        if store_name:
+            try:
+                from app.gemini_store.service import GeminiStoreService
+                GeminiStoreService.delete_store(store_name)
+            except Exception as store_err:
+                error_logger.error(
+                    "Soft failure: could not delete Gemini store %s for tenant %s: %s",
+                    store_name, tenant_id_str, store_err
+                )
 
         supabase.table('tenant_fine_tune').delete().eq('tenant_id', tenant_id_str).execute()
         supabase.table('tenant_sources').delete().eq('tenant_id', tenant_id_str).execute()

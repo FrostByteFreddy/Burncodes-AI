@@ -9,14 +9,20 @@ RUN addgroup --system appgroup && \
     adduser --system --ingroup appgroup appuser && \
     mkdir -p /home/appuser && chown -R appuser:appgroup /home/appuser
 
-COPY requirements.txt .
+COPY services/worker_fast/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY entrypoint.sh /entrypoint.sh
+COPY services/worker_fast/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-COPY app/ app/
-COPY celery_worker.py .
+COPY services/worker_fast/app/ app/
+COPY shared/auth/         app/auth/
+COPY shared/database/     app/database/
+COPY shared/models/       app/models/
+COPY shared/logging_config.py app/logging_config.py
+COPY shared/gemini_store/    app/gemini_store/
+
+COPY services/worker_fast/celery_worker.py .
 RUN chown -R appuser:appgroup $APP_HOME
 
 ENTRYPOINT ["/entrypoint.sh"]

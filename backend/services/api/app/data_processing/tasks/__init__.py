@@ -28,4 +28,5 @@ class _TaskProxy:
 # Task names = module_path.function_name as registered by @shared_task in each worker
 process_local_file = _TaskProxy('app.data_processing.tasks.process_local_file', queue='fast')
 process_urls       = _TaskProxy('app.data_processing.tasks.process_urls',        queue='fast')
+process_file_url   = _TaskProxy('app.data_processing.tasks.process_file_url',    queue='fast')
 crawl_links_task   = _TaskProxy('app.data_processing.tasks.crawl_tasks.crawl_links_task', queue='heavy')

@@ -11,17 +11,10 @@
         </span>
       </div>
       <div class="sources-kpi">
-        <span class="sources-kpi__value">{{ kpis.documents.toLocaleString() }}</span>
+        <span class="sources-kpi__value">{{ kpis.files.toLocaleString() }}</span>
         <span class="sources-kpi__label">
           <font-awesome-icon :icon="['fas', 'file']" />
-          Documents
-        </span>
-      </div>
-      <div class="sources-kpi">
-        <span class="sources-kpi__value">{{ kpis.facts.toLocaleString() }}</span>
-        <span class="sources-kpi__label">
-          <font-awesome-icon :icon="['fas', 'bolt']" />
-          Total Facts
+          Indexed Documents
         </span>
       </div>
       <div class="sources-kpi sources-kpi--error" v-if="kpis.errors > 0">
@@ -32,7 +25,7 @@
         </span>
       </div>
       <div class="sources-kpi" v-else>
-        <span class="sources-kpi__value sources-kpi__value--success">{{ kpis.pages + kpis.documents > 0 ? '100%' : '—' }}</span>
+        <span class="sources-kpi__value sources-kpi__value--success">{{ kpis.pages + kpis.files > 0 ? '100%' : '—' }}</span>
         <span class="sources-kpi__label">
           <font-awesome-icon :icon="['fas', 'circle-check']" />
           Success Rate
@@ -50,6 +43,14 @@
         <span class="sources-add-banner__sub">Crawl a website · Upload a PDF or document</span>
       </div>
     </button>
+
+    <!-- Danger zone -->
+    <div class="sources-danger" v-if="kpis.pages + kpis.files > 0">
+      <button @click="showDeleteAllModal = true" class="sources-danger__btn" :disabled="deletingAll">
+        <font-awesome-icon :icon="['fas', deletingAll ? 'spinner' : 'trash-can']" :spin="deletingAll" />
+        {{ deletingAll ? 'Clearing…' : 'Delete All Knowledge' }}
+      </button>
+    </div>
 
     <!-- Main list -->
     <KnowledgeList
@@ -75,11 +76,20 @@
       @confirm="handleDelete"
       @cancel="cancelDelete"
     />
+
+    <ConfirmationModal
+      :show="showDeleteAllModal"
+      title="Delete All Knowledge?"
+      message="This will permanently remove all sources from the database AND delete the entire Gemini index. This cannot be undone."
+      confirmButtonText="Yes, delete everything"
+      @confirm="handleDeleteAll"
+      @cancel="showDeleteAllModal = false"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { useTenantsStore } from '../../stores/tenants';
 import { useToast } from '../../composables/useToast';
 import { useI18n } from 'vue-i18n';
@@ -96,18 +106,48 @@ const wizardOpen            = ref(false);
 const crawlingJobs          = ref([]);
 const sourceToDelete        = ref(null);
 const showConfirmationModal = ref(false);
+const showDeleteAllModal    = ref(false);
+const deletingAll           = ref(false);
 
+// ---------------------------------------------------------------------------
+// Live polling — refresh sources every 5 s while a crawl is active
+// KPIs are computed from the Pinia store, so they update automatically.
+// ---------------------------------------------------------------------------
+const liveInterval = ref(null);
+const hasActiveJobs = computed(() => crawlingJobs.value.some(j => j.status === 'IN_PROGRESS'));
+
+const startLiveRefresh = () => {
+  if (liveInterval.value) return;
+  liveInterval.value = setInterval(async () => {
+    if (tenantsStore.currentTenant) {
+      await tenantsStore.refetch(tenantsStore.currentTenant.id);
+    }
+  }, 5000);
+};
+
+const stopLiveRefresh = () => {
+  if (liveInterval.value) { clearInterval(liveInterval.value); liveInterval.value = null; }
+};
+
+watch(hasActiveJobs, (active) => { active ? startLiveRefresh() : stopLiveRefresh(); });
+onUnmounted(stopLiveRefresh);
+
+// ---------------------------------------------------------------------------
+// Local KPIs (derived from tenant_sources already loaded in the store)
+// ---------------------------------------------------------------------------
 const kpis = computed(() => {
   const sources = tenantsStore.currentTenant?.tenant_sources || [];
   const completed = sources.filter(s => s.status === 'COMPLETED');
   return {
-    pages:     completed.filter(s => s.source_type === 'URL').length,
-    documents: completed.filter(s => s.source_type === 'FILE').length,
-    facts:     completed.reduce((sum, s) => sum + (s.chunk_count || 0), 0),
-    errors:    sources.filter(s => s.status === 'ERROR').length,
+    pages:  completed.filter(s => s.source_type === 'URL').length,
+    files:  completed.filter(s => s.source_type === 'FILE' || s.source_type === 'FILE_URL').length,
+    errors: sources.filter(s => s.status === 'ERROR' || s.status === 'UNSUPPORTED').length,
   };
 });
 
+// ---------------------------------------------------------------------------
+// Data fetching
+// ---------------------------------------------------------------------------
 const fetchCrawlingJobs = async () => {
   if (!tenantsStore.currentTenant) return;
   try {
@@ -116,8 +156,12 @@ const fetchCrawlingJobs = async () => {
   } catch { addToast(t('tenant.sources.actions.fetchFailed'), 'error'); }
 };
 
-watch(() => tenantsStore.currentTenant, (t) => {
-  if (t) fetchCrawlingJobs(); else crawlingJobs.value = [];
+watch(() => tenantsStore.currentTenant, (tenant) => {
+  if (tenant) {
+    fetchCrawlingJobs();
+  } else {
+    crawlingJobs.value = [];
+  }
 }, { immediate: true });
 
 const onCrawlStarted = async () => { await fetchCrawlingJobs(); };
@@ -150,5 +194,21 @@ const handleDelete = async () => {
     tenantsStore.currentTenant.tenant_sources = orig;
     addToast(t('tenant.sources.actions.deleteFailed'), 'error');
   } finally { cancelDelete(); }
+};
+
+const handleDeleteAll = async () => {
+  if (!tenantsStore.currentTenant) return;
+  showDeleteAllModal.value = false;
+  deletingAll.value = true;
+  try {
+    await apiClient.delete(`/tenants/${tenantsStore.currentTenant.id}/sources`);
+    addToast('All knowledge deleted.', 'success');
+    await tenantsStore.refetch(tenantsStore.currentTenant.id);
+    await fetchCrawlingJobs();
+  } catch {
+    addToast('Failed to delete all knowledge.', 'error');
+  } finally {
+    deletingAll.value = false;
+  }
 };
 </script>
