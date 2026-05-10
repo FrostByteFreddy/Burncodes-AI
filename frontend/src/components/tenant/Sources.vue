@@ -16,6 +16,7 @@
             <h2 class="knowledge-panel__title">Crawls &amp; Documents</h2>
             <p class="knowledge-panel__sub">Indexed pages, uploaded PDFs and files</p>
           </div>
+        </div>
       </div>
 
       <!-- Divider -->
