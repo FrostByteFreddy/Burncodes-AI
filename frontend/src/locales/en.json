@@ -198,8 +198,17 @@
             "launcher_background_color": "Launcher Button Background"
           }
         },
+        "header": {
+          "title": "Header"
+        },
+        "messages": {
+          "title": "Messages"
+        },
+        "inputField": {
+          "title": "Input Field"
+        },
         "launcher": {
-          "title": "Launcher Configuration",
+          "title": "Launcher",
           "icon": "Launcher Icon",
           "removeIcon": "Remove Icon",
           "currentIcon": "Current Icon:",

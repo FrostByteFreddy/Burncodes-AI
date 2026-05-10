@@ -198,8 +198,17 @@
             "launcher_background_color": "Arrière-plan du bouton lanceur"
           }
         },
+        "header": {
+          "title": "En-tête"
+        },
+        "messages": {
+          "title": "Messages"
+        },
+        "inputField": {
+          "title": "Champ de saisie"
+        },
         "launcher": {
-          "title": "Configuration du lanceur",
+          "title": "Lanceur",
           "icon": "Icône du lanceur",
           "removeIcon": "Supprimer l'icône",
           "currentIcon": "Icône actuelle :",
