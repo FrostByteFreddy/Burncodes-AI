@@ -44,7 +44,10 @@
       <p class="step-subtext mb-4">{{ $t('tenant.install.scriptDesc') }}</p>
 
       <div class="install-script-block">
-        <pre class="install-script-pre"><code>&lt;script src="{{ apiUrl }}/tenants/widget.js" data-tenant-id="{{ tenantId }}"&gt;&lt;/script&gt;</code></pre>
+        <pre class="install-script-pre"><code>&lt;script
+  src="{{ apiUrl }}/tenants/widget.js"
+  data-tenant-id="{{ tenantId }}"&gt;
+&lt;/script&gt;</code></pre>
         <button @click="copyScript" class="install-script-copy">
           <font-awesome-icon :icon="['fas', copied ? 'check' : 'copy']" />
           <span>{{ copied ? $t('tenant.install.copied') : $t('tenant.install.copy') }}</span>

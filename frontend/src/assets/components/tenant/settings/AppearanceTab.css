@@ -210,8 +210,7 @@
   border: 1px solid var(--surface-3);
   border-radius: var(--radius-md);
   padding: 16px;
-  white-space: pre-wrap;
-  word-break: break-all;
+  overflow-x: auto;
   font-size: 13px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   color: var(--surface-text);
