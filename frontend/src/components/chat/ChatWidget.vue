@@ -1,5 +1,12 @@
 <template>
+  <!-- Collapsed state (non-widget mode only — in widget mode parent hides the iframe) -->
+  <div v-if="!isChatOpen" class="chat-collapsed-bar" @click="isChatOpen = true">
+    <span>{{ resolvedConfig.chatbot_title || 'Chat' }}</span>
+    <font-awesome-icon :icon="['fas', 'chevron-up']" />
+  </div>
+
   <BaseChat
+    v-else
     :config="resolvedConfig"
     :chatHistory="chatHistory"
     :isThinking="isThinking"
@@ -7,11 +14,12 @@
     v-model:userMessage="userMessage"
     @sendMessage="sendMessage"
     @reset="resetChat"
+    @close="handleClose"
   />
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
@@ -31,16 +39,25 @@ const props = defineProps({
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // ── Config resolution ──────────────────────────────────────────────────────────
-// Preview mode: config prop is reactive (in-memory widget_config from AppearanceTab)
-// Standalone mode: fetch from /public, store locally
 const fetchedConfig = ref(null);
-
 const resolvedConfig = computed(() => props.config ?? fetchedConfig.value ?? {});
 
+// ── Open / close state ────────────────────────────────────────────────────────
+const isChatOpen = ref(true);
+
+const handleClose = () => {
+  if (props.isWidget) {
+    // Tell widget.js to hide the iframe; the launcher re-opens it
+    window.parent.postMessage({ type: 'burncodes:close-widget' }, '*');
+  } else {
+    isChatOpen.value = false;
+  }
+};
+
 // ── Chat state ─────────────────────────────────────────────────────────────────
-const chatHistory   = ref([]);
-const userMessage   = ref('');
-const isThinking    = ref(false);
+const chatHistory    = ref([]);
+const userMessage    = ref('');
+const isThinking     = ref(false);
 const conversationId = ref(uuidv4());
 const activeAbortController = ref(null);
 
@@ -233,3 +250,19 @@ onUnmounted(() => {
   }
 });
 </script>
+
+<style scoped>
+.chat-collapsed-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--chat-header-background-color, #6366f1);
+  color: var(--chat-header-text-color, #ffffff);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  user-select: none;
+}
+</style>

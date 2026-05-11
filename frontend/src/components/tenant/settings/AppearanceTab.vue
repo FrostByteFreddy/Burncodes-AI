@@ -54,6 +54,24 @@
                   <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
                 </select>
               </div>
+              <div>
+                <label for="reset_button_icon_color" class="form-field">{{ $t('tenant.settings.appearance.componentStyles.labels.reset_button_icon_color') }}</label>
+                <select v-model="local.widget_config.component_styles.reset_button_icon_color" id="reset_button_icon_color" class="form-input">
+                  <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
+                </select>
+              </div>
+              <div>
+                <label for="close_button_background_color" class="form-field">{{ $t('tenant.settings.appearance.componentStyles.labels.close_button_background_color') }}</label>
+                <select v-model="local.widget_config.component_styles.close_button_background_color" id="close_button_background_color" class="form-input">
+                  <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
+                </select>
+              </div>
+              <div>
+                <label for="close_button_icon_color" class="form-field">{{ $t('tenant.settings.appearance.componentStyles.labels.close_button_icon_color') }}</label>
+                <select v-model="local.widget_config.component_styles.close_button_icon_color" id="close_button_icon_color" class="form-input">
+                  <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
+                </select>
+              </div>
             </div>
             <div>
               <label for="chatbot_title" class="form-field">{{ $t('tenant.settings.appearance.chatWindow.chatbotTitle') }}</label>

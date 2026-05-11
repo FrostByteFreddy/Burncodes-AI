@@ -120,6 +120,13 @@ def get_widget_script():
             }});
 
             container.appendChild(launcher);
+
+            // Listen for close event emitted from inside the chat iframe
+            window.addEventListener('message', (event) => {{
+                if (event.data && event.data.type === 'burncodes:close-widget') {{
+                    iframe.style.display = 'none';
+                }}
+            }});
         }})
         .catch(err => {{
             console.error('Burncodes AI Widget: Error fetching config.', err);

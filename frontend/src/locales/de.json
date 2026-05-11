@@ -76,6 +76,8 @@
   "chat": {
     "inputPlaceholder": "Stell mir eine Frage...",
     "thinking": "Denke nach...",
+    "reset": "Gespräch zurücksetzen",
+    "close": "Chat schließen",
     "errors": {
       "initialMessage": "Fehler: Konnte Anfangsnachricht nicht laden.",
       "processingFailed": "Fehler: Verarbeitung fehlgeschlagen.",
@@ -194,7 +196,10 @@
             "input_text_color": "Eingabefeld-Text",
             "input_focus_ring_color": "Eingabefeld-Fokusring",
             "chat_background_color": "Chat-Bereich-Hintergrund",
-            "reset_button_color": "Zurücksetzen-Button",
+            "reset_button_color": "Zurücksetzen-Hintergrund",
+            "reset_button_icon_color": "Zurücksetzen-Icon",
+            "close_button_background_color": "Schließen-Hintergrund",
+            "close_button_icon_color": "Schließen-Icon",
             "launcher_background_color": "Launcher-Button-Hintergrund"
           }
         },

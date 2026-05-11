@@ -76,6 +76,8 @@
   "chat": {
     "inputPlaceholder": "Ask me a question...",
     "thinking": "Thinking...",
+    "reset": "Reset conversation",
+    "close": "Close chat",
     "errors": {
       "initialMessage": "Error: Could not get initial message.",
       "processingFailed": "Error: Processing failed.",
@@ -194,7 +196,10 @@
             "input_text_color": "Input Field Text",
             "input_focus_ring_color": "Input Field Focus Ring",
             "chat_background_color": "Chat Area Background",
-            "reset_button_color": "Reset Button",
+            "reset_button_color": "Reset Button Background",
+            "reset_button_icon_color": "Reset Button Icon",
+            "close_button_background_color": "Close Button Background",
+            "close_button_icon_color": "Close Button Icon",
             "launcher_background_color": "Launcher Button Background"
           }
         },

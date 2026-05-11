@@ -84,7 +84,9 @@ const defaultWidgetConfig = () => ({
     send_button_background_color: 'c_primary', send_button_text_color: 'c_white',
     input_background_color: 'c_secondary', input_text_color: 'c_black',
     input_focus_ring_color: 'c_primary', chat_background_color: 'c_white',
-    reset_button_color: 'c_primary', launcher_background_color: 'c_primary',
+    reset_button_color: 'c_primary', reset_button_icon_color: 'c_white',
+    close_button_background_color: 'c_primary', close_button_icon_color: 'c_white',
+    launcher_background_color: 'c_primary',
   },
 });
 

@@ -76,6 +76,8 @@
   "chat": {
     "inputPlaceholder": "Posez-moi une question...",
     "thinking": "Je réfléchis...",
+    "reset": "Réinitialiser la conversation",
+    "close": "Fermer le chat",
     "errors": {
       "initialMessage": "Erreur : Impossible de récupérer le message initial.",
       "processingFailed": "Erreur : Échec du traitement.",
@@ -194,7 +196,10 @@
             "input_text_color": "Texte du champ de saisie",
             "input_focus_ring_color": "Anneau de focus du champ de saisie",
             "chat_background_color": "Arrière-plan de la zone de chat",
-            "reset_button_color": "Bouton de réinitialisation",
+            "reset_button_color": "Fond bouton réinitialisation",
+            "reset_button_icon_color": "Icône bouton réinitialisation",
+            "close_button_background_color": "Fond bouton fermer",
+            "close_button_icon_color": "Icône bouton fermer",
             "launcher_background_color": "Arrière-plan du bouton lanceur"
           }
         },
