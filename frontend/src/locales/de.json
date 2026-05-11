@@ -76,6 +76,8 @@
   "chat": {
     "inputPlaceholder": "Stell mir eine Frage...",
     "thinking": "Denke nach...",
+    "reset": "Gespräch zurücksetzen",
+    "close": "Chat schließen",
     "errors": {
       "initialMessage": "Fehler: Konnte Anfangsnachricht nicht laden.",
       "processingFailed": "Fehler: Verarbeitung fehlgeschlagen.",
@@ -182,7 +184,7 @@
         "componentStyles": {
           "title": "Komponenten-Stile",
           "labels": {
-            "header_background_color": "Header-Hintergrund",
+            "header_background_color": "Header & Footer Hintergrund",
             "header_text_color": "Header-Text",
             "user_message_background_color": "Benutzernachricht-Hintergrund",
             "user_message_text_color": "Benutzernachricht-Text",
@@ -194,12 +196,27 @@
             "input_text_color": "Eingabefeld-Text",
             "input_focus_ring_color": "Eingabefeld-Fokusring",
             "chat_background_color": "Chat-Bereich-Hintergrund",
-            "reset_button_color": "Zurücksetzen-Button",
+            "reset_button_color": "Zurücksetzen-Hintergrund",
+            "reset_button_icon_color": "Zurücksetzen-Icon",
+            "close_button_background_color": "Schließen-Hintergrund",
+            "close_button_icon_color": "Schließen-Icon",
             "launcher_background_color": "Launcher-Button-Hintergrund"
           }
         },
+        "header": {
+          "title": "Header",
+          "bgHint": "Wird auch für den Hintergrund hinter dem Eingabefeld verwendet."
+        },
+        "messages": {
+          "title": "Nachrichten"
+        },
+        "inputField": {
+          "title": "Eingabefeld"
+        },
         "launcher": {
-          "title": "Launcher-Konfiguration",
+          "title": "Launcher",
+          "widgetEnabled": "Widget auf Website anzeigen",
+          "widgetEnabledHint": "Wenn deaktiviert, erscheint der Chatbot-Launcher nicht auf Ihrer Website. Der Script-Tag kann bestehen bleiben.",
           "icon": "Launcher-Icon",
           "removeIcon": "Icon entfernen",
           "currentIcon": "Aktuelles Icon:",
@@ -334,7 +351,33 @@
         "add": "Regel hinzufügen",
         "saveSuccess": "Feinabstimmungsregeln erfolgreich gespeichert!",
         "saveFailed": "Fehler beim Speichern der Feinabstimmungsregeln."
+      },
+      "wizard": {
+        "step1of2": "Schritt 1 von 2",
+        "step2of2": "Schritt 2 von 2",
+        "triggerTitle": "Was soll diese Regel auslösen?",
+        "triggerDesc": "Der Auslöser ist ein Thema oder eine Absicht, die diese Regel aktiviert. Wenn ein Nutzer etwas fragt, das diesem Auslöser entspricht, greift Ihre Anweisung. Halten Sie ihn kurz und beschreibend.",
+        "triggerExample": "z.B. 'Frage zur Preisgestaltung'",
+        "triggerPreview": "Vorschau",
+        "actionTitle": "Was soll der Bot tun?",
+        "actionDesc": "Sagen Sie dem Bot genau, was er tun oder sagen soll, wenn dieser Auslöser zutrifft. Seien Sie konkret — z.B. 'Verweisen Sie den Nutzer für alle Preisfragen auf example.com/pricing.'",
+        "actionExample": "z.B. 'Verweisen Sie den Nutzer immer auf example.com/pricing für Preisfragen.'",
+        "next": "Weiter",
+        "back": "Zurück"
       }
+    },
+    "install": {
+      "title": "Ihr Chatbot ist bereit zum Einsatz",
+      "description": "Betten Sie Ihren KI-Chatbot mit einer einzigen HTML-Zeile auf jeder Website ein. Er lädt asynchron und verlangsamt Ihre Seite nicht.",
+      "step1": "Kopieren Sie den Script-Tag aus dem Bereich rechts",
+      "step2": "Fügen Sie ihn direkt vor dem schließenden </body>-Tag ein",
+      "step3": "Ihr Chatbot erscheint automatisch für Ihre Besucher",
+      "previewLink": "Chatbot öffnen",
+      "scriptTitle": "Einbettungs-Script",
+      "scriptDesc": "Fügen Sie diesen Script-Tag in Ihre Website ein. Kein Build-Schritt erforderlich.",
+      "scriptHint": "Das Widget ist immer aktuell. Ändern Sie die data-tenant-id nur, wenn Sie den Chatbot wechseln.",
+      "copy": "In Zwischenablage kopieren",
+      "copied": "Kopiert!"
     }
   },
   "chatLogs": {
@@ -376,6 +419,7 @@
   },
   "sidebar": {
     "selectTenant": "Chatbot auswählen",
+    "install": "Einbinden",
     "sources": "Wissen",
     "configuration": "Konfiguration",
     "fineTune": "Feinabstimmung",

@@ -149,15 +149,16 @@ def get_crawling_jobs(current_user, tenant_id):
             tasks_by_job[t['job_id']].append(t)
             all_crawled_urls.add(t['url'])
 
-        # Batch-fetch matching tenant_sources — one query total
+        # Batch-fetch matching tenant_sources — fetch all for this tenant, filter in Python
+        # (avoids httpx "URL component 'query' too long" when crawl jobs contain hundreds of URLs)
         sources_by_url = {}
         if all_crawled_urls:
             sources_resp = supabase.table('tenant_sources').select("*") \
                 .eq('tenant_id', tenant_id_str) \
-                .in_('source_location', list(all_crawled_urls)) \
                 .execute()
             for s in (sources_resp.data or []):
-                sources_by_url[s['source_location']] = s
+                if s['source_location'] in all_crawled_urls:
+                    sources_by_url[s['source_location']] = s
 
         # Attach sources + counts to each job
         for job in jobs:

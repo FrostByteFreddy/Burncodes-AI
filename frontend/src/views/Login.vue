@@ -8,7 +8,7 @@
 
       <div class="relative">
         <!-- Logo -->
-        <img src="@/assets/logo.svg" alt="Logo" style="height:48px;width:auto;filter:brightness(0) invert(1);" />
+        <img src="/logo_white.png" alt="Logo" style="height:48px;width:auto;" />
       </div>
 
       <div class="relative">
@@ -26,7 +26,7 @@
     <div class="flex-1 flex flex-col justify-center px-6 py-12 lg:px-16 bg-base-100">
       <!-- Mobile logo -->
       <div class="lg:hidden mb-10 flex justify-center">
-        <img src="@/assets/logo.svg" alt="Logo" style="height:40px;width:auto;" />
+        <img src="/logo_white.png" alt="Logo" style="height:40px;width:auto;" />
       </div>
 
       <div class="w-full max-w-sm mx-auto lg:mx-0">

@@ -24,6 +24,7 @@ const routes = [
       { path: "sources",   name: "TenantSources",   component: () => import("../components/tenant/Sources.vue") },
       { path: "configure", name: "TenantConfigure", component: () => import("../components/tenant/Settings.vue") },
       { path: "insights",  name: "TenantInsights",  component: () => import("../views/Insights.vue") },
+      { path: "install",   name: "TenantInstall",   component: () => import("../views/Install.vue") },
     ],
 
   },
@@ -49,7 +50,7 @@ const routes = [
     path: `/chat/:tenantId(${uuidRegex})`,
     name: "Chat",
     component: () => import("../views/Chat.vue"),
-    meta: { public: true },
+    meta: { public: true, skipAuth: true },
     props: true,
   },
 ];
@@ -60,6 +61,9 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
+  // Fully public standalone routes — skip auth entirely
+  if (to.meta.skipAuth) return next();
+
   const authStore = useAuthStore();
 
   let sessionFoundInStorage = false;

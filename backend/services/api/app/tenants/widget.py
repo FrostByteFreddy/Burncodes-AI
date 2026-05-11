@@ -57,6 +57,12 @@ def get_widget_script():
             }}
 
             const config = data.widget_config || {{}};
+
+            // Respect the hide/show toggle set in the dashboard
+            if (config.widget_enabled === false) {{
+                return;
+            }}
+
             const styles = config.component_styles || {{}};
             const palette = config.color_palette || [];
 
@@ -114,6 +120,13 @@ def get_widget_script():
             }});
 
             container.appendChild(launcher);
+
+            // Listen for close event emitted from inside the chat iframe
+            window.addEventListener('message', (event) => {{
+                if (event.data && event.data.type === 'burncodes:close-widget') {{
+                    iframe.style.display = 'none';
+                }}
+            }});
         }})
         .catch(err => {{
             console.error('Burncodes AI Widget: Error fetching config.', err);

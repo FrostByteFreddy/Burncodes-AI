@@ -76,6 +76,8 @@
   "chat": {
     "inputPlaceholder": "Posez-moi une question...",
     "thinking": "Je réfléchis...",
+    "reset": "Réinitialiser la conversation",
+    "close": "Fermer le chat",
     "errors": {
       "initialMessage": "Erreur : Impossible de récupérer le message initial.",
       "processingFailed": "Erreur : Échec du traitement.",
@@ -182,7 +184,7 @@
         "componentStyles": {
           "title": "Styles des composants",
           "labels": {
-            "header_background_color": "Arrière-plan de l'en-tête",
+            "header_background_color": "Fond en-tête & pied",
             "header_text_color": "Texte de l'en-tête",
             "user_message_background_color": "Arrière-plan du message utilisateur",
             "user_message_text_color": "Texte du message utilisateur",
@@ -194,12 +196,27 @@
             "input_text_color": "Texte du champ de saisie",
             "input_focus_ring_color": "Anneau de focus du champ de saisie",
             "chat_background_color": "Arrière-plan de la zone de chat",
-            "reset_button_color": "Bouton de réinitialisation",
+            "reset_button_color": "Fond bouton réinitialisation",
+            "reset_button_icon_color": "Icône bouton réinitialisation",
+            "close_button_background_color": "Fond bouton fermer",
+            "close_button_icon_color": "Icône bouton fermer",
             "launcher_background_color": "Arrière-plan du bouton lanceur"
           }
         },
+        "header": {
+          "title": "En-tête",
+          "bgHint": "Appliqué aussi en arrière-plan de la zone de saisie."
+        },
+        "messages": {
+          "title": "Messages"
+        },
+        "inputField": {
+          "title": "Champ de saisie"
+        },
         "launcher": {
-          "title": "Configuration du lanceur",
+          "title": "Lanceur",
+          "widgetEnabled": "Afficher le widget sur le site",
+          "widgetEnabledHint": "Désactivé, le lanceur n'apparaîtra pas sur votre site. La balise script peut rester en place.",
           "icon": "Icône du lanceur",
           "removeIcon": "Supprimer l'icône",
           "currentIcon": "Icône actuelle :",
@@ -334,7 +351,33 @@
         "add": "Ajouter une règle",
         "saveSuccess": "Règles d'ajustement enregistrées avec succès !",
         "saveFailed": "Échec de l'enregistrement des règles d'ajustement."
+      },
+      "wizard": {
+        "step1of2": "Étape 1 sur 2",
+        "step2of2": "Étape 2 sur 2",
+        "triggerTitle": "Qu'est-ce qui doit déclencher cette règle ?",
+        "triggerDesc": "Le déclencheur est un sujet ou une intention qui active cette règle. Lorsqu'un utilisateur pose une question correspondant à ce déclencheur, votre instruction s'applique. Restez concis et descriptif.",
+        "triggerExample": "ex. 'question sur les tarifs'",
+        "triggerPreview": "Aperçu",
+        "actionTitle": "Que doit faire le bot ?",
+        "actionDesc": "Dites au bot exactement quoi dire ou faire lorsque ce déclencheur est activé. Soyez précis — ex. 'Dirigez l'utilisateur vers example.com/tarifs pour toutes les questions de prix.'",
+        "actionExample": "ex. 'Toujours diriger l'utilisateur vers example.com/tarifs pour les questions de prix.'",
+        "next": "Suivant",
+        "back": "Retour"
       }
+    },
+    "install": {
+      "title": "Votre chatbot est prêt à être mis en ligne",
+      "description": "Intégrez votre chatbot IA sur n'importe quel site web avec une seule ligne HTML. Il se charge de manière asynchrone sans ralentir votre page.",
+      "step1": "Copiez la balise script depuis le panneau de droite",
+      "step2": "Collez-la juste avant la balise fermante </body> de votre site",
+      "step3": "Votre chatbot apparaîtra automatiquement pour vos visiteurs",
+      "previewLink": "Ouvrir le chatbot",
+      "scriptTitle": "Script d'intégration",
+      "scriptDesc": "Placez cette balise dans votre HTML. Aucune étape de compilation requise.",
+      "scriptHint": "Le widget est toujours à jour. Remplacez le data-tenant-id uniquement si vous changez de chatbot.",
+      "copy": "Copier dans le presse-papiers",
+      "copied": "Copié !"
     }
   },
   "chatLogs": {
@@ -376,6 +419,7 @@
   },
   "sidebar": {
     "selectTenant": "Sélectionner un chatbot",
+    "install": "Installer",
     "sources": "Connaissances",
     "configuration": "Configuration",
     "fineTune": "Ajustement",

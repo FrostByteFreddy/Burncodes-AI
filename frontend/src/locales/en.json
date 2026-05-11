@@ -76,6 +76,8 @@
   "chat": {
     "inputPlaceholder": "Ask me a question...",
     "thinking": "Thinking...",
+    "reset": "Reset conversation",
+    "close": "Close chat",
     "errors": {
       "initialMessage": "Error: Could not get initial message.",
       "processingFailed": "Error: Processing failed.",
@@ -182,7 +184,7 @@
         "componentStyles": {
           "title": "Component Styles",
           "labels": {
-            "header_background_color": "Header Background",
+            "header_background_color": "Header & Footer Background",
             "header_text_color": "Header Text",
             "user_message_background_color": "User Message Background",
             "user_message_text_color": "User Message Text",
@@ -194,12 +196,27 @@
             "input_text_color": "Input Field Text",
             "input_focus_ring_color": "Input Field Focus Ring",
             "chat_background_color": "Chat Area Background",
-            "reset_button_color": "Reset Button",
+            "reset_button_color": "Reset Button Background",
+            "reset_button_icon_color": "Reset Button Icon",
+            "close_button_background_color": "Close Button Background",
+            "close_button_icon_color": "Close Button Icon",
             "launcher_background_color": "Launcher Button Background"
           }
         },
+        "header": {
+          "title": "Header",
+          "bgHint": "Also applies to the background behind the input field."
+        },
+        "messages": {
+          "title": "Messages"
+        },
+        "inputField": {
+          "title": "Input Field"
+        },
         "launcher": {
-          "title": "Launcher Configuration",
+          "title": "Launcher",
+          "widgetEnabled": "Show widget on website",
+          "widgetEnabledHint": "When disabled, the chatbot launcher won't appear on your site. The script tag can stay in place.",
           "icon": "Launcher Icon",
           "removeIcon": "Remove Icon",
           "currentIcon": "Current Icon:",
@@ -334,7 +351,33 @@
         "add": "Add Rule",
         "saveSuccess": "Fine-tuning rules saved successfully!",
         "saveFailed": "Failed to save fine-tuning rules."
+      },
+      "wizard": {
+        "step1of2": "Step 1 of 2",
+        "step2of2": "Step 2 of 2",
+        "triggerTitle": "What should trigger this rule?",
+        "triggerDesc": "The trigger is a topic or intent that activates this rule. When a user asks something matching this, your instruction kicks in. Keep it short and descriptive.",
+        "triggerExample": "e.g. 'question about pricing'",
+        "triggerPreview": "Preview",
+        "actionTitle": "What should the bot do?",
+        "actionDesc": "Tell the bot exactly what to say or do when this trigger is matched. Be specific — e.g. 'Direct the user to our pricing page at example.com/pricing for all pricing questions.'",
+        "actionExample": "e.g. 'Always direct the user to example.com/pricing for pricing questions.'",
+        "next": "Next",
+        "back": "Back"
       }
+    },
+    "install": {
+      "title": "Your chatbot is ready to go live",
+      "description": "Embed your AI chatbot on any website with a single line of HTML. It loads asynchronously and won't slow down your page.",
+      "step1": "Copy the script tag on the right",
+      "step2": "Paste it just before the closing </body> tag on your website",
+      "step3": "Your chatbot appears automatically for visitors",
+      "previewLink": "Open Chatbot",
+      "scriptTitle": "Embed Script",
+      "scriptDesc": "Drop this into any HTML page. No build step, no framework required.",
+      "scriptHint": "The widget is always up to date. Only change the data-tenant-id if you switch chatbots.",
+      "copy": "Copy to clipboard",
+      "copied": "Copied!"
     }
   },
   "chatLogs": {
@@ -376,6 +419,7 @@
   },
   "sidebar": {
     "selectTenant": "Select a Chatbot",
+    "install": "Install",
     "sources": "Knowledge",
     "configuration": "Configuration",
     "fineTune": "Fine Tune",

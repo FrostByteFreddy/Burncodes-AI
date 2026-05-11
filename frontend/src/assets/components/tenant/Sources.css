@@ -2,59 +2,94 @@
 .sources-page {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 32px;
   min-height: calc(100vh - 8rem);
 }
 
-/* ── KPI strip ──────────────────────────────────────── */
-.sources-kpis {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-
-.sources-kpi {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 18px 20px;
+/* ── Knowledge panels (each section is its own card) ─────── */
+.knowledge-panel {
   background: var(--surface-1);
   border: 1px solid var(--surface-3);
   border-radius: var(--radius-xl);
-  transition: background var(--t-fast);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.sources-kpi--error {
-  border-color: rgba(255, 68, 68, 0.3);
-  background: rgba(255, 68, 68, 0.06);
-}
-
-.sources-kpi__value {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--surface-heading);
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-.sources-kpi--error .sources-kpi__value {
-  color: var(--status-error);
-}
-
-.sources-kpi__value--success {
-  color: var(--status-success);
-}
-
-.sources-kpi__label {
+.knowledge-panel__header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--surface-muted);
+  justify-content: space-between;
+  gap: 16px;
 }
+
+.knowledge-panel__header--solo {
+  justify-content: flex-start;
+}
+
+.knowledge-panel__header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.knowledge-panel__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  background: rgba(10, 31, 171, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--brand-indigo);
+  flex-shrink: 0;
+}
+
+.knowledge-panel__icon--accent {
+  background: rgba(255, 32, 149, 0.12);
+  color: var(--brand-magenta);
+}
+
+.knowledge-panel__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--surface-heading);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.knowledge-panel__sub {
+  font-size: 12px;
+  color: var(--surface-muted);
+  margin: 2px 0 0;
+}
+
+.knowledge-panel__divider {
+  height: 1px;
+  background: var(--surface-3);
+  margin: 0 -4px;
+}
+
+/* ── Compact add button (in panel header) ──────────── */
+.panel-add-btn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  background: var(--gradient-brand);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity var(--t-fast), transform var(--t-fast);
+}
+.panel-add-btn:hover { opacity: 0.88; transform: scale(1.05); }
+.panel-add-btn:active { opacity: 0.75; transform: scale(0.97); }
 
 /* ── Banner add button ──────────────────────────────── */
 .sources-add-banner {
@@ -143,4 +178,38 @@
 .sources-danger__btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ── Knowledge section headers ─────────────────────────────── */
+.knowledge-section-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.knowledge-section-header--second {
+  padding-top: 24px;
+  border-top: 1px solid var(--surface-3);
+  margin-top: 8px;
+}
+
+.knowledge-section-header__icon {
+  font-size: 16px;
+  color: var(--brand-indigo);
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+.knowledge-section-header__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--surface-heading);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.knowledge-section-header__sub {
+  font-size: 12px;
+  color: var(--surface-muted);
+  margin: 2px 0 0;
 }

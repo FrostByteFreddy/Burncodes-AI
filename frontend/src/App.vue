@@ -8,7 +8,7 @@
           <font-awesome-icon :icon="mobileOpen ? ['fas', 'xmark'] : ['fas', 'bars']" />
         </button>
         <router-link to="/manage-tenants" class="mobile-topbar__logo">
-          <img src="@/assets/logo.svg" alt="Logo" style="height:28px;width:auto;" />
+          <img src="/logo.png" alt="Logo" style="height:28px;width:auto;" />
         </router-link>
       </header>
 
@@ -52,7 +52,8 @@ const showCreateModal = ref(false)
 
 const layout = computed(() => {
   const blank = ['Login', 'Signup', 'Chat']
-  return blank.includes(route.name) ? 'blank' : 'default'
+  // Default to blank while route is unresolved to prevent sidebar flash
+  return (!route.name || blank.includes(route.name)) ? 'blank' : 'default'
 })
 </script>
 

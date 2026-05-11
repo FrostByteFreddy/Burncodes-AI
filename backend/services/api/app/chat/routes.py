@@ -29,21 +29,26 @@ def handle_chat(tenant_id):
         except ValueError:
             return jsonify({"error": "Invalid conversation_id format"}), 400
 
-        # Check tenant owner's balance
-        try:
-            tenant_response = supabase.table('tenants').select('user_id').eq('id', str(tenant_id)).single().execute()
-            if not tenant_response.data:
-                return jsonify({"error": "Tenant not found"}), 404
-            
-            user_id = tenant_response.data['user_id']
-            balance = BillingService.check_balance(user_id)
-            
-            if balance <= 0:
-                return jsonify({"error": "Insufficient balance. Please recharge."}), 402
-                
-        except Exception as e:
-            error_logger.error(f"Error checking balance for tenant {tenant_id}: {e}")
-            return jsonify({"error": "Error checking billing status"}), 500
+        # Check tenant owner's balance — retry up to 2 times on transient Supabase timeouts
+        import time as _time
+        user_id = None
+        for attempt in range(3):
+            try:
+                tenant_response = supabase.table('tenants').select('user_id').eq('id', str(tenant_id)).single().execute()
+                if not tenant_response.data:
+                    return jsonify({"error": "Tenant not found"}), 404
+                user_id = tenant_response.data['user_id']
+                balance = BillingService.check_balance(user_id)
+                if balance <= 0:
+                    return jsonify({"error": "Insufficient balance. Please recharge."}), 402
+                break  # success
+            except Exception as e:
+                if attempt < 2:
+                    error_logger.warning(f"Billing check attempt {attempt+1} failed for tenant {tenant_id}: {e} — retrying")
+                    _time.sleep(0.5)
+                else:
+                    # All retries exhausted — log and allow through rather than blocking on a transient error
+                    error_logger.error(f"Billing check failed after 3 attempts for tenant {tenant_id}: {e}", exc_info=True)
 
         task = chat_task.delay(str(tenant_id), query, chat_history_json, str(conversation_id), str(user_id))
 

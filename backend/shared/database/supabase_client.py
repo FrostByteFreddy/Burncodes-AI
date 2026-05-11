@@ -18,7 +18,13 @@ supabase: Client = create_client(
     url,
     key,
     options=ClientOptions(
-        httpx_client=httpx.Client(http2=False),
+        httpx_client=httpx.Client(
+            http2=False,
+            # Short connect timeout — fail fast on stalled TCP handshakes
+            # (common when ForkPoolWorkers inherit a shared connection pool)
+            timeout=httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0),
+            limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+        ),
         postgrest_client_timeout=30,
         storage_client_timeout=30,
     ),

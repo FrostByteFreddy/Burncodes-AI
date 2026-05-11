@@ -1,107 +1,303 @@
-@layer components {
-  /* Two-column layout */
-  .appearance-grid {
-    @apply grid grid-cols-1 lg:grid-cols-2 gap-8;
-  }
-
-  .appearance-preview-col {
-    @apply lg:sticky top-8 space-y-6;
-  }
-
-  .appearance-preview__label {
-    @apply text-sm font-medium text-base-content/70 mb-2;
-  }
-
-  /* Color palette swatch */
-  .palette-swatches {
-    @apply flex flex-wrap gap-3;
-  }
-
-  .palette-swatch {
-    @apply relative flex flex-col items-center gap-1.5;
-  }
-
-  .palette-swatch__color {
-    @apply block w-12 h-12 rounded-xl shadow-sm ring-1 ring-black/10 transition-transform;
-  }
-  .palette-swatch:hover .palette-swatch__color {
-    transform: scale(1.05);
-  }
-
-  .palette-swatch__remove {
-    @apply absolute -top-1.5 -right-1.5 w-4 h-4 bg-error text-white
-           rounded-full items-center justify-center leading-none;
-    font-size: 10px;
-    display: none;
-  }
-  .palette-swatch:hover .palette-swatch__remove {
-    display: flex;
-  }
-
-  .palette-swatch__name {
-    @apply w-12 text-xs text-center bg-transparent border-none
-           focus:outline-none focus:ring-1 focus:ring-primary/50 rounded p-0
-           disabled:cursor-default;
-  }
-
-  .palette-add-btn {
-    @apply w-12 h-12 rounded-xl border-2 border-dashed border-base-300
-           flex items-center justify-center text-base-content/30
-           hover:border-primary/50 hover:text-primary/50 transition-colors;
-  }
-
-  .palette-add-label {
-    @apply w-12 text-xs text-center text-base-content/30;
-  }
-
-  /* File upload field */
-  .file-input-row {
-    @apply flex items-center space-x-2 mt-1;
-  }
-
-  .file-input {
-    @apply w-full p-2 bg-base-200 border-none rounded-xl
-           file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0
-           file:text-sm file:font-semibold file:bg-primary/10 file:text-primary
-           hover:file:bg-primary/20;
-  }
-
-  .file-preview-img {
-    @apply mt-4 max-h-20 rounded-lg shadow-sm;
-  }
-
-  .launcher-icon-preview {
-    @apply w-12 h-12 rounded-full object-cover shadow-sm bg-base-200 p-1;
-  }
-
-  .launcher-icon-caption {
-    @apply text-xs text-base-content/50 mb-2;
-  }
-
-  /* Checkbox row */
-  .checkbox-field {
-    @apply flex items-center;
-  }
-
-  .checkbox-field__input {
-    @apply h-4 w-4 rounded border-base-200 text-primary focus:ring-primary/50 bg-base-200;
-  }
-
-  .checkbox-field__label {
-    @apply ml-2 block text-sm text-base-content;
-  }
-
-  /* Installation script block */
-  .install-script-block {
-    @apply relative;
-  }
-
-  .install-script-pre {
-    @apply bg-base-200/50 p-4 rounded-lg overflow-x-auto text-sm font-mono
-           text-base-content border border-base-200;
-  }
-
-  .install-script-copy {
-    @apply absolute top-2 right-2 btn btn-sm btn-ghost text-primary hover:bg-base-300;
-  }
+/* ── Two-column layout ────────────────────────────────────────── */
+.appearance-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
 }
+@media (min-width: 1024px) {
+  .appearance-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.appearance-preview-col {
+  position: sticky;
+  top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: calc(100dvh - 84px);
+  padding-bottom: 20px;
+}
+
+.appearance-preview__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--surface-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Color palette swatches ───────────────────────────────────── */
+.palette-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.palette-swatch {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.palette-swatch__color {
+  display: block;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: transform var(--t-fast);
+  cursor: pointer;
+}
+.palette-swatch:hover .palette-swatch__color {
+  transform: scale(1.06);
+}
+
+.palette-swatch__remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+  background: var(--status-error);
+  color: white;
+  border-radius: 50%;
+  font-size: 10px;
+  line-height: 1;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+}
+.palette-swatch:hover .palette-swatch__remove {
+  display: flex;
+}
+
+.palette-swatch__name {
+  width: 48px;
+  font-size: 11px;
+  text-align: center;
+  background: transparent;
+  border: none;
+  color: var(--surface-muted);
+  outline: none;
+  padding: 0;
+  cursor: text;
+}
+.palette-swatch__name:focus {
+  color: var(--surface-text);
+}
+.palette-swatch__name:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.palette-add-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: 2px dashed var(--surface-3);
+  background: transparent;
+  color: var(--surface-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color var(--t-fast), color var(--t-fast);
+}
+.palette-add-btn:hover {
+  border-color: var(--brand-indigo);
+  color: var(--brand-indigo);
+}
+
+.palette-add-label {
+  width: 48px;
+  font-size: 11px;
+  text-align: center;
+  color: var(--surface-muted);
+}
+
+/* ── File upload ──────────────────────────────────────────────── */
+.file-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.file-input {
+  width: 100%;
+  font-size: 13px;
+  color: var(--surface-text);
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: border-color var(--t-fast);
+}
+.file-input:hover { border-color: var(--brand-indigo); }
+
+/* Style the native file picker button */
+.file-input::file-selector-button {
+  background: var(--gradient-brand);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 12px;
+  transition: opacity var(--t-fast);
+}
+.file-input::file-selector-button:hover { opacity: 0.88; }
+
+.file-preview-img {
+  margin-top: 12px;
+  max-height: 80px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+
+/* ── Launcher icon preview ────────────────────────────────────── */
+.launcher-icon-preview {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  padding: 4px;
+}
+
+.launcher-icon-caption {
+  font-size: 11px;
+  color: var(--surface-muted);
+  margin-bottom: 8px;
+}
+
+/* ── Checkbox row ─────────────────────────────────────────────── */
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkbox-field__input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand-indigo);
+  cursor: pointer;
+}
+
+.checkbox-field__label {
+  font-size: 14px;
+  color: var(--surface-text);
+  cursor: pointer;
+}
+
+/* ── Installation script block ───────────────────────────────── */
+.install-script-block {
+  position: relative;
+}
+
+.install-script-pre {
+  background: var(--surface-0);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  overflow-x: auto;
+  font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--surface-text);
+}
+
+.install-script-copy {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-sm);
+  color: var(--surface-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
+}
+.install-script-copy:hover {
+  color: var(--surface-text);
+  border-color: var(--brand-indigo);
+  background: var(--surface-3);
+}
+
+/* ── Conversation Starters ────────────────────────────────────── */
+.starters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.starter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.starter-chip-preview {
+  flex-shrink: 0;
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
+.starter-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--surface-muted);
+  cursor: pointer;
+  font-size: 13px;
+  transition: color var(--t-fast), background var(--t-fast), border-color var(--t-fast);
+}
+.starter-delete-btn:hover {
+  color: var(--status-error);
+  background: rgba(255, 68, 68, 0.1);
+  border-color: rgba(255, 68, 68, 0.25);
+}
+
+.starter-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 20px;
+  background: var(--gradient-brand);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--t-fast);
+}
+.starter-add-btn:hover { opacity: 0.88; }

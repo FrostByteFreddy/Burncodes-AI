@@ -1,44 +1,50 @@
 <template>
-  <div>
-    <div class="settings-tabs">
-      <button type="button" @click="activeTab = 'behavior'"
-        class="settings-tabs__btn"
-        :class="{ 'settings-tabs__btn--active': activeTab === 'behavior' }">
-        <font-awesome-icon :icon="['fas', 'sliders']" />
-        {{ $t("tenant.settings.tabs.behavior") }}
-      </button>
-      <button type="button" @click="activeTab = 'appearance'"
-        class="settings-tabs__btn"
-        :class="{ 'settings-tabs__btn--active': activeTab === 'appearance' }">
-        <font-awesome-icon :icon="['fas', 'palette']" />
-        {{ $t("tenant.settings.tabs.appearance") }}
-      </button>
-      <button type="button" @click="activeTab = 'rules'"
-        class="settings-tabs__btn"
-        :class="{ 'settings-tabs__btn--active': activeTab === 'rules' }">
-        <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" />
-        {{ $t("tenant.settings.tabs.rules") }}
-      </button>
-    </div>
+  <div class="appearance-grid">
 
-    <form @submit.prevent="handleUpdate" class="space-y-6 mt-6">
-      <div v-show="activeTab === 'behavior'">
-        <BehaviorTab v-model="formData" />
-      </div>
-      <div v-show="activeTab === 'appearance'" @change="handleUpdate">
-        <AppearanceTab v-model="formData" :tenant-id="tenantsStore.currentTenant?.id" :preview-key="previewKey" :api-url="apiUrl" />
-      </div>
-      <div v-show="activeTab === 'rules'">
-        <RulesTab />
-      </div>
-
-      <div v-show="activeTab === 'behavior'" class="settings-footer">
-        <button type="submit" class="btn-save" :disabled="tenantsStore.loading">
-          <font-awesome-icon :icon="['fas', 'floppy-disk']" />
-          {{ $t("tenant.settings.actions.save") }}
+    <!-- Left column: tabs + content -->
+    <div>
+      <div class="settings-tabs">
+        <button type="button" @click="activeTab = 'behavior'"
+          class="settings-tabs__btn"
+          :class="{ 'settings-tabs__btn--active': activeTab === 'behavior' }">
+          <font-awesome-icon :icon="['fas', 'sliders']" />
+          {{ $t("tenant.settings.tabs.behavior") }}
+        </button>
+        <button type="button" @click="activeTab = 'appearance'"
+          class="settings-tabs__btn"
+          :class="{ 'settings-tabs__btn--active': activeTab === 'appearance' }">
+          <font-awesome-icon :icon="['fas', 'palette']" />
+          {{ $t("tenant.settings.tabs.appearance") }}
         </button>
       </div>
-    </form>
+
+      <form @submit.prevent="handleUpdate" class="space-y-6 mt-6">
+        <div v-show="activeTab === 'behavior'">
+          <BehaviorTab v-model="formData" />
+        </div>
+        <div v-show="activeTab === 'appearance'" @change="handleUpdate">
+          <AppearanceTab v-model="formData" :tenant-id="tenantsStore.currentTenant?.id" />
+        </div>
+
+        <div v-show="activeTab === 'behavior'" class="settings-footer">
+          <button type="submit" class="btn-save" :disabled="tenantsStore.loading">
+            <font-awesome-icon :icon="['fas', 'floppy-disk']" />
+            {{ $t("tenant.settings.actions.save") }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Right column: sticky chat preview (shared by both tabs) -->
+    <div>
+      <div class="appearance-preview-col">
+        <ChatPreview
+          :config="formData.widget_config"
+          :tenant-id="tenantsStore.currentTenant?.id"
+        />
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -49,15 +55,13 @@ import { useToast } from '../../composables/useToast';
 import { useI18n } from 'vue-i18n';
 import BehaviorTab from './settings/BehaviorTab.vue';
 import AppearanceTab from './settings/AppearanceTab.vue';
-import RulesTab from './settings/RulesTab.vue';
+import ChatPreview from './ChatPreview.vue';
 
 const tenantsStore = useTenantsStore();
 const { addToast } = useToast();
 const { t } = useI18n();
 
 const activeTab = ref('behavior');
-const previewKey = ref(0);
-const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 const defaultWidgetConfig = () => ({
   chatbot_title: '',
@@ -66,6 +70,7 @@ const defaultWidgetConfig = () => ({
   show_reset_button: true,
   input_placeholder: 'Send a message...',
   thinking_messages: ['Thinking...', 'Just a moment...', 'Let me check that for you...'],
+  conversation_starters: [],
   color_palette: [
     { id: 'c_white',     name: t('tenant.settings.defaults.white'),     value: '#FFFFFF' },
     { id: 'c_black',     name: t('tenant.settings.defaults.black'),     value: '#1F2937' },
@@ -79,7 +84,9 @@ const defaultWidgetConfig = () => ({
     send_button_background_color: 'c_primary', send_button_text_color: 'c_white',
     input_background_color: 'c_secondary', input_text_color: 'c_black',
     input_focus_ring_color: 'c_primary', chat_background_color: 'c_white',
-    reset_button_color: 'c_primary', launcher_background_color: 'c_primary',
+    reset_button_color: 'c_primary', reset_button_icon_color: 'c_white',
+    close_button_background_color: 'c_primary', close_button_icon_color: 'c_white',
+    launcher_background_color: 'c_primary',
   },
 });
 
@@ -95,6 +102,7 @@ watch(() => tenantsStore.currentTenant?.id, () => {
   const cfg = { ...defaultWidgetConfig(), ...(tenant.widget_config || {}) };
   cfg.color_palette = tenant.widget_config?.color_palette || defaultWidgetConfig().color_palette;
   cfg.component_styles = { ...defaultWidgetConfig().component_styles, ...(tenant.widget_config?.component_styles || {}) };
+  cfg.conversation_starters = tenant.widget_config?.conversation_starters || [];
   formData.value = {
     name: tenant.name, intro_message: tenant.intro_message, system_persona: tenant.system_persona,
     rag_prompt_template: tenant.rag_prompt_template, doc_language: tenant.doc_language,
@@ -108,7 +116,6 @@ const handleUpdate = async () => {
   try {
     await tenantsStore.updateTenant(tenantsStore.currentTenant.id, formData.value);
     addToast(t('tenant.settings.actions.savedSuccess'), 'success');
-    previewKey.value++;
   } catch {
     addToast(t('tenant.settings.actions.saveFailed'), 'error');
   }

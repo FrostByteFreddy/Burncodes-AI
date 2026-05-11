@@ -1,28 +1,20 @@
 <template>
-  <Teleport to="body">
-    <Transition name="slide-over">
-      <div v-if="open" class="fixed inset-0 z-50 flex justify-end">
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="$emit('close')"></div>
-
-        <div class="wizard-panel">
-
-          <!-- Header -->
-          <div class="wizard-header">
-            <div>
-              <h2 class="wizard-title">{{ $t('tenant.sources.wizard.addKnowledge') }}</h2>
-              <div class="wizard-progress">
-                <div v-for="i in lastStep + 1" :key="i"
-                  class="wizard-progress__dot"
-                  :class="{ 'is-active': i - 1 === step, 'is-done': i - 1 < step }"></div>
-              </div>
-            </div>
-            <button @click="$emit('close')" class="wizard-close">
-              <font-awesome-icon :icon="['fas', 'xmark']" />
-            </button>
-          </div>
-
-          <!-- Step content -->
-          <div class="flex-1 overflow-y-auto p-6 space-y-6">
+  <WizardPanel
+    :open="open"
+    :title="$t('tenant.sources.wizard.addKnowledge')"
+    :step="step"
+    :total-steps="lastStep + 1"
+    :can-proceed="canProceed"
+    :can-submit="!submitting"
+    :submitting="submitting"
+    :back-label="$t('tenant.sources.wizard.back')"
+    :next-label="$t('tenant.sources.wizard.next')"
+    :submit-label="type === 'website' ? $t('tenant.sources.wizard.startCrawl') : $t('tenant.sources.wizard.uploadFile')"
+    @close="$emit('close')"
+    @back="step--"
+    @next="nextStep"
+    @submit="submit"
+  >
 
             <!-- Step 0: Pick type -->
             <div v-if="step === 0">
@@ -244,30 +236,13 @@
 
               </div>
             </div>
-          </div>
-
-          <!-- Footer -->
-          <div class="wizard-footer">
-            <button v-if="step > 0" @click="step--" class="wiz-btn wiz-btn--ghost">
-              <font-awesome-icon :icon="['fas', 'arrow-left']" /> {{ $t('tenant.sources.wizard.back') }}
-            </button>
-            <button v-if="step < lastStep" @click="nextStep" :disabled="!canProceed" class="wiz-btn wiz-btn--primary">
-              {{ $t('tenant.sources.wizard.next') }} <font-awesome-icon :icon="['fas', 'arrow-right']" />
-            </button>
-            <button v-if="step === lastStep" @click="submit" :disabled="submitting" class="wiz-btn wiz-btn--primary">
-              <font-awesome-icon v-if="submitting" :icon="['fas', 'spinner']" class="spin" />
-              {{ type === 'website' ? $t('tenant.sources.wizard.startCrawl') : $t('tenant.sources.wizard.uploadFile') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
+  </WizardPanel>
 </template>
 
 <script setup>
 import { ref, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
+import WizardPanel from '../../WizardPanel.vue';
 import { useToast } from '../../../composables/useToast';
 import { useTenantsStore } from '../../../stores/tenants';
 import apiClient from '@/utils/api';
@@ -375,163 +350,61 @@ const submit = async () => {
 };
 </script>
 
-<style scoped>
-/* ── Slide transition ─────────────────────────────────────────────── */
-.slide-over-enter-active, .slide-over-leave-active { transition: opacity 0.25s ease; }
-.slide-over-enter-active .wizard-panel, .slide-over-leave-active .wizard-panel { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
-.slide-over-enter-from { opacity: 0; }
-.slide-over-enter-from .wizard-panel { transform: translateX(100%); }
-.slide-over-leave-to { opacity: 0; }
-.slide-over-leave-to .wizard-panel { transform: translateX(100%); }
 
-/* ── Panel shell ─────────────────────────────────────────────────── */
-.wizard-panel {
-  position: relative;
-  width: 100%;
-  max-width: 420px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: var(--surface-1);
-  border-left: 1px solid var(--surface-3);
-  box-shadow: -8px 0 40px rgba(0,0,0,0.4);
-}
-
-/* ── Header ──────────────────────────────────────────────────────── */
-.wizard-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--surface-3);
-}
-
-.wizard-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--surface-heading);
-}
-
-.wizard-close {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface-2);
-  border: 1px solid var(--surface-3);
-  color: var(--surface-muted);
-  cursor: pointer;
-  transition: color var(--t-fast), border-color var(--t-fast);
-}
-.wizard-close:hover { color: var(--surface-text); border-color: var(--surface-muted); }
+/* ── Footer ──────────────────────────────────────────────────────── */
+.spin { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+<style>
 
 /* ── Type icons ──────────────────────────────────────────────────── */
 .type-icon {
-  width: 40px;
-  height: 40px;
+  width: 40px; height: 40px;
   border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   font-size: 18px;
   background: var(--surface-2);
   color: var(--surface-muted);
   transition: background var(--t-fast), color var(--t-fast);
 }
-.type-icon--active {
-  background: rgba(10, 31, 171, 0.15);
-  color: var(--brand-indigo);
-}
+.type-icon--active { background: rgba(10,31,171,0.15); color: var(--brand-indigo); }
 
-/* ── Info box ─────────────────────────────────────────────────────── */
+/* ── Info box ────────────────────────────────────────────────────── */
 .info-box {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
+  display: flex; gap: 10px; align-items: flex-start;
   padding: 14px;
   background: var(--surface-2);
   border: 1px solid var(--surface-3);
   border-radius: var(--radius-md);
 }
-.info-box__icon { color: var(--brand-indigo); flex-shrink: 0; margin-top: 2px; }
+.info-box__icon  { color: var(--brand-indigo); flex-shrink: 0; margin-top: 2px; }
 .info-box__title { font-size: 12px; font-weight: 600; color: var(--surface-text); margin-bottom: 4px; }
 
-/* ── Field position icon ─────────────────────────────────────────── */
+/* ── Field icon ──────────────────────────────────────────────────── */
 .field-icon {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  padding-left: 14px;
-  pointer-events: none;
-  color: var(--surface-muted);
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  padding-left: 14px; pointer-events: none; color: var(--surface-muted);
 }
 
 /* ── File drop zone ──────────────────────────────────────────────── */
 .file-drop {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 36px 20px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 36px 20px;
   border-radius: var(--radius-lg);
   border: 1.5px dashed var(--surface-3);
   cursor: pointer;
   transition: border-color var(--t-fast), background var(--t-fast);
 }
-.file-drop:hover { border-color: var(--brand-indigo); background: rgba(10,31,171,0.04); }
-.file-drop--active { border-color: var(--brand-indigo); background: rgba(10,31,171,0.06); }
-
+.file-drop:hover       { border-color: var(--brand-indigo); background: rgba(10,31,171,0.04); }
+.file-drop--active     { border-color: var(--brand-indigo); background: rgba(10,31,171,0.06); }
 .file-drop__icon {
-  width: 52px;
-  height: 52px;
-  border-radius: var(--radius-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  background: var(--surface-2);
-  color: var(--surface-muted);
+  width: 52px; height: 52px; border-radius: var(--radius-lg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; background: var(--surface-2); color: var(--surface-muted);
   transition: background var(--t-fast), color var(--t-fast);
 }
 .file-drop:hover .file-drop__icon,
 .file-drop__icon--active { background: rgba(10,31,171,0.15); color: var(--brand-indigo); }
-
-.file-drop__name { font-size: 13px; font-weight: 600; color: var(--surface-muted); }
+.file-drop__name        { font-size: 13px; font-weight: 600; color: var(--surface-muted); }
 .file-drop__name--active { color: var(--brand-indigo); }
-
-/* ── Footer ──────────────────────────────────────────────────────── */
-.wizard-footer {
-  display: flex;
-  gap: 10px;
-  padding: 20px 24px;
-  border-top: 1px solid var(--surface-3);
-}
-
-.wiz-btn {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: opacity var(--t-fast), background var(--t-fast);
-}
-.wiz-btn--primary { background: var(--gradient-brand); color: white; }
-.wiz-btn--primary:hover:not(:disabled) { opacity: 0.9; }
-.wiz-btn--primary:disabled { opacity: 0.4; cursor: not-allowed; }
-.wiz-btn--ghost { background: var(--surface-2); border: 1px solid var(--surface-3); color: var(--surface-text); }
-.wiz-btn--ghost:hover { border-color: var(--surface-muted); }
-
-.spin { animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 
