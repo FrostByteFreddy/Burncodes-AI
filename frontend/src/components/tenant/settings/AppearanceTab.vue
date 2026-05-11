@@ -1,8 +1,5 @@
 <template>
   <div class="space-y-8">
-    <div class="appearance-grid">
-      <!-- Left column -->
-      <div class="space-y-8">
 
         <!-- 1. Color Palette -->
         <div class="settings-section">
@@ -264,15 +261,6 @@
           </div>
         </div>
 
-      </div>
-
-      <!-- Right column: live chat preview -->
-      <div>
-        <div class="appearance-preview-col">
-          <ChatPreview :config="local.widget_config" :tenant-id="tenantId" />
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -282,7 +270,6 @@ import { useI18n } from 'vue-i18n';
 import { useToast } from '../../../composables/useToast';
 import { v4 as uuidv4 } from 'uuid';
 import AutoGrowTextarea from '../../AutoGrowTextarea.vue';
-import ChatPreview from '../ChatPreview.vue';
 import LauncherPreview from '../LauncherPreview.vue';
 
 const props = defineProps({

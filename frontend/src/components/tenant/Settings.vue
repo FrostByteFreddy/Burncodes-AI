@@ -1,35 +1,50 @@
 <template>
-  <div>
-    <div class="settings-tabs">
-      <button type="button" @click="activeTab = 'behavior'"
-        class="settings-tabs__btn"
-        :class="{ 'settings-tabs__btn--active': activeTab === 'behavior' }">
-        <font-awesome-icon :icon="['fas', 'sliders']" />
-        {{ $t("tenant.settings.tabs.behavior") }}
-      </button>
-      <button type="button" @click="activeTab = 'appearance'"
-        class="settings-tabs__btn"
-        :class="{ 'settings-tabs__btn--active': activeTab === 'appearance' }">
-        <font-awesome-icon :icon="['fas', 'palette']" />
-        {{ $t("tenant.settings.tabs.appearance") }}
-      </button>
-    </div>
+  <div class="appearance-grid">
 
-    <form @submit.prevent="handleUpdate" class="space-y-6 mt-6">
-      <div v-show="activeTab === 'behavior'">
-        <BehaviorTab v-model="formData" />
-      </div>
-      <div v-show="activeTab === 'appearance'" @change="handleUpdate">
-        <AppearanceTab v-model="formData" :tenant-id="tenantsStore.currentTenant?.id" />
-      </div>
-
-      <div v-show="activeTab === 'behavior'" class="settings-footer">
-        <button type="submit" class="btn-save" :disabled="tenantsStore.loading">
-          <font-awesome-icon :icon="['fas', 'floppy-disk']" />
-          {{ $t("tenant.settings.actions.save") }}
+    <!-- Left column: tabs + content -->
+    <div>
+      <div class="settings-tabs">
+        <button type="button" @click="activeTab = 'behavior'"
+          class="settings-tabs__btn"
+          :class="{ 'settings-tabs__btn--active': activeTab === 'behavior' }">
+          <font-awesome-icon :icon="['fas', 'sliders']" />
+          {{ $t("tenant.settings.tabs.behavior") }}
+        </button>
+        <button type="button" @click="activeTab = 'appearance'"
+          class="settings-tabs__btn"
+          :class="{ 'settings-tabs__btn--active': activeTab === 'appearance' }">
+          <font-awesome-icon :icon="['fas', 'palette']" />
+          {{ $t("tenant.settings.tabs.appearance") }}
         </button>
       </div>
-    </form>
+
+      <form @submit.prevent="handleUpdate" class="space-y-6 mt-6">
+        <div v-show="activeTab === 'behavior'">
+          <BehaviorTab v-model="formData" />
+        </div>
+        <div v-show="activeTab === 'appearance'" @change="handleUpdate">
+          <AppearanceTab v-model="formData" :tenant-id="tenantsStore.currentTenant?.id" />
+        </div>
+
+        <div v-show="activeTab === 'behavior'" class="settings-footer">
+          <button type="submit" class="btn-save" :disabled="tenantsStore.loading">
+            <font-awesome-icon :icon="['fas', 'floppy-disk']" />
+            {{ $t("tenant.settings.actions.save") }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Right column: sticky chat preview (shared by both tabs) -->
+    <div>
+      <div class="appearance-preview-col">
+        <ChatPreview
+          :config="formData.widget_config"
+          :tenant-id="tenantsStore.currentTenant?.id"
+        />
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -40,13 +55,13 @@ import { useToast } from '../../composables/useToast';
 import { useI18n } from 'vue-i18n';
 import BehaviorTab from './settings/BehaviorTab.vue';
 import AppearanceTab from './settings/AppearanceTab.vue';
+import ChatPreview from './ChatPreview.vue';
 
 const tenantsStore = useTenantsStore();
 const { addToast } = useToast();
 const { t } = useI18n();
 
 const activeTab = ref('behavior');
-const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 const defaultWidgetConfig = () => ({
   chatbot_title: '',

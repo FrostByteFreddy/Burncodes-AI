@@ -19,8 +19,7 @@ defineProps({
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
   /* Fixed height so it looks like a chat widget, not a stretched page */
-  height: 560px;
-  max-width: 420px;
+  height: 100%;
   width: 100%;
   margin: 0 auto;
 }
