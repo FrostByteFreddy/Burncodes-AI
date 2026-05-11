@@ -65,7 +65,7 @@ const fetchConfig = async () => {
   if (!props.tenantId || props.config) return;
   try {
     const { data } = await axios.get(`${API_BASE_URL}/tenants/${props.tenantId}/public`);
-    fetchedConfig.value = data;
+    fetchedConfig.value = data.widget_config || {};
   } catch (err) {
     console.error('[ChatWidget] Failed to fetch tenant config', err);
   }
