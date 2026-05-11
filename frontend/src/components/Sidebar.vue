@@ -3,7 +3,7 @@
   <aside class="sidebar" :class="{ 'sidebar--mobile-open': mobileOpen }">
     <!-- Logo -->
     <router-link to="/manage-tenants" class="sidebar__logo">
-      <img src="@/assets/logo.png" alt="Logo" class="sidebar__logo-img" />
+      <img src="/logo.png" alt="Logo" class="sidebar__logo-img" />
     </router-link>
 
     <!-- Tenant switcher -->
