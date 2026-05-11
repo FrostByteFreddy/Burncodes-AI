@@ -269,7 +269,7 @@
       <!-- Right column: live chat preview -->
       <div>
         <div class="appearance-preview-col">
-          <ChatPreview :config="local.widget_config" />
+          <ChatPreview :config="local.widget_config" :tenant-id="tenantId" />
         </div>
       </div>
     </div>

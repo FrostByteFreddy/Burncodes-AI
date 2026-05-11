@@ -363,7 +363,7 @@ const widgetCssVariables = computed(() => {
 }
 
 .chat-main {
-  background-color: transparent;
+  background-color: var(--chat-background-color, #ffffff);
   padding: 1rem;
   flex-grow: 1;
   overflow-y: auto;
