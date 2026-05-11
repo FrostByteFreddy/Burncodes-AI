@@ -50,7 +50,7 @@ const routes = [
     path: `/chat/:tenantId(${uuidRegex})`,
     name: "Chat",
     component: () => import("../views/Chat.vue"),
-    meta: { public: true },
+    meta: { public: true, skipAuth: true },
     props: true,
   },
 ];
@@ -61,6 +61,9 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
+  // Fully public standalone routes — skip auth entirely
+  if (to.meta.skipAuth) return next();
+
   const authStore = useAuthStore();
 
   let sessionFoundInStorage = false;

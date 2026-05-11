@@ -52,7 +52,8 @@ const showCreateModal = ref(false)
 
 const layout = computed(() => {
   const blank = ['Login', 'Signup', 'Chat']
-  return blank.includes(route.name) ? 'blank' : 'default'
+  // Default to blank while route is unresolved to prevent sidebar flash
+  return (!route.name || blank.includes(route.name)) ? 'blank' : 'default'
 })
 </script>
 

@@ -20,7 +20,7 @@
         <BehaviorTab v-model="formData" />
       </div>
       <div v-show="activeTab === 'appearance'" @change="handleUpdate">
-        <AppearanceTab v-model="formData" :tenant-id="tenantsStore.currentTenant?.id" :preview-key="previewKey" :api-url="apiUrl" />
+        <AppearanceTab v-model="formData" :tenant-id="tenantsStore.currentTenant?.id" />
       </div>
 
       <div v-show="activeTab === 'behavior'" class="settings-footer">
@@ -46,7 +46,6 @@ const { addToast } = useToast();
 const { t } = useI18n();
 
 const activeTab = ref('behavior');
-const previewKey = ref(0);
 const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 const defaultWidgetConfig = () => ({
@@ -100,7 +99,6 @@ const handleUpdate = async () => {
   try {
     await tenantsStore.updateTenant(tenantsStore.currentTenant.id, formData.value);
     addToast(t('tenant.settings.actions.savedSuccess'), 'success');
-    previewKey.value++;
   } catch {
     addToast(t('tenant.settings.actions.saveFailed'), 'error');
   }

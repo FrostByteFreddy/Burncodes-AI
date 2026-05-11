@@ -266,10 +266,10 @@
 
       </div>
 
-      <!-- Right column: sticky chat preview -->
+      <!-- Right column: live chat preview -->
       <div>
         <div class="appearance-preview-col">
-          <ChatPreview :tenantId="tenantId" :key="previewKey" />
+          <ChatPreview :config="local.widget_config" />
         </div>
       </div>
     </div>
@@ -288,7 +288,6 @@ import LauncherPreview from '../LauncherPreview.vue';
 const props = defineProps({
   modelValue: { type: Object, required: true },
   tenantId: { type: String, required: true },
-  previewKey: { type: Number, default: 0 },
 });
 const emit = defineEmits(['update:modelValue']);
 const { t } = useI18n();

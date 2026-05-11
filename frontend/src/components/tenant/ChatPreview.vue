@@ -1,13 +1,22 @@
 <template>
-    <iframe :src="`/chat/${tenantId}`" class="w-full h-screen max-h-[80svh] py-5 bg-base-200"
-        title="Chat Preview"></iframe>
+  <div class="chat-preview-wrap">
+    <ChatWidget :config="config" />
+  </div>
 </template>
 
 <script setup>
+import ChatWidget from '../chat/ChatWidget.vue';
+
 defineProps({
-    tenantId: {
-        type: String,
-        required: true
-    }
+  config: { type: Object, required: true },
 });
 </script>
+
+<style scoped>
+.chat-preview-wrap {
+  height: 100%;
+  min-height: 500px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+</style>
