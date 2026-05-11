@@ -1,22 +1,7 @@
 <template>
-  <div>
-    <div
-      v-if="tenantsStore.currentTenant"
-      class="mb-8"
-    >
-      <h1 style="font-size:1.75rem;font-weight:700;display:flex;align-items:center;color:var(--surface-heading);">
-        <font-awesome-icon :icon="['fas', 'cogs']" style="margin-right:0.75rem;color:var(--brand-indigo);opacity:0.9;" />
-        {{ tenantsStore.currentTenant.name }}
-      </h1>
-      <p style="color:var(--surface-muted);margin-top:0.5rem;font-size:0.9rem;">{{ $t("tenant.subtitle") }}</p>
-    </div>
-    <div v-else-if="tenantsStore.loading" class="text-center p-10 text-base-content/60">
-      <p class="animate-pulse">{{ $t("tenant.loading") }}</p>
-    </div>
     <main>
       <router-view />
     </main>
-  </div>
 </template>
 
 <script setup>
