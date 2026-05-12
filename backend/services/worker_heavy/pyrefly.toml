@@ -1,0 +1,9 @@
+# pyrefly.toml — Pyrefly config for worker_heavy
+#
+# All third-party packages (crawl4ai, celery, httpx, etc.) and the `app.*`
+# namespace run inside a Docker container. They are NOT installed in any local
+# venv, so Pyrefly cannot resolve them. Suppress missing-import errors to keep
+# the editor noise-free without adding per-line ignore comments everywhere.
+
+[python]
+ignore_missing_imports = true

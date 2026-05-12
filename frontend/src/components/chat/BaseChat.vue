@@ -368,7 +368,10 @@ const widgetCssVariables = computed(() => {
   border: none;
   box-shadow: none;
   width: 100%;
-  height: 100vh;
+  /* Use the JS-calculated --app-height instead of 100dvh.
+     visualViewport correctly excludes mobile browser chrome (address bar,
+     bottom nav) that dvh/svh don't account for on all platforms. */
+  height: var(--app-height, 100dvh);
 }
 
 .chat-header {
@@ -387,7 +390,7 @@ const widgetCssVariables = computed(() => {
   padding: 1rem;
   flex-grow: 1;
   overflow-y: auto;
-  height: 400px;
+  min-height: 0; /* required for flex children to scroll correctly */
 }
 
 .user-message {
@@ -505,8 +508,9 @@ const widgetCssVariables = computed(() => {
   cursor: pointer;
   border: none;
   transition: opacity 0.15s ease, transform 0.15s ease;
-  text-align: left;
+  text-align: right;
   line-height: 1.4;
+  white-space: wrap;
 }
 
 .starter-chip:hover {
@@ -517,5 +521,24 @@ const widgetCssVariables = computed(() => {
 .starter-chip:active {
   transform: translateY(0);
   opacity: 0.7;
+}
+/* ── Mobile: flatten outer shell edges so no background shows through ── */
+@media (max-width: 768px) {
+  .chat-widget,
+  .chat-widget.is-widget {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .chat-header {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+  }
+
+  .chat-footer {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }
 }
 </style>

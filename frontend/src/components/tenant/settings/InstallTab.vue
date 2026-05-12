@@ -3,12 +3,23 @@
 
     <!-- Full-height chat preview -->
     <div class="install-tab__preview">
-      <h3 class="install-section__title">
-        <font-awesome-icon :icon="['fas', 'eye']" />
-        Live Preview
-      </h3>
+      <div class="install-section__title-row">
+        <h3 class="install-section__title">
+          <font-awesome-icon :icon="['fas', 'eye']" />
+          Live Preview
+        </h3>
+        <a
+          :href="`/preview.html?tenant_id=${tenantId}&api_url=${encodeURIComponent(apiUrl)}`"
+          target="_blank"
+          rel="noopener"
+          class="install-preview-link"
+        >
+          <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" />
+          Open in browser
+        </a>
+      </div>
       <iframe
-        :src="`/chat/${tenantId}`"
+        :src="`/preview.html?tenant_id=${tenantId}&api_url=${encodeURIComponent(apiUrl)}`"
         class="install-tab__iframe"
         title="Chat Preview"
       ></iframe>
@@ -67,7 +78,31 @@ const copyScript = () => {
   font-size: 14px;
   font-weight: 700;
   color: var(--surface-heading);
+  margin: 0;
+}
+
+.install-section__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 12px;
+}
+
+.install-preview-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary, #a855f7);
+  text-decoration: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.install-preview-link:hover {
+  background: color-mix(in srgb, var(--primary, #a855f7) 10%, transparent);
 }
 .install-section__sub {
   font-size: 13px;

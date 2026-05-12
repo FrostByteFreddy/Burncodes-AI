@@ -1,37 +1,78 @@
 <template>
-  <!-- Standalone browser page: center the chat card on a neutral background -->
-  <div v-if="!isWidget" class="chat-standalone-page">
-    <ChatWidget :tenant-id="tenantId" />
+  <div class="chat-page">
+    <ChatWidget :tenant-id="tenantId" :is-widget="true" />
   </div>
-
-  <!-- Embedded via widget.js iframe: full-screen, no chrome -->
-  <ChatWidget v-else :tenant-id="tenantId" :is-widget="true" />
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import ChatWidget from '@/components/chat/ChatWidget.vue';
 
 const route    = useRoute();
 const tenantId = computed(() => route.params.tenantId);
-const isWidget = computed(() => 'widget' in route.query);
+
+const setAppHeight = () => {
+  const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.documentElement.style.setProperty('--app-height', `${h}px`);
+};
+
+onMounted(() => {
+  setAppHeight();
+  window.addEventListener('resize', setAppHeight);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', setAppHeight);
+  if (window.visualViewport) window.visualViewport.removeEventListener('resize', setAppHeight);
+});
 </script>
 
 <style scoped>
-.chat-standalone-page {
-  min-height: 100vh;
+.chat-page {
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: 1rem;
-  background: #f3f4f6;
+  align-items: flex-start;
+  width: 100%;
+  height: var(--app-height, 100dvh);
+  padding: 1.5rem 0;
+  background: none;
 }
 
-/* Give the card a sensible max-width so it doesn't stretch to full screen */
-.chat-standalone-page :deep(.chat-widget) {
+.chat-page > :deep(.chat-widget) {
+  max-width: 650px;
   width: 100%;
-  max-width: 480px;
-  height: 640px;
+  height: calc(var(--app-height, 100dvh) - 3rem);
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+@media (max-width: 768px) {
+  :global(body) {
+    overflow: hidden;
+  }
+
+  /* Zero out the CSS variable so every child that references it inherits 0 */
+  :global(:root) {
+    --chat-border-radius: 0px !important;
+    --chat-custom-radius: 0px !important;
+  }
+
+  .chat-page {
+    padding: 0;
+    width: 100vw;
+    height: var(--app-height, 100dvh);
+  }
+
+  .chat-page > :deep(.chat-widget) {
+    max-width: 100vw;
+    width: 100vw;
+    height: var(--app-height, 100dvh);
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
 }
 </style>

@@ -163,6 +163,10 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         depth = task_details["depth"]
         max_depth = job["max_depth"]
         excluded_urls = job.get("excluded_urls", [])
+        # Enforce same-host crawling: only follow links whose hostname exactly
+        # matches the start URL. This prevents drifting into subdomains
+        # (e.g. impactlab.fhnw.ch when the user entered www.fhnw.ch).
+        start_hostname = urlparse(job["start_url"]).hostname or ""
 
         normalized_url = normalize_url(url)
         normalized_excluded_list = [normalize_url(str(ex).strip()) for ex in excluded_urls]
@@ -227,6 +231,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             }).execute()
             source_id = source_response.data[0]["id"]
 
+            # pyrefly: ignore [missing-import]
             import trafilatura
             text = trafilatura.extract(html, url=url, output_format="markdown",
                                        include_links=False, include_images=False)
@@ -244,7 +249,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             found_links: set[str] = set()
             for href in extract_internal_links(html, url):
                 _check_and_add_link(href, normalized_excluded_list, found_links,
-                                    str(tenant_id), job_id, depth, max_depth, url)
+                                    str(tenant_id), job_id, depth, max_depth, url, start_hostname)
 
             supabase.table("crawling_tasks").update(
                 {"status": CrawlingStatus.COMPLETED.value}
@@ -325,7 +330,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
                 href = lnk.get("href", "").split("#")[0].strip()  # strip fragments
                 if href:
                     _check_and_add_link(href, normalized_excluded_list, found_links,
-                                        str(tenant_id), job_id, depth, max_depth, url)
+                                        str(tenant_id), job_id, depth, max_depth, url, start_hostname)
 
             error_logger.info("playwright: found %d page links on %s", len(found_links), url)
         else:
@@ -342,13 +347,32 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             # Deduplicate within the current job only — URLs already in crawling_tasks
             # for this job_id are skipped. We do NOT check tenant_sources so that
             # re-crawling the same site across separate jobs works correctly.
-            tasks_resp = supabase.table("crawling_tasks") \
-                .select("url") \
-                .eq("job_id", job_id) \
-                .in_("url", found_list) \
-                .execute()
+            #
+            # NOTE: PostgREST serialises .in_() values into the query-string, so
+            # large or percent-encoded URL lists can exceed the server's URL-length
+            # limit and return a raw "Bad Request" (non-JSON) 400 response, which
+            # causes a pydantic crash in the postgrest client. Guard against this by
+            # (a) chunking the list into batches of 50 and (b) wrapping in try/except
+            # so a single bad response degrades gracefully instead of aborting the task.
+            already_queued: set[str] = set()
+            try:
+                CHUNK_SIZE = 50
+                for i in range(0, len(found_list), CHUNK_SIZE):
+                    chunk = found_list[i : i + CHUNK_SIZE]
+                    tasks_resp = (
+                        supabase.table("crawling_tasks")
+                        .select("url")
+                        .eq("job_id", job_id)
+                        .in_("url", chunk)
+                        .execute()
+                    )
+                    already_queued.update(item["url"] for item in (tasks_resp.data or []))
+            except Exception as dedup_err:
+                error_logger.warning(
+                    "Dedup query failed for job %s (skipping dedup, may re-enqueue some URLs): %s",
+                    job_id, dedup_err,
+                )
 
-            already_queued = {item["url"] for item in (tasks_resp.data or [])}
             new_links = found_links - already_queued
 
             if new_links:
@@ -404,13 +428,23 @@ def _check_and_add_link(
     depth: int,
     max_depth: int,
     parent_url: str,
+    start_hostname: str = "",
 ) -> None:
     """
     Evaluates a discovered link:
+    - Different hostname than start URL → skip (prevents subdomain drift)
     - Excluded → skip
     - File extension (PDF, DOCX, image, …) → dispatch to process_file_url (worker_fast)
     - HTML page within depth limit → add to found_page_links for later enqueueing
     """
+    # Hostname guard — only follow links that belong to the exact same host as
+    # the crawl's start URL. This prevents subdomains (e.g. impactlab.fhnw.ch)
+    # from being enqueued when the user entered www.fhnw.ch.
+    if start_hostname:
+        link_hostname = urlparse(href).hostname or ""
+        if link_hostname and link_hostname != start_hostname:
+            return  # off-domain, skip silently
+
     # Exclusion check
     for excluded in normalized_excluded_list:
         if not excluded:
