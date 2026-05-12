@@ -15,6 +15,7 @@
 <script setup>
 import { ref, toRefs, onMounted, onUnmounted, computed } from 'vue';
 import apiClient from '@/utils/api';
+import { supabase } from '../../../supabase';
 import { useToast } from '../../composables/useToast';
 
 const props = defineProps({
@@ -25,33 +26,73 @@ const { job, tenantId } = toRefs(props);
 const emit = defineEmits(['job-completed', 'job-cancelled']);
 const { addToast } = useToast();
 
-const progress     = ref({ total: 0, completed: 0, pending: 0, in_progress: 0, failed: 0 });
-const pollInterval = ref(null);
-const cancelling   = ref(false);
-const liveStatus   = ref(job.value.status);
+const progress   = ref({ total: 0, completed: 0, pending: 0, in_progress: 0, failed: 0 });
+const cancelling = ref(false);
+const liveStatus = ref(job.value.status);
 
 const progressPercentage = computed(() => {
   if (!progress.value.total) return 0;
   return (progress.value.completed / progress.value.total) * 100;
 });
 
-const stopPolling = () => {
-  if (pollInterval.value) { clearInterval(pollInterval.value); pollInterval.value = null; }
-};
-
+// ── Initial progress fetch (REST, one-shot) ────────────────────────────────
 const fetchProgress = async () => {
   try {
     const r = await apiClient.get(`/tenants/${tenantId.value}/crawling_jobs/${job.value.id}/progress`);
     progress.value = r.data;
-    const done = r.data.total > 0 && r.data.pending === 0 && r.data.in_progress === 0;
-    if (done) { liveStatus.value = 'COMPLETED'; stopPolling(); emit('job-completed', job.value.id); }
-  } catch { stopPolling(); }
+    checkDone();
+  } catch { /* ignore — realtime will keep us updated */ }
 };
 
+const checkDone = () => {
+  const { total, pending, in_progress } = progress.value;
+  if (total > 0 && pending === 0 && in_progress === 0) {
+    liveStatus.value = 'COMPLETED';
+    emit('job-completed', job.value.id);
+  }
+};
+
+// ── Supabase Realtime on crawling_tasks for this job ──────────────────────
+// We count task statuses locally to avoid a REST round-trip on every change.
+let tasksChannel = null;
+
+const subscribeToTasks = () => {
+  tasksChannel = supabase
+    .channel(`crawling-tasks-job-${job.value.id}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'crawling_tasks',
+        filter: `job_id=eq.${job.value.id}`,
+      },
+      () => {
+        // Re-fetch aggregate counts from the API (cheap single-row query)
+        fetchProgress();
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'crawling_tasks',
+        filter: `job_id=eq.${job.value.id}`,
+      },
+      () => {
+        // New tasks discovered — bump the total and re-fetch
+        fetchProgress();
+      }
+    )
+    .subscribe();
+};
+
+// ── Cancel ────────────────────────────────────────────────────────────────
 const cancelJob = async () => {
   if (cancelling.value) return;
   cancelling.value = true;
-  stopPolling();
+  if (tasksChannel) supabase.removeChannel(tasksChannel);
   try {
     await apiClient.post(`/tenants/${tenantId.value}/crawling_jobs/${job.value.id}/cancel`);
     liveStatus.value = 'FAILED';
@@ -59,15 +100,18 @@ const cancelJob = async () => {
     emit('job-cancelled', job.value.id);
   } catch {
     addToast('Failed to stop the crawl.', 'error');
-    pollInterval.value = setInterval(fetchProgress, 5000);
+    subscribeToTasks(); // re-subscribe if cancel failed
   } finally { cancelling.value = false; }
 };
 
 onMounted(() => {
   if (job.value.status === 'IN_PROGRESS') {
-    fetchProgress();
-    pollInterval.value = setInterval(fetchProgress, 5000);
+    fetchProgress();    // get current counts immediately
+    subscribeToTasks(); // then listen for incremental updates
   }
 });
-onUnmounted(stopPolling);
+
+onUnmounted(() => {
+  if (tasksChannel) supabase.removeChannel(tasksChannel);
+});
 </script>

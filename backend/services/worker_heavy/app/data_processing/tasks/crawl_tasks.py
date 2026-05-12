@@ -398,6 +398,25 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         ).eq("id", task_id).execute()
         error_logger.info("Completed processing URL: %s", url)
 
+        # ── Final-task check ───────────────────────────────────────────────
+        # No single worker knows it's "the last one", so after each completion
+        # we ask: are there still any PENDING or IN_PROGRESS tasks for this job?
+        # If not, we own the responsibility of marking the job COMPLETED.
+        # Use limit(1) — we only need to know if at least one exists.
+        outstanding = (
+            supabase.table("crawling_tasks")
+            .select("id", count="exact")
+            .eq("job_id", job_id)
+            .in_("status", [CrawlingStatus.PENDING.value, CrawlingStatus.IN_PROGRESS.value])
+            .limit(1)
+            .execute()
+        )
+        if not outstanding.data:
+            supabase.table("crawling_jobs").update(
+                {"status": CrawlingStatus.COMPLETED.value}
+            ).eq("id", job_id).eq("status", CrawlingStatus.IN_PROGRESS.value).execute()
+            error_logger.info("Crawl job %s marked COMPLETED (last task finished: %s)", job_id, url)
+
     except Exception as e:
         err_str = str(e)
         if "Connection closed" in err_str or "connection closed" in err_str.lower():
