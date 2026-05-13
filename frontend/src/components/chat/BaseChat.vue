@@ -570,7 +570,8 @@ const widgetCssVariables = computed(() => {
     border-top-right-radius: 0 !important;
   }
 
-  .chat-footer {
+  .chat-footer,
+  .chat-main--rounded-bottom {
     border-bottom-left-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
   }
