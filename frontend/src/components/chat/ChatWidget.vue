@@ -36,10 +36,12 @@
     :chatHistory="chatHistory"
     :isThinking="isThinking"
     :isWidget="isWidget"
+    :isSharedView="isSharedView"
     v-model:userMessage="userMessage"
     @sendMessage="sendMessage"
     @reset="resetChat"
     @close="handleClose"
+    @share="handleShare"
   />
 </template>
 
@@ -51,6 +53,7 @@ import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import BaseChat from './BaseChat.vue';
 import { processBotMessage } from '@/utils/chatProcessor.js';
+import { useToast } from '@/composables/useToast';
 
 const { t } = useI18n();
 
@@ -60,12 +63,15 @@ const props = defineProps({
   /** Pass config directly to skip the API fetch (preview mode — live reactive updates) */
   config: { type: Object, default: null },
   isWidget: { type: Boolean, default: false },
+  /** When set, loads a read-only shared conversation snapshot */
+  shareId: { type: String, default: null },
 });
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // ── Config resolution ──────────────────────────────────────────────────────────
-const fetchedConfig = ref(null);
+const fetchedConfig  = ref(null);
+const isSharedView   = ref(false);
 const resolvedConfig = computed(() => props.config ?? fetchedConfig.value ?? {});
 
 // Launcher button background — resolved from the config color palette
@@ -75,6 +81,8 @@ const launcherBgColor = computed(() => {
   const colorId = styles.launcher_background_color;
   return palette.find(c => c.id === colorId)?.value || colorId || '#A855F7';
 });
+
+const { addToast } = useToast();
 
 // ── Open / close state ────────────────────────────────────────────────────────
 const emit = defineEmits(['close']);
@@ -90,6 +98,22 @@ const handleClose = () => {
     isChatOpen.value = false;
   }
   emit('close');
+};
+
+// ── Share ─────────────────────────────────────────────────────────────
+
+const handleShare = async () => {
+  if (!props.tenantId) return;
+  try {
+    const { data } = await axios.post(
+      `${API_BASE_URL}/chat/${props.tenantId}/conversation/${conversationId.value}/share`
+    );
+    const shareUrl = `${window.location.origin}/share/${data.share_id}`;
+    await navigator.clipboard.writeText(shareUrl);
+    addToast(t('chat.shareCopied'), 'success');
+  } catch {
+    addToast(t('chat.shareError'), 'error');
+  }
 };
 
 // ── Chat state ─────────────────────────────────────────────────────────────────
@@ -265,6 +289,35 @@ const resetChat = () => {
   fetchIntroMessage();
 };
 
+// ── Shared conversation ───────────────────────────────────────────────────────
+
+const buildSharedHistory = (messages) =>
+  messages.flatMap((m) => {
+    const entries = [];
+    if (m.user_message) entries.push({ text: m.user_message, isUser: true });
+    if (m.ai_message) {
+      const { text, html } = processBotMessage(m.ai_message);
+      entries.push({ text, html, isUser: false });
+    }
+    return entries;
+  });
+
+const fetchSharedConversation = async () => {
+  try {
+    const { data } = await axios.get(`${API_BASE_URL}/chat/shared/${props.shareId}`);
+    chatHistory.value = buildSharedHistory(data.messages || []);
+    const cfg = data.widget_config || {};
+    cfg.show_share_button = false;
+    fetchedConfig.value = cfg;
+    isSharedView.value = true;
+  } catch (err) {
+    const status = err.response?.status;
+    const msg = status === 410 ? t('chat.sharedExpired') : t('chat.sharedNotFound');
+    const { text, html } = processBotMessage(msg);
+    chatHistory.value = [{ text, html, isUser: false }];
+  }
+};
+
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 // JS-calculated viewport height — avoids 100dvh bugs on mobile browsers
@@ -282,6 +335,11 @@ onMounted(async () => {
   window.addEventListener('resize', setAppHeight);
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', setAppHeight);
+  }
+
+  if (props.shareId) {
+    await fetchSharedConversation();
+    return;
   }
 
   await fetchConfig();

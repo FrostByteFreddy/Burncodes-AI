@@ -5,7 +5,18 @@
     :style="widgetCssVariables"
   >
     <header class="chat-header">
-      <div class="w-1/4"></div>
+      <div class="w-1/4 flex items-center">
+        <button
+          v-if="config.show_share_button"
+          @click="$emit('share')"
+          :disabled="!hasUserMessages"
+          class="share-button btn btn-secondary btn-xs btn-square rounded-custom aspect-square"
+          :class="{ 'opacity-40 cursor-not-allowed': !hasUserMessages }"
+          :title="hasUserMessages ? $t('chat.share') : ''"
+        >
+          <font-awesome-icon :icon="['fas', 'share-nodes']" />
+        </button>
+      </div>
       <h1
         class="text-md font-bold text-center w-1/2 flex items-center justify-center"
       >
@@ -14,7 +25,7 @@
       </h1>
       <div class="w-1/4 flex justify-end items-center gap-2">
         <button
-          v-if="config.show_reset_button"
+          v-if="config.show_reset_button && !isSharedView"
           @click="$emit('reset')"
           class="reset-button btn btn-secondary btn-xs btn-square rounded-custom aspect-square"
           :title="$t('chat.reset')"
@@ -22,6 +33,7 @@
           <font-awesome-icon :icon="['fas', 'arrows-rotate']" />
         </button>
         <button
+          v-if="!isSharedView"
           @click="$emit('close')"
           class="close-button btn btn-secondary btn-xs btn-square rounded-custom aspect-square"
           :title="$t('chat.close')"
@@ -31,7 +43,7 @@
       </div>
     </header>
 
-    <main class="chat-main" ref="chatContainer">
+    <main class="chat-main" :class="{ 'chat-main--rounded-bottom': isSharedView }" ref="chatContainer">
       <div
         v-for="(message, index) in chatHistory"
         :key="index"
@@ -89,7 +101,7 @@
       </div>
     </main>
 
-    <footer class="chat-footer">
+    <footer v-if="!isSharedView" class="chat-footer">
       <div class="flex items-end gap-3">
         <textarea
           ref="textareaRef"
@@ -140,9 +152,13 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  isSharedView: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const emit = defineEmits(["update:userMessage", "sendMessage", "reset", "close"]);
+const emit = defineEmits(["update:userMessage", "sendMessage", "reset", "close", "share"]);
 
 // Starters: show only when no user message has been sent yet
 const hasUserMessages = computed(() => props.chatHistory.some(m => m.isUser));
@@ -346,6 +362,14 @@ const widgetCssVariables = computed(() => {
       styles.close_button_icon_color,
       "#1F2937"
     ),
+    "--chat-share-button-background-color": findColor(
+      styles.share_button_color,
+      "#FFFFFF"
+    ),
+    "--chat-share-button-icon-color": findColor(
+      styles.share_button_icon_color,
+      "#1F2937"
+    ),
     "--chat-border-radius": "32px",
     "--chat-custom-radius": "22px",
   };
@@ -391,6 +415,11 @@ const widgetCssVariables = computed(() => {
   flex-grow: 1;
   overflow-y: auto;
   min-height: 0; /* required for flex children to scroll correctly */
+}
+
+.chat-main--rounded-bottom {
+  border-bottom-left-radius: var(--chat-border-radius);
+  border-bottom-right-radius: var(--chat-border-radius);
 }
 
 .user-message {
@@ -487,6 +516,11 @@ const widgetCssVariables = computed(() => {
 .close-button {
   background-color: var(--chat-close-button-background-color) !important;
   color: var(--chat-close-button-icon-color) !important;
+}
+
+.share-button {
+  background-color: var(--chat-share-button-background-color) !important;
+  color: var(--chat-share-button-icon-color) !important;
 }
 
 /* ── Conversation starters ────────────────────────────────────── */

@@ -15,7 +15,7 @@
 <script setup>
 import { ref, toRefs, onMounted, onUnmounted, computed } from 'vue';
 import apiClient from '@/utils/api';
-import { supabase } from '../../../supabase';
+import { supabase } from '@/supabase';
 import { useToast } from '../../composables/useToast';
 
 const props = defineProps({

@@ -53,6 +53,13 @@ const routes = [
     meta: { public: true, skipAuth: true },
     props: true,
   },
+  {
+    path: `/share/:shareId(${uuidRegex})`,
+    name: "Share",
+    component: () => import("../views/ShareView.vue"),
+    meta: { public: true, skipAuth: true },
+    props: true,
+  },
 ];
 
 const router = createRouter({

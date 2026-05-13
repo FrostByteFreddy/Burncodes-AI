@@ -78,6 +78,12 @@
     "thinking": "Thinking...",
     "reset": "Reset conversation",
     "close": "Close chat",
+    "share": "Share conversation",
+    "shareCopied": "Link copied to clipboard!",
+    "shareError": "Could not create share link",
+    "sharedViewNotice": "You are viewing a shared conversation",
+    "sharedExpired": "This share link has expired",
+    "sharedNotFound": "Share link not found",
     "errors": {
       "initialMessage": "Error: Could not get initial message.",
       "processingFailed": "Error: Processing failed.",
@@ -177,6 +183,7 @@
           "logo": "Logo",
           "removeLogo": "Remove Logo",
           "showResetButton": "Show \"Reset Chat\" Button",
+          "showShareButton": "Show \"Share Chat\" Button",
           "inputPlaceholder": "Input Placeholder",
           "thinkingMessages": "\"Thinking\" Messages",
           "thinkingPlaceholder": "One message per line..."
@@ -200,6 +207,8 @@
             "reset_button_icon_color": "Reset Button Icon",
             "close_button_background_color": "Close Button Background",
             "close_button_icon_color": "Close Button Icon",
+            "share_button_color": "Share Button Background",
+            "share_button_icon_color": "Share Button Icon",
             "launcher_background_color": "Launcher Button Background"
           }
         },

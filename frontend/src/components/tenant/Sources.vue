@@ -86,7 +86,7 @@ import { useTenantsStore } from '../../stores/tenants';
 import { useToast } from '../../composables/useToast';
 import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';
-import { supabase } from '../../supabase';
+import { supabase } from '@/supabase';
 import KnowledgeList from './sources/KnowledgeList.vue';
 import AddKnowledgeWizard from './sources/AddKnowledgeWizard.vue';
 import ConfirmationModal from '../ConfirmationModal.vue';
