@@ -25,7 +25,7 @@
       </div>
 
       <a
-        :href="`/chat/${tenantId}`"
+        :href="`/preview.html?tenant_id=${tenantId}`"
         target="_blank"
         rel="noopener"
         class="starter-add-btn"

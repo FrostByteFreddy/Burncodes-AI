@@ -142,7 +142,9 @@ def get_crawling_jobs(current_user, tenant_id):
         job_ids = [j['id'] for j in jobs]
 
         # Batch-fetch tasks — one query for all jobs
-        tasks_resp = supabase.table('crawling_tasks').select("job_id,url,status").in_('job_id', job_ids).execute()
+        # NOTE: Supabase default row limit is 1000 — raise it explicitly so large
+        # crawls (3000+ pages) are not silently truncated in the job stats display.
+        tasks_resp = supabase.table('crawling_tasks').select("job_id,url,status").in_('job_id', job_ids).limit(10000).execute()
         tasks_by_job = defaultdict(list)
         all_crawled_urls = set()
         for t in (tasks_resp.data or []):
@@ -155,6 +157,7 @@ def get_crawling_jobs(current_user, tenant_id):
         if all_crawled_urls:
             sources_resp = supabase.table('tenant_sources').select("*") \
                 .eq('tenant_id', tenant_id_str) \
+                .limit(10000) \
                 .execute()
             for s in (sources_resp.data or []):
                 if s['source_location'] in all_crawled_urls:
@@ -186,7 +189,7 @@ def get_crawling_job_progress(current_user, tenant_id, job_id):
         if not job_check.data:
             return jsonify({"error": "Job not found or not part of this tenant"}), 404
 
-        tasks_response = supabase.table('crawling_tasks').select('status').eq('job_id', job_id).execute()
+        tasks_response = supabase.table('crawling_tasks').select('status').eq('job_id', job_id).limit(10000).execute()
 
         from collections import Counter
         status_list = [task['status'] for task in tasks_response.data]

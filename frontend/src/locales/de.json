@@ -78,6 +78,12 @@
     "thinking": "Denke nach...",
     "reset": "Gespräch zurücksetzen",
     "close": "Chat schließen",
+    "share": "Gespräch teilen",
+    "shareCopied": "Link in die Zwischenablage kopiert!",
+    "shareError": "Freigabe-Link konnte nicht erstellt werden",
+    "sharedViewNotice": "Du siehst ein geteiltes Gespräch",
+    "sharedExpired": "Dieser Freigabe-Link ist abgelaufen",
+    "sharedNotFound": "Freigabe-Link nicht gefunden",
     "errors": {
       "initialMessage": "Fehler: Konnte Anfangsnachricht nicht laden.",
       "processingFailed": "Fehler: Verarbeitung fehlgeschlagen.",
@@ -177,6 +183,7 @@
           "logo": "Logo",
           "removeLogo": "Logo entfernen",
           "showResetButton": "\"Chat zurücksetzen\"-Button anzeigen",
+          "showShareButton": "\"Chat teilen\"-Button anzeigen",
           "inputPlaceholder": "Eingabe-Platzhalter",
           "thinkingMessages": "\"Denk\"-Nachrichten",
           "thinkingPlaceholder": "Eine Nachricht pro Zeile..."
@@ -200,6 +207,8 @@
             "reset_button_icon_color": "Zurücksetzen-Icon",
             "close_button_background_color": "Schließen-Hintergrund",
             "close_button_icon_color": "Schließen-Icon",
+            "share_button_color": "Teilen-Button Hintergrund",
+            "share_button_icon_color": "Teilen-Button Icon",
             "launcher_background_color": "Launcher-Button-Hintergrund"
           }
         },

@@ -81,11 +81,12 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
+import { ref, watch, onUnmounted } from 'vue';
 import { useTenantsStore } from '../../stores/tenants';
 import { useToast } from '../../composables/useToast';
 import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';
+import { supabase } from '@/supabase';
 import KnowledgeList from './sources/KnowledgeList.vue';
 import AddKnowledgeWizard from './sources/AddKnowledgeWizard.vue';
 import ConfirmationModal from '../ConfirmationModal.vue';
@@ -102,27 +103,44 @@ const showConfirmationModal = ref(false);
 const rulesTabRef           = ref(null);
 
 // ---------------------------------------------------------------------------
-// Live polling — refresh sources every 5 s while a crawl is active
-// KPIs are computed from the Pinia store, so they update automatically.
+// Supabase Realtime — react to crawling_jobs changes for this tenant
 // ---------------------------------------------------------------------------
-const liveInterval = ref(null);
-const hasActiveJobs = computed(() => crawlingJobs.value.some(j => j.status === 'IN_PROGRESS'));
+let realtimeChannel = null;
 
-const startLiveRefresh = () => {
-  if (liveInterval.value) return;
-  liveInterval.value = setInterval(async () => {
-    if (tenantsStore.currentTenant) {
-      await tenantsStore.refetch(tenantsStore.currentTenant.id);
-    }
-  }, 5000);
+const subscribeToJobs = (tenantId) => {
+  // Tear down any previous subscription first
+  if (realtimeChannel) {
+    supabase.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+  }
+
+  realtimeChannel = supabase
+    .channel(`crawling-jobs-${tenantId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',           // INSERT | UPDATE | DELETE
+        schema: 'public',
+        table: 'crawling_jobs',
+        filter: `tenant_id=eq.${tenantId}`,
+      },
+      async (payload) => {
+        // Re-fetch enriched list (includes task_count + sources)
+        await fetchCrawlingJobs();
+
+        // If a job just became COMPLETED, also refresh the sources store
+        if (payload.eventType === 'UPDATE' && payload.new?.status === 'COMPLETED') {
+          addToast(t('tenant.sources.actions.crawlCompleted'), 'success');
+          await tenantsStore.refetch(tenantId);
+        }
+      }
+    )
+    .subscribe();
 };
 
-const stopLiveRefresh = () => {
-  if (liveInterval.value) { clearInterval(liveInterval.value); liveInterval.value = null; }
-};
-
-watch(hasActiveJobs, (active) => { active ? startLiveRefresh() : stopLiveRefresh(); });
-onUnmounted(stopLiveRefresh);
+onUnmounted(() => {
+  if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+});
 
 // ---------------------------------------------------------------------------
 
@@ -140,21 +158,21 @@ const fetchCrawlingJobs = async () => {
 watch(() => tenantsStore.currentTenant, (tenant) => {
   if (tenant) {
     fetchCrawlingJobs();
+    subscribeToJobs(tenant.id);
   } else {
     crawlingJobs.value = [];
+    if (realtimeChannel) { supabase.removeChannel(realtimeChannel); realtimeChannel = null; }
   }
 }, { immediate: true });
 
 const onCrawlStarted = async () => { await fetchCrawlingJobs(); };
 const onUploadDone   = async () => { await tenantsStore.refetch(tenantsStore.currentTenant.id); };
 
-const handleJobCompletion = async () => {
-  addToast(t('tenant.sources.actions.crawlCompleted'), 'success');
-  await tenantsStore.refetch(tenantsStore.currentTenant.id);
-  await fetchCrawlingJobs();
-};
-const handleJobCancelled = async () => { await fetchCrawlingJobs(); };
-const handleJobDeleted   = async () => {
+// These are now mostly no-ops — realtime handles re-fetching.
+// Keep them for optimistic UX (delete needs an immediate local update).
+const handleJobCompletion = () => {}; // realtime fires crawlCompleted toast + refetch
+const handleJobCancelled  = async () => { await fetchCrawlingJobs(); };
+const handleJobDeleted    = async () => {
   await fetchCrawlingJobs();
   await tenantsStore.refetch(tenantsStore.currentTenant.id);
 };

@@ -72,6 +72,18 @@
                   <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
                 </select>
               </div>
+              <div>
+                <label for="share_button_color" class="form-field">{{ $t('tenant.settings.appearance.componentStyles.labels.share_button_color') }}</label>
+                <select v-model="local.widget_config.component_styles.share_button_color" id="share_button_color" class="form-input">
+                  <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
+                </select>
+              </div>
+              <div>
+                <label for="share_button_icon_color" class="form-field">{{ $t('tenant.settings.appearance.componentStyles.labels.share_button_icon_color') }}</label>
+                <select v-model="local.widget_config.component_styles.share_button_icon_color" id="share_button_icon_color" class="form-input">
+                  <option v-for="c in local.widget_config.color_palette" :key="c.id" :value="c.id">{{ c.name }}</option>
+                </select>
+              </div>
             </div>
             <div>
               <label for="chatbot_title" class="form-field">{{ $t('tenant.settings.appearance.chatWindow.chatbotTitle') }}</label>
@@ -90,6 +102,10 @@
             <div class="checkbox-field">
               <input v-model="local.widget_config.show_reset_button" type="checkbox" id="show_reset_button" class="checkbox-field__input" />
               <label for="show_reset_button" class="checkbox-field__label">{{ $t('tenant.settings.appearance.chatWindow.showResetButton') }}</label>
+            </div>
+            <div class="checkbox-field">
+              <input v-model="local.widget_config.show_share_button" type="checkbox" id="show_share_button" class="checkbox-field__input" />
+              <label for="show_share_button" class="checkbox-field__label">{{ $t('tenant.settings.appearance.chatWindow.showShareButton') }}</label>
             </div>
           </div>
         </div>

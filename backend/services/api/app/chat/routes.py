@@ -170,3 +170,114 @@ def get_intro_message(tenant_id):
     except Exception as e:
         error_logger.error(f"Error getting intro message for tenant {tenant_id}: {e}", exc_info=True)
         return jsonify({"error": "An internal error occurred"}), 500
+
+
+# ── Share endpoints ────────────────────────────────────────────────────────────
+
+@chat_bp.route('/<uuid:tenant_id>/conversation/<uuid:conversation_id>/share', methods=['POST'])
+@limiter.limit("10 per minute")
+def create_share_link(tenant_id, conversation_id):
+    """
+    Public endpoint — no auth required (end-users have no account token).
+    Validates the conversation exists for this tenant, then upserts a share row.
+    Idempotent: sharing the same conversation twice returns the same link.
+    """
+    try:
+        tenant_id_str = str(tenant_id)
+        conversation_id_str = str(conversation_id)
+
+        # Validate conversation belongs to this tenant (prevents UUID guessing)
+        check = (
+            supabase.table('chat_logs')
+            .select('conversation_id')
+            .eq('tenant_id', tenant_id_str)
+            .eq('conversation_id', conversation_id_str)
+            .limit(1)
+            .execute()
+        )
+        if not check.data:
+            return jsonify({"error": "Conversation not found"}), 404
+
+        # Upsert — if already shared, refresh the expiry and return the existing row
+        result = (
+            supabase.table('shared_conversations')
+            .upsert(
+                {
+                    "conversation_id": conversation_id_str,
+                    "tenant_id": tenant_id_str,
+                    # expires_at: DB default is now() + 24h, but on conflict we want to
+                    # reset the expiry so re-sharing extends the link lifetime.
+                },
+                on_conflict="conversation_id",
+                returning="representation",
+            )
+            .execute()
+        )
+        row = result.data[0]
+        return jsonify({"share_id": row["id"], "expires_at": row["expires_at"]}), 200
+
+    except Exception as e:
+        error_logger.error(f"Error creating share link for conversation {conversation_id}: {e}", exc_info=True)
+        return jsonify({"error": "Failed to create share link"}), 500
+
+
+@chat_bp.route('/shared/<uuid:share_id>', methods=['GET'])
+def get_shared_conversation(share_id):
+    """
+    Public endpoint — fetches a shared conversation by its share UUID.
+    Returns 410 Gone if the link has expired.
+    """
+    try:
+        from datetime import datetime, timezone
+        share_id_str = str(share_id)
+
+        # Look up the share row
+        share_resp = (
+            supabase.table('shared_conversations')
+            .select('*')
+            .eq('id', share_id_str)
+            .maybe_single()
+            .execute()
+        )
+        if not share_resp.data:
+            return jsonify({"error": "Share link not found"}), 404
+
+        share = share_resp.data
+        # Check expiry
+        expires_at = datetime.fromisoformat(share['expires_at'].replace('Z', '+00:00'))
+        if datetime.now(timezone.utc) > expires_at:
+            return jsonify({"error": "This share link has expired"}), 410
+
+        conversation_id = share['conversation_id']
+        tenant_id = share['tenant_id']
+
+        # Fetch the conversation messages
+        logs_resp = (
+            supabase.table('chat_logs')
+            .select('user_message, ai_message, created_at')
+            .eq('tenant_id', tenant_id)
+            .eq('conversation_id', conversation_id)
+            .order('created_at')
+            .execute()
+        )
+
+        # Fetch tenant public config for branding
+        tenant_resp = (
+            supabase.table('tenants')
+            .select('widget_config')
+            .eq('id', tenant_id)
+            .single()
+            .execute()
+        )
+        widget_config = (tenant_resp.data or {}).get('widget_config', {})
+
+        return jsonify({
+            "messages":      logs_resp.data or [],
+            "widget_config": widget_config,
+            "tenant_id":     tenant_id,
+            "expires_at":    share['expires_at'],
+        }), 200
+
+    except Exception as e:
+        error_logger.error(f"Error fetching shared conversation {share_id}: {e}", exc_info=True)
+        return jsonify({"error": "Failed to fetch shared conversation"}), 500

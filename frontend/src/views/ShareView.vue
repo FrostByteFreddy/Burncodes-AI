@@ -1,6 +1,6 @@
 <template>
   <div class="chat-page">
-    <ChatWidget :tenant-id="tenantId" :is-widget="true" />
+    <ChatWidget :share-id="shareId" />
   </div>
 </template>
 
@@ -9,8 +9,8 @@ import { computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import ChatWidget from '@/components/chat/ChatWidget.vue';
 
-const route    = useRoute();
-const tenantId = computed(() => route.params.tenantId);
+const route   = useRoute();
+const shareId = computed(() => route.params.shareId);
 
 const setAppHeight = () => {
   const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
@@ -50,22 +50,16 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
-  :global(body) {
-    overflow: hidden;
-  }
-
-  /* Zero out the CSS variable so every child that references it inherits 0 */
+  :global(body) { overflow: hidden; }
   :global(:root) {
     --chat-border-radius: 0px !important;
     --chat-custom-radius: 0px !important;
   }
-
   .chat-page {
     padding: 0;
     width: 100vw;
     height: var(--app-height, 100dvh);
   }
-
   .chat-page > :deep(.chat-widget) {
     max-width: 100vw;
     width: 100vw;

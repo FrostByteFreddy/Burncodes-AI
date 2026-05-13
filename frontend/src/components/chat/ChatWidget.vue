@@ -1,8 +1,33 @@
 <template>
-  <!-- Collapsed state (non-widget mode only — in widget mode parent hides the iframe) -->
-  <div v-if="!isChatOpen" class="chat-collapsed-bar" @click="isChatOpen = true">
-    <span>{{ resolvedConfig.chatbot_title || 'Chat' }}</span>
-    <font-awesome-icon :icon="['fas', 'chevron-up']" />
+  <!-- Collapsed state (non-widget mode only — in widget mode the parent hides the iframe) -->
+  <div
+    v-if="!isChatOpen"
+    class="chat-launcher"
+    :style="{ backgroundColor: launcherBgColor }"
+    @click="isChatOpen = true"
+    :title="resolvedConfig.chatbot_title || 'Chat'"
+  >
+    <img
+      v-if="resolvedConfig.launcher_icon"
+      :src="resolvedConfig.launcher_icon"
+      class="chat-launcher__icon"
+      alt="Open chat"
+    />
+    <svg
+      v-else
+      xmlns="http://www.w3.org/2000/svg"
+      width="28"
+      height="28"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="white"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
   </div>
 
   <BaseChat
@@ -11,20 +36,24 @@
     :chatHistory="chatHistory"
     :isThinking="isThinking"
     :isWidget="isWidget"
+    :isSharedView="isSharedView"
     v-model:userMessage="userMessage"
     @sendMessage="sendMessage"
     @reset="resetChat"
     @close="handleClose"
+    @share="handleShare"
   />
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import BaseChat from './BaseChat.vue';
 import { processBotMessage } from '@/utils/chatProcessor.js';
+import { useToast } from '@/composables/useToast';
 
 const { t } = useI18n();
 
@@ -34,15 +63,30 @@ const props = defineProps({
   /** Pass config directly to skip the API fetch (preview mode — live reactive updates) */
   config: { type: Object, default: null },
   isWidget: { type: Boolean, default: false },
+  /** When set, loads a read-only shared conversation snapshot */
+  shareId: { type: String, default: null },
 });
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // ── Config resolution ──────────────────────────────────────────────────────────
-const fetchedConfig = ref(null);
+const fetchedConfig  = ref(null);
+const isSharedView   = ref(false);
 const resolvedConfig = computed(() => props.config ?? fetchedConfig.value ?? {});
 
+// Launcher button background — resolved from the config color palette
+const launcherBgColor = computed(() => {
+  const styles  = resolvedConfig.value.component_styles || {};
+  const palette = resolvedConfig.value.color_palette    || [];
+  const colorId = styles.launcher_background_color;
+  return palette.find(c => c.id === colorId)?.value || colorId || '#A855F7';
+});
+
+const { addToast } = useToast();
+
 // ── Open / close state ────────────────────────────────────────────────────────
+const emit = defineEmits(['close']);
+
 const isChatOpen = ref(true);
 
 const handleClose = () => {
@@ -50,7 +94,25 @@ const handleClose = () => {
     // Tell widget.js to hide the iframe; the launcher re-opens it
     window.parent.postMessage({ type: 'burncodes:close-widget' }, '*');
   } else {
+    // Show own launcher again and notify any parent that wraps us
     isChatOpen.value = false;
+  }
+  emit('close');
+};
+
+// ── Share ─────────────────────────────────────────────────────────────
+
+const handleShare = async () => {
+  if (!props.tenantId) return;
+  try {
+    const { data } = await axios.post(
+      `${API_BASE_URL}/chat/${props.tenantId}/conversation/${conversationId.value}/share`
+    );
+    const shareUrl = `${window.location.origin}/share/${data.share_id}`;
+    await navigator.clipboard.writeText(shareUrl);
+    addToast(t('chat.shareCopied'), 'success');
+  } catch {
+    addToast(t('chat.shareError'), 'error');
   }
 };
 
@@ -227,8 +289,59 @@ const resetChat = () => {
   fetchIntroMessage();
 };
 
+// ── Shared conversation ───────────────────────────────────────────────────────
+
+const buildSharedHistory = (messages) =>
+  messages.flatMap((m) => {
+    const entries = [];
+    if (m.user_message) entries.push({ text: m.user_message, isUser: true });
+    if (m.ai_message) {
+      const { text, html } = processBotMessage(m.ai_message);
+      entries.push({ text, html, isUser: false });
+    }
+    return entries;
+  });
+
+const fetchSharedConversation = async () => {
+  try {
+    const { data } = await axios.get(`${API_BASE_URL}/chat/shared/${props.shareId}`);
+    chatHistory.value = buildSharedHistory(data.messages || []);
+    const cfg = data.widget_config || {};
+    cfg.show_share_button = false;
+    fetchedConfig.value = cfg;
+    isSharedView.value = true;
+  } catch (err) {
+    const status = err.response?.status;
+    const msg = status === 410 ? t('chat.sharedExpired') : t('chat.sharedNotFound');
+    const { text, html } = processBotMessage(msg);
+    chatHistory.value = [{ text, html, isUser: false }];
+  }
+};
+
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
+
+// JS-calculated viewport height — avoids 100dvh bugs on mobile browsers
+// where the address bar appearing / disappearing causes layout jumps.
+// Sets --app-height on the widget root so CSS can consume it.
+const widgetRoot = ref(null);
+
+const setAppHeight = () => {
+  const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.documentElement.style.setProperty('--app-height', `${h}px`);
+};
+
 onMounted(async () => {
+  setAppHeight();
+  window.addEventListener('resize', setAppHeight);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', setAppHeight);
+  }
+
+  if (props.shareId) {
+    await fetchSharedConversation();
+    return;
+  }
+
   await fetchConfig();
 
   if (props.tenantId) {
@@ -244,25 +357,44 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener('resize', setAppHeight);
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', setAppHeight);
+  }
   if (activeAbortController.value) {
     activeAbortController.value.abort();
     activeAbortController.value = null;
   }
 });
+
 </script>
 
 <style scoped>
-.chat-collapsed-bar {
+.chat-launcher {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: var(--chat-header-background-color, #6366f1);
-  color: var(--chat-header-text-color, #ffffff);
-  border-radius: 12px;
+  justify-content: center;
   cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 600;
-  user-select: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.20);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chat-launcher:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+}
+
+.chat-launcher:active {
+  transform: scale(0.96);
+}
+
+.chat-launcher__icon {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
 }
 </style>

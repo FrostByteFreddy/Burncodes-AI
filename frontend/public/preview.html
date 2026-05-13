@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chatbot Preview</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100dvh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f8f9fa;
+      background-image:
+        radial-gradient(circle at 1px 1px, #d1d5db 1px, transparent 0);
+      background-size: 28px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .placeholder {
+      text-align: center;
+      color: #9ca3af;
+      max-width: 320px;
+    }
+
+    .placeholder svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 16px;
+      opacity: 0.4;
+    }
+
+    .placeholder h1 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+
+    .placeholder p {
+      font-size: 0.875rem;
+      line-height: 1.6;
+    }
+
+    .error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 12px;
+      padding: 20px 24px;
+      color: #b91c1c;
+      font-size: 0.875rem;
+      max-width: 360px;
+      text-align: center;
+    }
+
+    /* ── Launcher hint annotation ───────────────────── */
+    .hint {
+      position: fixed;
+      bottom: 100px;
+      right: 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+      z-index: 99999;
+    }
+
+    .hint.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .hint.fade-out {
+      opacity: 0;
+    }
+
+    .hint__label {
+      background: #1e1b4b;
+      color: #fff;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 20px;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .hint__arrow {
+      /* curvy SVG arrow pointing down-right toward the launcher */
+      display: block;
+      margin-right: 4px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+      animation: hint-bounce 1.2s ease-in-out infinite alternate;
+    }
+
+    @keyframes hint-bounce {
+      from { transform: translateY(0px) rotate(0deg); }
+      to   { transform: translateY(6px) rotate(3deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="placeholder" id="placeholder">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    <h1>Loading your chatbot…</h1>
+    <p>The widget will appear in the bottom-right corner of this page.</p>
+  </div>
+
+  <!-- Launcher hint — shown after widget loads, dismissed on click or after 6s -->
+  <div class="hint" id="hint" onclick="dismissHint()">
+    <span class="hint__label" id="hint-label"></span>
+    <!-- Curvy arrow pointing down-right -->
+    <svg class="hint__arrow" width="48" height="56" viewBox="0 0 48 56"
+         fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6 4 C10 18, 30 20, 38 42" stroke="#1e1b4b" stroke-width="2.5"
+            stroke-linecap="round" fill="none"/>
+      <!-- arrowhead -->
+      <path d="M32 46 L38 42 L36 34" stroke="#1e1b4b" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+  </div>
+
+  <script>
+    var hintLabels = {
+      de: '👆 Hier klicken, um den Chat zu öffnen!',
+      fr: '👆 Cliquez ici pour ouvrir le chat !',
+      en: '👆 Click here to open your chat!',
+    };
+
+    function getHintLabel() {
+      var lang = (navigator.language || 'en').toLowerCase().slice(0, 2);
+      return hintLabels[lang] || hintLabels['en'];
+    }
+
+    function dismissHint() {
+      const hint = document.getElementById('hint');
+      if (!hint) return;
+      hint.classList.add('fade-out');
+      setTimeout(() => hint.remove(), 500);
+    }
+
+    (function () {
+      const params  = new URLSearchParams(window.location.search);
+      const tid     = params.get('tenant_id');
+      const apiBase = params.get('api_url')
+        || document.currentScript?.dataset?.apiUrl
+        // fallback: same origin as this page but on /api prefix — adjust if needed
+        || (window.location.origin.includes('localhost')
+            ? 'http://localhost:5000/api'
+            : window.location.origin + '/api');
+
+      const placeholder = document.getElementById('placeholder');
+
+      if (!tid) {
+        placeholder.innerHTML =
+          '<div class="error">⚠️ No <code>tenant_id</code> in the URL.<br>' +
+          'Use <code>?tenant_id=YOUR_ID</code></div>';
+        return;
+      }
+
+      // Derive widget.js URL from apiBase (strip trailing /api if present)
+      const widgetBase = apiBase.replace(/\/api\/?$/, '');
+      const script = document.createElement('script');
+      script.src = widgetBase + '/api/tenants/widget.js';
+      script.setAttribute('data-tenant-id', tid);
+
+      script.onload = () => {
+        // Fade out the loading placeholder
+        placeholder.style.transition = 'opacity 0.4s ease';
+        placeholder.style.opacity = '0';
+        setTimeout(() => placeholder.remove(), 400);
+
+        // Show the hint after a short delay (widget needs time to render)
+        setTimeout(() => {
+          const hint = document.getElementById('hint');
+          const label = document.getElementById('hint-label');
+          if (label) label.textContent = getHintLabel();
+          if (hint) hint.classList.add('visible');
+        }, 800);
+
+        // Auto-dismiss after 6 seconds
+        setTimeout(dismissHint, 6800);
+      };
+
+      script.onerror = () => {
+        placeholder.innerHTML =
+          '<div class="error">⚠️ Could not load widget.js.<br>' +
+          'Check that the API is running and <code>tenant_id</code> is correct.</div>';
+      };
+
+      document.body.appendChild(script);
+    })();
+  </script>
+
+</body>
+</html>

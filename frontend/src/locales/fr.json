@@ -78,6 +78,12 @@
     "thinking": "Je réfléchis...",
     "reset": "Réinitialiser la conversation",
     "close": "Fermer le chat",
+    "share": "Partager la conversation",
+    "shareCopied": "Lien copié dans le presse-papiers !",
+    "shareError": "Impossible de créer le lien de partage",
+    "sharedViewNotice": "Vous consultez une conversation partagée",
+    "sharedExpired": "Ce lien de partage a expiré",
+    "sharedNotFound": "Lien de partage introuvable",
     "errors": {
       "initialMessage": "Erreur : Impossible de récupérer le message initial.",
       "processingFailed": "Erreur : Échec du traitement.",
@@ -177,6 +183,7 @@
           "logo": "Logo",
           "removeLogo": "Supprimer le logo",
           "showResetButton": "Afficher le bouton \"Réinitialiser le chat\"",
+          "showShareButton": "Afficher le bouton \"Partager le chat\"",
           "inputPlaceholder": "Espace réservé de l'entrée",
           "thinkingMessages": "Messages \"Je réfléchis\"",
           "thinkingPlaceholder": "Un message par ligne..."
@@ -200,6 +207,8 @@
             "reset_button_icon_color": "Icône bouton réinitialisation",
             "close_button_background_color": "Fond bouton fermer",
             "close_button_icon_color": "Icône bouton fermer",
+            "share_button_color": "Fond bouton partager",
+            "share_button_icon_color": "Icône bouton partager",
             "launcher_background_color": "Arrière-plan du bouton lanceur"
           }
         },
