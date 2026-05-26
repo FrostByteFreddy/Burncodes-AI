@@ -5,37 +5,22 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted } from 'vue';
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import ChatWidget from '@/components/chat/ChatWidget.vue';
 
 const route   = useRoute();
 const shareId = computed(() => route.params.shareId);
-
-const setAppHeight = () => {
-  const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  document.documentElement.style.setProperty('--app-height', `${h}px`);
-};
-
-onMounted(() => {
-  setAppHeight();
-  window.addEventListener('resize', setAppHeight);
-  if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('resize', setAppHeight);
-  if (window.visualViewport) window.visualViewport.removeEventListener('resize', setAppHeight);
-});
 </script>
 
 <style scoped>
+/* ── Desktop ─────────────────────────────────────────────────────────────── */
 .chat-page {
   display: flex;
   justify-content: center;
   align-items: flex-start;
   width: 100%;
-  height: var(--app-height, 100dvh);
+  height: 100dvh;
   padding: 1.5rem 0;
   background: none;
 }
@@ -43,27 +28,39 @@ onUnmounted(() => {
 .chat-page > :deep(.chat-widget) {
   max-width: 650px;
   width: 100%;
-  height: calc(var(--app-height, 100dvh) - 3rem);
+  height: calc(100dvh - 3rem);
   box-shadow: none !important;
   border: none !important;
   border-radius: 0 !important;
 }
 
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  :global(body) { overflow: hidden; }
+  :global(html),
+  :global(body),
+  :global(#app),
+  :global(.app-root) {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
   :global(:root) {
     --chat-border-radius: 0px !important;
     --chat-custom-radius: 0px !important;
   }
+
   .chat-page {
+    height: 100%;
+    width: 100%;
     padding: 0;
-    width: 100vw;
-    height: var(--app-height, 100dvh);
+    align-items: stretch;
   }
+
   .chat-page > :deep(.chat-widget) {
-    max-width: 100vw;
-    width: 100vw;
-    height: var(--app-height, 100dvh);
+    max-width: 100%;
+    width: 100%;
+    height: 100%;
     border-radius: 0 !important;
     box-shadow: none !important;
     border: none !important;

@@ -301,34 +301,42 @@ def delete_crawling_job(current_user, tenant_id, job_id):
         tasks_resp = supabase.table('crawling_tasks').select("url").eq('job_id', job_id).execute()
         crawled_urls = [t['url'] for t in (tasks_resp.data or [])]
 
-        # 3. Find + delete matching tenant_sources rows
+        # 3. Find + delete matching tenant_sources rows in batches
         deleted_source_ids = []
         if crawled_urls:
-            sources_resp = supabase.table('tenant_sources') \
-                .select("id") \
-                .eq('tenant_id', tenant_id_str) \
-                .in_('source_location', crawled_urls) \
-                .execute()
-            deleted_source_ids = [s['id'] for s in (sources_resp.data or [])]
-
-            if deleted_source_ids:
-                # Fetch gemini_document_name for each source before deletion
-                sources_full = supabase.table('tenant_sources') \
+            from app.gemini_store.service import GeminiStoreService
+            
+            # Batch size of 100 prevents "URL component 'query' too long" in Supabase
+            batch_size = 100
+            for i in range(0, len(crawled_urls), batch_size):
+                url_batch = crawled_urls[i:i + batch_size]
+                
+                sources_resp = supabase.table('tenant_sources') \
                     .select("id, gemini_document_name") \
-                    .in_('id', deleted_source_ids) \
+                    .eq('tenant_id', tenant_id_str) \
+                    .in_('source_location', url_batch) \
                     .execute()
-                supabase.table('tenant_sources').delete().in_('id', deleted_source_ids).execute()
-
-                # 4. Delete each document from the Gemini File Search Store — soft-fail
-                try:
-                    from app.gemini_store.service import GeminiStoreService
-                    for src in (sources_full.data or []):
-                        doc_name = src.get('gemini_document_name')
-                        if doc_name:
+                    
+                batch_sources = sources_resp.data or []
+                if not batch_sources:
+                    continue
+                    
+                batch_ids = [s['id'] for s in batch_sources]
+                deleted_source_ids.extend(batch_ids)
+                
+                # Delete the sources from Supabase
+                supabase.table('tenant_sources').delete().in_('id', batch_ids).execute()
+                
+                # Delete from Gemini Store
+                for src in batch_sources:
+                    doc_name = src.get('gemini_document_name')
+                    if doc_name:
+                        try:
                             GeminiStoreService.delete_document(doc_name)
-                    error_logger.info("delete_job: purged %d Gemini document(s) for job %s", len(deleted_source_ids), job_id)
-                except Exception as vec_err:
-                    error_logger.warning("delete_job: Gemini store cleanup partial failure for job %s: %s", job_id, vec_err)
+                        except Exception as vec_err:
+                            error_logger.warning("delete_job: Gemini store cleanup partial failure for job %s: %s", job_id, vec_err)
+
+            error_logger.info("delete_job: purged %d Gemini document(s) for job %s", len(deleted_source_ids), job_id)
 
         # 5. Delete crawling_tasks + job row
         supabase.table('crawling_tasks').delete().eq('job_id', job_id).execute()

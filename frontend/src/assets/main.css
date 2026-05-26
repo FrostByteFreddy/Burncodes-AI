@@ -65,7 +65,7 @@
   .send-button > svg {
     position: relative;
     transform: rotate(45deg);
-    left: -3px;
+    left: -2px;
   }
 }
 
