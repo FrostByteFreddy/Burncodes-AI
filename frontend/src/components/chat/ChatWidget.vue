@@ -54,6 +54,7 @@ import { v4 as uuidv4 } from 'uuid';
 import BaseChat from './BaseChat.vue';
 import { processBotMessage } from '@/utils/chatProcessor.js';
 import { useToast } from '@/composables/useToast';
+import { useAppHeight } from '@/composables/useAppHeight';
 
 const { t } = useI18n();
 
@@ -320,23 +321,11 @@ const fetchSharedConversation = async () => {
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
-// JS-calculated viewport height — avoids 100dvh bugs on mobile browsers
-// where the address bar appearing / disappearing causes layout jumps.
-// Sets --app-height on the widget root so CSS can consume it.
+useAppHeight();
+
 const widgetRoot = ref(null);
 
-const setAppHeight = () => {
-  const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  document.documentElement.style.setProperty('--app-height', `${h}px`);
-};
-
 onMounted(async () => {
-  setAppHeight();
-  window.addEventListener('resize', setAppHeight);
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', setAppHeight);
-  }
-
   if (props.shareId) {
     await fetchSharedConversation();
     return;
@@ -357,10 +346,6 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', setAppHeight);
-  if (window.visualViewport) {
-    window.visualViewport.removeEventListener('resize', setAppHeight);
-  }
   if (activeAbortController.value) {
     activeAbortController.value.abort();
     activeAbortController.value = null;

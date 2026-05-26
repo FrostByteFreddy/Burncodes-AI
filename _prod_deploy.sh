@@ -25,8 +25,7 @@ rsync -avz \
   --exclude 'node_modules' \
   --exclude 'backend/venv' \
   --exclude 'backend/__pycache__' \
-  --exclude 'frontend/dist' \
-  --exclude '.env.*' \
+  --exclude 'frontend/dist' 
   ./ "$SERVER:$APP_DIR"
 
 echo "✅ Code synced successfully."

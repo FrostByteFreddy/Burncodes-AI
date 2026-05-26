@@ -61,7 +61,7 @@
           </div>
           <div
             v-else
-            class="prose prose-sm prose-neutral max-w-none bot-message-prose"
+            class="prose prose-neutral max-w-none bot-message-prose"
             v-html="processBotMessage(message.html)"
           ></div>
         </div>
@@ -102,21 +102,21 @@
     </main>
 
     <footer v-if="!isSharedView" class="chat-footer">
-      <div class="flex items-end gap-3">
+      <div class="chat-input-row">
         <textarea
           ref="textareaRef"
           :value="userMessage"
           @input="onInput"
           @keyup.enter.exact.prevent="$emit('sendMessage')"
           :placeholder="config.input_placeholder || $t('chat.inputPlaceholder')"
-          class="chat-input outline-none flex-grow border p-4 text-sm focus:outline-none focus:ring-1 rounded-custom transition-all"
+          class="chat-input outline-none border px-4 py-3 focus:outline-none focus:ring-1 rounded-custom transition-all"
           rows="1"
           style="resize: none; overflow-y: hidden"
         ></textarea>
         <button
           @click="$emit('sendMessage')"
           :disabled="!userMessage.trim() || isThinking"
-          class="send-button font-bold py-2 px-4 btn-secondary btn-square rounded-custom aspect-square"
+          class="send-button font-bold btn-secondary btn-square rounded-custom aspect-square chat-send-btn"
         >
           <font-awesome-icon :icon="['fas', 'paper-plane']" />
         </button>
@@ -385,6 +385,8 @@ const widgetCssVariables = computed(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
+  /* 16px base prevents iOS Safari from auto-zooming any child input on focus */
+  font-size: 16px;
 }
 
 .chat-widget.is-widget {
@@ -392,10 +394,10 @@ const widgetCssVariables = computed(() => {
   border: none;
   box-shadow: none;
   width: 100%;
-  /* Use the JS-calculated --app-height instead of 100dvh.
-     visualViewport correctly excludes mobile browser chrome (address bar,
-     bottom nav) that dvh/svh don't account for on all platforms. */
-  height: var(--app-height, 100dvh);
+  /* Falls back to 100dvh on desktop widget (iframe) mode.
+     On mobile the height:100% from the parent chain takes over
+     via the media query below. */
+  height: 100dvh;
 }
 
 .chat-header {
@@ -425,13 +427,15 @@ const widgetCssVariables = computed(() => {
 .user-message {
   background-color: var(--chat-user-message-background-color);
   border-radius: var(--chat-border-radius);
-  font-size: 0.875rem; /* Same as .prose */
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .bot-message {
   background-color: var(--chat-bot-message-background-color);
   border-radius: var(--chat-border-radius);
-  font-size: 0.875rem; /* Same as .prose */
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .user-message,
@@ -484,8 +488,18 @@ const widgetCssVariables = computed(() => {
 .chat-footer {
   background-color: var(--chat-header-background-color);
   padding: 0.75rem;
+  /* Extend padding into the safe area so the home indicator / gesture bar
+     never clips the input on iOS and Android. */
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
   border-bottom-left-radius: var(--chat-border-radius);
   border-bottom-right-radius: var(--chat-border-radius);
+}
+
+/* ── Footer input row ─────────────────────────────────────────────────────── */
+.chat-input-row {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
 }
 
 .chat-input {
@@ -493,6 +507,10 @@ const widgetCssVariables = computed(() => {
   color: var(--chat-input-text-color);
   border-color: var(--chat-header-background-color);
   --tw-ring-color: var(--chat-input-focus-ring-color);
+  /* Full-width — button overlays on top of the right edge */
+  width: 100%;
+  /* Offset text from the overlaid send button */
+  padding-right: 3.5rem;
 }
 
 .chat-input::placeholder {
@@ -503,6 +521,29 @@ const widgetCssVariables = computed(() => {
 .rounded-custom {
   border-radius: var(--chat-custom-radius);
 }
+
+.chat-send-btn {
+  background-color: var(--chat-send-button-background-color);
+  color: var(--chat-send-button-text-color);
+  /* Overlay on the right side of the textarea */
+  position: absolute;
+  right: 0rem;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.5rem;
+  width: 3.1rem;
+  height: 3.1rem;
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    cursor: pointer;
+  }
+}
+
 .send-button {
   background-color: var(--chat-send-button-background-color);
   color: var(--chat-send-button-text-color);
@@ -556,13 +597,18 @@ const widgetCssVariables = computed(() => {
   transform: translateY(0);
   opacity: 0.7;
 }
-/* ── Mobile: flatten outer shell edges so no background shows through ── */
+/* ── Mobile: full-screen, percentage-based height chain ─────────────────── */
 @media (max-width: 768px) {
   .chat-widget,
   .chat-widget.is-widget {
     border-radius: 0 !important;
     box-shadow: none !important;
     border: none !important;
+    /* Inherit the shrunk height from html→body→#app→.chat-page.
+       Do NOT use dvh/vh here — percentage propagates the keyboard-aware
+       resize from interactive-widget=resizes-content correctly. */
+    height: 100%;
+    width: 100%;
   }
 
   .chat-header {

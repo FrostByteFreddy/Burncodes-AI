@@ -73,9 +73,10 @@
     <CreateTenantModal v-if="showCreateModal" @close="showCreateModal = false" />
     <ConfirmationModal
       v-if="tenantToDelete"
+      :show="true"
       :title="$t('manageTenants.deleteModal.title')"
       :message="$t('manageTenants.deleteModal.message', { name: tenantToDelete.name })"
-      :confirmText="$t('manageTenants.deleteModal.confirm')"
+      :confirmButtonText="$t('manageTenants.deleteModal.confirm')"
       @confirm="deleteTenant"
       @cancel="tenantToDelete = null"
     />
