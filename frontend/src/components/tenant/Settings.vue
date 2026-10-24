@@ -1,14 +1,14 @@
 <template>
   <div class="cfg-page">
-    <div class="page-head">
-      <div>
-        <h1 class="page-title">{{ $t('pages.configureTitle') }}</h1>
-        <p class="page-lede">{{ $t('pages.configure') }}</p>
-      </div>
-    </div>
-
     <div class="cfg-layout">
       <form class="cfg-form" @submit.prevent="save">
+        <div class="page-head">
+          <div>
+            <h1 class="page-title">{{ $t('pages.configureTitle') }}</h1>
+            <p class="page-lede">{{ $t('pages.configure') }}</p>
+          </div>
+        </div>
+
         <div class="cfg-tabs" role="tablist">
           <button
             v-for="tab in TABS"
@@ -151,7 +151,8 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload)
 </script>
 
 <style scoped>
-.cfg-layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 32px; align-items: start; }
+/* Settings get a readable column; the preview takes every remaining pixel */
+.cfg-layout { display: grid; grid-template-columns: minmax(0, 600px) minmax(360px, 1fr); gap: 32px; align-items: start; }
 .cfg-form { min-width: 0; }
 
 .cfg-tabs {
@@ -178,13 +179,17 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload)
 .cfg-bar-enter-active, .cfg-bar-leave-active { transition: opacity var(--t-fast), transform var(--t-fast); }
 .cfg-bar-enter-from, .cfg-bar-leave-to { opacity: 0; transform: translateY(8px); }
 
-.cfg-preview { position: sticky; top: 24px; }
+/* Full viewport height minus the shell's top and bottom padding */
+.cfg-preview {
+  position: sticky; top: 40px;
+  height: calc(100dvh - 80px);
+  display: flex; flex-direction: column;
+}
 .cfg-preview__label { margin-bottom: 8px; }
-.cfg-preview__frame { height: min(680px, calc(100vh - 80px)); }
+.cfg-preview__frame { flex: 1; min-height: 0; }
 
 @media (max-width: 1100px) {
   .cfg-layout { grid-template-columns: minmax(0, 1fr); }
-  .cfg-preview { position: static; order: -1; }
-  .cfg-preview__frame { height: 520px; max-width: 420px; }
+  .cfg-preview { position: static; order: -1; height: 70dvh; }
 }
 </style>
