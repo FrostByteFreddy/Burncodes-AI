@@ -1070,5 +1070,61 @@
       "shareNote": "Envoyez le lien et le mot de passe séparément, par exemple le mot de passe par téléphone.",
       "previewNote": "Vous n'avez pas besoin du mot de passe dans l'aperçu sous Configuration."
     }
+  },
+  "install": {
+    "example": "Voir sur un site d'exemple",
+    "copy": "Copier le code",
+    "copied": "Copié",
+    "copyFailed": "La copie a échoué. Sélectionnez le code et copiez-le à la main.",
+    "notes": {
+      "off": "Votre chatbot est désactivé : il n'apparaîtra pas, même une fois installé.",
+      "offLink": "L'activer",
+      "hidden": "Le bouton de chat est masqué : il n'apparaît pas encore sur votre site.",
+      "hiddenLink": "L'afficher",
+      "protected": "Un mot de passe est défini : les visiteurs de votre site devront aussi le saisir.",
+      "protectedLink": "Supprimer le mot de passe"
+    },
+    "step1": {
+      "title": "Copiez ce code",
+      "text": "Il est identique pour toutes les pages et ne change jamais. Vos modifications dans le tableau de bord apparaissent automatiquement sur votre site."
+    },
+    "step2": {
+      "title": "Ajoutez-le à votre site",
+      "text": "Collez le code une seule fois, pour qu'il soit sur toutes les pages : juste avant la balise </body>, ou dans le réglage « code du pied de page » de votre outil de création de site."
+    },
+    "builders": {
+      "wordpress": {
+        "name": "WordPress",
+        "how": "Installez l'extension gratuite « WPCode ». Sous Code Snippets → Header & Footer, collez le code dans « Footer » et enregistrez."
+      },
+      "wix": {
+        "name": "Wix",
+        "how": "Paramètres → Code personnalisé → Ajouter du code. Collez le code, choisissez « Toutes les pages » et « Body – fin », puis appliquez."
+      },
+      "squarespace": {
+        "name": "Squarespace",
+        "how": "Paramètres → Avancé → Injection de code, collez le code dans « Pied de page » et enregistrez. Nécessite au moins l'offre Business."
+      },
+      "webflow": {
+        "name": "Webflow",
+        "how": "Ouvrez Site settings → Custom code, collez le code dans « Footer code », enregistrez et publiez le site."
+      },
+      "other": {
+        "name": "Autre système ou agence web",
+        "how": "La plupart des systèmes ont un champ pour du code en pied de page, souvent sous « Tracking », « Scripts » ou « Code personnalisé ». Sinon, envoyez le code à la personne qui gère votre site."
+      }
+    },
+    "delegate": {
+      "text": "Quelqu'un d'autre gère votre site ? Envoyez-lui le code avec ces instructions.",
+      "button": "Envoyer par e-mail à l'équipe web",
+      "subject": "Merci d'ajouter notre chatbot ({name}) au site",
+      "body": "Bonjour,\n\nmerci d'ajouter le code suivant sur toutes les pages de notre site, juste avant la balise </body> (ou dans le réglage du code de pied de page du CMS) :\n\n{code}\n\nIl charge notre chatbot. Rien d'autre n'est à configurer.\n\nMerci !"
+    },
+    "step3": {
+      "title": "Vérifiez qu'il apparaît",
+      "text": "Ouvrez votre site. Un bouton de chat rond apparaît en bas à droite. Cliquez dessus et posez une question.",
+      "cache": "Vous ne le voyez pas ? Rechargez la page avec Ctrl+Maj+R (Cmd+Maj+R sur Mac) ; certains sites gardent les pages en cache quelques minutes.",
+      "consent": "Une bannière de cookies bloque les scripts ? Autorisez-y ce script ; le chatbot lui-même ne dépose aucun cookie."
+    }
   }
 }

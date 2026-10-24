@@ -1070,5 +1070,61 @@
       "shareNote": "Send the link and the password separately, for example the password by phone.",
       "previewNote": "You don't need the password in the preview under Configure."
     }
+  },
+  "install": {
+    "example": "See it on an example website",
+    "copy": "Copy code",
+    "copied": "Copied",
+    "copyFailed": "Could not copy. Select the code and copy it by hand.",
+    "notes": {
+      "off": "Your chatbot is switched off, so it won't appear even after installing.",
+      "offLink": "Switch it on",
+      "hidden": "The chat button is hidden, so it won't appear on your website yet.",
+      "hiddenLink": "Show it",
+      "protected": "A password is set, so visitors on your website are asked for it too.",
+      "protectedLink": "Remove the password"
+    },
+    "step1": {
+      "title": "Copy this code",
+      "text": "It's the same for every page and never changes. Changes you make in the dashboard show up on your website automatically."
+    },
+    "step2": {
+      "title": "Add it to your website",
+      "text": "Paste the code once, so it's on every page: just before the closing </body> tag, or in your website builder's setting for code in the footer."
+    },
+    "builders": {
+      "wordpress": {
+        "name": "WordPress",
+        "how": "Install the free plugin “WPCode”. Go to Code Snippets → Header & Footer, paste the code into “Footer” and save."
+      },
+      "wix": {
+        "name": "Wix",
+        "how": "Go to Settings → Custom code → Add custom code. Paste the code, choose “All pages” and “Body – end”, then apply."
+      },
+      "squarespace": {
+        "name": "Squarespace",
+        "how": "Go to Settings → Advanced → Code injection, paste the code into “Footer” and save. Needs a Business plan or higher."
+      },
+      "webflow": {
+        "name": "Webflow",
+        "how": "Open Site settings → Custom code, paste the code into “Footer code”, save and publish the site."
+      },
+      "other": {
+        "name": "Another system or a web agency",
+        "how": "Most systems have a field for code in the footer, often under “Tracking”, “Scripts” or “Custom code”. If you can't find it, send the code to whoever maintains your website."
+      }
+    },
+    "delegate": {
+      "text": "Someone else looks after your website? Send them the code with these instructions.",
+      "button": "Email it to your web team",
+      "subject": "Please add our chatbot ({name}) to the website",
+      "body": "Hello,\n\nplease add the following code to every page of our website, just before the closing </body> tag (or in the footer code setting of the CMS):\n\n{code}\n\nIt loads our chatbot. Nothing else needs to be configured.\n\nThank you!"
+    },
+    "step3": {
+      "title": "Check that it shows up",
+      "text": "Open your website. A round chat button appears in the bottom-right corner. Click it and ask a question.",
+      "cache": "Don't see it? Reload the page with Ctrl+Shift+R (Cmd+Shift+R on a Mac); some websites cache pages for a few minutes.",
+      "consent": "Using a cookie banner that blocks scripts? Allow this script there; the chatbot itself sets no cookies."
+    }
   }
 }
