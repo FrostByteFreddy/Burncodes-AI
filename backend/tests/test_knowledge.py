@@ -402,3 +402,23 @@ class TestFetchAll:
         rows = fetch_all(lambda: Q())
         assert len(rows) == 2345 and rows[-1] == {"i": 2344}
         assert len(fetch_all(lambda: Q(), max_rows=1500)) == 2000  # stops after the page that crosses the cap
+
+
+class TestContactLinks:
+    HIDDEN = "https://www.zofingen.ch/route/cms-index-redirectEmailLink/email/bWFpbHRvJTNBa3VsdHVyJTQwem9maW5nZW4lMkVjaA%3D%3D"
+
+    def test_decodes_hidden_and_plain_contact_links(self):
+        from app.knowledge.markdown import contact_from_link
+        assert contact_from_link(self.HIDDEN) == "kultur@zofingen.ch"
+        assert contact_from_link("mailto:info@zofingen.ch?subject=Hallo") == "info@zofingen.ch"
+        assert contact_from_link("tel:+41627457100") == "+41627457100"
+        assert contact_from_link("https://www.zofingen.ch/aktuelles/news/908") is None
+        assert contact_from_link("https://www.zofingen.ch/verwaltung/abteilungen") is None
+
+    def test_page_text_keeps_the_address(self):
+        from app.knowledge.markdown import html_to_markdown
+        html = f'<main><p>Fragen an die <a href="{self.HIDDEN}">Kulturabteilung</a> oder ' \
+               '<a href="mailto:info@zofingen.ch">info@zofingen.ch</a>.</p></main>'
+        _, md = html_to_markdown(html)
+        assert "Kulturabteilung (kultur@zofingen.ch)" in md
+        assert md.count("info@zofingen.ch") == 1   # already visible: not doubled

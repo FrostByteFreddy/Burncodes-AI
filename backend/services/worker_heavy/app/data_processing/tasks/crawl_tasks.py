@@ -14,8 +14,6 @@ Duplicate protection:
     rows actually inserted are queued — each URL is visited once per job
 """
 import re
-import binascii
-import base64
 import asyncio
 import random
 from pathlib import Path
@@ -33,7 +31,7 @@ from app.database.supabase_client import supabase
 from app.gemini_store.service import INDEXABLE_FILE_EXTENSIONS, UNSUPPORTED_EXTENSIONS
 from app.knowledge import jobs
 from app.ai_models import INDEXING_GEMINI_MODEL, count_tokens
-from app.knowledge.markdown import content_hash, estimate_tokens, html_to_markdown, pdf_page_count
+from app.knowledge.markdown import content_hash, estimate_tokens, html_to_markdown, pdf_page_count, contact_from_link
 from app.logging_config import error_logger
 from app.models.database import CrawlingStatus, SourceType
 from app.security.url_guard import UnsafeURLError, is_public_url, safe_client
@@ -71,27 +69,9 @@ def _canonical_link(href: str) -> str:
     return url
 
 
-_CONTACT_SCHEMES = ("mailto:", "tel:", "callto:", "sms:")
-
-
 def _is_contact_link(url: str) -> bool:
-    """
-    Email/phone links some CMSs hide from spam bots inside the path, e.g.
-    /route/cms-index-redirectEmailLink/email/bWFpbHRvJTNB… (Base64 of
-    "mailto%3A…"). They aren't pages; reading them only fails.
-    """
-    for segment in urlparse(url).path.split("/"):
-        candidates = [unquote(segment)]
-        raw = candidates[0]
-        if len(raw) >= 8 and re.fullmatch(r"[A-Za-z0-9+/_-]+={0,2}", raw):
-            try:
-                padded = raw + "=" * (-len(raw) % 4)
-                candidates.append(unquote(base64.urlsafe_b64decode(padded.replace("+", "-").replace("/", "_")).decode("utf-8", "ignore")))
-            except (ValueError, binascii.Error):
-                pass
-        if any(c.lower().startswith(_CONTACT_SCHEMES) for c in candidates):
-            return True
-    return False
+    """Email/phone links (also ones hidden in the path) aren't pages; their address is kept in the page text."""
+    return contact_from_link(url) is not None
 
 
 def _is_excluded(url: str, excluded: list[str]) -> bool:

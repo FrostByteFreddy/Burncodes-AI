@@ -17,6 +17,9 @@ which are stable.
 """
 import hashlib
 import re
+import base64
+import binascii
+from urllib.parse import unquote, urlparse
 
 from bs4 import BeautifulSoup
 from markdownify import markdownify
@@ -44,6 +47,44 @@ _NEVER_DROP = {"html", "body", "main", "article"}
 _CHARS_PER_TOKEN = 4
 
 
+_CONTACT_SCHEMES = ("mailto:", "tel:", "callto:", "sms:")
+
+
+def contact_from_link(href: str) -> str | None:
+    """
+    The email address or phone number behind a link, or None. Handles plain
+    mailto:/tel: links and those CMSs hide from spam bots inside the path,
+    e.g. /route/cms-index-redirectEmailLink/email/bWFpbHRvJTNB… (Base64 of
+    "mailto%3A…").
+    """
+    href = (href or "").strip()
+    candidates = [unquote(href)]
+    for segment in urlparse(href).path.split("/"):
+        raw = unquote(segment)
+        candidates.append(raw)
+        if len(raw) >= 8 and re.fullmatch(r"[A-Za-z0-9+/_-]+={0,2}", raw):
+            try:
+                padded = raw + "=" * (-len(raw) % 4)
+                candidates.append(unquote(base64.urlsafe_b64decode(
+                    padded.replace("+", "-").replace("/", "_")).decode("utf-8", "ignore")))
+            except (ValueError, binascii.Error):
+                pass
+    for c in candidates:
+        if c.lower().startswith(_CONTACT_SCHEMES):
+            value = c.split(":", 1)[1].split("?", 1)[0].strip()
+            return value or None
+    return None
+
+
+def _spell_out_contacts(soup) -> None:
+    """Links are reduced to their text below; keep addresses a link only carried in its href."""
+    for a in soup.find_all("a", href=True):
+        value = contact_from_link(a["href"])
+        if value and value.lower() not in a.get_text(" ", strip=True).lower():
+            text = a.get_text(" ", strip=True)
+            a.string = f"{text} ({value})" if text else value
+
+
 def html_to_markdown(html: str) -> tuple[str, str]:
     """Returns (title, markdown) for an HTML page."""
     soup = BeautifulSoup(html or "", "lxml")
@@ -61,6 +102,7 @@ def html_to_markdown(html: str) -> tuple[str, str]:
             el.decompose()
 
     root = soup.find("main") or soup.find(attrs={"role": "main"}) or soup.body or soup
+    _spell_out_contacts(root)
     md = markdownify(
         str(root),
         heading_style="ATX",
