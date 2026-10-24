@@ -162,7 +162,12 @@
         "systemPersona": "System-Persona",
         "ragPromptTemplate": "RAG-Prompt-Vorlage",
         "docLanguage": "Dokumentsprache",
-        "translationTarget": "Übersetzungsziel"
+        "translationTarget": "Übersetzungsziel",
+        "recrawlTitle": "Automatisches Neu-Crawlen",
+        "recrawlToggle": "Meine Websites automatisch neu crawlen",
+        "recrawlHelp": "Prüft Ihre gecrawlten Websites regelmässig. Nur neue oder geänderte Seiten werden gelernt (und verrechnet); unveränderte Seiten kosten nichts. Nach jedem Lauf erhalten Sie einen Bericht.",
+        "recrawlInterval": "Intervall",
+        "recrawlEveryDays": "Alle {n} Tage"
       },
       "appearance": {
         "installation": {
@@ -295,6 +300,7 @@
         "deleteSuccess": "Quelle erfolgreich gelöscht!",
         "deleteFailed": "Fehler beim Löschen der Quelle:",
         "crawlCompleted": "Crawl-Job abgeschlossen! Quellen werden aktualisiert...",
+        "scanCompleted": "Scan abgeschlossen — Schätzung prüfen und Lernen starten.",
         "fetchFailed": "Fehler beim Abrufen der Crawling-Aktivität."
       },
       "tabs": {

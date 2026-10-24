@@ -24,9 +24,13 @@
 
               <!-- Info -->
               <div class="kl-job-row__info">
-                <p class="kl-job-row__url">{{ job.start_url }}</p>
+                <a :href="job.start_url" target="_blank" rel="noopener noreferrer" class="kl-job-row__url kl-job-row__url--link"
+                   :title="`Open ${job.start_url} in a new tab`">
+                  {{ job.start_url }}
+                  <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" class="kl-job-row__url-icon" />
+                </a>
                 <p class="kl-job-row__meta">
-                  Started {{ fmtDate(job.created_at) }}
+                  {{ job.trigger === 'scheduled' ? 'Auto re-crawl' : 'Started' }} {{ fmtDate(job.created_at) }}
                   <template v-if="job.sources && job.sources.length > 0">
                     &middot; {{ successCount(job) }} page{{ successCount(job) !== 1 ? 's' : '' }}
                     <span v-if="errorCount(job) > 0" class="kl-job-row__errors">
@@ -43,13 +47,21 @@
                   @job-completed="onJobCompleted(job.id)"
                   @job-cancelled="onJobCancelled(job.id)"
                 />
+
+                <!-- Estimate + confirm, learning progress, crawl report -->
+                <CrawlJobPanel
+                  :job="job"
+                  :tenantId="tenantsStore.currentTenant?.id"
+                  @confirmed="onJobCancelled(job.id)"
+                  @cancel="stopJob"
+                />
               </div>
 
               <!-- Status badge + actions -->
               <div class="kl-job-row__actions">
                 <!-- Stop — only visible while IN_PROGRESS -->
                 <button
-                  v-if="job.status === 'IN_PROGRESS'"
+                  v-if="ACTIVE.includes(job.status) && job.status !== 'SCANNED'"
                   @click="stopJob(job)"
                   :disabled="stoppingJobId === job.id"
                   class="kl-job-row__stop"
@@ -76,7 +88,13 @@
           </div>
         </div>
 
-        <div v-if="crawlingJobs.length === 0 && fileSources.length === 0" class="kl-empty">
+        <!-- Everything crawled, as a tree per website (files found on the site included) -->
+        <div v-if="webSources.length > 0" class="kl-section">
+          <h3 class="kl-section__title">Website content</h3>
+          <PageTree :sources="webSources" />
+        </div>
+
+        <div v-if="crawlingJobs.length === 0 && fileSources.length === 0 && webSources.length === 0" class="kl-empty">
           <font-awesome-icon :icon="['fas', 'database']" />
           <p>No knowledge sources yet.<br>Add a website or document above.</p>
         </div>
@@ -84,7 +102,7 @@
 
       <!-- ── RIGHT: Documents sidebar ─────────────────── -->
       <aside v-if="fileSources.length > 0" class="kl-col-aside">
-        <h3 class="kl-section__title">Documents</h3>
+        <h3 class="kl-section__title">Uploaded files</h3>
         <div class="kl-doc-list">
           <div v-for="source in fileSources" :key="source.id" class="kl-doc-row">
             <div class="kl-doc-row__icon" :class="`kl-doc-row__icon--${fileExt(source)}`">
@@ -93,12 +111,13 @@
             <div class="kl-doc-row__info">
               <p class="kl-doc-row__name" :title="fileName(source)">{{ fileName(source) }}</p>
               <p class="kl-doc-row__meta">
-                <span class="status-dot"
+                <span class="status-dot" :title="source.status"
                   :class="source.status === 'COMPLETED' ? 'status-dot--success'
                         : source.status === 'ERROR'     ? 'status-dot--error'
                         :                                 'status-dot--processing'"
                 ></span>
                 {{ fileExt(source).toUpperCase() }}
+                <template v-if="source.indexed_chunks != null"> · {{ source.indexed_chunks }} chunks</template>
               </p>
             </div>
             <button @click="$emit('delete-source', source)" class="kl-doc-row__delete" title="Delete document">
@@ -128,6 +147,8 @@ import { useTenantsStore } from '../../../stores/tenants';
 import { useToast } from '../../../composables/useToast';
 import apiClient from '@/utils/api';
 import CrawlingJobProgress from '../CrawlingJobProgress.vue';
+import CrawlJobPanel from './CrawlJobPanel.vue';
+import PageTree from './PageTree.vue';
 import ConfirmationModal from '../../ConfirmationModal.vue';
 
 const props = defineProps({
@@ -143,16 +164,20 @@ const stoppingJobId      = ref(null);
 const showDeleteJobModal = ref(false);
 const jobToDelete        = ref(null);
 
-const hasActiveJob    = computed(() => props.crawlingJobs.some(j => j.status === 'IN_PROGRESS'));
+// Scanning, waiting for confirmation, or learning
+const ACTIVE = ['IN_PROGRESS', 'SCANNED', 'INDEXING'];
+const hasActiveJob    = computed(() => props.crawlingJobs.some(j => ACTIVE.includes(j.status)));
 const allTenantSources = computed(() => tenantsStore.currentTenant?.tenant_sources || []);
 const fileSources      = computed(() => allTenantSources.value.filter(s => s.source_type === 'FILE'));
+// Crawled pages and the files found on those sites
+const webSources       = computed(() => allTenantSources.value.filter(s => s.source_type === 'URL' || s.source_type === 'FILE_URL'));
 
 const stopJob = async (job) => {
   if (stoppingJobId.value) return;
   stoppingJobId.value = job.id;
   try {
     await apiClient.post(`/tenants/${tenantsStore.currentTenant.id}/crawling_jobs/${job.id}/cancel`);
-    addToast('Crawl stopped — already-indexed pages are kept.', 'success');
+    addToast(job.status === 'SCANNED' ? 'Crawl discarded — nothing was learned.' : 'Crawl stopped — already-indexed pages are kept.', 'success');
     emit('job-cancelled', job.id);
   } catch {
     addToast('Failed to stop the crawl.', 'error');

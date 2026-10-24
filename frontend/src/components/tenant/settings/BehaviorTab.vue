@@ -46,6 +46,26 @@
 
     <div class="settings-section">
       <h3 class="settings-section__title">
+        <font-awesome-icon :icon="['fas', 'rotate']" class="settings-section__icon" />
+        {{ $t("tenant.settings.behavior.recrawlTitle") }}
+      </h3>
+      <div class="space-y-4">
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input v-model="local.auto_recrawl" type="checkbox" class="toggle toggle-primary" />
+          <span class="form-field !mb-0">{{ $t("tenant.settings.behavior.recrawlToggle") }}</span>
+        </label>
+        <p class="text-xs opacity-70 leading-relaxed">{{ $t("tenant.settings.behavior.recrawlHelp") }}</p>
+        <div v-if="local.auto_recrawl" class="max-w-xs">
+          <label for="recrawl_interval_days" class="form-field">{{ $t("tenant.settings.behavior.recrawlInterval") }}</label>
+          <select v-model.number="local.recrawl_interval_days" id="recrawl_interval_days" class="form-input">
+            <option v-for="n in [7, 14, 30]" :key="n" :value="n">{{ $t("tenant.settings.behavior.recrawlEveryDays", { n }) }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3 class="settings-section__title">
         <font-awesome-icon :icon="['fas', 'brain']" class="settings-section__icon" />
         Advanced RAG Configuration
       </h3>

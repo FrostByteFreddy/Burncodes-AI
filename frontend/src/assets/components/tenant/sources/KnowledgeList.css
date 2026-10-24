@@ -185,3 +185,8 @@
 .status-dot--processing { background: var(--status-warning); animation: kl-pulse 1.5s ease-in-out infinite; }
 
 .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand-indigo); animation: kl-pulse 1.5s ease-in-out infinite; }
+
+/* Job start URL as a link to the live site */
+.kl-job-row__url--link { display: block; text-decoration: none; }
+.kl-job-row__url--link:hover { color: var(--brand-cyan); }
+.kl-job-row__url-icon { font-size: 9px; margin-left: 4px; opacity: 0.5; }

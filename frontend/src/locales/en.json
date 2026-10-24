@@ -162,7 +162,12 @@
         "systemPersona": "System Persona",
         "ragPromptTemplate": "RAG Prompt Template",
         "docLanguage": "Document Language",
-        "translationTarget": "Translation Target"
+        "translationTarget": "Translation Target",
+        "recrawlTitle": "Automatic re-crawl",
+        "recrawlToggle": "Re-crawl my websites automatically",
+        "recrawlHelp": "Checks your crawled websites regularly. Only new or changed pages are learned (and billed); unchanged pages cost nothing. You get a report after each run.",
+        "recrawlInterval": "Interval",
+        "recrawlEveryDays": "Every {n} days"
       },
       "appearance": {
         "installation": {
@@ -295,6 +300,7 @@
         "deleteSuccess": "Source deleted successfully!",
         "deleteFailed": "Failed to delete source:",
         "crawlCompleted": "Crawl job completed! Refreshing sources...",
+        "scanCompleted": "Scan complete — review the estimate and start learning.",
         "fetchFailed": "Failed to fetch crawling activity."
       },
       "tabs": {

@@ -162,7 +162,12 @@
         "systemPersona": "Persona du système",
         "ragPromptTemplate": "Modèle de prompt RAG",
         "docLanguage": "Langue du document",
-        "translationTarget": "Cible de traduction"
+        "translationTarget": "Cible de traduction",
+        "recrawlTitle": "Re-crawl automatique",
+        "recrawlToggle": "Re-crawler mes sites automatiquement",
+        "recrawlHelp": "Vérifie régulièrement vos sites. Seules les pages nouvelles ou modifiées sont apprises (et facturées) ; les pages inchangées ne coûtent rien. Vous recevez un rapport après chaque passage.",
+        "recrawlInterval": "Intervalle",
+        "recrawlEveryDays": "Tous les {n} jours"
       },
       "appearance": {
         "installation": {
@@ -295,6 +300,7 @@
         "deleteSuccess": "Source supprimée avec succès !",
         "deleteFailed": "Échec de la suppression de la source :",
         "crawlCompleted": "Tâche de crawling terminée ! Actualisation des sources...",
+        "scanCompleted": "Analyse terminée — vérifiez l'estimation et lancez l'apprentissage.",
         "fetchFailed": "Échec de la récupération de l'activité de crawling."
       },
       "tabs": {

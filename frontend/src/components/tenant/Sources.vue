@@ -129,6 +129,9 @@ const subscribeToJobs = (tenantId) => {
         // Re-fetch enriched list (includes task_count + sources)
         await fetchCrawlingJobs();
 
+        if (payload.eventType === 'UPDATE' && payload.old?.status !== 'SCANNED' && payload.new?.status === 'SCANNED') {
+          addToast(t('tenant.sources.actions.scanCompleted'), 'info');
+        }
         // If a job just became COMPLETED, also refresh the sources store
         if (payload.eventType === 'UPDATE' && payload.new?.status === 'COMPLETED') {
           addToast(t('tenant.sources.actions.crawlCompleted'), 'success');
