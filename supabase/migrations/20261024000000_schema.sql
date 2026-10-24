@@ -68,6 +68,8 @@ ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS auto_recrawl          BOOLEA
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS recrawl_interval_days INTEGER NOT NULL DEFAULT 7;
 -- Master switch: off = no widget anywhere, no public page, no answers (owner preview excepted)
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS is_active             BOOLEAN NOT NULL DEFAULT true;
+-- Review finished conversations for unanswered questions and pushback (billed per conversation)
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS review_chats          BOOLEAN NOT NULL DEFAULT true;
 COMMENT ON COLUMN public.tenants.gemini_file_store_name IS
     'Gemini File Search Store resource name (e.g. fileSearchStores/abc123). NULL until the tenant uploads their first source.';
 
@@ -246,6 +248,32 @@ CREATE TABLE IF NOT EXISTS public.tenant_events (
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- One row per reviewed conversation; a conversation that continues after
+-- its review is reviewed again from last_log_id on.
+CREATE TABLE IF NOT EXISTS public.chat_reviews (
+    conversation_id UUID PRIMARY KEY,
+    tenant_id       UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+    last_log_id     BIGINT NOT NULL,
+    reviewed_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    cost_chf        DECIMAL(10, 6) NOT NULL DEFAULT 0
+);
+
+-- What the review found: questions the bot couldn't answer, answers people
+-- pushed back on. Staff mark them resolved (knowledge added) or dismissed.
+CREATE TABLE IF NOT EXISTS public.chat_findings (
+    id              BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    tenant_id       UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+    conversation_id UUID NOT NULL,
+    log_id          BIGINT,
+    kind            TEXT NOT NULL CHECK (kind IN ('unanswered', 'wrong', 'pushback', 'unclear')),
+    question        TEXT NOT NULL,
+    problem         TEXT NOT NULL,
+    suggestion      TEXT NOT NULL DEFAULT '',
+    status          TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'resolved', 'dismissed')),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    resolved_at     TIMESTAMPTZ
+);
+
 -- ----------------------------------------------------------------------------
 -- Legacy objects (pre-Gemini File Search pipeline) — unused by any code
 -- ----------------------------------------------------------------------------
@@ -274,6 +302,9 @@ CREATE INDEX IF NOT EXISTS idx_crawl_job_log_tenant       ON public.crawl_job_lo
 CREATE INDEX IF NOT EXISTS idx_tenant_events_source       ON public.tenant_events (source_id);
 CREATE INDEX IF NOT EXISTS idx_tenant_facts_source        ON public.tenant_facts (source_id);
 CREATE INDEX IF NOT EXISTS idx_tenant_sources_last_job    ON public.tenant_sources (last_job_id);
+CREATE INDEX IF NOT EXISTS idx_chat_reviews_tenant        ON public.chat_reviews (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_chat_findings_tenant       ON public.chat_findings (tenant_id, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_logs_tenant_created   ON public.chat_logs (tenant_id, created_at);
 
 -- A crawl job visits each URL once. Earlier versions re-queued tasks and
 -- produced duplicate rows; keep the oldest before enforcing uniqueness.
@@ -462,6 +493,8 @@ ALTER TABLE public.processed_payments   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tenant_facts         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tenant_events        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crawl_job_log        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chat_reviews         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chat_findings        ENABLE ROW LEVEL SECURITY;
 
 -- Policies are recreated so their definition here is authoritative.
 DROP POLICY IF EXISTS "Allow users to view their own tenants"                   ON public.tenants;
@@ -517,6 +550,7 @@ CREATE POLICY "crawl_job_log_owner_read" ON public.crawl_job_log FOR SELECT TO a
 
 -- processed_payments and shared_conversations: no policies (service role only).
 -- tenant_facts and tenant_events: no policies (served through the API).
+-- chat_reviews and chat_findings: no policies (served through the API).
 
 -- ----------------------------------------------------------------------------
 -- Grants

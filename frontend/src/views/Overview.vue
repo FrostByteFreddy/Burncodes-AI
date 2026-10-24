@@ -109,6 +109,10 @@
             <h2 class="panel-title">{{ $t('overview.latest.title') }}</h2>
             <router-link :to="{ name: 'TenantInsights', params: { tenantId } }" class="ov-link">{{ $t('overview.latest.more') }}</router-link>
           </div>
+          <p v-if="data.usage.open_findings" class="ov-attention ov-attention--top">
+            <font-awesome-icon :icon="['fas', 'triangle-exclamation']" />
+            <router-link :to="{ name: 'TenantInsights', params: { tenantId } }">{{ $t('overview.latest.findings', { n: data.usage.open_findings }) }}</router-link>
+          </p>
           <ol v-if="data.usage.latest.length" class="ov-questions">
             <li v-for="(q, i) in data.usage.latest" :key="i">
               <p>{{ q.question }}</p>
@@ -257,6 +261,7 @@ Trend.props = ['now', 'before'];
 .ov-facts strong { font-size: var(--text-lg); color: var(--surface-heading); margin-right: 4px; }
 .ov-attention { display: flex; gap: 8px; align-items: baseline; margin-top: 14px; font-size: var(--text-sm); color: var(--status-warning); }
 .ov-attention a { color: inherit; font-weight: 600; }
+.ov-attention--top { margin: -4px 0 12px; }
 .ov-crawl { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--surface-3); display: flex; flex-direction: column; gap: 4px; }
 .ov-crawl h3 { font-size: var(--text-sm); font-weight: 700; color: var(--surface-heading); }
 .ov-crawl__url { font-size: 15px; font-weight: 600; color: var(--surface-heading); text-decoration: none; overflow-wrap: anywhere; }

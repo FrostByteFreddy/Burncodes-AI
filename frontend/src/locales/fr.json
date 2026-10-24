@@ -435,6 +435,8 @@
     }
   },
   "sidebar": {
+    "configure": "Configuration",
+    "insights": "Statistiques",
     "overview": "Aperçu",
     "selectTenant": "Sélectionner un chatbot",
     "install": "Installer",
@@ -664,7 +666,7 @@
     "overview": "Votre chatbot est-il activé, combien est-il utilisé et ses connaissances sont-elles à jour.",
     "configureTitle": "Configuration",
     "chatbots": "Chaque chatbot répond aux questions à partir du site et des documents d’une organisation.",
-    "insights": "À quelle fréquence on interroge votre chatbot, et ce que les gens voulaient savoir.",
+    "insights": "Là où votre chatbot n'a pas pu aider, et tout ce qui a été demandé.",
     "subscription": "Votre solde prépayé paie les réponses du chat et l’apprentissage de nouveaux contenus.",
     "profile": "Votre nom, votre mot de passe et votre compte.",
     "knowledgeTitle": "Connaissances",
@@ -883,9 +885,56 @@
       "recrawlOff": "Ne vérifie pas les changements automatiquement."
     },
     "latest": {
+      "findings": "{n} questions à vérifier",
       "title": "Dernières questions",
       "more": "Toutes les conversations",
       "none": "Aucune question sur cette période."
+    }
+  },
+  "insights": {
+    "title": "Statistiques",
+    "findings": {
+      "title": "À vérifier",
+      "sub": "Les questions auxquelles votre chatbot n'a pas bien répondu, trouvées en relisant les conversations terminées.",
+      "filter": "Afficher",
+      "status": {
+        "open": "Ouvert",
+        "resolved": "Fait",
+        "dismissed": "Écarté"
+      },
+      "noneOpen": "Rien à vérifier. Toutes les questions relues ont reçu une bonne réponse.",
+      "noneOther": "Rien pour l'instant.",
+      "reviewOff": "La relecture des conversations est désactivée, rien n'est vérifié.",
+      "loadFailed": "Impossible de charger les résultats.",
+      "viewConversation": "Voir la conversation",
+      "addKnowledge": "Ajouter des connaissances",
+      "done": "Fait",
+      "dismiss": "Écarter",
+      "reopen": "Rouvrir"
+    },
+    "kinds": {
+      "unanswered": "Sans réponse",
+      "wrong": "Peut-être faux",
+      "pushback": "Contestation",
+      "unclear": "Mal compris"
+    },
+    "review": {
+      "toggle": "Relire les conversations",
+      "how": "Les conversations terminées sont relues toutes les heures, environ CHF {cost} chacune.",
+      "stats": "30 derniers jours : {n} conversations, CHF {cost}.",
+      "off": "Activez ceci pour trouver les questions auxquelles votre chatbot n'a pas pu répondre.",
+      "now": "Relire maintenant",
+      "queued": "Relecture…",
+      "started": "Relecture lancée. Les résultats apparaissent d'ici une à deux minutes.",
+      "failed": "Impossible de lancer la relecture."
+    },
+    "conversations": {
+      "title": "Conversations",
+      "sub": "Tout ce qui a été demandé, le plus récent d'abord.",
+      "none": "Aucune conversation pour l'instant.",
+      "questions": "{n} questions",
+      "flagged": "à vérifier",
+      "close": "Fermer la conversation"
     }
   }
 }

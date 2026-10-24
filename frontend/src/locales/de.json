@@ -435,6 +435,8 @@
     }
   },
   "sidebar": {
+    "configure": "Einstellungen",
+    "insights": "Auswertung",
     "overview": "Übersicht",
     "selectTenant": "Chatbot auswählen",
     "install": "Einbinden",
@@ -664,7 +666,7 @@
     "overview": "Ist Ihr Chatbot eingeschaltet, wie oft wird er genutzt und ist sein Wissen aktuell.",
     "configureTitle": "Einstellungen",
     "chatbots": "Jeder Chatbot beantwortet Fragen aus der Website und den Dokumenten einer Organisation.",
-    "insights": "Wie oft Ihr Chatbot gefragt wird und was die Leute wissen wollten.",
+    "insights": "Wo Ihr Chatbot nicht helfen konnte, und alles, was gefragt wurde.",
     "subscription": "Ihr Guthaben bezahlt Chat-Antworten und das Lernen neuer Inhalte.",
     "profile": "Ihr Name, Ihr Passwort und Ihr Konto.",
     "knowledgeTitle": "Wissen",
@@ -883,9 +885,56 @@
       "recrawlOff": "Prüft nicht automatisch auf Änderungen."
     },
     "latest": {
+      "findings": "{n} Fragen zu prüfen",
       "title": "Neueste Fragen",
       "more": "Alle Gespräche",
       "none": "In diesem Zeitraum noch keine Fragen."
+    }
+  },
+  "insights": {
+    "title": "Auswertung",
+    "findings": {
+      "title": "Zu prüfen",
+      "sub": "Fragen, die Ihr Chatbot nicht gut beantworten konnte – gefunden durch die Prüfung abgeschlossener Gespräche.",
+      "filter": "Anzeigen",
+      "status": {
+        "open": "Offen",
+        "resolved": "Erledigt",
+        "dismissed": "Verworfen"
+      },
+      "noneOpen": "Nichts zu prüfen. Alle geprüften Fragen wurden gut beantwortet.",
+      "noneOther": "Hier ist noch nichts.",
+      "reviewOff": "Die Gesprächsprüfung ist ausgeschaltet, daher wird nichts geprüft.",
+      "loadFailed": "Die Ergebnisse konnten nicht geladen werden.",
+      "viewConversation": "Gespräch ansehen",
+      "addKnowledge": "Wissen hinzufügen",
+      "done": "Erledigt",
+      "dismiss": "Verwerfen",
+      "reopen": "Wieder öffnen"
+    },
+    "kinds": {
+      "unanswered": "Nicht beantwortet",
+      "wrong": "Evtl. falsch",
+      "pushback": "Widerspruch",
+      "unclear": "Missverstanden"
+    },
+    "review": {
+      "toggle": "Gespräche prüfen",
+      "how": "Abgeschlossene Gespräche werden stündlich geprüft, etwa CHF {cost} pro Gespräch.",
+      "stats": "Letzte 30 Tage: {n} Gespräche, CHF {cost}.",
+      "off": "Schalten Sie dies ein, um Fragen zu finden, die Ihr Chatbot nicht beantworten konnte.",
+      "now": "Jetzt prüfen",
+      "queued": "Wird geprüft…",
+      "started": "Prüfung gestartet. Ergebnisse erscheinen in ein, zwei Minuten.",
+      "failed": "Die Prüfung konnte nicht gestartet werden."
+    },
+    "conversations": {
+      "title": "Gespräche",
+      "sub": "Alles, was gefragt wurde, das Neueste zuerst.",
+      "none": "Noch keine Gespräche.",
+      "questions": "{n} Fragen",
+      "flagged": "zu prüfen",
+      "close": "Gespräch schliessen"
     }
   }
 }

@@ -116,6 +116,8 @@ def update_tenant(current_user, tenant_id):
             tenant_update_data['auto_recrawl'] = bool(tenant_update_data['auto_recrawl'])
         if 'is_active' in data:
             tenant_update_data['is_active'] = bool(data['is_active'])
+        if 'review_chats' in data:
+            tenant_update_data['review_chats'] = bool(data['review_chats'])
         if 'recrawl_interval_days' in data:
             try:
                 days = int(data['recrawl_interval_days'])
@@ -239,6 +241,10 @@ def get_tenant_overview(current_user, tenant_id):
             .lte('event_date', (date.today() + timedelta(days=13)).isoformat())
             .limit(1).execute()
         ).count or 0
+        open_findings = (
+            supabase.table('chat_findings').select("id", count="exact")
+            .eq('tenant_id', tenant_id_str).eq('status', 'open').limit(1).execute()
+        ).count or 0
         balance = (
             supabase.table('user_billing').select("balance_chf")
             .eq('user_id', current_user.id).limit(1).execute()
@@ -260,6 +266,7 @@ def get_tenant_overview(current_user, tenant_id):
                 "questions_prev": len(previous),
                 "series": series,
                 "latest": [{"question": (r['user_message'] or '')[:160], "at": r['created_at']} for r in current[:5]],
+                "open_findings": open_findings,
             },
             "costs": {
                 "chat_chf": money(current),
@@ -284,3 +291,92 @@ def get_tenant_overview(current_user, tenant_id):
     except Exception as e:
         error_logger.error(f"Error building tenant overview for {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to load overview"}), 500
+
+
+# ── Conversation review findings (Insights) ──────────────────────────────────
+
+def _owned(tenant_id, user_id, columns="id"):
+    rows = supabase.table('tenants').select(columns).eq('id', str(tenant_id)).eq('user_id', user_id).limit(1).execute().data
+    return rows[0] if rows else None
+
+
+@tenants_bp.route('/<uuid:tenant_id>/insights/findings', methods=['GET'])
+@token_required
+def list_findings(current_user, tenant_id):
+    """What the conversation review found, newest first, plus review status."""
+    from datetime import datetime, timedelta, timezone
+    try:
+        tenant = _owned(tenant_id, current_user.id, "id, review_chats")
+        if not tenant:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+        status = request.args.get('status', 'open')
+        query = (supabase.table('chat_findings')
+                 .select("id, conversation_id, log_id, kind, question, problem, suggestion, status, created_at, resolved_at")
+                 .eq('tenant_id', str(tenant_id)))
+        if status in ('open', 'resolved', 'dismissed'):
+            query = query.eq('status', status)
+        findings = query.order('created_at', desc=True).limit(500).execute().data or []
+
+        counts = {}
+        for st in ('open', 'resolved', 'dismissed'):
+            counts[st] = (supabase.table('chat_findings').select("id", count="exact")
+                          .eq('tenant_id', str(tenant_id)).eq('status', st).limit(1).execute()).count or 0
+        since = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+        reviews = (supabase.table('chat_reviews').select("reviewed_at, cost_chf")
+                   .eq('tenant_id', str(tenant_id)).gte('reviewed_at', since)
+                   .order('reviewed_at', desc=True).limit(5000).execute()).data or []
+        from app.ai_models import RATES
+        rate = RATES.get("review", RATES["chat"])
+        return jsonify({
+            "findings": findings,
+            "counts": counts,
+            "review": {
+                "enabled": bool(tenant.get('review_chats')),
+                "last_run": reviews[0]['reviewed_at'] if reviews else None,
+                "reviewed_30d": len(reviews),
+                "cost_30d_chf": round(sum(float(r.get('cost_chf') or 0) for r in reviews), 4),
+                "est_chf_per_conversation": round(2000 / 1_000_000 * rate["input"] + 200 / 1_000_000 * rate["output"], 4),
+            },
+        }), 200
+    except Exception as e:
+        error_logger.error(f"Error listing findings for {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to load findings"}), 500
+
+
+@tenants_bp.route('/<uuid:tenant_id>/insights/findings/<int:finding_id>', methods=['PATCH'])
+@token_required
+def update_finding(current_user, tenant_id, finding_id):
+    from datetime import datetime, timezone
+    try:
+        if not _owned(tenant_id, current_user.id):
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+        status = (request.get_json(silent=True) or {}).get('status')
+        if status not in ('open', 'resolved', 'dismissed'):
+            return jsonify({"error": "status must be open, resolved or dismissed"}), 400
+        resp = (supabase.table('chat_findings')
+                .update({"status": status, "resolved_at": None if status == 'open' else datetime.now(timezone.utc).isoformat()})
+                .eq('id', finding_id).eq('tenant_id', str(tenant_id)).execute())
+        if not resp.data:
+            return jsonify({"error": "Finding not found"}), 404
+        return jsonify(resp.data[0]), 200
+    except Exception as e:
+        error_logger.error(f"Error updating finding {finding_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to update finding"}), 500
+
+
+@tenants_bp.route('/<uuid:tenant_id>/insights/review', methods=['POST'])
+@token_required
+def run_review_now(current_user, tenant_id):
+    """Reviews this chatbot's finished conversations now instead of at the next hourly run."""
+    try:
+        tenant = _owned(tenant_id, current_user.id, "id, review_chats")
+        if not tenant:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+        if not tenant.get('review_chats'):
+            return jsonify({"error": "Conversation review is switched off"}), 409
+        from app.data_processing.tasks import review_conversations_task
+        review_conversations_task.delay(tenant_id=str(tenant_id))
+        return jsonify({"status": "queued"}), 202
+    except Exception as e:
+        error_logger.error(f"Error starting review for {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to start review"}), 500

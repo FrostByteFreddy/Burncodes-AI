@@ -29,3 +29,4 @@ class _TaskProxy:
 process_local_file  = _TaskProxy('app.data_processing.tasks.process_local_file',  queue='fast')
 start_learning_task = _TaskProxy('app.data_processing.tasks.start_learning_task', queue='fast')
 crawl_links_task    = _TaskProxy('app.data_processing.tasks.crawl_tasks.crawl_links_task', queue='heavy')
+review_conversations_task = _TaskProxy('app.data_processing.tasks.maintenance_tasks.review_conversations_task', queue='fast')

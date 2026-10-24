@@ -22,6 +22,7 @@ celery.conf.update(
         'app.data_processing.tasks.maintenance_tasks.job_scheduler_task': {'queue': 'fast'},
         'app.data_processing.tasks.maintenance_tasks.zombie_reaper_task': {'queue': 'fast'},
         'app.data_processing.tasks.maintenance_tasks.weekly_recrawl_task': {'queue': 'fast'},
+        'app.data_processing.tasks.maintenance_tasks.review_conversations_task': {'queue': 'fast'},
     },
     beat_schedule={
         'job-scheduler-every-30-seconds': {
@@ -37,6 +38,11 @@ celery.conf.update(
         'recrawl-check-every-6-hours': {
             'task': 'app.data_processing.tasks.maintenance_tasks.weekly_recrawl_task',
             'schedule': 6 * 3600.0,
+        },
+        # Reviews conversations that went quiet for unanswered questions and pushback
+        'review-conversations-hourly': {
+            'task': 'app.data_processing.tasks.maintenance_tasks.review_conversations_task',
+            'schedule': 3600.0,
         },
     },
 )

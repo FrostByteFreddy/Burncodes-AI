@@ -14,6 +14,7 @@ from app.knowledge.markdown import content_hash, pdf_page_count
 from app.data_processing.tasks.maintenance_tasks import (  # noqa: F401
     job_scheduler_task,
     weekly_recrawl_task,
+    review_conversations_task,
     zombie_reaper_task,
 )
 from app.logging_config import error_logger
@@ -59,5 +60,6 @@ __all__ = [
     "process_local_file",
     "job_scheduler_task",
     "weekly_recrawl_task",
+    "review_conversations_task",
     "zombie_reaper_task",
 ]

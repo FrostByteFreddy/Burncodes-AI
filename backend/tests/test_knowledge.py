@@ -304,3 +304,37 @@ class TestValidate:
         series["dates"][-1]["is_exception"] = False
         result = self._run([series], None)
         assert result["schedules"][0]["_problems"]
+
+
+class TestReviewFindings:
+    """review._clean: which model findings become rows staff see."""
+
+    LOGS = [
+        {"id": 10, "user_message": "Hallo", "ai_message": "Hallo!"},
+        {"id": 11, "user_message": "Wann ist Grünabfuhr?", "ai_message": "Dazu habe ich keine Informationen."},
+        {"id": 12, "user_message": "Das stimmt nicht", "ai_message": "Entschuldigung."},
+    ]
+
+    def test_keeps_new_turns_and_attaches_log_id(self):
+        from app.knowledge.review import _clean
+        raw = [
+            {"turn": 2, "kind": "unanswered", "question": "Wann ist Grünabfuhr?", "problem": "Keine Antwort", "suggestion": "Kalender ergänzen"},
+            {"turn": 3, "kind": "pushback", "question": "", "problem": "Widerspruch", "suggestion": ""},
+        ]
+        out = _clean(raw, self.LOGS, first_new=1)
+        assert [f["log_id"] for f in out] == [11, 12]
+        assert out[1]["question"] == "Das stimmt nicht"  # falls back to the visitor's message
+
+    def test_drops_old_turns_unknown_kinds_duplicates_and_empty(self):
+        from app.knowledge.review import _clean
+        raw = [
+            {"turn": 1, "kind": "unanswered", "question": "Hallo", "problem": "x", "suggestion": ""},  # reviewed before
+            {"turn": 2, "kind": "praise", "question": "q", "problem": "x", "suggestion": ""},
+            {"turn": 2, "kind": "unanswered", "question": "q", "problem": "x", "suggestion": ""},
+            {"turn": 2, "kind": "unanswered", "question": "q", "problem": "again", "suggestion": ""},
+            {"turn": 3, "kind": "wrong", "question": "q", "problem": "", "suggestion": ""},
+            {"turn": 9, "kind": "wrong", "question": "q", "problem": "x", "suggestion": ""},
+            "garbage",
+        ]
+        out = _clean(raw, self.LOGS, first_new=1)
+        assert len(out) == 1 and out[0]["kind"] == "unanswered" and out[0]["log_id"] == 11

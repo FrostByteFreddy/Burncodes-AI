@@ -56,14 +56,14 @@
         class="nav-item" active-class="nav-item--active"
       >
         <font-awesome-icon :icon="['fas', 'sliders']" class="nav-item__icon" />
-        <span>Configure</span>
+        <span>{{ $t('sidebar.configure') }}</span>
       </router-link>
       <router-link
         :to="{ name: 'TenantInsights', params: { tenantId: activeTenant.id } }"
         class="nav-item" active-class="nav-item--active"
       >
         <font-awesome-icon :icon="['fas', 'chart-line']" class="nav-item__icon" />
-        <span>Insights</span>
+        <span>{{ $t('sidebar.insights') }}</span>
       </router-link>
       <router-link
         :to="{ name: 'TenantInstall', params: { tenantId: activeTenant.id } }"

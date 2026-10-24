@@ -1,6 +1,7 @@
 """
 tasks/maintenance_tasks.py
-Celery Beat periodic tasks — crawl job watchdog, zombie reaper, weekly re-crawl.
+Celery Beat periodic tasks — crawl job watchdog, zombie reaper, weekly re-crawl,
+conversation review.
 """
 from datetime import datetime, timedelta, timezone
 
@@ -140,3 +141,31 @@ def weekly_recrawl_task(self):
                 break  # at most one crawl per tenant per run
     except Exception as e:
         error_logger.error("weekly_recrawl_task: unexpected error: %s", e, exc_info=True)
+
+
+@shared_task(bind=True, queue="fast", soft_time_limit=1500, time_limit=1800)
+def review_conversations_task(self, tenant_id=None):
+    """
+    Hourly (or on demand for one tenant): review conversations that went quiet,
+    store what staff should act on, and bill the owner per reviewed conversation.
+    """
+    from app.billing.services import BillingService
+    from app.knowledge import review
+
+    try:
+        query = supabase.table("tenants").select("id, user_id").eq("review_chats", True).eq("is_active", True)
+        if tenant_id:
+            query = query.eq("id", str(tenant_id))
+        tenants = query.execute().data or []
+        for tenant in tenants:
+            if BillingService.check_balance(tenant["user_id"]) <= 0:
+                continue
+            result = review.review_tenant(
+                tenant["id"], tenant["user_id"],
+                lambda owner, i, o: BillingService.deduct_cost(owner, "review", i, o),
+            )
+            if result["reviewed"]:
+                error_logger.info("review: tenant %s — %d conversations, %d findings",
+                                  tenant["id"], result["reviewed"], result["findings"])
+    except Exception as e:
+        error_logger.error("review_conversations_task: unexpected error: %s", e, exc_info=True)

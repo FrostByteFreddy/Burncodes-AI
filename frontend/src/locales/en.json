@@ -435,6 +435,8 @@
     }
   },
   "sidebar": {
+    "configure": "Configure",
+    "insights": "Insights",
     "overview": "Overview",
     "selectTenant": "Select a Chatbot",
     "install": "Install",
@@ -664,7 +666,7 @@
     "overview": "Is your chatbot on, how much is it used, and is its knowledge current.",
     "configureTitle": "Configure",
     "chatbots": "Each chatbot answers questions from one organisation’s website and documents.",
-    "insights": "How often people ask your chatbot, and what they wanted to know.",
+    "insights": "Where your chatbot couldn't help, and everything people asked.",
     "subscription": "Your prepaid balance pays for chat answers and for learning new content.",
     "profile": "Your name, password and account.",
     "knowledgeTitle": "Knowledge",
@@ -883,9 +885,56 @@
       "recrawlOff": "Doesn't check for changes automatically."
     },
     "latest": {
+      "findings": "{n} questions to look at",
       "title": "Latest questions",
       "more": "All conversations",
       "none": "No questions in this period yet."
+    }
+  },
+  "insights": {
+    "title": "Insights",
+    "findings": {
+      "title": "To look at",
+      "sub": "Questions your chatbot couldn't answer well, found by reviewing finished conversations.",
+      "filter": "Show",
+      "status": {
+        "open": "Open",
+        "resolved": "Done",
+        "dismissed": "Dismissed"
+      },
+      "noneOpen": "Nothing to look at. Every reviewed question was answered well.",
+      "noneOther": "Nothing here yet.",
+      "reviewOff": "Conversation review is switched off, so nothing is checked.",
+      "loadFailed": "Could not load the findings.",
+      "viewConversation": "View conversation",
+      "addKnowledge": "Add knowledge",
+      "done": "Done",
+      "dismiss": "Dismiss",
+      "reopen": "Reopen"
+    },
+    "kinds": {
+      "unanswered": "Not answered",
+      "wrong": "Possibly wrong",
+      "pushback": "Pushback",
+      "unclear": "Misunderstood"
+    },
+    "review": {
+      "toggle": "Review conversations",
+      "how": "Finished conversations are checked every hour, about CHF {cost} each.",
+      "stats": "Last 30 days: {n} conversations, CHF {cost}.",
+      "off": "Turn this on to find questions your chatbot couldn't answer.",
+      "now": "Review now",
+      "queued": "Reviewing…",
+      "started": "Review started. Results appear in a minute or two.",
+      "failed": "Could not start the review."
+    },
+    "conversations": {
+      "title": "Conversations",
+      "sub": "Everything people asked, newest first.",
+      "none": "No conversations yet.",
+      "questions": "{n} questions",
+      "flagged": "to look at",
+      "close": "Close conversation"
     }
   }
 }
