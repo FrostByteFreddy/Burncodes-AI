@@ -511,6 +511,9 @@
   },
   "knowledge": {
     "recrawl": {
+      "onHint": "Prüft alle {n} Tage auf Änderungen.",
+      "offHint": "Prüft nicht automatisch auf Änderungen.",
+      "change": "Ändern",
       "label": "Auf Änderungen prüfen",
       "off": "Nie",
       "every7": "Jede Woche",
@@ -839,6 +842,21 @@
     }
   },
   "overview": {
+    "auto": {
+      "title": "Läuft automatisch",
+      "sub": "Aufgaben, die für diesen Chatbot nach Zeitplan laufen. Jede kostet nur, was sie verarbeitet.",
+      "recrawl": "Websites auf Änderungen prüfen",
+      "recrawlHow": "Liest Ihre Websites erneut und lernt nur, was sich geändert hat. Unveränderte Seiten kosten nichts.",
+      "review": "Gespräche prüfen",
+      "reviewHow": "Prüft abgeschlossene Gespräche auf Fragen, die Ihr Chatbot nicht beantworten konnte, etwa CHF {cost} pro Gespräch. Ergebnisse erscheinen in der Auswertung.",
+      "off": "Aus",
+      "daily": "Jede Nacht",
+      "weekly": "Einmal pro Woche",
+      "last": "Zuletzt {date}",
+      "never": "Noch nie gelaufen",
+      "next": "nächstes Mal {date}",
+      "saved": "Zeitplan gespeichert"
+    },
     "period": "Zeitraum",
     "days": "{n} Tage",
     "loadFailed": "Die Übersicht konnte nicht geladen werden. Laden Sie die Seite neu.",
@@ -919,6 +937,8 @@
       "unclear": "Missverstanden"
     },
     "review": {
+      "howWeekly": "Abgeschlossene Gespräche werden einmal pro Woche geprüft, etwa CHF {cost} pro Gespräch. Jedes Gespräch wird nur einmal geprüft.",
+      "change": "Zeitplan ändern",
       "toggle": "Gespräche prüfen",
       "how": "Abgeschlossene Gespräche werden einmal pro Nacht geprüft, etwa CHF {cost} pro Gespräch. Jedes Gespräch wird nur einmal geprüft.",
       "stats": "Letzte 30 Tage: {n} Gespräche, CHF {cost}.",

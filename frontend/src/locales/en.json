@@ -511,6 +511,9 @@
   },
   "knowledge": {
     "recrawl": {
+      "onHint": "Checks for changes every {n} days.",
+      "offHint": "Doesn't check for changes automatically.",
+      "change": "Change",
       "label": "Check for changes",
       "off": "Never",
       "every7": "Every week",
@@ -839,6 +842,21 @@
     }
   },
   "overview": {
+    "auto": {
+      "title": "Runs automatically",
+      "sub": "Tasks that run on a schedule for this chatbot. Each costs only what it processes.",
+      "recrawl": "Check websites for changes",
+      "recrawlHow": "Reads your websites again and learns only what changed. Unchanged pages cost nothing.",
+      "review": "Review conversations",
+      "reviewHow": "Checks finished conversations for questions your chatbot couldn't answer, about CHF {cost} each. Results appear in Insights.",
+      "off": "Off",
+      "daily": "Every night",
+      "weekly": "Once a week",
+      "last": "Last run {date}",
+      "never": "Hasn't run yet",
+      "next": "next {date}",
+      "saved": "Schedule saved"
+    },
     "period": "Period",
     "days": "{n} days",
     "loadFailed": "The overview could not be loaded. Reload the page to try again.",
@@ -919,6 +937,8 @@
       "unclear": "Misunderstood"
     },
     "review": {
+      "howWeekly": "Finished conversations are checked once a week, about CHF {cost} each. Each conversation is checked once.",
+      "change": "Change schedule",
       "toggle": "Review conversations",
       "how": "Finished conversations are checked once a night, about CHF {cost} each. Each conversation is checked once.",
       "stats": "Last 30 days: {n} conversations, CHF {cost}.",

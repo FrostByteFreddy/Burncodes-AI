@@ -511,6 +511,9 @@
   },
   "knowledge": {
     "recrawl": {
+      "onHint": "Vérifie les changements tous les {n} jours.",
+      "offHint": "Ne vérifie pas les changements automatiquement.",
+      "change": "Modifier",
       "label": "Vérifier les changements",
       "off": "Jamais",
       "every7": "Chaque semaine",
@@ -839,6 +842,21 @@
     }
   },
   "overview": {
+    "auto": {
+      "title": "Tâches automatiques",
+      "sub": "Les tâches planifiées pour ce chatbot. Chacune ne coûte que ce qu'elle traite.",
+      "recrawl": "Vérifier les changements des sites",
+      "recrawlHow": "Relit vos sites et n'apprend que ce qui a changé. Les pages inchangées ne coûtent rien.",
+      "review": "Relire les conversations",
+      "reviewHow": "Relit les conversations terminées pour trouver les questions sans réponse, environ CHF {cost} chacune. Les résultats apparaissent dans les statistiques.",
+      "off": "Désactivé",
+      "daily": "Chaque nuit",
+      "weekly": "Une fois par semaine",
+      "last": "Dernière exécution {date}",
+      "never": "Pas encore exécuté",
+      "next": "prochaine {date}",
+      "saved": "Planification enregistrée"
+    },
     "period": "Période",
     "days": "{n} jours",
     "loadFailed": "L'aperçu n'a pas pu être chargé. Rechargez la page.",
@@ -919,6 +937,8 @@
       "unclear": "Mal compris"
     },
     "review": {
+      "howWeekly": "Les conversations terminées sont relues une fois par semaine, environ CHF {cost} chacune. Chaque conversation n'est relue qu'une fois.",
+      "change": "Modifier la planification",
       "toggle": "Relire les conversations",
       "how": "Les conversations terminées sont relues une fois par nuit, environ CHF {cost} chacune. Chaque conversation n'est relue qu'une fois.",
       "stats": "30 derniers jours : {n} conversations, CHF {cost}.",

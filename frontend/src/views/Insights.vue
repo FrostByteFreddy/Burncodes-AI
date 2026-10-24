@@ -58,16 +58,13 @@
 
       <!-- How the review runs, and what it costs -->
       <div class="ins-review">
-        <label class="ins-toggle">
-          <input type="checkbox" :checked="review.enabled" :disabled="savingReview" @change="toggleReview($event.target.checked)" />
-          <span>{{ $t('insights.review.toggle') }}</span>
-        </label>
         <p class="meta">
           <template v-if="review.enabled">
-            {{ $t('insights.review.how', { cost: fmtChf(review.est_chf_per_conversation) }) }}
+            {{ $t(review.interval_days === 7 ? 'insights.review.howWeekly' : 'insights.review.how', { cost: fmtChf(review.est_chf_per_conversation) }) }}
             <template v-if="review.reviewed_30d"> {{ $t('insights.review.stats', { n: review.reviewed_30d, cost: fmtChf(review.cost_30d_chf) }) }}</template>
           </template>
           <template v-else>{{ $t('insights.review.off') }}</template>
+          <router-link :to="{ name: 'TenantOverview', params: { tenantId }, hash: '#automation' }" class="ins-link ins-link--inline">{{ $t('insights.review.change') }}</router-link>
         </p>
         <button v-if="review.enabled" type="button" class="btn-quiet" :disabled="reviewQueued" @click="runNow">
           <font-awesome-icon :icon="['fas', 'rotate']" /> {{ reviewQueued ? $t('insights.review.queued') : $t('insights.review.now') }}
@@ -145,7 +142,6 @@ const findings = ref([])
 const counts = ref({})
 const review = ref({ enabled: true })
 const loadingFindings = ref(false)
-const savingReview = ref(false)
 const reviewQueued = ref(false)
 
 const fetchFindings = async () => {
@@ -167,15 +163,6 @@ const setStatus = async (f, next) => {
     findings.value = findings.value.filter((x) => x.id !== f.id)
     counts.value = { ...counts.value, [f.status]: Math.max(0, (counts.value[f.status] || 1) - 1), [next]: (counts.value[next] || 0) + 1 }
   } catch { addToast(t('tenant.settings.actions.saveFailed'), 'error') }
-}
-
-const toggleReview = async (on) => {
-  savingReview.value = true
-  try {
-    await apiClient.put(`/tenants/${tenantId.value}`, { review_chats: on })
-    review.value = { ...review.value, enabled: on }
-  } catch { addToast(t('tenant.settings.actions.saveFailed'), 'error') }
-  finally { savingReview.value = false }
 }
 
 const runNow = async () => {
@@ -276,15 +263,7 @@ watch(tenantId, (id) => {
 
 .ins-review { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--surface-3); }
 .ins-review .meta { flex: 1; min-width: 240px; }
-.ins-toggle { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--text-sm); font-weight: 600; color: var(--surface-heading); }
-.ins-toggle input {
-  appearance: none; flex-shrink: 0; position: relative; cursor: pointer;
-  width: 36px; height: 20px; border-radius: var(--radius-pill); background: var(--surface-3); transition: background var(--t-fast);
-}
-.ins-toggle input::after { content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface-heading); transition: transform var(--t-fast); }
-.ins-toggle input:checked { background: var(--interactive-strong); }
-.ins-toggle input:checked::after { transform: translateX(16px); }
-.ins-toggle input:focus-visible { box-shadow: var(--focus-ring); }
+.ins-link--inline { margin-left: 6px; font-size: inherit; text-decoration: none; }
 
 /* Conversations: list, and a reader beside it once one is open */
 .ins-convos { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }

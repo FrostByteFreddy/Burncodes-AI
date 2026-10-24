@@ -154,13 +154,21 @@ def review_conversations_task(self, tenant_id=None):
     from app.knowledge import review
 
     try:
-        query = supabase.table("tenants").select("id, user_id").eq("review_chats", True).eq("is_active", True)
+        query = (supabase.table("tenants").select("id, user_id, review_interval_days, last_review_at")
+                 .eq("review_chats", True).eq("is_active", True))
         if tenant_id:
             query = query.eq("id", str(tenant_id))
         tenants = query.execute().data or []
+        now = datetime.now(timezone.utc)
         for tenant in tenants:
+            # The nightly run only picks tenants whose interval is up; "Review now" always runs.
+            # An hour of slack keeps a daily schedule from drifting by a day.
+            interval = timedelta(days=tenant.get("review_interval_days") or 1) - timedelta(hours=1)
+            if not tenant_id and tenant.get("last_review_at") and _ago(interval) < tenant["last_review_at"]:
+                continue
             if BillingService.check_balance(tenant["user_id"]) <= 0:
                 continue
+            supabase.table("tenants").update({"last_review_at": now.isoformat()}).eq("id", tenant["id"]).execute()
             result = review.review_tenant(
                 tenant["id"], tenant["user_id"],
                 lambda owner, i, o: BillingService.deduct_cost(owner, "review", i, o),

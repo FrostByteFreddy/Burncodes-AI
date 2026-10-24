@@ -70,6 +70,8 @@ ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS recrawl_interval_days INTEGE
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS is_active             BOOLEAN NOT NULL DEFAULT true;
 -- Review finished conversations for unanswered questions and pushback (billed per conversation)
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS review_chats          BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS review_interval_days  INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS last_review_at        TIMESTAMPTZ;
 COMMENT ON COLUMN public.tenants.gemini_file_store_name IS
     'Gemini File Search Store resource name (e.g. fileSearchStores/abc123). NULL until the tenant uploads their first source.';
 

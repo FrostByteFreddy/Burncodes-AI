@@ -118,6 +118,10 @@ def update_tenant(current_user, tenant_id):
             tenant_update_data['is_active'] = bool(data['is_active'])
         if 'review_chats' in data:
             tenant_update_data['review_chats'] = bool(data['review_chats'])
+        if 'review_interval_days' in data:
+            if data['review_interval_days'] not in (1, 7):
+                return jsonify({"error": "review_interval_days must be 1 or 7"}), 400
+            tenant_update_data['review_interval_days'] = data['review_interval_days']
         if 'recrawl_interval_days' in data:
             try:
                 days = int(data['recrawl_interval_days'])
@@ -176,6 +180,45 @@ def delete_tenant(current_user, tenant_id):
         return jsonify({"error": "Failed to delete tenant"}), 500
 
 
+def _automation(tenant, jobs, now):
+    """When the scheduled tasks last ran and will run next, for the dashboard."""
+    from datetime import datetime, timedelta
+    from app.ai_models import RATES
+
+    def at(iso):
+        return datetime.fromisoformat(iso.replace('Z', '+00:00')) if iso else None
+
+    scheduled = [j for j in jobs if j.get('trigger') == 'scheduled']
+    last_crawl = at(jobs[0]['created_at']) if jobs else None
+    recrawl_days = tenant.get('recrawl_interval_days') or 7
+    review_days = tenant.get('review_interval_days') or 1
+    last_review = at(tenant.get('last_review_at'))
+    # reviews run nightly at 03:00 UTC (see services/beat/celery_beat.py)
+    next_night = (now + timedelta(days=1 if now.hour >= 3 else 0)).replace(hour=3, minute=0, second=0, microsecond=0)
+    next_review = next_night
+    if last_review:
+        while next_review < last_review + timedelta(days=review_days) - timedelta(hours=1):
+            next_review += timedelta(days=1)
+    rate = RATES.get("review", RATES["chat"])
+    return {
+        "recrawl": {
+            "enabled": bool(tenant.get('auto_recrawl')),
+            "interval_days": recrawl_days,
+            "last_run": scheduled[0]['created_at'] if scheduled else None,
+            "next_run": ((last_crawl + timedelta(days=recrawl_days)).isoformat() if last_crawl else None)
+                        if tenant.get('auto_recrawl') else None,
+            "has_websites": bool(jobs),
+        },
+        "review": {
+            "enabled": bool(tenant.get('review_chats')),
+            "interval_days": review_days,
+            "last_run": tenant.get('last_review_at'),
+            "next_run": next_review.isoformat() if tenant.get('review_chats') else None,
+            "est_chf_per_conversation": round(2000 / 1_000_000 * rate["input"] + 200 / 1_000_000 * rate["output"], 4),
+        },
+    }
+
+
 @tenants_bp.route('/<uuid:tenant_id>/overview', methods=['GET'])
 @token_required
 def get_tenant_overview(current_user, tenant_id):
@@ -188,7 +231,7 @@ def get_tenant_overview(current_user, tenant_id):
         tenant_id_str = str(tenant_id)
         tenant = (
             supabase.table('tenants')
-            .select("id, name, is_active, widget_config, auto_recrawl, recrawl_interval_days")
+            .select("id, name, is_active, widget_config, auto_recrawl, recrawl_interval_days, review_chats, review_interval_days, last_review_at")
             .eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute()
         ).data
         if not tenant:
@@ -259,6 +302,7 @@ def get_tenant_overview(current_user, tenant_id):
             "widget_enabled": (tenant.get('widget_config') or {}).get('widget_enabled') is not False,
             "auto_recrawl": bool(tenant.get('auto_recrawl')),
             "recrawl_interval_days": tenant.get('recrawl_interval_days'),
+            "automation": _automation(tenant, jobs, now),
             "usage": {
                 "conversations": len({r['conversation_id'] for r in current}),
                 "conversations_prev": len({r['conversation_id'] for r in previous}),
@@ -306,7 +350,7 @@ def list_findings(current_user, tenant_id):
     """What the conversation review found, newest first, plus review status."""
     from datetime import datetime, timedelta, timezone
     try:
-        tenant = _owned(tenant_id, current_user.id, "id, review_chats")
+        tenant = _owned(tenant_id, current_user.id, "id, review_chats, review_interval_days")
         if not tenant:
             return jsonify({"error": "Tenant not found or access denied"}), 404
         status = request.args.get('status', 'open')
@@ -332,6 +376,7 @@ def list_findings(current_user, tenant_id):
             "counts": counts,
             "review": {
                 "enabled": bool(tenant.get('review_chats')),
+                "interval_days": tenant.get('review_interval_days') or 1,
                 "last_run": reviews[0]['reviewed_at'] if reviews else None,
                 "reviewed_30d": len(reviews),
                 "cost_30d_chf": round(sum(float(r.get('cost_chf') or 0) for r in reviews), 4),

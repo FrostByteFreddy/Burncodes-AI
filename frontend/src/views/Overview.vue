@@ -99,7 +99,6 @@
               </p>
             </template>
             <p v-else class="meta">{{ $t('overview.knowledge.noCrawl') }}</p>
-            <p class="meta">{{ data.auto_recrawl ? $t('overview.knowledge.recrawlOn', { n: data.recrawl_interval_days }) : $t('overview.knowledge.recrawlOff') }}</p>
           </div>
         </section>
 
@@ -122,6 +121,37 @@
           <p v-else class="meta">{{ $t('overview.latest.none') }}</p>
         </section>
       </div>
+
+      <!-- Everything that runs on a schedule, in one place -->
+      <section id="automation" class="panel">
+        <h2 class="panel-title">{{ $t('overview.auto.title') }}</h2>
+        <p class="panel-sub">{{ $t('overview.auto.sub') }}</p>
+        <ul class="ov-auto">
+          <li class="ov-auto__row">
+            <div class="ov-auto__text">
+              <label for="auto-recrawl" class="ov-auto__name">{{ $t('overview.auto.recrawl') }}</label>
+              <p class="meta">{{ $t('overview.auto.recrawlHow') }}</p>
+              <p class="ov-auto__when">{{ when(data.automation.recrawl) }}</p>
+            </div>
+            <select id="auto-recrawl" class="ov-auto__select" :value="recrawlValue" :disabled="savingAuto || !data.automation.recrawl.has_websites" @change="saveRecrawl($event.target.value)">
+              <option value="off">{{ $t('overview.auto.off') }}</option>
+              <option v-for="n in [7, 14, 30]" :key="n" :value="String(n)">{{ $t(`knowledge.recrawl.every${n}`) }}</option>
+            </select>
+          </li>
+          <li class="ov-auto__row">
+            <div class="ov-auto__text">
+              <label for="auto-review" class="ov-auto__name">{{ $t('overview.auto.review') }}</label>
+              <p class="meta">{{ $t('overview.auto.reviewHow', { cost: fmtChf(data.automation.review.est_chf_per_conversation) }) }}</p>
+              <p class="ov-auto__when">{{ when(data.automation.review) }}</p>
+            </div>
+            <select id="auto-review" class="ov-auto__select" :value="reviewValue" :disabled="savingAuto" @change="saveReview($event.target.value)">
+              <option value="off">{{ $t('overview.auto.off') }}</option>
+              <option value="1">{{ $t('overview.auto.daily') }}</option>
+              <option value="7">{{ $t('overview.auto.weekly') }}</option>
+            </select>
+          </li>
+        </ul>
+      </section>
     </template>
 
     <ConfirmationModal
@@ -136,7 +166,7 @@
 </template>
 
 <script setup>
-import { computed, h, ref, watch } from 'vue';
+import { computed, h, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';
 import { useToast } from '@/composables/useToast';
@@ -166,6 +196,13 @@ const load = async () => {
 };
 watch([tenantId, days], load, { immediate: true });
 
+// Links from Knowledge and Insights point at the scheduled tasks panel
+watch(data, async (d, before) => {
+  if (!d || before || window.location.hash !== '#automation') return;
+  await nextTick();
+  document.getElementById('automation')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
 const setActive = async (on) => {
   askOff.value = false;
   switching.value = true;
@@ -177,6 +214,27 @@ const setActive = async (on) => {
   } catch {
     addToast(t('tenant.settings.actions.saveFailed'), 'error');
   } finally { switching.value = false; }
+};
+
+// ── Scheduled tasks ─────────────────────────────────────────────────
+const savingAuto = ref(false);
+const recrawlValue = computed(() => (data.value?.automation.recrawl.enabled ? String(data.value.automation.recrawl.interval_days) : 'off'));
+const reviewValue = computed(() => (data.value?.automation.review.enabled ? String(data.value.automation.review.interval_days) : 'off'));
+const saveAuto = async (payload) => {
+  savingAuto.value = true;
+  try {
+    await apiClient.put(`/tenants/${tenantId.value}`, payload);
+    await load();
+    addToast(t('overview.auto.saved'), 'success');
+  } catch { addToast(t('tenant.settings.actions.saveFailed'), 'error'); }
+  finally { savingAuto.value = false; }
+};
+const saveRecrawl = (v) => saveAuto(v === 'off' ? { auto_recrawl: false } : { auto_recrawl: true, recrawl_interval_days: Number(v) });
+const saveReview = (v) => saveAuto(v === 'off' ? { review_chats: false } : { review_chats: true, review_interval_days: Number(v) });
+const when = (task) => {
+  const parts = [task.last_run ? t('overview.auto.last', { date: fmtDateTime(task.last_run) }) : t('overview.auto.never')];
+  if (task.next_run) parts.push(t('overview.auto.next', { date: fmtDateTime(task.next_run) }));
+  return parts.join('. ') + '.';
 };
 
 const fmtInt = (n) => Number(n || 0).toLocaleString(locale.value);
@@ -267,6 +325,21 @@ Trend.props = ['now', 'before'];
 .ov-crawl__url { font-size: 15px; font-weight: 600; color: var(--surface-heading); text-decoration: none; overflow-wrap: anywhere; }
 .ov-crawl__url:hover { color: var(--interactive); text-decoration: underline; }
 
+/* Scheduled tasks */
+.ov-auto { list-style: none; padding: 0; margin: 16px 0 0; display: flex; flex-direction: column; }
+.ov-auto__row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 14px 0; border-top: 1px solid var(--surface-3); }
+.ov-auto__row:first-child { border-top: none; padding-top: 0; }
+.ov-auto__text { min-width: 0; display: flex; flex-direction: column; gap: 2px; max-width: var(--measure); }
+.ov-auto__name { font-size: 15px; font-weight: 700; color: var(--surface-heading); }
+.ov-auto__when { font-size: var(--text-xs); color: var(--surface-muted); }
+.ov-auto__select {
+  flex-shrink: 0; min-width: 170px; padding: 8px 32px 8px 12px; border-radius: var(--radius-md);
+  background-color: var(--surface-2); border: 1px solid var(--surface-3);
+  color: var(--surface-heading); font: inherit; font-size: var(--text-sm); cursor: pointer;
+}
+.ov-auto__select:hover:not(:disabled) { border-color: var(--surface-muted); }
+.ov-auto__select:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* Latest questions */
 .ov-questions { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
 .ov-questions li { padding: 10px 0; border-top: 1px solid var(--surface-3); }
@@ -278,5 +351,6 @@ Trend.props = ['now', 'before'];
   .ov-grid { grid-template-columns: minmax(0, 1fr); }
   .ov-status { grid-template-columns: auto minmax(0, 1fr); }
   .ov-status > button { grid-column: 1 / -1; justify-self: start; }
+  .ov-auto__row { flex-direction: column; align-items: stretch; }
 }
 </style>
