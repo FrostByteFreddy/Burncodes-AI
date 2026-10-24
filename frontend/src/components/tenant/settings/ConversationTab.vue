@@ -4,19 +4,10 @@
     <section class="panel">
       <h2 class="panel-title">{{ $t('configure.basics.title') }}</h2>
       <div class="cfg-fields">
-        <div class="cfg-grid">
-          <div>
-            <label for="cfg-name" class="form-field">{{ $t('configure.basics.name') }}</label>
-            <input v-model="local.name" id="cfg-name" type="text" required class="form-input" />
-            <p class="field-hint">{{ $t('configure.basics.nameHint') }}</p>
-          </div>
-          <div>
-            <label for="cfg-lang" class="form-field">{{ $t('configure.basics.language') }}</label>
-            <select v-model="language" id="cfg-lang" class="form-input">
-              <option v-for="l in CHATBOT_LANGUAGES" :key="l.value" :value="l.value">{{ l.text }}</option>
-            </select>
-            <p class="field-hint">{{ $t('configure.basics.languageHint') }}</p>
-          </div>
+        <div>
+          <label for="cfg-name" class="form-field">{{ $t('configure.basics.name') }}</label>
+          <input v-model="local.name" id="cfg-name" type="text" required class="form-input" />
+          <p class="field-hint">{{ $t('configure.basics.nameHint') }}</p>
         </div>
       </div>
     </section>
@@ -85,7 +76,7 @@
 <script setup>
 import { computed } from 'vue';
 import AutoGrowTextarea from '../../AutoGrowTextarea.vue';
-import { CHATBOT_LANGUAGES, PROMPT_TEMPLATES, TONES } from '@/utils/chatbotDefaults';
+import { PROMPT_TEMPLATE, TONES } from '@/utils/chatbotDefaults';
 
 // Shown literally in the help texts (vue-i18n would read them as parameters)
 const PLACEHOLDERS = { persona: '{persona}', fine_tune_instructions: '{fine_tune_instructions}' };
@@ -93,25 +84,19 @@ const PLACEHOLDERS = { persona: '{persona}', fine_tune_instructions: '{fine_tune
 const props = defineProps({ modelValue: { type: Object, required: true } });
 const local = computed(() => props.modelValue);
 
-// One language setting: what residents write in and what rules are phrased in
-const language = computed({
-  get: () => local.value.translation_target || local.value.doc_language || 'de',
-  set: (v) => { local.value.translation_target = v; local.value.doc_language = v; },
-});
-
 const thinkingMessages = computed({
   get: () => (local.value.widget_config.thinking_messages || []).join('\n'),
   set: (v) => { local.value.widget_config.thinking_messages = v.split('\n').map((s) => s.trim()).filter(Boolean); },
 });
 
 const activeTone = computed(() =>
-  Object.keys(TONES).find((k) => Object.values(TONES[k]).includes((local.value.system_persona || '').trim())) || null
+  Object.keys(TONES).find((k) => TONES[k] === (local.value.system_persona || '').trim()) || null
 );
-const applyTone = (key) => { local.value.system_persona = TONES[key][language.value] || TONES[key].en; };
+const applyTone = (key) => { local.value.system_persona = TONES[key]; };
 
 const missingPersona = computed(() => !(local.value.rag_prompt_template || '').includes('{persona}'));
-const isDefaultTemplate = computed(() => local.value.rag_prompt_template === (PROMPT_TEMPLATES[language.value] || PROMPT_TEMPLATES.en));
-const restoreTemplate = () => { local.value.rag_prompt_template = PROMPT_TEMPLATES[language.value] || PROMPT_TEMPLATES.en; };
+const isDefaultTemplate = computed(() => local.value.rag_prompt_template === PROMPT_TEMPLATE);
+const restoreTemplate = () => { local.value.rag_prompt_template = PROMPT_TEMPLATE; };
 </script>
 
 <style scoped>

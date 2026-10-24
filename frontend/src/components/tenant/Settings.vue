@@ -79,7 +79,7 @@ const defaultWidgetConfig = () => ({
   },
 });
 
-const FIELDS = ['name', 'intro_message', 'system_persona', 'rag_prompt_template', 'doc_language', 'translation_target'];
+const FIELDS = ['name', 'intro_message', 'system_persona', 'rag_prompt_template'];
 
 // Plain deep copy; store objects are reactive proxies, which structuredClone rejects
 const clone = (v) => JSON.parse(JSON.stringify(v));

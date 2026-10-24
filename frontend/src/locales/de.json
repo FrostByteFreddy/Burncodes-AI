@@ -487,14 +487,8 @@
     "createTenant": {
       "title": "Neuer Chatbot",
       "name": "Name",
-      "introMessage": "Begrüßungsnachricht",
-      "systemPersona": "System-Persona",
-      "ragPromptTemplate": "RAG-Prompt-Vorlage",
-      "docLanguage": "Dokumentsprache",
-      "translationTarget": "Übersetzungsziel",
       "cancel": "Abbrechen",
-      "create": "Chatbot erstellen",
-      "languageHint": "Die Sprache, in der die Leute schreiben. Texte und Farben können Sie danach unter Einstellungen anpassen."
+      "create": "Chatbot erstellen"
     },
     "confirmation": {
       "cancel": "Abbrechen",
@@ -685,9 +679,7 @@
     "basics": {
       "title": "Grundlagen",
       "name": "Name",
-      "nameHint": "Wird nur hier im Dashboard angezeigt.",
-      "language": "Sprache",
-      "languageHint": "Die Sprache, in der die Leute schreiben. Ihre Regeln werden in dieser Sprache angewendet."
+      "nameHint": "Wird nur hier im Dashboard angezeigt."
     },
     "welcome": {
       "title": "Erster Eindruck",
@@ -701,7 +693,7 @@
     },
     "tone": {
       "title": "Wie er spricht",
-      "sub": "Wählen Sie einen Ausgangspunkt und passen Sie den Text mit eigenen Worten an.",
+      "sub": "Er antwortet immer in der Sprache, in der man ihm schreibt. Wählen Sie einen Ausgangspunkt und passen Sie den Text mit eigenen Worten an.",
       "presets": "Tonvorlagen",
       "formal": "Höflich und formell",
       "formalDesc": "Sachlich, spricht die Leute mit «Sie» an.",

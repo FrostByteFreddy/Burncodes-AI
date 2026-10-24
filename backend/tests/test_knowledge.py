@@ -192,7 +192,7 @@ class TestChatDates:
         import importlib
         import sys
         sys.modules.setdefault("app.prompts", type(sys)("app.prompts"))
-        sys.modules["app.prompts"].FINE_TUNE_RULE_PROMPTS = {"en": "{trigger}{instruction}"}
+        sys.modules["app.prompts"].FINE_TUNE_RULE_PROMPT = "{trigger}{instruction}"
         # worker_chat's module isn't on the API path; load it by file
         spec = importlib.util.spec_from_file_location(
             "chat_tasks", __file__.replace("tests/test_knowledge.py", "services/worker_chat/app/chat/tasks.py"))
@@ -225,7 +225,7 @@ class TestSystemInstruction:
         import importlib
         import sys
         sys.modules.setdefault("app.prompts", type(sys)("app.prompts"))
-        sys.modules["app.prompts"].FINE_TUNE_RULE_PROMPTS = {"en": "When {trigger}: {instruction}"}
+        sys.modules["app.prompts"].FINE_TUNE_RULE_PROMPT = "When {trigger}: {instruction}"
         spec = importlib.util.spec_from_file_location(
             "chat_tasks", __file__.replace("tests/test_knowledge.py", "services/worker_chat/app/chat/tasks.py"))
         chat = importlib.util.module_from_spec(spec)
@@ -234,14 +234,20 @@ class TestSystemInstruction:
 
     def test_legacy_template_slots_are_removed(self):
         chat = self._chat()
-        cfg = {"translation_target": "en", "system_persona": "Be polite.",
+        cfg = {"system_persona": "Be polite.",
                "rag_prompt_template": "{persona}\n\n{fine_tune_instructions}\n\nAnswer from context.\n\n<context>\n{context}\n</context>\n\nFrage: {input}\n"}
         text = chat._build_system_instruction(cfg, [{"trigger": "asked about fees", "instruction": "link the fee list"}])
         assert text == "Be polite.\n\nWhen asked about fees: link the fee list\n\nAnswer from context."
 
+    def test_language_rule_comes_last_and_follows_the_user(self):
+        chat = self._chat()
+        rule = chat._language_rule()
+        assert "language of the user's most recent message" in rule
+        assert rule.endswith("reply in the language of your documents.")
+
     def test_persona_and_rules_survive_an_edited_template(self):
         chat = self._chat()
-        cfg = {"translation_target": "en", "system_persona": "Be brief.", "rag_prompt_template": "Only use the documents."}
+        cfg = {"system_persona": "Be brief.", "rag_prompt_template": "Only use the documents."}
         text = chat._build_system_instruction(cfg, [{"trigger": "x", "instruction": "y"}])
         assert text.startswith("Be brief.") and "When x: y" in text and text.endswith("Only use the documents.")
 

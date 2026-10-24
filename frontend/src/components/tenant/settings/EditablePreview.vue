@@ -142,7 +142,7 @@ const props = defineProps({
   form:     { type: Object, required: true },
   tenantId: { type: String, required: true },
 });
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const config = computed(() => props.form.widget_config);
 
 const STATES = ['start', 'conversation', 'launcher'];
@@ -150,7 +150,7 @@ const mode = ref('edit');
 const state = ref('start');
 
 // ── Sample content ──────────────────────────────────────────────────
-const sample = computed(() => SAMPLE_CONVERSATION[props.form.translation_target] || SAMPLE_CONVERSATION.en);
+const sample = computed(() => SAMPLE_CONVERSATION[locale.value] || SAMPLE_CONVERSATION.en);
 const bot = (text) => ({ ...processBotMessage(text || ''), isUser: false });
 const sampleHistory = computed(() => {
   const intro = bot(props.form.intro_message);

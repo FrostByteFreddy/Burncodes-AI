@@ -487,14 +487,8 @@
     "createTenant": {
       "title": "New chatbot",
       "name": "Name",
-      "introMessage": "Intro Message",
-      "systemPersona": "System Persona",
-      "ragPromptTemplate": "RAG Prompt Template",
-      "docLanguage": "Document Language",
-      "translationTarget": "Translation Target",
       "cancel": "Cancel",
-      "create": "Create chatbot",
-      "languageHint": "The language residents write in. You can change texts and colours afterwards under Configure."
+      "create": "Create chatbot"
     },
     "confirmation": {
       "cancel": "Cancel",
@@ -685,9 +679,7 @@
     "basics": {
       "title": "Basics",
       "name": "Name",
-      "nameHint": "Only shown here in the dashboard.",
-      "language": "Language",
-      "languageHint": "The language residents write in. Your rules are applied in this language."
+      "nameHint": "Only shown here in the dashboard."
     },
     "welcome": {
       "title": "First impression",
@@ -701,7 +693,7 @@
     },
     "tone": {
       "title": "How it talks",
-      "sub": "Pick a starting point, then adjust the text in your own words.",
+      "sub": "It always answers in the language people write in. Pick a starting point, then adjust the text in your own words.",
       "presets": "Tone presets",
       "formal": "Polite and formal",
       "formalDesc": "Factual, addresses people formally.",

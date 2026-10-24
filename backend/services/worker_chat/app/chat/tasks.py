@@ -21,7 +21,7 @@ from google import genai
 from app.database.supabase_client import supabase
 from app.billing.services import BillingService
 from app.logging_config import error_logger
-from app.prompts import FINE_TUNE_RULE_PROMPTS
+from app.prompts import FINE_TUNE_RULE_PROMPT
 from app.ai_models import CHAT_GEMINI_MODEL
 
 
@@ -132,12 +132,8 @@ def _build_system_instruction(tenant_config: dict, fine_tune_rules: list) -> str
     Assembles the full system instruction from the tenant's RAG prompt template,
     persona, and fine-tune rules.
     """
-    translation_target = tenant_config.get("translation_target", "en")
-    fine_tune_prompt_template = FINE_TUNE_RULE_PROMPTS.get(
-        translation_target, FINE_TUNE_RULE_PROMPTS["en"]
-    )
     fine_tune_instructions = "\n".join([
-        fine_tune_prompt_template.format(
+        FINE_TUNE_RULE_PROMPT.format(
             trigger=rule["trigger"], instruction=rule["instruction"]
         )
         for rule in fine_tune_rules
@@ -157,6 +153,21 @@ def _build_system_instruction(tenant_config: dict, fine_tune_rules: list) -> str
         .replace("{fine_tune_instructions}", fine_tune_instructions)
     )
     return re.sub(r"\n{3,}", "\n\n", system_text).strip()
+
+
+def _language_rule() -> str:
+    """
+    Always last, so it wins over a persona or template written in one language:
+    answer in whatever language the visitor writes, not the documents' language.
+    """
+    return (
+        "Language: always reply in the language of the user's most recent message, "
+        "even when your documents and these instructions are in another language "
+        "(e.g. a question in Ukrainian gets an answer in Ukrainian). Translate the content "
+        "you found; keep names of places, streets, offices and documents as written, and "
+        "give dates in the reply language. If the language of the message is unclear "
+        "(only a name, number or single word), reply in the language of your documents."
+    )
 
 
 # Older templates carried LangChain-era slots; documents now come through
@@ -238,6 +249,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
             system_instruction += "\n\n" + _dates_context(tenant_id, date.today())
         except Exception as e:
             error_logger.warning("chat_task: dates context unavailable for tenant %s: %s", tenant_id, e)
+        system_instruction += "\n\n" + _language_rule()
 
         # --- Build tool config ---
         # Only attach file_search if the tenant has an indexed store

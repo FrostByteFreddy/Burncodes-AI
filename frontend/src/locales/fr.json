@@ -487,14 +487,8 @@
     "createTenant": {
       "title": "Nouveau chatbot",
       "name": "Nom",
-      "introMessage": "Message d'introduction",
-      "systemPersona": "Persona système",
-      "ragPromptTemplate": "Modèle de prompt RAG",
-      "docLanguage": "Langue du document",
-      "translationTarget": "Cible de traduction",
       "cancel": "Annuler",
-      "create": "Créer le chatbot",
-      "languageHint": "La langue dans laquelle les gens écrivent. Vous pourrez ensuite adapter les textes et les couleurs sous Configuration."
+      "create": "Créer le chatbot"
     },
     "confirmation": {
       "cancel": "Annuler",
@@ -685,9 +679,7 @@
     "basics": {
       "title": "Bases",
       "name": "Nom",
-      "nameHint": "Affiché uniquement ici dans le tableau de bord.",
-      "language": "Langue",
-      "languageHint": "La langue dans laquelle les gens écrivent. Vos règles sont appliquées dans cette langue."
+      "nameHint": "Affiché uniquement ici dans le tableau de bord."
     },
     "welcome": {
       "title": "Première impression",
@@ -701,7 +693,7 @@
     },
     "tone": {
       "title": "Sa façon de parler",
-      "sub": "Choisissez un point de départ, puis adaptez le texte avec vos mots.",
+      "sub": "Il répond toujours dans la langue dans laquelle on lui écrit. Choisissez un point de départ, puis adaptez le texte avec vos mots.",
       "presets": "Tons prédéfinis",
       "formal": "Poli et formel",
       "formalDesc": "Factuel, vouvoie les gens.",

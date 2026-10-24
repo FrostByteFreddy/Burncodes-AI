@@ -15,14 +15,6 @@
           <input v-model="name" type="text" id="name" required class="modal-field__input" />
         </div>
 
-        <div class="modal-field">
-          <label for="language" class="modal-field__label">{{ $t("configure.basics.language") }}</label>
-          <select v-model="language" id="language" class="modal-field__input modal-field__select">
-            <option v-for="lang in CHATBOT_LANGUAGES" :key="lang.value" :value="lang.value">{{ lang.text }}</option>
-          </select>
-          <p class="modal-field__hint">{{ $t("modals.createTenant.languageHint") }}</p>
-        </div>
-
         <div class="modal-box__footer">
           <p v-if="error" class="modal-error">{{ error }}</p>
           <button type="button" @click="$emit('close')" class="modal-btn modal-btn--ghost" :disabled="submitting">
@@ -43,7 +35,8 @@
 import { ref } from "vue";
 import { useTenantsStore } from "../stores/tenants";
 import { useRouter } from "vue-router";
-import { CHATBOT_LANGUAGES, defaultsFor } from "../utils/chatbotDefaults";
+import { useI18n } from "vue-i18n";
+import { defaultsFor } from "../utils/chatbotDefaults";
 
 defineProps({});
 const emit = defineEmits(["close"]);
@@ -55,13 +48,13 @@ const submitting = ref(false);
 const error      = ref("");
 
 const name     = ref("");
-const language = ref("de");
+const { locale } = useI18n();
 
 const handleSubmit = async () => {
   error.value = "";
   submitting.value = true;
   try {
-    const newTenant = await tenantsStore.createTenant({ name: name.value, ...defaultsFor(language.value) });
+    const newTenant = await tenantsStore.createTenant({ name: name.value, ...defaultsFor(locale.value) });
     emit("close");
     // Navigate to the new tenant's dashboard
     if (newTenant?.id) {
