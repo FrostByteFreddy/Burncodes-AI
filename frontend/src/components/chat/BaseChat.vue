@@ -126,7 +126,7 @@
           @input="onInput"
           @keyup.enter.exact.prevent="$emit('sendMessage')"
           :placeholder="config.input_placeholder || $t('chat.inputPlaceholder')"
-          class="chat-input outline-none border px-4 py-3 focus:outline-none rounded-custom transition-all"
+          class="chat-input outline-none border px-4 py-3 rounded-custom"
           rows="1"
           style="resize: none; overflow-y: hidden"
         ></textarea>
@@ -550,6 +550,16 @@ const widgetCssVariables = computed(() => {
   width: 100%;
   /* Offset text from the overlaid send button */
   padding-right: 3.5rem;
+}
+
+/* Looks the same while typing: no ring, no changed corners (the dashboard's
+   global :focus-visible style would otherwise apply here too) */
+.chat-input:focus,
+.chat-input:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-color: var(--chat-footer-background-color);
+  border-radius: var(--chat-custom-radius);
 }
 
 .chat-input::placeholder {
