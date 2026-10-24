@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from app.database.supabase_client import supabase
+from app.database.supabase_client import fetch_all, supabase
 from app.auth.decorators import token_required
 from app.models.database import Tenant, TenantFineTune
 from app.logging_config import error_logger
@@ -74,8 +74,8 @@ def get_tenant(current_user, tenant_id):
         tenant.data['test_protected'] = bool(tenant.data.pop('test_password_hash', None))
 
         # Not "*": sources carry their scanned Markdown, which the dashboard never needs.
-        tenant_sources = supabase.table('tenant_sources').select(SOURCE_COLUMNS).eq('tenant_id', str(tenant_id)).limit(20000).execute()
-        tenant.data['tenant_sources'] = tenant_sources.data
+        tenant.data['tenant_sources'] = fetch_all(
+            lambda: supabase.table('tenant_sources').select(SOURCE_COLUMNS).eq('tenant_id', str(tenant_id)).order('id'))
 
         return jsonify(tenant.data), 200
     except Exception as e:
@@ -261,12 +261,12 @@ def get_tenant_overview(current_user, tenant_id):
         since = now - timedelta(days=days)
         prev_since = since - timedelta(days=days)
 
-        logs = (
+        logs = fetch_all(lambda: (
             supabase.table('chat_logs')
             .select("conversation_id, user_message, cost_chf, created_at")
             .eq('tenant_id', tenant_id_str).gte('created_at', prev_since.isoformat())
-            .order('created_at', desc=True).limit(20000).execute()
-        ).data or []
+            .order('created_at', desc=True).order('id', desc=True)
+        ))
         current = [r for r in logs if r['created_at'] >= since.isoformat()]
         previous = [r for r in logs if r['created_at'] < since.isoformat()]
 
@@ -288,11 +288,11 @@ def get_tenant_overview(current_user, tenant_id):
                          for j in jobs if (j.get('finished_at') or '') >= since.isoformat())
         last = jobs[0] if jobs else None
 
-        sources = (
+        sources = fetch_all(lambda: (
             supabase.table('tenant_sources')
             .select("source_type, status, indexed_chunks, warnings")
-            .eq('tenant_id', tenant_id_str).limit(10000).execute()
-        ).data or []
+            .eq('tenant_id', tenant_id_str).order('id')
+        ))
         upcoming = (
             supabase.table('tenant_events').select("id", count="exact")
             .eq('tenant_id', tenant_id_str)
@@ -382,9 +382,9 @@ def list_findings(current_user, tenant_id):
             counts[st] = (supabase.table('chat_findings').select("id", count="exact")
                           .eq('tenant_id', str(tenant_id)).eq('status', st).limit(1).execute()).count or 0
         since = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
-        reviews = (supabase.table('chat_reviews').select("reviewed_at, cost_chf")
-                   .eq('tenant_id', str(tenant_id)).gte('reviewed_at', since)
-                   .order('reviewed_at', desc=True).limit(5000).execute()).data or []
+        reviews = fetch_all(lambda: (supabase.table('chat_reviews').select("reviewed_at, cost_chf")
+                                     .eq('tenant_id', str(tenant_id)).gte('reviewed_at', since)
+                                     .order('reviewed_at', desc=True).order('conversation_id')))
         from app.ai_models import RATES
         rate = RATES.get("review", RATES["chat"])
         return jsonify({

@@ -93,10 +93,10 @@ def get_usage(current_user):
         chat_cost = float(row.get('chat_cost') or 0)
         sources_cost = float(row.get('sources_cost') or 0)
         tenant_ids = [t['id'] for t in (supabase.table('tenants').select('id').eq('user_id', current_user.id).execute().data or [])]
+        from app.database.supabase_client import fetch_all
         review_cost = sum(
-            float(r.get('cost_chf') or 0) for r in (
-                supabase.table('chat_reviews').select('cost_chf').in_('tenant_id', tenant_ids).limit(50000).execute().data or []
-            )
+            float(r.get('cost_chf') or 0) for r in fetch_all(
+                lambda: supabase.table('chat_reviews').select('cost_chf').in_('tenant_id', tenant_ids).order('conversation_id'))
         ) if tenant_ids else 0.0
 
         return jsonify({

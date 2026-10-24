@@ -104,6 +104,11 @@ def _add_links(job: dict, tenant_id: str, depth: int, parent_url: str, hrefs: li
             continue
         if start_site and _site(parsed.hostname) != start_site:
             continue  # same site only — no drifting into other subdomains
+        if parsed.scheme == "http" and urlparse(job["start_url"]).scheme == "https":
+            # the same page linked as http:// and https:// would be read twice
+            url = "https://" + url[len("http://"):]
+            if url in seen:
+                continue
         if _is_excluded(url, excluded):
             continue
         if _is_file_link(url):

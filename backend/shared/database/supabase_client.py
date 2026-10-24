@@ -31,5 +31,29 @@ supabase: Client = create_client(
     ),
 )
 
-__all__ = ['supabase']
 
+
+
+# The API returns at most 1000 rows per request (Supabase "max rows"), whatever
+# .limit() asks for. Anything that can grow past that has to page.
+PAGE_SIZE = 1000
+
+
+def fetch_all(make_query, page_size: int = PAGE_SIZE, max_rows: int = 200_000) -> list[dict]:
+    """
+    All rows of a query, fetched page by page.
+
+    make_query: a function returning a fresh, ordered query, e.g.
+        lambda: supabase.table("tenant_sources").select("id").eq("tenant_id", t).order("id")
+    The order keeps pages stable while rows are being added.
+    """
+    rows: list[dict] = []
+    while len(rows) < max_rows:
+        page = make_query().range(len(rows), len(rows) + page_size - 1).execute().data or []
+        rows += page
+        if len(page) < page_size:
+            break
+    return rows
+
+
+__all__ = ['supabase', 'fetch_all']

@@ -19,7 +19,7 @@ from datetime import date, timedelta
 from celery import shared_task
 from google import genai
 
-from app.database.supabase_client import supabase
+from app.database.supabase_client import fetch_all, supabase
 from app.billing.services import BillingService
 from app.logging_config import error_logger
 from app.prompts import FINE_TUNE_RULE_PROMPT
@@ -107,16 +107,14 @@ def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, s
     data ends, so the model doesn't present an expired calendar as current.
     """
     lines = [f"Today is {_WEEKDAY[today.weekday()]} {today.isoformat()}."]
-    rows = (
+    rows = fetch_all(lambda: (
         supabase.table("tenant_events")
         .select("series, zone, event_date, is_exception, notes, source_id")
         .eq("tenant_id", str(tenant_id))
         .gte("event_date", (today - timedelta(days=400)).isoformat())
         .lte("event_date", (today + timedelta(days=400)).isoformat())
-        .order("event_date")
-        .limit(5000)
-        .execute()
-    ).data or []
+        .order("event_date").order("id")
+    ), max_rows=20_000)
     if not rows:
         return lines[0]
 
@@ -205,8 +203,8 @@ _MD_LINK = re.compile(r"\[([^\]]+)\]\((https?://[^)\s]+)\)")
 
 
 def _known_source_urls(tenant_id: str) -> set[str]:
-    rows = (supabase.table("tenant_sources").select("source_location")
-            .eq("tenant_id", str(tenant_id)).limit(20000).execute()).data or []
+    rows = fetch_all(lambda: supabase.table("tenant_sources").select("source_location")
+                     .eq("tenant_id", str(tenant_id)).order("id"))
     return {r["source_location"] for r in rows if r.get("source_location")}
 
 

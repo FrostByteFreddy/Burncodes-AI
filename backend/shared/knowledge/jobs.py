@@ -21,7 +21,7 @@ from urllib.parse import urlparse
 from celery import current_app as celery_app
 
 from app.ai_models import RATES
-from app.database.supabase_client import supabase
+from app.database.supabase_client import fetch_all, supabase
 from app.logging_config import error_logger
 from app.models.database import CrawlingStatus
 
@@ -144,12 +144,11 @@ def _outstanding_tasks(job_id: int) -> bool:
 
 
 def _pending_sources(job_id: int) -> list[dict]:
-    return (
+    return fetch_all(lambda: (
         supabase.table("tenant_sources")
         .select("id, source_type, source_location, content_tokens, file_pages, status")
-        .eq("last_job_id", job_id).eq("status", "QUEUED")
-        .limit(20000).execute()
-    ).data or []
+        .eq("last_job_id", job_id).eq("status", "QUEUED").order("id")
+    ))
 
 
 def estimate_source(src: dict) -> tuple[int, int, int]:
@@ -163,9 +162,7 @@ def estimate_source(src: dict) -> tuple[int, int, int]:
 
 def compute_estimate(job_id: int) -> dict:
     pending = _pending_sources(job_id)
-    tasks = (
-        supabase.table("crawling_tasks").select("outcome").eq("job_id", job_id).limit(20000).execute()
-    ).data or []
+    tasks = fetch_all(lambda: supabase.table("crawling_tasks").select("outcome").eq("job_id", job_id).order("id"))
     outcomes: dict[str, int] = {}
     for t in tasks:
         key = t.get("outcome") or "unknown"
@@ -203,13 +200,12 @@ def _mark_missed_sources(job: dict) -> int:
     host = urlparse(job["start_url"]).netloc
     if not host:
         return 0
-    rows = (
+    rows = fetch_all(lambda: (
         supabase.table("tenant_sources")
         .select("id, source_location, missed_crawls, last_job_id, gemini_document_name, gemini_document_names")
         .eq("tenant_id", job["tenant_id"]).in_("source_type", ["URL", "FILE_URL"])
-        .like("source_location", f"%://{host}%")
-        .limit(20000).execute()
-    ).data or []
+        .like("source_location", f"%://{host}%").order("id")
+    ))
     removed = 0
     for src in rows:
         if src.get("last_job_id") == job["id"]:
@@ -318,12 +314,12 @@ def build_report(job: dict) -> dict:
     """Aggregates what the crawl found. Deterministic — no LLM call."""
     job_id = job["id"]
     estimate = job.get("estimate") or {}
-    sources = (
+    sources = fetch_all(lambda: (
         supabase.table("tenant_sources")
         .select("id, source_location, source_type, status, status_code, title, summary, page_type, importance, "
                 "importance_reason, warnings, learned_job_id, last_learn_cost_chf")
-        .eq("last_job_id", job_id).limit(20000).execute()
-    ).data or []
+        .eq("last_job_id", job_id).order("id")
+    ))
     learned = [s for s in sources if s.get("learned_job_id") == job_id]
     by_id = {s["id"]: s for s in sources}
 
@@ -337,12 +333,13 @@ def build_report(job: dict) -> dict:
 
     schedules = []
     if sources:
-        events = (
-            supabase.table("tenant_events")
-            .select("source_id, series, zone, event_date")
-            .in_("source_id", [s["id"] for s in sources])
-            .limit(20000).execute()
-        ).data or []
+        # ids go into the URL, so ask in chunks
+        ids, events = [s["id"] for s in sources], []
+        for i in range(0, len(ids), 200):
+            events += fetch_all(lambda chunk=ids[i:i + 200]: (
+                supabase.table("tenant_events").select("source_id, series, zone, event_date")
+                .in_("source_id", chunk).order("id")
+            ))
         grouped: dict[tuple, list[str]] = {}
         for e in events:
             grouped.setdefault((e["source_id"], e["series"], e["zone"]), []).append(e["event_date"])

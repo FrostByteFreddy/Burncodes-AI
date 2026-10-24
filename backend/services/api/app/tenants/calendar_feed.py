@@ -14,7 +14,7 @@ from datetime import date, timedelta
 from flask import Blueprint, Response, jsonify, request
 
 from app import limiter
-from app.database.supabase_client import supabase
+from app.database.supabase_client import fetch_all, supabase
 from app.knowledge.calendar import build_ics, calendar_key
 from app.logging_config import error_logger
 
@@ -39,11 +39,13 @@ def _offered(tenant) -> bool:
 
 
 def _events(tenant_id):
-    return (supabase.table('tenant_events')
-            .select("series, zone, event_date, is_exception, notes, source_id, created_at")
-            .eq('tenant_id', str(tenant_id))
-            .gte('event_date', (date.today() - timedelta(days=PAST_DAYS)).isoformat())
-            .order('event_date').limit(10000).execute()).data or []
+    return fetch_all(lambda: (
+        supabase.table('tenant_events')
+        .select("series, zone, event_date, is_exception, notes, source_id, created_at")
+        .eq('tenant_id', str(tenant_id))
+        .gte('event_date', (date.today() - timedelta(days=PAST_DAYS)).isoformat())
+        .order('event_date').order('id')
+    ))
 
 
 def feed_urls(tenant_id, key: str) -> dict:

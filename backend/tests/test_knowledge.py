@@ -385,3 +385,20 @@ class TestSourceLinks:
         url = "https://www.zofingen.ch/kontakt"
         text = f"Nummer: 062 745 71 00. Quelle: [Kontakt]({url})"
         assert chat._ensure_source(text, [("Andere", "https://www.zofingen.ch/a")], {url, "https://www.zofingen.ch/a"}) == text
+
+
+class TestFetchAll:
+    def test_pages_past_the_1000_row_cap(self):
+        from app.database.supabase_client import fetch_all
+        data = list(range(2345))
+
+        class Q:
+            def range(self, a, b):
+                self.a, self.b = a, b
+                return self
+            def execute(self):
+                return type("R", (), {"data": [{"i": i} for i in data[self.a:self.b + 1]]})()
+
+        rows = fetch_all(lambda: Q())
+        assert len(rows) == 2345 and rows[-1] == {"i": 2344}
+        assert len(fetch_all(lambda: Q(), max_rows=1500)) == 2000  # stops after the page that crosses the cap

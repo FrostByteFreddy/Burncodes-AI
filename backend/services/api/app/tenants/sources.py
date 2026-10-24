@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from app.database.supabase_client import supabase
+from app.database.supabase_client import fetch_all, supabase
 from app.auth.decorators import token_required
 from app.models.database import SourceType
 from app.data_processing.tasks import process_local_file, start_learning_task, crawl_links_task
@@ -54,8 +54,8 @@ def get_sources(current_user, tenant_id):
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
         from app.tenants.routes import SOURCE_COLUMNS
-        sources = supabase.table('tenant_sources').select(SOURCE_COLUMNS).eq('tenant_id', tenant_id_str).limit(20000).execute()
-        return jsonify(sources.data), 200
+        sources = fetch_all(lambda: supabase.table('tenant_sources').select(SOURCE_COLUMNS).eq('tenant_id', tenant_id_str).order('id'))
+        return jsonify(sources), 200
     except Exception as e:
         error_logger.error(f"Error getting sources for tenant {tenant_id} for user {current_user.id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to retrieve sources"}), 500
@@ -201,10 +201,10 @@ def get_crawling_jobs(current_user, tenant_id):
         # Batch-fetch tasks — one query for all jobs
         # NOTE: Supabase default row limit is 1000 — raise it explicitly so large
         # crawls (3000+ pages) are not silently truncated in the job stats display.
-        tasks_resp = supabase.table('crawling_tasks').select("job_id,url,status").in_('job_id', job_ids).limit(10000).execute()
+        tasks = fetch_all(lambda: supabase.table('crawling_tasks').select("job_id,url,status").in_('job_id', job_ids).order('id'))
         tasks_by_job = defaultdict(list)
         all_crawled_urls = set()
-        for t in (tasks_resp.data or []):
+        for t in tasks:
             tasks_by_job[t['job_id']].append(t)
             all_crawled_urls.add(t['url'])
 
@@ -213,11 +213,9 @@ def get_crawling_jobs(current_user, tenant_id):
         sources_by_url = {}
         if all_crawled_urls:
             from app.tenants.routes import SOURCE_COLUMNS
-            sources_resp = supabase.table('tenant_sources').select(SOURCE_COLUMNS) \
-                .eq('tenant_id', tenant_id_str) \
-                .limit(10000) \
-                .execute()
-            for s in (sources_resp.data or []):
+            tenant_sources = fetch_all(lambda: supabase.table('tenant_sources').select(SOURCE_COLUMNS)
+                                       .eq('tenant_id', tenant_id_str).order('id'))
+            for s in tenant_sources:
                 if s['source_location'] in all_crawled_urls:
                     sources_by_url[s['source_location']] = s
 
@@ -265,10 +263,10 @@ def get_crawling_job_progress(current_user, tenant_id, job_id):
         if not job_check.data:
             return jsonify({"error": "Job not found or not part of this tenant"}), 404
 
-        tasks_response = supabase.table('crawling_tasks').select('status').eq('job_id', job_id).limit(10000).execute()
+        task_rows = fetch_all(lambda: supabase.table('crawling_tasks').select('status').eq('job_id', job_id).order('id'))
 
         from collections import Counter
-        status_list = [task['status'] for task in tasks_response.data]
+        status_list = [task['status'] for task in task_rows]
         db_counts = Counter(status_list)
 
         counts = {status.value: 0 for status in CrawlingStatus}
@@ -316,17 +314,16 @@ def get_knowledge_overview(current_user, tenant_id):
             .order('event_date').limit(500).execute()
         ).data or []
         # Series whose published dates ended — the bot can't answer "next" for them
-        past = (
+        past = fetch_all(lambda: (
             supabase.table('tenant_events').select("series, zone, event_date")
             .eq('tenant_id', tenant_id_str).lt('event_date', today.isoformat())
-            .order('event_date', desc=True).limit(2000).execute()
-        ).data or []
+            .order('event_date', desc=True).order('id')
+        ), max_rows=10_000)
         future_keys = {
-            (r['series'], r['zone']) for r in (
+            (r['series'], r['zone']) for r in fetch_all(lambda: (
                 supabase.table('tenant_events').select("series, zone")
-                .eq('tenant_id', tenant_id_str).gte('event_date', today.isoformat())
-                .limit(5000).execute()
-            ).data or []
+                .eq('tenant_id', tenant_id_str).gte('event_date', today.isoformat()).order('id')
+            ))
         }
         # Only recurring series count as "ended" (several dates spread over
         # months, e.g. a collection calendar) — one-off events that already
@@ -514,8 +511,8 @@ def delete_crawling_job(current_user, tenant_id, job_id):
             supabase.table('crawling_jobs').update({"status": CrawlingStatus.FAILED.value}).eq('id', job_id).execute()
 
         # 2. Collect all URLs that this job crawled
-        tasks_resp = supabase.table('crawling_tasks').select("url").eq('job_id', job_id).execute()
-        crawled_urls = [t['url'] for t in (tasks_resp.data or [])]
+        crawled_urls = [t['url'] for t in fetch_all(
+            lambda: supabase.table('crawling_tasks').select("url").eq('job_id', job_id).order('id'))]
 
         # 3. Find + delete matching tenant_sources rows in batches
         deleted_source_ids = []

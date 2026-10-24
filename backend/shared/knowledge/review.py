@@ -17,7 +17,7 @@ from google import genai
 from google.genai import types
 
 from app.ai_models import RATES, REVIEW_GEMINI_MODEL
-from app.database.supabase_client import supabase
+from app.database.supabase_client import fetch_all, supabase
 from app.logging_config import error_logger
 
 QUIET_MINUTES = int(os.getenv("REVIEW_QUIET_MINUTES", "30"))
@@ -170,12 +170,11 @@ def due_conversations(tenant_id: str, now: datetime | None = None) -> list[dict]
     now = now or datetime.now(timezone.utc)
     quiet_since = (now - timedelta(minutes=QUIET_MINUTES)).isoformat()
     since = (now - timedelta(days=LOOKBACK_DAYS)).isoformat()
-    rows = (
+    rows = fetch_all(lambda: (
         supabase.table("chat_logs")
         .select("id, conversation_id, user_message, ai_message, created_at")
-        .eq("tenant_id", tenant_id).gte("created_at", since)
-        .order("id").limit(20000).execute()
-    ).data or []
+        .eq("tenant_id", tenant_id).gte("created_at", since).order("id")
+    ))
     by_convo: dict[str, list[dict]] = {}
     for r in rows:
         by_convo.setdefault(r["conversation_id"], []).append(r)
