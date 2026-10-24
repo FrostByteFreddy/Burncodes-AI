@@ -5,7 +5,7 @@ Central service for all Gemini File Search Store operations.
 Used by every worker (fast, heavy, chat) and the API service.
 
 One store per tenant — created lazily on first source upload.
-Embedding model is fixed at store creation time (gemini-embedding-2).
+Embedding model is fixed at store creation time (EMBEDDING_GEMINI_MODEL).
 """
 import os
 import io
@@ -17,6 +17,7 @@ from google import genai
 
 from app.database.supabase_client import supabase
 from app.logging_config import error_logger
+from app.ai_models import EMBEDDING_GEMINI_MODEL
 
 # File extensions treated as directly-indexable documents (downloaded & uploaded as-is)
 INDEXABLE_FILE_EXTENSIONS: set[str] = {
@@ -50,7 +51,7 @@ class GeminiStoreService:
     def get_or_create_store(tenant_id: str) -> str:
         """
         Returns the store name for a tenant.
-        Creates it with gemini-embedding-2 if it doesn't exist yet.
+        Creates it with EMBEDDING_GEMINI_MODEL if it doesn't exist yet.
         Persists the store name to tenants.gemini_file_store_name.
         """
         row = (
@@ -68,7 +69,7 @@ class GeminiStoreService:
             store = client.file_search_stores.create(
                 config={
                     "display_name": f"tenant-{tenant_id}",
-                    "embedding_model": "models/gemini-embedding-2",
+                    "embedding_model": f"models/{EMBEDDING_GEMINI_MODEL}",
                 }
             )
             store_name = store.name

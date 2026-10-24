@@ -100,11 +100,18 @@ GOOGLE_API_KEY=<your-google-api-key>
 # Flask
 SECRET_KEY=<random-hex-string>   # python -c "import secrets; print(secrets.token_hex(32))"
 
-# Models (optional — defaults shown)
-CHAT_GEMINI_MODEL=gemini-3.1-flash-lite-preview
+# Models (optional — defaults shown). See backend/shared/ai_models.py.
+# Restart the containers after changing them.
+CHAT_GEMINI_MODEL=gemini-3.1-flash-lite      # answers chat messages
+INDEXING_GEMINI_MODEL=gemini-4-argon         # reads documents during indexing
+EMBEDDING_GEMINI_MODEL=gemini-embedding-2    # new File Search stores only
 
-# Pricing (optional) — CHF per 1M tokens charged for indexing
+# Pricing (optional) — CHF per 1M tokens, per billing role
+CHAT_RATE_CHF_PER_1M_INPUT=8.0
+CHAT_RATE_CHF_PER_1M_OUTPUT=17.5
 INDEXING_RATE_CHF_PER_1M_TOKENS=0.15
+EXTRACTION_RATE_CHF_PER_1M_INPUT=8.0
+EXTRACTION_RATE_CHF_PER_1M_OUTPUT=17.5
 
 # Stripe (use test keys locally)
 STRIPE_PUBLIC_KEY=pk_test_...

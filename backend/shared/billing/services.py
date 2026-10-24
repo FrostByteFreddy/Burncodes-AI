@@ -12,6 +12,7 @@ import stripe
 from app.database.supabase_client import supabase
 from app.database.supabase_retry import retrying_execute
 from app.logging_config import error_logger
+from app.ai_models import RATES
 
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip('/')
@@ -19,18 +20,6 @@ FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip('/
 # verify-session only accepts sessions this fresh. The success redirect happens
 # seconds after payment; older sessions are left to the (idempotent) webhook.
 VERIFY_SESSION_MAX_AGE_SECONDS = 60 * 60
-
-# Rates per 1M tokens in CHF. Override the chat/indexing rates via env so
-# pricing changes don't need a deploy of code.
-RATES = {
-    "default": {"input": 8.0, "output": 17.5},
-    "gemini-1.5-flash": {"input": 0.315, "output": 0.945},
-    "gemini-2.5-flash-lite": {"input": 0.315, "output": 0.945},
-    "indexing": {
-        "input": float(os.environ.get("INDEXING_RATE_CHF_PER_1M_TOKENS", "0.15")),
-        "output": 0.0,
-    },
-}
 
 # Rough bytes→tokens ratios used to estimate indexing cost before Gemini
 # reports anything. Text is ~4 chars/token; binary formats (PDF, DOCX, images)
@@ -231,14 +220,14 @@ class BillingService:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def calculate_cost(model, input_tokens, output_tokens):
-        """Calculates the cost in CHF for the given model and token usage."""
-        rate = RATES.get(model, RATES["default"])
+    def calculate_cost(role, input_tokens, output_tokens):
+        """Cost in CHF for a billing role ("chat", "indexing", "extraction"); see app.ai_models."""
+        rate = RATES.get(role, RATES["chat"])
         return (input_tokens / 1_000_000 * rate["input"]) + (output_tokens / 1_000_000 * rate["output"])
 
     @staticmethod
-    def deduct_cost(user_id, model, input_tokens, output_tokens):
-        cost = BillingService.calculate_cost(model, input_tokens, output_tokens)
+    def deduct_cost(user_id, role, input_tokens, output_tokens):
+        cost = BillingService.calculate_cost(role, input_tokens, output_tokens)
         try:
             result = supabase.rpc("deduct_balance", {"p_user_id": user_id, "p_amount": cost}).execute()
             if result.data == -1:

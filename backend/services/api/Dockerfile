@@ -26,6 +26,7 @@ COPY shared/models/     app/models/
 COPY shared/logging_config.py app/logging_config.py
 COPY shared/gemini_store/    app/gemini_store/
 COPY shared/billing/services.py app/billing/services.py
+COPY shared/ai_models.py      app/ai_models.py
 COPY shared/security/      app/security/
 
 COPY services/api/run.py .

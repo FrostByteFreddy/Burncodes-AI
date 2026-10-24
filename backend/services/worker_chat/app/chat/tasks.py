@@ -19,8 +19,8 @@ from app.database.supabase_client import supabase
 from app.billing.services import BillingService
 from app.logging_config import error_logger
 from app.prompts import FINE_TUNE_RULE_PROMPTS
+from app.ai_models import CHAT_GEMINI_MODEL
 
-CHAT_GEMINI_MODEL = os.getenv("CHAT_GEMINI_MODEL", "gemini-3.1-flash-lite-preview")
 
 # Number of previous exchanges (user + AI message pairs) sent as context.
 HISTORY_TURNS = int(os.getenv("CHAT_HISTORY_TURNS", "10"))
@@ -215,7 +215,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         # --- Billing ---
         cost = 0.0
         if user_id and user_id != "None":
-            cost = BillingService.deduct_cost(user_id, CHAT_GEMINI_MODEL, input_tokens, output_tokens)
+            cost = BillingService.deduct_cost(user_id, "chat", input_tokens, output_tokens)
 
         # --- Log to DB ---
         try:
