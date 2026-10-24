@@ -105,7 +105,7 @@ const tenantToDelete = ref(null)
 
 const goToTenant = (tenant) => {
   tenantsStore.selectTenant(tenant)
-  router.push({ name: 'TenantSources', params: { tenantId: tenant.id } })
+  router.push({ name: 'TenantOverview', params: { tenantId: tenant.id } })
 }
 
 const confirmDelete = (tenant) => { tenantToDelete.value = tenant }

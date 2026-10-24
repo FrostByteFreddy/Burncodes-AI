@@ -66,6 +66,8 @@ ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS gemini_file_store_name TEXT;
 -- Opt-in automatic re-crawl; unchanged pages cost nothing thanks to content hashes
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS auto_recrawl          BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS recrawl_interval_days INTEGER NOT NULL DEFAULT 7;
+-- Master switch: off = no widget anywhere, no public page, no answers (owner preview excepted)
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS is_active             BOOLEAN NOT NULL DEFAULT true;
 COMMENT ON COLUMN public.tenants.gemini_file_store_name IS
     'Gemini File Search Store resource name (e.g. fileSearchStores/abc123). NULL until the tenant uploads their first source.';
 

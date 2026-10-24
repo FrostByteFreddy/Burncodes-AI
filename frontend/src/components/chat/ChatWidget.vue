@@ -1,7 +1,12 @@
 <template>
+  <!-- Switched off by the owner: no chat at all -->
+  <div v-if="switchedOff" class="chat-off" role="status">
+    <p>{{ $t('chat.switchedOff') }}</p>
+  </div>
+
   <!-- Collapsed state (non-widget mode only — in widget mode the parent hides the iframe) -->
   <div
-    v-if="!isChatOpen"
+    v-else-if="!isChatOpen"
     class="chat-launcher"
     :style="{ backgroundColor: launcherBgColor }"
     @click="isChatOpen = true"
@@ -52,6 +57,7 @@ import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import BaseChat from './BaseChat.vue';
+import { supabase } from '@/supabase';
 import { processBotMessage } from '@/utils/chatProcessor.js';
 import { useToast } from '@/composables/useToast';
 import { useAppHeight } from '@/composables/useAppHeight';
@@ -70,8 +76,17 @@ const props = defineProps({
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
+// The dashboard preview (config passed in) sends the owner's token, so it
+// keeps working while the chatbot is switched off for everyone else
+const previewAuthHeaders = async () => {
+  if (!props.config) return {};
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+};
+
 // ── Config resolution ──────────────────────────────────────────────────────────
 const fetchedConfig  = ref(null);
+const switchedOff    = ref(false);
 const isSharedView   = ref(false);
 const resolvedConfig = computed(() => props.config ?? fetchedConfig.value ?? {});
 
@@ -145,6 +160,7 @@ const fetchConfig = async () => {
   if (!props.tenantId || props.config) return;
   try {
     const { data } = await axios.get(`${API_BASE_URL}/tenants/${props.tenantId}/public`);
+    if (data.is_active === false) { switchedOff.value = true; return; }
     fetchedConfig.value = data.widget_config || {};
   } catch (err) {
     console.error('[ChatWidget] Failed to fetch tenant config', err);
@@ -251,14 +267,17 @@ const sendMessage = async () => {
     const { data } = await axios.post(`${API_BASE_URL}/chat/${props.tenantId}`, {
       query: current,
       conversation_id: conversationId.value,
-    });
+    }, { headers: await previewAuthHeaders() });
     if (data.task_id) {
       pollTaskStatus(data.task_id);
     } else {
       throw new Error('No task_id received');
     }
   } catch (err) {
-    const { text, html } = processBotMessage(err.response?.status === 429
+    const code = err.response?.data?.code;
+    const { text, html } = processBotMessage(code === 'chatbot_off'
+      ? t('chat.switchedOff')
+      : err.response?.status === 429
       ? t('chat.errors.rateLimited')
       : `Error: ${err.response?.data?.error || t('chat.errors.sendMessage')}`);
     chatHistory.value.push({ text, html, isUser: false });
@@ -366,5 +385,10 @@ onUnmounted(() => {
   width: 30px;
   height: 30px;
   object-fit: contain;
+}
+.chat-off {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; min-height: 200px; padding: 24px; text-align: center;
+  font-family: system-ui, sans-serif; color: #4B5563; background: #F9FAFB;
 }
 </style>

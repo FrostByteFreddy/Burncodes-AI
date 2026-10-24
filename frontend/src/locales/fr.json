@@ -74,6 +74,7 @@
     "chartLabel": "Nombre de messages"
   },
   "chat": {
+    "switchedOff": "Ce chatbot est actuellement désactivé.",
     "inputPlaceholder": "Posez-moi une question...",
     "thinking": "Je réfléchis...",
     "reset": "Réinitialiser la conversation",
@@ -434,6 +435,7 @@
     }
   },
   "sidebar": {
+    "overview": "Aperçu",
     "selectTenant": "Sélectionner un chatbot",
     "install": "Installer",
     "sources": "Connaissances",
@@ -658,6 +660,8 @@
     }
   },
   "pages": {
+    "overviewTitle": "Aperçu",
+    "overview": "Votre chatbot est-il activé, combien est-il utilisé et ses connaissances sont-elles à jour.",
     "configureTitle": "Configuration",
     "chatbots": "Chaque chatbot répond aux questions à partir du site et des documents d’une organisation.",
     "insights": "À quelle fréquence on interroge votre chatbot, et ce que les gens voulaient savoir.",
@@ -830,6 +834,58 @@
       "choose": "Choisir une image",
       "replace": "Remplacer",
       "remove": "Supprimer"
+    }
+  },
+  "overview": {
+    "period": "Période",
+    "days": "{n} jours",
+    "loadFailed": "L'aperçu n'a pas pu être chargé. Rechargez la page.",
+    "status": {
+      "onTitle": "Votre chatbot est activé",
+      "onBody": "Il répond sur votre site et sur la page de test publique.",
+      "onHidden": "Il répond sur la page de test publique. Le bouton de chat est masqué sur votre site.",
+      "offTitle": "Votre chatbot est désactivé",
+      "offBody": "Il n'apparaît sur aucun site et ne répond à personne. Vous pouvez toujours l'essayer dans l'aperçu sous Configuration.",
+      "switchOff": "Désactiver",
+      "switchOn": "Activer",
+      "switchedOff": "Chatbot désactivé",
+      "switchedOn": "Chatbot activé",
+      "confirmTitle": "Désactiver le chatbot ?",
+      "confirmBody": "Il disparaît immédiatement de tous les sites et de la page de test publique, et ne répond plus. Vous pouvez le réactiver à tout moment."
+    },
+    "usage": {
+      "title": "{n} derniers jours",
+      "more": "Ouvrir les statistiques",
+      "conversations": "Conversations",
+      "questions": "Questions traitées",
+      "spent": "Dépensé",
+      "spentSplit": "CHF {chat} réponses, CHF {learning} apprentissage",
+      "balance": "Solde",
+      "topUp": "Recharger",
+      "chartLabel": "{n} questions sur les {days} derniers jours",
+      "today": "Aujourd'hui",
+      "new": "nouveau",
+      "same": "inchangé",
+      "vsPrevious": "Par rapport à la période précédente"
+    },
+    "knowledge": {
+      "title": "Connaissances",
+      "more": "Ouvrir les connaissances",
+      "pages": "pages",
+      "files": "fichiers",
+      "sections": "sections apprises",
+      "upcoming": "dates dans les 2 prochaines semaines",
+      "attention": "{n} documents demandent votre attention",
+      "lastCrawl": "Dernier crawl",
+      "noCrawl": "Aucun site lu pour l'instant.",
+      "crawlCounts": "{learned} appris, {unchanged} inchangés",
+      "recrawlOn": "Vérifie les changements tous les {n} jours.",
+      "recrawlOff": "Ne vérifie pas les changements automatiquement."
+    },
+    "latest": {
+      "title": "Dernières questions",
+      "more": "Toutes les conversations",
+      "none": "Aucune question sur cette période."
     }
   }
 }

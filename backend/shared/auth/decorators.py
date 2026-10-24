@@ -20,3 +20,14 @@ def token_required(f):
         return f(current_user, *args, **kwargs)
 
     return decorated_function
+
+
+def optional_user():
+    """The signed-in user if the request carries a valid token, else None (never fails)."""
+    scheme, _, token = request.headers.get('Authorization', '').partition(' ')
+    if scheme.lower() != 'bearer' or not token.strip():
+        return None
+    try:
+        return supabase.auth.get_user(token.strip()).user
+    except Exception:
+        return None

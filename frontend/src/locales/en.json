@@ -74,6 +74,7 @@
     "chartLabel": "Number of Messages"
   },
   "chat": {
+    "switchedOff": "This chatbot is currently switched off.",
     "inputPlaceholder": "Ask me a question...",
     "thinking": "Thinking...",
     "reset": "Reset conversation",
@@ -434,6 +435,7 @@
     }
   },
   "sidebar": {
+    "overview": "Overview",
     "selectTenant": "Select a Chatbot",
     "install": "Install",
     "sources": "Knowledge",
@@ -658,6 +660,8 @@
     }
   },
   "pages": {
+    "overviewTitle": "Overview",
+    "overview": "Is your chatbot on, how much is it used, and is its knowledge current.",
     "configureTitle": "Configure",
     "chatbots": "Each chatbot answers questions from one organisation’s website and documents.",
     "insights": "How often people ask your chatbot, and what they wanted to know.",
@@ -830,6 +834,58 @@
       "choose": "Choose image",
       "replace": "Replace",
       "remove": "Remove"
+    }
+  },
+  "overview": {
+    "period": "Period",
+    "days": "{n} days",
+    "loadFailed": "The overview could not be loaded. Reload the page to try again.",
+    "status": {
+      "onTitle": "Your chatbot is on",
+      "onBody": "It answers on your website and on the public test page.",
+      "onHidden": "It answers on the public test page. The chat button is hidden on your website.",
+      "offTitle": "Your chatbot is switched off",
+      "offBody": "It doesn't appear on any website and doesn't answer anyone. You can still try it in the preview under Configure.",
+      "switchOff": "Switch off",
+      "switchOn": "Switch on",
+      "switchedOff": "Chatbot switched off",
+      "switchedOn": "Chatbot switched on",
+      "confirmTitle": "Switch off the chatbot?",
+      "confirmBody": "It disappears from every website and the public test page right away, and stops answering questions. You can switch it back on at any time."
+    },
+    "usage": {
+      "title": "Last {n} days",
+      "more": "Open insights",
+      "conversations": "Conversations",
+      "questions": "Questions answered",
+      "spent": "Spent",
+      "spentSplit": "CHF {chat} answers, CHF {learning} learning",
+      "balance": "Balance",
+      "topUp": "Top up",
+      "chartLabel": "{n} questions in the last {days} days",
+      "today": "Today",
+      "new": "new",
+      "same": "no change",
+      "vsPrevious": "Compared with the previous period"
+    },
+    "knowledge": {
+      "title": "Knowledge",
+      "more": "Open knowledge",
+      "pages": "pages",
+      "files": "files",
+      "sections": "sections learned",
+      "upcoming": "dates in the next 2 weeks",
+      "attention": "{n} documents need your attention",
+      "lastCrawl": "Last crawl",
+      "noCrawl": "No website read yet.",
+      "crawlCounts": "{learned} learned, {unchanged} unchanged",
+      "recrawlOn": "Checks for changes every {n} days.",
+      "recrawlOff": "Doesn't check for changes automatically."
+    },
+    "latest": {
+      "title": "Latest questions",
+      "more": "All conversations",
+      "none": "No questions in this period yet."
     }
   }
 }

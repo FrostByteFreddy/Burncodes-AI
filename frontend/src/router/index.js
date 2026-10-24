@@ -20,7 +20,8 @@ const routes = [
     meta: { requiresAuth: true },
     props: true,
     children: [
-      { path: "", redirect: { name: "TenantSources" } },
+      { path: "", redirect: { name: "TenantOverview" } },
+      { path: "overview",  name: "TenantOverview",  component: () => import("../views/Overview.vue") },
       { path: "sources",   name: "TenantSources",   component: () => import("../components/tenant/Sources.vue") },
       { path: "sources/crawls/:jobId(\\d+)", name: "TenantCrawl", component: () => import("../components/tenant/CrawlDetail.vue"), props: true },
       { path: "configure", name: "TenantConfigure", component: () => import("../components/tenant/Settings.vue") },

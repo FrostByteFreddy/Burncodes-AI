@@ -156,6 +156,7 @@ def test_chat_ignores_client_history_and_caps_query(client, monkeypatch):
 
     monkeypatch.setattr(routes.BillingService, "get_tenant_owner", staticmethod(lambda t: "owner"))
     monkeypatch.setattr(routes.BillingService, "check_balance", staticmethod(lambda u: 5.0))
+    monkeypatch.setattr(routes, "_chatbot_active", lambda t: True)
     dispatched = MagicMock(return_value=MagicMock(id="task-1"))
     monkeypatch.setattr(routes.chat_task, "delay", dispatched)
 
@@ -173,6 +174,30 @@ def test_chat_ignores_client_history_and_caps_query(client, monkeypatch):
         "conversation_id": str(uuid.uuid4()),
     })
     assert resp.status_code == 400
+
+
+def test_switched_off_chatbot_only_answers_its_owner(client, monkeypatch):
+    from types import SimpleNamespace
+    from app.chat import routes
+
+    monkeypatch.setattr(routes.BillingService, "get_tenant_owner", staticmethod(lambda t: "owner-id"))
+    monkeypatch.setattr(routes.BillingService, "check_balance", staticmethod(lambda u: 5.0))
+    monkeypatch.setattr(routes, "_chatbot_active", lambda t: False)
+    dispatched = MagicMock(return_value=MagicMock(id="task-off"))
+    monkeypatch.setattr(routes.chat_task, "delay", dispatched)
+    body = {"query": "hi", "conversation_id": str(uuid.uuid4())}
+
+    monkeypatch.setattr(routes, "optional_user", lambda: None)
+    resp = client.post(f"/api/chat/{uuid.uuid4()}", json=body)
+    assert resp.status_code == 403 and resp.get_json()["code"] == "chatbot_off"
+
+    monkeypatch.setattr(routes, "optional_user", lambda: SimpleNamespace(id="someone-else"))
+    assert client.post(f"/api/chat/{uuid.uuid4()}", json=body).status_code == 403
+    dispatched.assert_not_called()
+
+    # the owner's preview in the dashboard still works
+    monkeypatch.setattr(routes, "optional_user", lambda: SimpleNamespace(id="owner-id"))
+    assert client.post(f"/api/chat/{uuid.uuid4()}", json=body).status_code == 202
 
 
 def test_chat_status_only_for_issued_tasks(client, monkeypatch, fake_guard_redis):
@@ -211,6 +236,7 @@ def test_chat_is_rate_limited_per_tenant(app, monkeypatch):
     monkeypatch.setattr(routes.BillingService, "get_tenant_owner", staticmethod(lambda t: "owner"))
     monkeypatch.setattr(routes.BillingService, "check_balance", staticmethod(lambda u: 5.0))
     monkeypatch.setattr(routes.chat_task, "delay", MagicMock(return_value=MagicMock(id="t")))
+    monkeypatch.setattr(routes, "_chatbot_active", lambda t: True)
     limiter.enabled = True
     limiter.reset()
     client = app.test_client()

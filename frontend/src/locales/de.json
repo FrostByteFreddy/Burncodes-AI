@@ -74,6 +74,7 @@
     "chartLabel": "Anzahl der Nachrichten"
   },
   "chat": {
+    "switchedOff": "Dieser Chatbot ist zurzeit ausgeschaltet.",
     "inputPlaceholder": "Stell mir eine Frage...",
     "thinking": "Denke nach...",
     "reset": "Gespräch zurücksetzen",
@@ -434,6 +435,7 @@
     }
   },
   "sidebar": {
+    "overview": "Übersicht",
     "selectTenant": "Chatbot auswählen",
     "install": "Einbinden",
     "sources": "Wissen",
@@ -658,6 +660,8 @@
     }
   },
   "pages": {
+    "overviewTitle": "Übersicht",
+    "overview": "Ist Ihr Chatbot eingeschaltet, wie oft wird er genutzt und ist sein Wissen aktuell.",
     "configureTitle": "Einstellungen",
     "chatbots": "Jeder Chatbot beantwortet Fragen aus der Website und den Dokumenten einer Organisation.",
     "insights": "Wie oft Ihr Chatbot gefragt wird und was die Leute wissen wollten.",
@@ -830,6 +834,58 @@
       "choose": "Bild wählen",
       "replace": "Ersetzen",
       "remove": "Entfernen"
+    }
+  },
+  "overview": {
+    "period": "Zeitraum",
+    "days": "{n} Tage",
+    "loadFailed": "Die Übersicht konnte nicht geladen werden. Laden Sie die Seite neu.",
+    "status": {
+      "onTitle": "Ihr Chatbot ist eingeschaltet",
+      "onBody": "Er antwortet auf Ihrer Website und auf der öffentlichen Testseite.",
+      "onHidden": "Er antwortet auf der öffentlichen Testseite. Der Chat-Knopf ist auf Ihrer Website ausgeblendet.",
+      "offTitle": "Ihr Chatbot ist ausgeschaltet",
+      "offBody": "Er erscheint auf keiner Website und beantwortet keine Fragen. In der Vorschau unter Einstellungen können Sie ihn weiterhin ausprobieren.",
+      "switchOff": "Ausschalten",
+      "switchOn": "Einschalten",
+      "switchedOff": "Chatbot ausgeschaltet",
+      "switchedOn": "Chatbot eingeschaltet",
+      "confirmTitle": "Chatbot ausschalten?",
+      "confirmBody": "Er verschwindet sofort von allen Websites und der öffentlichen Testseite und beantwortet keine Fragen mehr. Sie können ihn jederzeit wieder einschalten."
+    },
+    "usage": {
+      "title": "Letzte {n} Tage",
+      "more": "Auswertung öffnen",
+      "conversations": "Gespräche",
+      "questions": "Beantwortete Fragen",
+      "spent": "Ausgegeben",
+      "spentSplit": "CHF {chat} Antworten, CHF {learning} Lernen",
+      "balance": "Guthaben",
+      "topUp": "Aufladen",
+      "chartLabel": "{n} Fragen in den letzten {days} Tagen",
+      "today": "Heute",
+      "new": "neu",
+      "same": "unverändert",
+      "vsPrevious": "Im Vergleich zum vorherigen Zeitraum"
+    },
+    "knowledge": {
+      "title": "Wissen",
+      "more": "Wissen öffnen",
+      "pages": "Seiten",
+      "files": "Dateien",
+      "sections": "gelernte Abschnitte",
+      "upcoming": "Termine in den nächsten 2 Wochen",
+      "attention": "{n} Dokumente brauchen Ihre Aufmerksamkeit",
+      "lastCrawl": "Letzter Crawl",
+      "noCrawl": "Noch keine Website gelesen.",
+      "crawlCounts": "{learned} gelernt, {unchanged} unverändert",
+      "recrawlOn": "Prüft alle {n} Tage auf Änderungen.",
+      "recrawlOff": "Prüft nicht automatisch auf Änderungen."
+    },
+    "latest": {
+      "title": "Neueste Fragen",
+      "more": "Alle Gespräche",
+      "none": "In diesem Zeitraum noch keine Fragen."
     }
   }
 }

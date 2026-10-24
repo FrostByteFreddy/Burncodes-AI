@@ -3,7 +3,7 @@ from app.database.supabase_client import supabase
 from app.logging_config import error_logger
 from app.chat.tasks import chat_task
 from app.billing.services import BillingService
-from app.auth.decorators import token_required
+from app.auth.decorators import optional_user, token_required
 from app import limiter
 from celery.result import AsyncResult
 import uuid
@@ -21,6 +21,11 @@ MAX_QUERY_CHARS = 4000
 
 def _tenant_key():
     return f"chat-tenant:{request.view_args.get('tenant_id')}"
+
+
+def _chatbot_active(tenant_id) -> bool:
+    resp = supabase.table('tenants').select('is_active').eq('id', str(tenant_id)).limit(1).execute()
+    return bool(resp.data) and resp.data[0].get('is_active') is not False
 
 
 def _owns_tenant(tenant_id, user_id):
@@ -56,6 +61,11 @@ def handle_chat(tenant_id):
             user_id = BillingService.get_tenant_owner(tenant_id)
             if not user_id:
                 return jsonify({"error": "Tenant not found"}), 404
+            # Switched off: only the owner's signed-in preview may still chat
+            if not _chatbot_active(tenant_id):
+                viewer = optional_user()
+                if not viewer or str(viewer.id) != str(user_id):
+                    return jsonify({"error": "This chatbot is switched off.", "code": "chatbot_off"}), 403
             if BillingService.check_balance(user_id) <= 0:
                 return jsonify({"error": "Insufficient balance. Please recharge."}), 402
         except Exception as e:

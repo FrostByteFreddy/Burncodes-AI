@@ -38,6 +38,13 @@
     <div class="sidebar__section-label">{{ $t('sidebar.workspace') }}</div>
     <nav class="sidebar__nav" v-if="activeTenant">
       <router-link
+        :to="{ name: 'TenantOverview', params: { tenantId: activeTenant.id } }"
+        class="nav-item" active-class="nav-item--active"
+      >
+        <font-awesome-icon :icon="['fas', 'gauge']" class="nav-item__icon" />
+        <span>{{ $t('sidebar.overview') }}</span>
+      </router-link>
+      <router-link
         :to="{ name: 'TenantSources', params: { tenantId: activeTenant.id } }"
         class="nav-item" active-class="nav-item--active"
       >
