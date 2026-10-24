@@ -54,7 +54,7 @@ RATES = {
     "extraction": {
         # LLM reading documents (structured/schedule extraction).
         "input": _rate("EXTRACTION_RATE_CHF_PER_1M_INPUT", 8.0),
-        "output": _rate("EXTRACTION_RATE_CHF_PER_1M_OUTPUT", 17.5),
+        "output": _rate("EXTRACTION_RATE_CHF_PER_1M_OUTPUT", 50.0),
     },
 }
 

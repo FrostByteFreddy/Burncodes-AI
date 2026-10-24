@@ -13,6 +13,9 @@ Duplicate protection:
   - links are inserted with ON CONFLICT (job_id, url) DO NOTHING and only the
     rows actually inserted are queued — each URL is visited once per job
 """
+import re
+import binascii
+import base64
 import asyncio
 import random
 from pathlib import Path
@@ -68,6 +71,29 @@ def _canonical_link(href: str) -> str:
     return url
 
 
+_CONTACT_SCHEMES = ("mailto:", "tel:", "callto:", "sms:")
+
+
+def _is_contact_link(url: str) -> bool:
+    """
+    Email/phone links some CMSs hide from spam bots inside the path, e.g.
+    /route/cms-index-redirectEmailLink/email/bWFpbHRvJTNB… (Base64 of
+    "mailto%3A…"). They aren't pages; reading them only fails.
+    """
+    for segment in urlparse(url).path.split("/"):
+        candidates = [unquote(segment)]
+        raw = candidates[0]
+        if len(raw) >= 8 and re.fullmatch(r"[A-Za-z0-9+/_-]+={0,2}", raw):
+            try:
+                padded = raw + "=" * (-len(raw) % 4)
+                candidates.append(unquote(base64.urlsafe_b64decode(padded.replace("+", "-").replace("/", "_")).decode("utf-8", "ignore")))
+            except (ValueError, binascii.Error):
+                pass
+        if any(c.lower().startswith(_CONTACT_SCHEMES) for c in candidates):
+            return True
+    return False
+
+
 def _is_excluded(url: str, excluded: list[str]) -> bool:
     stripped = url.replace("https://", "").replace("http://", "").strip("/")
     for ex in excluded:
@@ -110,7 +136,7 @@ def _add_links(job: dict, tenant_id: str, depth: int, parent_url: str, hrefs: li
             url = "https://" + url[len("http://"):]
             if url in seen:
                 continue
-        if _is_excluded(url, excluded):
+        if _is_excluded(url, excluded) or _is_contact_link(url):
             continue
         if _is_file_link(url):
             if max_depth <= 1 and Path(parsed.path).suffix.lower() not in _DOCUMENT_EXTENSIONS:
