@@ -15,6 +15,10 @@
     >
       <font-awesome-icon v-if="modelValue === c.id" :icon="['fas', 'check']" :style="{ color: checkColor(c.value) }" />
     </button>
+    <label v-if="allowCustom" class="swp__dot swp__custom" :title="$t('configure.edit.custom')">
+      <font-awesome-icon :icon="['fas', 'plus']" />
+      <input type="color" class="swp__custom-input" :aria-label="$t('configure.edit.custom')" @change="$emit('custom', $event.target.value)" />
+    </label>
   </div>
 </template>
 
@@ -25,8 +29,9 @@ defineProps({
   modelValue: { type: String, default: null },
   palette:    { type: Array, required: true },
   labelId:    { type: String, required: true },
+  allowCustom: { type: Boolean, default: false },
 });
-defineEmits(['update:modelValue']);
+defineEmits(['update:modelValue', 'custom']);
 const { nameOf } = usePaletteNames();
 const checkColor = (hex) => readableOn(hex);
 </script>
@@ -40,5 +45,9 @@ const checkColor = (hex) => readableOn(hex);
   transition: transform var(--t-fast);
 }
 .swp__dot:hover { transform: scale(1.08); }
+.swp__custom { position: relative; background: var(--surface-2); color: var(--surface-muted); border-style: dashed; }
+.swp__custom:hover { color: var(--surface-heading); }
+.swp__custom:focus-within { box-shadow: var(--focus-ring); }
+.swp__custom-input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
 .swp__dot--active { box-shadow: 0 0 0 2px var(--surface-1), 0 0 0 4px var(--interactive); }
 </style>

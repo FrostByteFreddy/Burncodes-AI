@@ -680,7 +680,7 @@
     "discard": "Discard",
     "save": "Save changes",
     "saved": "Changes saved",
-    "preview": "Preview — try it out",
+    "preview": "Preview — click a pen to change colours or the logo",
     "remove": "Remove",
     "basics": {
       "title": "Basics",
@@ -791,6 +791,22 @@
       "color": "Colour",
       "icon": "Icon",
       "iconHint": "Optional. Without an icon, a speech bubble is shown."
+    },
+    "edit": {
+      "custom": "Custom colour",
+      "close": "Close",
+      "editPart": "Edit {part}",
+      "parts": {
+        "header": "Header",
+        "title": "Title and logo",
+        "buttons": "Header buttons",
+        "bot": "Chatbot messages",
+        "user": "Visitor messages",
+        "starters": "Suggested questions",
+        "background": "Chat background",
+        "input": "Input field",
+        "send": "Send button"
+      }
     },
     "image": {
       "choose": "Choose image",

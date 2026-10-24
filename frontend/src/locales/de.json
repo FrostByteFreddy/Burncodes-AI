@@ -680,7 +680,7 @@
     "discard": "Verwerfen",
     "save": "Änderungen speichern",
     "saved": "Änderungen gespeichert",
-    "preview": "Vorschau — probieren Sie es aus",
+    "preview": "Vorschau — klicken Sie auf einen Stift, um Farben oder das Logo zu ändern",
     "remove": "Entfernen",
     "basics": {
       "title": "Grundlagen",
@@ -791,6 +791,22 @@
       "color": "Farbe",
       "icon": "Symbol",
       "iconHint": "Optional. Ohne Symbol wird eine Sprechblase angezeigt."
+    },
+    "edit": {
+      "custom": "Eigene Farbe",
+      "close": "Schliessen",
+      "editPart": "{part} bearbeiten",
+      "parts": {
+        "header": "Kopfzeile",
+        "title": "Titel und Logo",
+        "buttons": "Knöpfe in der Kopfzeile",
+        "bot": "Chatbot-Nachrichten",
+        "user": "Besucher-Nachrichten",
+        "starters": "Vorgeschlagene Fragen",
+        "background": "Chat-Hintergrund",
+        "input": "Eingabefeld",
+        "send": "Senden-Knopf"
+      }
     },
     "image": {
       "choose": "Bild wählen",

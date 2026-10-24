@@ -109,7 +109,7 @@ import { v4 as uuidv4 } from 'uuid';
 import LauncherPreview from '../LauncherPreview.vue';
 import SwatchPicker from './SwatchPicker.vue';
 import ImageField from './ImageField.vue';
-import { BASE_COLOR_IDS, contrast, usePaletteNames } from './palette';
+import { BASE_COLOR_IDS, contrast, usePaletteNames, getStyle as getStyleOf, setStyle as setStyleOf, colorOf as colorOfIn } from './palette';
 
 const props = defineProps({ modelValue: { type: Object, required: true } });
 const { t } = useI18n();
@@ -117,12 +117,9 @@ const { nameOf } = usePaletteNames();
 const cfg = computed(() => props.modelValue.widget_config);
 
 const isBase = (c) => BASE_COLOR_IDS.includes(c.id);
-const colorOf = (id) => cfg.value.color_palette.find((c) => c.id === id)?.value || id;
-
-// Starter chip colours live at the top level of widget_config, the rest in component_styles
-const TOP_LEVEL = ['starter_background_color', 'starter_text_color'];
-const getStyle = (f) => (TOP_LEVEL.includes(f) ? cfg.value[f] : cfg.value.component_styles[f]);
-const setStyle = (f, id) => { if (TOP_LEVEL.includes(f)) cfg.value[f] = id; else cfg.value.component_styles[f] = id; };
+const colorOf = (id) => colorOfIn(cfg.value, id);
+const getStyle = (f) => getStyleOf(cfg.value, f);
+const setStyle = (f, id) => setStyleOf(cfg.value, f, id);
 
 const USAGE = [
   { key: 'header', fields: ['header_background_color', 'header_text_color', 'reset_button_color', 'reset_button_icon_color', 'close_button_background_color', 'close_button_icon_color', 'share_button_color', 'share_button_icon_color'] },

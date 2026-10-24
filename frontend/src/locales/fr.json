@@ -680,7 +680,7 @@
     "discard": "Annuler",
     "save": "Enregistrer",
     "saved": "Modifications enregistrées",
-    "preview": "Aperçu — essayez-le",
+    "preview": "Aperçu — cliquez sur un crayon pour modifier les couleurs ou le logo",
     "remove": "Supprimer",
     "basics": {
       "title": "Bases",
@@ -791,6 +791,22 @@
       "color": "Couleur",
       "icon": "Icône",
       "iconHint": "Facultatif. Sans icône, une bulle de dialogue s'affiche."
+    },
+    "edit": {
+      "custom": "Couleur personnalisée",
+      "close": "Fermer",
+      "editPart": "Modifier : {part}",
+      "parts": {
+        "header": "En-tête",
+        "title": "Titre et logo",
+        "buttons": "Boutons de l'en-tête",
+        "bot": "Messages du chatbot",
+        "user": "Messages des visiteurs",
+        "starters": "Questions suggérées",
+        "background": "Fond du chat",
+        "input": "Champ de saisie",
+        "send": "Bouton d'envoi"
+      }
     },
     "image": {
       "choose": "Choisir une image",

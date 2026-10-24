@@ -26,3 +26,12 @@ export function contrast(a, b) {
 
 // Black or white, whichever reads better on the given colour
 export const readableOn = (hex) => (contrast(hex, '#000000') >= contrast(hex, '#FFFFFF') ? '#000000' : '#FFFFFF');
+
+// Starter chip colours live at the top level of widget_config, the rest in component_styles
+const TOP_LEVEL_STYLES = ['starter_background_color', 'starter_text_color'];
+export const getStyle = (cfg, field) => (TOP_LEVEL_STYLES.includes(field) ? cfg[field] : cfg.component_styles?.[field]);
+export function setStyle(cfg, field, colorId) {
+  if (TOP_LEVEL_STYLES.includes(field)) cfg[field] = colorId;
+  else cfg.component_styles[field] = colorId;
+}
+export const colorOf = (cfg, id) => cfg.color_palette.find((c) => c.id === id)?.value || id;

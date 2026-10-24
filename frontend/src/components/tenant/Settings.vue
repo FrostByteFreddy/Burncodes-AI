@@ -43,7 +43,7 @@
       <aside class="cfg-preview" :aria-label="$t('configure.preview')">
         <p class="meta cfg-preview__label">{{ $t('configure.preview') }}</p>
         <div class="cfg-preview__frame">
-          <ChatPreview :config="formData.widget_config" :tenant-id="tenantsStore.currentTenant?.id || ''" />
+          <EditablePreview :config="formData.widget_config" :tenant-id="tenantsStore.currentTenant?.id || ''" />
         </div>
       </aside>
     </div>
@@ -57,7 +57,7 @@ import { useTenantsStore } from '../../stores/tenants';
 import { useToast } from '../../composables/useToast';
 import ConversationTab from './settings/ConversationTab.vue';
 import LookTab from './settings/LookTab.vue';
-import ChatPreview from './ChatPreview.vue';
+import EditablePreview from './settings/EditablePreview.vue';
 
 const tenantsStore = useTenantsStore();
 const { addToast } = useToast();
