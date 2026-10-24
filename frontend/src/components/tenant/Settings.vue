@@ -168,7 +168,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload)
 .cfg-tabs__btn--active { background: var(--interactive-strong); color: #fff; }
 
 .cfg-savebar {
-  position: sticky; bottom: 16px; z-index: 20;
+  position: sticky; bottom: 32px; z-index: 20;
   display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   margin-top: 20px; padding: 14px 16px 14px 20px;
   border-radius: var(--radius-lg);
