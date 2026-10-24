@@ -7,6 +7,10 @@ from app.auth.decorators import token_required
 from app import limiter
 from celery.result import AsyncResult
 import uuid
+from app.chat.guard import (
+    CHAT_LIMIT_PER_IP, CHAT_LIMIT_PER_TENANT, STATUS_LIMIT_PER_IP,
+    is_known_task, long_poll_slot, remember_task,
+)
 
 chat_bp = Blueprint('chat', __name__)
 
@@ -15,12 +19,17 @@ chat_bp = Blueprint('chat', __name__)
 MAX_QUERY_CHARS = 4000
 
 
+def _tenant_key():
+    return f"chat-tenant:{request.view_args.get('tenant_id')}"
+
+
 def _owns_tenant(tenant_id, user_id):
     resp = supabase.table('tenants').select('id').eq('id', str(tenant_id)).eq('user_id', user_id).limit(1).execute()
     return bool(resp.data)
 
 @chat_bp.route('/<uuid:tenant_id>', methods=['POST'])
-@limiter.limit("30 per minute")
+@limiter.limit(CHAT_LIMIT_PER_IP)
+@limiter.limit(CHAT_LIMIT_PER_TENANT, key_func=_tenant_key)
 def handle_chat(tenant_id):
     try:
         data = request.get_json()
@@ -57,6 +66,7 @@ def handle_chat(tenant_id):
         # conversation from chat_logs. The positional slot stays for task
         # signature compatibility.
         task = chat_task.delay(str(tenant_id), query, [], str(conversation_id), str(user_id))
+        remember_task(task.id)
 
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
@@ -64,18 +74,25 @@ def handle_chat(tenant_id):
         return jsonify({"error": "An internal error occurred"}), 500
 
 @chat_bp.route('/task/<string:task_id>/status', methods=['GET'])
+@limiter.limit(STATUS_LIMIT_PER_IP)
 def get_task_status(task_id):
+    # Unknown ids would otherwise hold a thread for the full long poll
+    if not is_known_task(task_id):
+        return jsonify({"error": "Unknown task"}), 404
+
     task = AsyncResult(task_id)
     try:
         timeout = max(0, min(int(request.args.get('timeout', 25)), 30))  # cap at 30s
     except ValueError:
         timeout = 25
 
-    # Long poll: hold the connection until the task finishes or we time out
+    # Long poll: hold the connection until the task finishes or we time out,
+    # but only for a few connections per IP; the rest get the current state now
     import time
-    deadline = time.time() + timeout
-    while not task.ready() and time.time() < deadline:
-        time.sleep(0.5)
+    with long_poll_slot(request.remote_addr or "unknown") as may_wait:
+        deadline = time.time() + (timeout if may_wait else 0)
+        while not task.ready() and time.time() < deadline:
+            time.sleep(0.5)
 
     response = {
         "task_id": task_id,
@@ -160,6 +177,7 @@ def get_conversation_logs(current_user, tenant_id, conversation_id):
         return jsonify({"error": "An internal error occurred"}), 500
 
 @chat_bp.route('/<uuid:tenant_id>/intro', methods=['GET'])
+@limiter.limit("60 per minute")
 def get_intro_message(tenant_id):
     try:
         tenant = supabase.table('tenants').select("intro_message").eq('id', str(tenant_id)).single().execute()

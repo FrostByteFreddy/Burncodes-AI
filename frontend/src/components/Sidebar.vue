@@ -65,15 +65,15 @@
         <font-awesome-icon :icon="['fas', 'code']" class="nav-item__icon" />
         <span>{{ $t('sidebar.install') }}</span>
       </router-link>
-      <a
-        :href="`/chat/${activeTenant.id}`"
-        target="_blank"
-        class="nav-item nav-item--external"
-      >
-        <font-awesome-icon :icon="['fas', 'comments']" class="nav-item__icon" />
-        <span>{{ $t('sidebar.chatbot') }}</span>
-        <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" class="nav-item__ext" />
-      </a>
+      <!-- Public, shareable chat page: a permalink anyone can open to try the chatbot -->
+      <a :href="chatUrl" target="_blank" rel="noopener" class="nav-item nav-item--external nav-share">
+          <font-awesome-icon :icon="['fas', 'comments']" class="nav-item__icon" />
+          <span class="nav-share__text">
+            <span>{{ $t('sidebar.chatbot') }}</span>
+            <span class="nav-share__hint">{{ $t('sidebar.chatbotHint') }}</span>
+          </span>
+          <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" class="nav-item__ext" />
+        </a>
     </nav>
 
     <div class="sidebar__section-label">{{ $t('sidebar.account') }}</div>
@@ -132,6 +132,9 @@ const tenantOpen = ref(false)
 const tenantRef = ref(null)
 
 const activeTenant = computed(() => tenantsStore.currentTenant)
+
+// Public chat page for the selected chatbot
+const chatUrl = computed(() => `/chat/${activeTenant.value?.id}`)
 
 const userInitial = computed(() => {
   const meta = authStore.user?.user_metadata
@@ -337,6 +340,12 @@ watch(
 .nav-item--active .nav-item__icon { color: var(--interactive); }
 .nav-item--external { color: var(--surface-muted); }
 .nav-item__ext { font-size: 10px; opacity: 0.4; margin-left: auto; }
+
+.nav-share { align-items: flex-start; }
+.nav-share .nav-item__icon { margin-top: 4px; }
+.nav-share .nav-item__ext { margin-top: 6px; }
+.nav-share__text { display: flex; flex-direction: column; min-width: 0; }
+.nav-share__hint { font-size: var(--text-xs); font-weight: 400; color: var(--surface-muted); line-height: 1.35; margin-top: 2px; }
 
 /* ── Footer ────────────────────────────────────────── */
 .sidebar__footer { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--surface-3); }

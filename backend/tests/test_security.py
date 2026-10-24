@@ -175,6 +175,56 @@ def test_chat_ignores_client_history_and_caps_query(client, monkeypatch):
     assert resp.status_code == 400
 
 
+def test_chat_status_only_for_issued_tasks(client, monkeypatch, fake_guard_redis):
+    from app.chat import routes
+
+    resp = client.get(f"/api/chat/task/{uuid.uuid4()}/status?timeout=0")
+    assert resp.status_code == 404
+
+    routes.remember_task("known-task")
+    ready = MagicMock(ready=lambda: True, state="SUCCESS", result={"answer": "hi"})
+    monkeypatch.setattr(routes, "AsyncResult", lambda task_id: ready)
+    resp = client.get("/api/chat/task/known-task/status?timeout=0")
+    assert resp.status_code == 200 and resp.get_json()["result"] == {"answer": "hi"}
+
+
+def test_long_poll_slots_are_capped_per_ip(fake_guard_redis):
+    from app.chat import guard
+
+    monkeypatch_limit = guard.MAX_LONG_POLLS_PER_IP
+    guard.MAX_LONG_POLLS_PER_IP = 3
+    try:
+        with guard.long_poll_slot("1.2.3.4") as a, guard.long_poll_slot("1.2.3.4") as b, \
+                guard.long_poll_slot("1.2.3.4") as c, guard.long_poll_slot("1.2.3.4") as d, \
+                guard.long_poll_slot("5.6.7.8") as other:
+            assert (a, b, c, d) == (True, True, True, False)
+            assert other is True
+    finally:
+        guard.MAX_LONG_POLLS_PER_IP = monkeypatch_limit
+    assert fake_guard_redis.data["chat:polls:1.2.3.4"] == 0
+
+
+def test_chat_is_rate_limited_per_tenant(app, monkeypatch):
+    from app import limiter
+    from app.chat import routes
+
+    monkeypatch.setattr(routes.BillingService, "get_tenant_owner", staticmethod(lambda t: "owner"))
+    monkeypatch.setattr(routes.BillingService, "check_balance", staticmethod(lambda u: 5.0))
+    monkeypatch.setattr(routes.chat_task, "delay", MagicMock(return_value=MagicMock(id="t")))
+    limiter.enabled = True
+    limiter.reset()
+    client = app.test_client()
+    tenant_id = uuid.uuid4()
+    body = lambda: {"query": "hi", "conversation_id": str(uuid.uuid4())}
+    # different IPs, same chatbot: the per-chatbot ceiling still applies
+    codes = [client.post(f"/api/chat/{tenant_id}", json=body(),
+                         environ_base={"REMOTE_ADDR": f"10.0.{i // 250}.{i % 250}"}).status_code
+             for i in range(605)]
+    assert codes.count(202) == 600 and codes[-1] == 429
+    assert client.post(f"/api/chat/{tenant_id}", json=body(),
+                       environ_base={"REMOTE_ADDR": "10.9.9.9"}).get_json()["error"]
+
+
 # ── URL guard ────────────────────────────────────────────────────────────────
 
 @pytest.mark.parametrize("url", [

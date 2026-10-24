@@ -171,18 +171,19 @@ const fetchIntroMessage = async () => {
 
 // ── Task polling ──────────────────────────────────────────────────────────────
 const pollTaskStatus = (taskId) => {
-  let retries = 0;
-  const MAX_RETRIES = 4;
+  // Give up after two minutes; the server may answer immediately instead of
+  // holding the request when it is busy, so pace those polls ourselves
+  const giveUpAt = Date.now() + 120000;
 
   const longPoll = async () => {
-    if (retries >= MAX_RETRIES) {
+    if (Date.now() > giveUpAt) {
       isThinking.value = false;
       const { text, html } = processBotMessage(t('chat.errors.taskStatus'));
       chatHistory.value.push({ text, html, isUser: false });
       saveSession(chatHistory.value, conversationId.value);
       return;
     }
-    retries++;
+    const startedAt = Date.now();
     const controller = new AbortController();
     activeAbortController.value = controller;
 
@@ -221,11 +222,12 @@ const pollTaskStatus = (taskId) => {
         return;
       }
 
+      if (Date.now() - startedAt < 1500) await new Promise((r) => setTimeout(r, 1500));
       await longPoll();
     } catch (err) {
       if (axios.isCancel(err)) return;
       activeAbortController.value = null;
-      const { text, html } = processBotMessage(t('chat.errors.taskStatus'));
+      const { text, html } = processBotMessage(t(err.response?.status === 429 ? 'chat.errors.rateLimited' : 'chat.errors.taskStatus'));
       chatHistory.value.push({ text, html, isUser: false });
       saveSession(chatHistory.value, conversationId.value);
       isThinking.value = false;
@@ -256,7 +258,9 @@ const sendMessage = async () => {
       throw new Error('No task_id received');
     }
   } catch (err) {
-    const { text, html } = processBotMessage(`Error: ${err.response?.data?.error || t('chat.errors.sendMessage')}`);
+    const { text, html } = processBotMessage(err.response?.status === 429
+      ? t('chat.errors.rateLimited')
+      : `Error: ${err.response?.data?.error || t('chat.errors.sendMessage')}`);
     chatHistory.value.push({ text, html, isUser: false });
     saveSession(chatHistory.value, conversationId.value);
     isThinking.value = false;

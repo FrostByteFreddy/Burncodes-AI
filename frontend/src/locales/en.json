@@ -85,6 +85,7 @@
     "sharedExpired": "This share link has expired",
     "sharedNotFound": "Share link not found",
     "errors": {
+      "rateLimited": "You're sending messages very quickly. Please wait a moment and try again.",
       "initialMessage": "Error: Could not get initial message.",
       "processingFailed": "Error: Processing failed.",
       "taskStatus": "Error: Could not get task status.",
@@ -440,7 +441,10 @@
     "fineTune": "Fine Tune",
     "analytics": "Analytics",
     "chatLogs": "Chat Logs",
-    "chatbot": "Open Chatbot",
+    "chatbot": "Public test page",
+    "chatbotHint": "A link anyone can open to try your chatbot",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied",
     "noTenantSelected": "Select a chatbot to see management options.",
     "settings": "Settings",
     "profile": "Profile",
@@ -744,6 +748,7 @@
         "starters": "Suggested questions"
       },
       "labels": {
+        "launcher_background_color": "Button colour",
         "footer_background_color": "Footer background",
         "header_background_color": "Header background",
         "header_text_color": "Header text",

@@ -85,6 +85,7 @@
     "sharedExpired": "Dieser Freigabe-Link ist abgelaufen",
     "sharedNotFound": "Freigabe-Link nicht gefunden",
     "errors": {
+      "rateLimited": "Sie senden sehr schnell Nachrichten. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
       "initialMessage": "Fehler: Konnte Anfangsnachricht nicht laden.",
       "processingFailed": "Fehler: Verarbeitung fehlgeschlagen.",
       "taskStatus": "Fehler: Konnte Task-Status nicht abrufen.",
@@ -440,7 +441,10 @@
     "fineTune": "Feinabstimmung",
     "analytics": "Analysen",
     "chatLogs": "Chat-Protokolle",
-    "chatbot": "Chatbot öffnen",
+    "chatbot": "Öffentliche Testseite",
+    "chatbotHint": "Ein Link, über den jede Person Ihren Chatbot ausprobieren kann",
+    "copyLink": "Link kopieren",
+    "linkCopied": "Link kopiert",
     "noTenantSelected": "Chatbot auswählen, um Optionen zu sehen.",
     "settings": "Einstellungen",
     "profile": "Profil",
@@ -744,6 +748,7 @@
         "starters": "Vorgeschlagene Fragen"
       },
       "labels": {
+        "launcher_background_color": "Farbe des Knopfs",
         "footer_background_color": "Hintergrund Fusszeile",
         "header_background_color": "Hintergrund Kopfzeile",
         "header_text_color": "Text Kopfzeile",

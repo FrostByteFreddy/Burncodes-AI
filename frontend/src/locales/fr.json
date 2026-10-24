@@ -85,6 +85,7 @@
     "sharedExpired": "Ce lien de partage a expiré",
     "sharedNotFound": "Lien de partage introuvable",
     "errors": {
+      "rateLimited": "Vous envoyez des messages très rapidement. Veuillez patienter un instant et réessayer.",
       "initialMessage": "Erreur : Impossible de récupérer le message initial.",
       "processingFailed": "Erreur : Échec du traitement.",
       "taskStatus": "Erreur : Impossible de récupérer le statut de la tâche.",
@@ -440,7 +441,10 @@
     "fineTune": "Ajustement",
     "analytics": "Analytique",
     "chatLogs": "Journaux de chat",
-    "chatbot": "Ouvrir le chatbot",
+    "chatbot": "Page de test publique",
+    "chatbotHint": "Un lien que chacun peut ouvrir pour essayer votre chatbot",
+    "copyLink": "Copier le lien",
+    "linkCopied": "Lien copié",
     "noTenantSelected": "Sélectionnez un chatbot pour voir les options.",
     "settings": "Paramètres",
     "profile": "Profil",
@@ -744,6 +748,7 @@
         "starters": "Questions suggérées"
       },
       "labels": {
+        "launcher_background_color": "Couleur du bouton",
         "footer_background_color": "Fond du pied de page",
         "header_background_color": "Fond de l'en-tête",
         "header_text_color": "Texte de l'en-tête",

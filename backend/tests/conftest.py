@@ -29,6 +29,38 @@ def app():
     limiter.enabled = True
 
 
+class FakeRedis:
+    """Just enough of redis-py for app.chat.guard."""
+
+    def __init__(self):
+        self.data = {}
+
+    def set(self, key, value, ex=None):
+        self.data[key] = value
+
+    def exists(self, key):
+        return int(key in self.data)
+
+    def incr(self, key):
+        self.data[key] = int(self.data.get(key, 0)) + 1
+        return self.data[key]
+
+    def decr(self, key):
+        self.data[key] = int(self.data.get(key, 0)) - 1
+        return self.data[key]
+
+    def expire(self, key, seconds):
+        pass
+
+
+@pytest.fixture(autouse=True)
+def fake_guard_redis(monkeypatch):
+    from app.chat import guard
+    fake = FakeRedis()
+    monkeypatch.setattr(guard, "_redis", fake)
+    return fake
+
+
 @pytest.fixture
 def client(app):
     """A test client for the app."""
