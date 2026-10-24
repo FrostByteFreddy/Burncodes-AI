@@ -232,6 +232,24 @@ def get_crawling_jobs(current_user, tenant_id):
         error_logger.error(f"Error getting crawling jobs for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to retrieve crawling jobs"}), 500
 
+@sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>', methods=['GET'])
+@token_required
+def get_crawling_job(current_user, tenant_id, job_id):
+    """One crawl job with its estimate and report (crawl detail page)."""
+    try:
+        tenant_id_str = str(tenant_id)
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute()
+        if not tenant_check.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+        rows = supabase.table('crawling_jobs').select("*").eq('id', job_id).eq('tenant_id', tenant_id_str).limit(1).execute().data
+        if not rows:
+            return jsonify({"error": "Job not found or not part of this tenant"}), 404
+        return jsonify(rows[0]), 200
+    except Exception as e:
+        error_logger.error(f"Error getting crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to retrieve crawl job"}), 500
+
+
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/progress', methods=['GET'])
 @token_required
 def get_crawling_job_progress(current_user, tenant_id, job_id):
@@ -270,6 +288,85 @@ def get_crawling_job_progress(current_user, tenant_id, job_id):
     except Exception as e:
         error_logger.error(f"Error getting job progress for job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to retrieve job progress"}), 500
+
+@sources_bp.route('/<uuid:tenant_id>/knowledge/overview', methods=['GET'])
+@token_required
+def get_knowledge_overview(current_user, tenant_id):
+    """
+    What the bot can answer right now: verified dates in the coming days and
+    open issues across all sources (warnings from learning, failed sources).
+    """
+    try:
+        from datetime import date, timedelta
+        tenant_id_str = str(tenant_id)
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute()
+        if not tenant_check.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+        try:
+            days = max(1, min(int(request.args.get('days', 14)), 60))
+        except ValueError:
+            days = 14
+        today = date.today()
+        events = (
+            supabase.table('tenant_events')
+            .select("event_date, series, zone, is_exception, notes, source_id")
+            .eq('tenant_id', tenant_id_str)
+            .gte('event_date', today.isoformat())
+            .lte('event_date', (today + timedelta(days=days - 1)).isoformat())
+            .order('event_date').limit(500).execute()
+        ).data or []
+        # Series whose published dates ended — the bot can't answer "next" for them
+        past = (
+            supabase.table('tenant_events').select("series, zone, event_date")
+            .eq('tenant_id', tenant_id_str).lt('event_date', today.isoformat())
+            .order('event_date', desc=True).limit(2000).execute()
+        ).data or []
+        future_keys = {
+            (r['series'], r['zone']) for r in (
+                supabase.table('tenant_events').select("series, zone")
+                .eq('tenant_id', tenant_id_str).gte('event_date', today.isoformat())
+                .limit(5000).execute()
+            ).data or []
+        }
+        # Only recurring series count as "ended" (several dates spread over
+        # months, e.g. a collection calendar) — one-off events that already
+        # took place are expected, not something to fix.
+        spans: dict[tuple, list[str]] = {}
+        for r in past:
+            key = (r['series'], r['zone'])
+            if key not in future_keys:
+                spans.setdefault(key, []).append(r['event_date'])
+        ended = {}
+        for key, dates in spans.items():
+            first, last = min(dates), max(dates)
+            if len(dates) >= 4 and (date.fromisoformat(last) - date.fromisoformat(first)).days >= 60:
+                ended[key] = last
+
+        sources = (
+            supabase.table('tenant_sources')
+            .select("id, source_location, title, status, status_code, warnings")
+            .eq('tenant_id', tenant_id_str)
+            .or_("status.eq.ERROR,warnings.neq.[]")
+            .limit(500).execute()
+        ).data or []
+        issues = []
+        for s in sources:
+            for w in s.get('warnings') or []:
+                issues.append({"source_id": s['id'], "title": s.get('title') or s['source_location'],
+                               "url": s['source_location'], "kind": "warning", "message": w})
+
+        return jsonify({
+            "today": today.isoformat(),
+            "days": days,
+            "upcoming": events,
+            "ended": [{"series": k[0], "zone": k[1], "last": v} for k, v in sorted(ended.items())],
+            "issues": issues,
+            "failed": sum(1 for s in sources if s.get('status') == 'ERROR'),
+        }), 200
+    except Exception as e:
+        error_logger.error(f"Error building knowledge overview for {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to load overview"}), 500
+
 
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/log', methods=['GET'])
 @token_required

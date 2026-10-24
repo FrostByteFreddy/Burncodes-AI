@@ -507,6 +507,19 @@
     }
   },
   "knowledge": {
+    "overview": {
+        "stripTitle": "Dates your chatbot knows",
+        "stripSub": "Verified dates from your documents for the next 14 days. Residents asking “when is the next…” get these answers.",
+        "noneUpcoming": "No dates in the next two weeks. When your documents contain calendars, they show up here.",
+        "noneUpcomingEnded": "No upcoming dates — the calendars your chatbot knows have ended. See below.",
+        "moved": "moved",
+        "needsTitle": "Needs you",
+        "needsNone": "Nothing needs your attention right now.",
+        "ended": "{series}: the published dates ended on {date}.",
+        "endedHint": "Your chatbot can’t say when the next one is. Publish the new calendar and re-crawl.",
+        "summary": "{sources} sources, {chunks} indexed sections. Last crawl {date}.",
+        "summaryNever": "Nothing learned yet."
+      },
     "stats": {
       "pages": "Pages",
       "files": "Files",
@@ -556,6 +569,16 @@
       "FAILED": "Stopped"
     },
     "job": {
+      "autoShort": "automatic re-crawl",
+      "summaryDone": "{learned} learned, {unchanged} unchanged, CHF {cost}",
+      "summaryScanned": "{n} to learn, about CHF {cost}",
+      "summaryStopped": "Stopped before learning finished.",
+      "actionFailed": "That didn’t work. Reload the page and try again.",
+      "details": "Details",
+      "back": "Knowledge",
+      "openSite": "Open website",
+      "activity": "Activity",
+      "toReview": "{n} to review",
       "started": "Started {date}",
       "scheduled": "Automatic re-crawl · {date}",
       "singlePage": "This page only",
@@ -594,8 +617,8 @@
       "cost": "Cost",
       "important": "Most important content",
       "noImportant": "Nothing stood out as especially important.",
-      "high": "High",
-      "medium": "Medium",
+      "high": "Very important",
+      "medium": "Important",
       "series": "Series",
       "zone": "Zone",
       "next": "Next date",
@@ -625,5 +648,16 @@
       "title": "Delete crawl",
       "message": "Delete the crawl of <strong>{url}</strong> and everything it indexed? This cannot be undone."
     }
+  },
+  "pages": {
+    "chatbots": "Each chatbot answers questions from one organisation’s website and documents.",
+    "insights": "How often people ask your chatbot, and what they wanted to know.",
+    "subscription": "Your prepaid balance pays for chat answers and for learning new content.",
+    "profile": "Your name, password and account.",
+    "knowledgeTitle": "Knowledge",
+    "knowledge": "What your chatbot knows, which dates it can answer, and where it needs you.",
+    "configure": "How your chatbot talks and how it looks on your website.",
+    "installTitle": "Install",
+    "install": "Add the chatbot to your website with one line of code."
   }
 }

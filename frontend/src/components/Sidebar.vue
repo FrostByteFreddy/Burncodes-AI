@@ -184,11 +184,15 @@ watch(
 
 <style scoped>
 /* ── Sidebar Shell ─────────────────────────────────── */
+/* Sticks beside the content inside the centered shell (see App.vue) */
 .sidebar {
-  position: fixed;
-  left: 0; top: 0; bottom: 0;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
   width: var(--sidebar-width);
-  background: var(--surface-1);
+  flex-shrink: 0;
+  background: var(--surface-0);
   border-right: 1px solid var(--surface-3);
   display: flex;
   flex-direction: column;
@@ -224,14 +228,14 @@ watch(
   background: var(--surface-2);
   border: 1px solid var(--surface-3);
   border-radius: var(--radius-md);
-  color: var(--surface-text);
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--surface-heading);
+  font-size: var(--text-sm);
+  font-weight: 700;
   cursor: pointer;
   transition: border-color var(--t-fast), background var(--t-fast);
   text-align: left;
 }
-.tenant-pill:hover { border-color: var(--brand-indigo); background: var(--surface-2); }
+.tenant-pill:hover { border-color: var(--interactive); }
 
 .tenant-pill__dot {
   width: 7px; height: 7px;
@@ -257,14 +261,14 @@ watch(
   border-radius: var(--radius-md);
   overflow: hidden;
   z-index: 200;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-float);
 }
 .dropdown-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 12px;
-  font-size: 13px;
+  padding: 10px 12px;
+  font-size: var(--text-sm);
   color: var(--surface-text);
   cursor: pointer;
   transition: background var(--t-fast);
@@ -275,15 +279,15 @@ watch(
   text-align: left;
 }
 .dropdown-row:hover { background: var(--surface-2); }
-.dropdown-row--active { color: var(--brand-cyan); font-weight: 600; }
-.dropdown-row--new { color: var(--surface-muted); font-size: 12px; }
+.dropdown-row--active { color: var(--surface-heading); font-weight: 700; }
+.dropdown-row--new { color: var(--interactive); }
 .dropdown-row--new:hover { color: var(--surface-text); }
 .dropdown-row__dot {
   width: 6px; height: 6px; border-radius: 50%;
   background: var(--surface-3);
   flex-shrink: 0;
 }
-.dropdown-row__dot--active { background: var(--brand-indigo); }
+.dropdown-row__dot--active { background: var(--interactive); }
 .dropdown-divider { height: 1px; background: var(--surface-3); margin: 2px 0; }
 
 /* Dropdown transition */
@@ -291,13 +295,12 @@ watch(
 .dropdown-enter-from, .dropdown-leave-to { opacity: 0; transform: translateY(-4px); }
 
 /* ── Section labels ────────────────────────────────── */
+/* Groups: things about the selected chatbot vs. the account */
 .sidebar__section-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--text-xs);
+  font-weight: 600;
   color: var(--surface-muted);
-  padding: 12px 10px 4px;
+  padding: 18px 10px 6px;
 }
 
 /* ── Nav items ─────────────────────────────────────── */
@@ -307,35 +310,31 @@ watch(
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
+  padding: 9px 10px;
   border-radius: var(--radius-md);
-  font-size: 13.5px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--surface-muted);
   text-decoration: none;
-  transition: color var(--t-fast), background var(--t-fast), transform var(--t-fast);
+  transition: color var(--t-fast), background var(--t-fast);
   position: relative;
 }
-.nav-item:hover {
-  color: var(--surface-text);
-  background: var(--surface-2);
-  transform: translateX(2px);
-}
+.nav-item:hover { color: var(--surface-text); background: var(--surface-1); }
 .nav-item--active {
   color: var(--surface-heading);
-  background: var(--gradient-brand-soft);
-  font-weight: 600;
+  background: var(--surface-1);
+  font-weight: 700;
 }
 .nav-item--active::before {
   content: '';
   position: absolute;
-  left: 0; top: 4px; bottom: 4px;
+  left: -12px; top: 8px; bottom: 8px;
   width: 3px;
-  background: var(--gradient-brand);
-  border-radius: 0 2px 2px 0;
+  background: var(--interactive);
+  border-radius: 0 3px 3px 0;
 }
 .nav-item__icon { width: 16px; color: inherit; flex-shrink: 0; }
-.nav-item--active .nav-item__icon { color: var(--brand-cyan); }
+.nav-item--active .nav-item__icon { color: var(--interactive); }
 .nav-item--external { color: var(--surface-muted); }
 .nav-item__ext { font-size: 10px; opacity: 0.4; margin-left: auto; }
 
@@ -352,9 +351,10 @@ watch(
 .user-avatar {
   width: 32px; height: 32px;
   border-radius: 50%;
-  background: var(--gradient-brand);
-  color: white;
-  font-size: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  color: var(--surface-heading);
+  font-size: 13px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -362,8 +362,8 @@ watch(
   flex-shrink: 0;
 }
 .user-info { overflow: hidden; }
-.user-info__name { font-size: 13px; font-weight: 600; color: var(--surface-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.user-info__email { font-size: 11px; color: var(--surface-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-info__name { font-size: var(--text-sm); font-weight: 700; color: var(--surface-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-info__email { font-size: var(--text-xs); color: var(--surface-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .sidebar__footer-links { display: flex; flex-direction: column; gap: 1px; }
 
@@ -371,9 +371,9 @@ watch(
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 10px;
+  padding: 8px 10px;
   border-radius: var(--radius-md);
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--surface-muted);
   text-decoration: none;
   cursor: pointer;
@@ -383,8 +383,8 @@ watch(
   width: 100%;
   text-align: left;
 }
-.footer-link:hover { color: var(--surface-text); background: var(--surface-2); }
-.footer-link--danger:hover { color: var(--status-error); background: rgba(255,68,68,0.08); }
+.footer-link:hover { color: var(--surface-text); background: var(--surface-1); }
+.footer-link--danger:hover { color: var(--status-error); background: var(--status-error-soft); }
 
 /* ── Mobile overlay ────────────────────────────────── */
 .sidebar-overlay {
@@ -398,6 +398,9 @@ watch(
 /* ── Mobile: sidebar off-canvas ────────────────────── */
 @media (max-width: 768px) {
   .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    height: auto;
     transform: translateX(-100%);
     transition: transform var(--t-normal);
     box-shadow: 8px 0 32px rgba(0,0,0,0.5);

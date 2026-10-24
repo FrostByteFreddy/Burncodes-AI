@@ -1,7 +1,10 @@
 <template>
   <div class="page">
-    <div class="page-header">
-      <p class="page-label">{{ $t('manageTenants.title').toUpperCase() }}</p>
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">{{ $t('manageTenants.title') }}</h1>
+        <p class="page-lede">{{ $t('pages.chatbots') }}</p>
+      </div>
       <button v-if="tenantsStore.tenants.length > 0" @click="showCreateModal = true" class="btn-add">
         <font-awesome-icon :icon="['fas', 'plus']" />
         {{ $t('manageTenants.newChatbot') }}
@@ -120,20 +123,7 @@ const deleteTenant = async () => {
 </script>
 
 <style scoped>
-.page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 28px;
-}
 
-.page-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--brand-cyan);
-}
 
 .btn-add {
   display: inline-flex;

@@ -1,7 +1,10 @@
 <template>
   <div class="page">
-    <div class="page-header">
-      <p class="page-label">{{ $t('analytics.title').toUpperCase() }}</p>
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">{{ $t('analytics.title') }}</h1>
+        <p class="page-lede">{{ $t('pages.insights') }}</p>
+      </div>
       <div class="header-controls">
         <select v-model="selectedInterval" @change="fetchAnalytics" class="field__select">
           <option v-for="item in intervals" :key="item.value" :value="item.value">{{ item.label }}</option>
@@ -264,14 +267,6 @@ watch(() => tenantsStore.currentTenant?.id, (tenantId) => {
 </script>
 
 <style scoped>
-.page-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 24px;
-}
-.page-label {
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.08em; color: var(--surface-muted);
-}
 .header-controls { display: flex; gap: 8px; }
 .field__select {
   padding: 7px 12px;

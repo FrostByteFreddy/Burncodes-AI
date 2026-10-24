@@ -1,49 +1,48 @@
 <template>
   <div class="sources-page">
 
-    <!-- ── Overview ─────────────────────────────────────────── -->
-    <div class="kstats">
-      <div v-for="s in stats" :key="s.label" class="kstat">
-        <p class="kstat__label">{{ s.label }}</p>
-        <p class="kstat__value">{{ s.value }}</p>
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">{{ $t('pages.knowledgeTitle') }}</h1>
+        <p class="page-lede">{{ $t('pages.knowledge') }}</p>
+        <p class="ksummary">{{ summary }}</p>
+      </div>
+      <div class="page-actions">
+        <button class="btn-action" @click="wizardOpen = true">
+          <font-awesome-icon :icon="['fas', 'plus']" />
+          {{ $t('tenant.sources.wizard.addKnowledge') }}
+        </button>
       </div>
     </div>
+
+    <KnowledgeOverview v-if="tenantId" :tenant-id="tenantId" :refresh-key="overviewKey" />
 
     <!-- ── Crawls ───────────────────────────────────────────── -->
     <section class="knowledge-panel">
       <div class="knowledge-panel__header">
         <div class="knowledge-panel__header-left">
-          <div class="knowledge-panel__icon">
-            <font-awesome-icon :icon="['fas', 'globe']" />
-          </div>
           <div>
             <h2 class="knowledge-panel__title">{{ $t('knowledge.crawls.title') }}</h2>
             <p class="knowledge-panel__sub">{{ $t('knowledge.crawls.sub') }}</p>
           </div>
         </div>
-        <button @click="wizardOpen = true" class="panel-add-btn" :title="$t('tenant.sources.wizard.addKnowledge')" :aria-label="$t('tenant.sources.wizard.addKnowledge')">
-          <font-awesome-icon :icon="['fas', 'plus']" />
-        </button>
       </div>
 
-      <div class="knowledge-panel__divider"></div>
-
-      <div v-if="shownJobs.length" class="kjobs">
-        <CrawlJobCard
-          v-for="(job, i) in shownJobs"
-          :key="job.id"
-          :job="job"
-          :tenant-id="tenantId"
-          :log="logsByJob[job.id] || []"
-          :expanded="i === 0 && job.status === 'COMPLETED'"
-          @confirmed="onJobChanged"
-          @stop="stopJob"
-          @delete="askDeleteJob"
-        />
+      <template v-if="shownJobs.length">
+        <ol class="kjobs">
+          <CrawlJobRow
+            v-for="job in shownJobs"
+            :key="job.id"
+            :job="job"
+            :tenant-id="tenantId"
+            :log="logsByJob[job.id] || []"
+            @changed="onJobChanged"
+          />
+        </ol>
         <button v-if="crawlingJobs.length > JOBS_SHOWN" class="kjobs__more" @click="showAllJobs = !showAllJobs">
           {{ showAllJobs ? $t('knowledge.crawls.showLess') : $t('knowledge.crawls.showAll', { n: crawlingJobs.length }) }}
         </button>
-      </div>
+      </template>
       <p v-else class="kempty">{{ $t('knowledge.crawls.empty') }}</p>
     </section>
 
@@ -51,16 +50,12 @@
     <section v-if="webSources.length" class="knowledge-panel">
       <div class="knowledge-panel__header knowledge-panel__header--solo">
         <div class="knowledge-panel__header-left">
-          <div class="knowledge-panel__icon">
-            <font-awesome-icon :icon="['fas', 'sitemap']" />
-          </div>
           <div>
             <h2 class="knowledge-panel__title">{{ $t('knowledge.content.title') }}</h2>
             <p class="knowledge-panel__sub">{{ $t('knowledge.content.sub') }}</p>
           </div>
         </div>
       </div>
-      <div class="knowledge-panel__divider"></div>
       <PageTree :sources="webSources" />
     </section>
 
@@ -68,19 +63,16 @@
     <section class="knowledge-panel">
       <div class="knowledge-panel__header">
         <div class="knowledge-panel__header-left">
-          <div class="knowledge-panel__icon knowledge-panel__icon--accent">
-            <font-awesome-icon :icon="['fas', 'file-arrow-up']" />
-          </div>
           <div>
             <h2 class="knowledge-panel__title">{{ $t('knowledge.files.title') }}</h2>
             <p class="knowledge-panel__sub">{{ $t('knowledge.files.sub') }}</p>
           </div>
         </div>
-        <button @click="wizardOpen = true" class="panel-add-btn panel-add-btn--accent" :title="$t('knowledge.files.upload')" :aria-label="$t('knowledge.files.upload')">
-          <font-awesome-icon :icon="['fas', 'plus']" />
+        <button @click="wizardOpen = true" class="btn-quiet">
+          <font-awesome-icon :icon="['fas', 'arrow-up-from-bracket']" />
+          {{ $t('knowledge.files.upload') }}
         </button>
       </div>
-      <div class="knowledge-panel__divider"></div>
 
       <div v-if="fileSources.length" class="kfiles">
         <div v-for="source in fileSources" :key="source.id" class="kfile">
@@ -105,19 +97,16 @@
     <section class="knowledge-panel">
       <div class="knowledge-panel__header">
         <div class="knowledge-panel__header-left">
-          <div class="knowledge-panel__icon knowledge-panel__icon--accent">
-            <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" />
-          </div>
           <div>
             <h2 class="knowledge-panel__title">Custom Knowledge</h2>
             <p class="knowledge-panel__sub">Fine-tuning rules that guide how the bot responds to specific triggers</p>
           </div>
         </div>
-        <button @click="rulesTabRef?.openModal()" class="panel-add-btn panel-add-btn--accent" title="Add rule" aria-label="Add rule">
+        <button @click="rulesTabRef?.openModal()" class="btn-quiet">
           <font-awesome-icon :icon="['fas', 'plus']" />
+          Add rule
         </button>
       </div>
-      <div class="knowledge-panel__divider"></div>
       <RulesTab ref="rulesTabRef" />
     </section>
 
@@ -137,14 +126,6 @@
       @cancel="cancelDelete"
     />
 
-    <ConfirmationModal
-      :show="!!jobToDelete"
-      :title="$t('knowledge.deleteJob.title')"
-      :message="$t('knowledge.deleteJob.message', { url: escapeHtml(jobToDelete?.start_url) })"
-      :confirmButtonText="$t('tenant.sources.deleteModal.confirm')"
-      @confirm="executeDeleteJob"
-      @cancel="jobToDelete = null"
-    />
   </div>
 </template>
 
@@ -157,8 +138,9 @@ import apiClient from '@/utils/api';
 import { supabase } from '@/supabase';
 import { escapeHtml } from '@/utils/escapeHtml';
 import AddKnowledgeWizard from './sources/AddKnowledgeWizard.vue';
-import CrawlJobCard from './sources/CrawlJobCard.vue';
+import CrawlJobRow from './sources/CrawlJobRow.vue';
 import PageTree from './sources/PageTree.vue';
+import KnowledgeOverview from './sources/KnowledgeOverview.vue';
 import ConfirmationModal from '../ConfirmationModal.vue';
 import RulesTab from './sources/RulesTab.vue';
 
@@ -176,7 +158,6 @@ const logsByJob             = ref({});
 const showAllJobs           = ref(false);
 const sourceToDelete        = ref(null);
 const showConfirmationModal = ref(false);
-const jobToDelete           = ref(null);
 const rulesTabRef           = ref(null);
 
 const tenantId = computed(() => tenantsStore.currentTenant?.id || '');
@@ -186,23 +167,22 @@ const fileSources = computed(() => allSources.value.filter((s) => s.source_type 
 const shownJobs = computed(() => (showAllJobs.value ? crawlingJobs.value : crawlingJobs.value.slice(0, JOBS_SHOWN)));
 const hasActiveJob = computed(() => crawlingJobs.value.some((j) => ACTIVE.includes(j.status)));
 
-// ── Overview numbers (each URL once — older crawls stored duplicates) ──
-const stats = computed(() => {
+// ── One-sentence summary (each URL once — older crawls stored duplicates) ──
+const summary = computed(() => {
   const unique = new Map();
-  for (const s of allSources.value) unique.set(`${s.source_type}:${s.source_location}`, s);
-  const rows = [...unique.values()];
-  const learned = rows.filter((s) => s.status === 'COMPLETED');
+  for (const src of allSources.value) unique.set(`${src.source_type}:${src.source_location}`, src);
+  const learned = [...unique.values()].filter((src) => src.status === 'COMPLETED');
+  if (!learned.length) return t('knowledge.overview.summaryNever');
   const lastCrawl = crawlingJobs.value[0]?.created_at;
-  return [
-    { label: t('knowledge.stats.pages'), value: learned.filter((s) => s.source_type === 'URL').length.toLocaleString(locale.value) },
-    { label: t('knowledge.stats.files'), value: learned.filter((s) => s.source_type !== 'URL').length.toLocaleString(locale.value) },
-    { label: t('knowledge.stats.chunks'), value: learned.reduce((n, s) => n + (s.indexed_chunks || 0), 0).toLocaleString(locale.value) },
-    {
-      label: t('knowledge.stats.lastCrawl'),
-      value: lastCrawl ? new Date(lastCrawl).toLocaleDateString(locale.value, { day: '2-digit', month: '2-digit', year: 'numeric' }) : t('knowledge.stats.never'),
-    },
-  ];
+  return t('knowledge.overview.summary', {
+    sources: learned.length.toLocaleString(locale.value),
+    chunks: learned.reduce((n, src) => n + (src.indexed_chunks || 0), 0).toLocaleString(locale.value),
+    date: lastCrawl ? new Date(lastCrawl).toLocaleDateString(locale.value, { day: 'numeric', month: 'long' }) : '—',
+  });
 });
+
+// Bumped when a crawl finishes so the date strip reloads
+const overviewKey = ref(0);
 
 // ── Data ───────────────────────────────────────────────────────────────
 const fetchCrawlingJobs = async () => {
@@ -256,6 +236,7 @@ const subscribe = (id) => {
         if (after === 'COMPLETED') addToast(t('tenant.sources.actions.crawlCompleted'), 'success');
       }
       scheduleRefresh({ sources: after === 'COMPLETED' });
+      if (after === 'COMPLETED') overviewKey.value += 1;
     })
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'crawl_job_log', filter: `tenant_id=eq.${id}` }, (payload) => {
       const entry = payload.new;
@@ -307,25 +288,6 @@ const onJobChanged = async () => {
   await loadLogs();
 };
 
-const stopJob = async (job) => {
-  try {
-    await apiClient.post(`/tenants/${tenantId.value}/crawling_jobs/${job.id}/cancel`);
-    await fetchCrawlingJobs();
-  } catch { addToast(t('tenant.sources.actions.fetchFailed'), 'error'); }
-};
-
-const askDeleteJob = (job) => { jobToDelete.value = job; };
-const executeDeleteJob = async () => {
-  const job = jobToDelete.value;
-  jobToDelete.value = null;
-  if (!job) return;
-  try {
-    await apiClient.delete(`/tenants/${tenantId.value}/crawling_jobs/${job.id}`);
-    await fetchCrawlingJobs();
-    await refreshSources();
-  } catch { addToast(t('tenant.sources.actions.deleteFailed'), 'error'); }
-};
-
 // ── Uploaded files ─────────────────────────────────────────────────────
 const fileName = (s) => (s.source_location || '').split('/').pop().split('?')[0].replace(/^[0-9a-f]{32}_/, '');
 const fileExt = (s) => { const n = fileName(s); return n.includes('.') ? n.split('.').pop().toLowerCase() : 'file'; };
@@ -349,18 +311,9 @@ const handleDelete = async () => {
 </script>
 
 <style scoped>
-.kstats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
-.kstat {
-  padding: 20px 22px; border-radius: var(--radius-xl);
-  background: var(--surface-1); border: 1px solid var(--surface-3);
-}
-.kstat__label {
-  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--surface-muted); margin-bottom: 6px;
-}
-.kstat__value { font-size: 26px; font-weight: 700; color: var(--surface-heading); font-variant-numeric: tabular-nums; }
+.ksummary { margin-top: 10px; font-size: var(--text-sm); color: var(--surface-text); }
 
-.kjobs { display: flex; flex-direction: column; gap: 12px; }
+.kjobs { list-style: none; padding: 0; margin: 0; }
 .kjobs__more {
   align-self: center; padding: 6px 14px; border-radius: var(--radius-pill);
   border: 1px solid var(--surface-3); background: none; cursor: pointer;
@@ -392,12 +345,7 @@ const handleDelete = async () => {
 .kfile:hover .kfile__delete, .kfile__delete:focus-visible { opacity: 1; }
 .kfile__delete:hover { color: var(--status-error); }
 
-@media (max-width: 900px) {
-  .kstats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 @media (max-width: 640px) {
-  .kstat { padding: 14px 16px; }
-  .kstat__value { font-size: 20px; }
   .kfile__delete { opacity: 1; }
 }
 </style>

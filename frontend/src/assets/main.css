@@ -52,9 +52,9 @@
   .btn-circle.btn-sm { @apply w-8 h-8; }
 
   /* Color variants */
-  .btn-primary   { @apply bg-gradient-to-br from-[#0A1FAB] to-[#000e78] text-white shadow-md hover:shadow-lg hover:brightness-110; }
+  .btn-primary   { background: var(--interactive-strong); @apply text-white hover:brightness-110; }
   .btn-secondary { @apply bg-secondary hover:brightness-95; color: oklch(var(--sc)); }
-  .btn-error     { @apply bg-[#ba1a1a] text-white hover:brightness-110; }
+  .btn-error     { background: var(--status-error); @apply text-[#11152D] hover:brightness-110; }
   .btn-success   { @apply bg-success hover:brightness-95; color: oklch(var(--suc)); }
   .btn-warning   { @apply bg-warning hover:brightness-95; color: oklch(var(--wc)); }
   .btn-ghost     { @apply bg-transparent text-base-content hover:bg-base-200; box-shadow: none !important; }
@@ -105,3 +105,63 @@ main:has(#test-chat) {
 details[open] > summary .details-arrow {
   transform: rotate(180deg);
 }
+/* ── Page primitives ──────────────────────────────────────────────────
+   Every page opens with a title and one plain sentence about what the
+   page is for. No capitalised eyebrow labels above content.          */
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.page-title {
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: var(--surface-heading);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.01em;
+}
+.page-lede {
+  margin-top: 6px;
+  max-width: var(--measure);
+  font-size: 15px;
+  color: var(--surface-muted);
+}
+.page-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* Panel: one surface per topic */
+.panel {
+  background: var(--surface-1);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+}
+.panel-title { font-size: var(--text-lg); font-weight: 700; color: var(--surface-heading); line-height: var(--leading-tight); }
+.panel-sub { margin-top: 4px; font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); }
+
+/* Small text that qualifies something else (dates, counts, hints) */
+.meta { font-size: var(--text-sm); color: var(--surface-muted); }
+
+/* Primary action: solid interactive colour, no gradient */
+.btn-action {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  border: none; border-radius: var(--radius-md);
+  background: var(--interactive-strong); color: #fff;
+  font: inherit; font-size: var(--text-sm); font-weight: 700;
+  cursor: pointer; transition: background var(--t-fast);
+}
+.btn-action:hover:not(:disabled) { background: var(--interactive); }
+.btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-quiet {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 14px;
+  border: 1px solid var(--surface-3); border-radius: var(--radius-md);
+  background: transparent; color: var(--surface-text);
+  font: inherit; font-size: var(--text-sm); font-weight: 600;
+  cursor: pointer; transition: border-color var(--t-fast), color var(--t-fast);
+}
+.btn-quiet:hover:not(:disabled) { border-color: var(--surface-muted); color: var(--surface-heading); }
+.btn-quiet:disabled { opacity: 0.5; cursor: not-allowed; }

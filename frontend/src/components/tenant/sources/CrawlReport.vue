@@ -17,14 +17,14 @@
 
     <!-- Overview -->
     <div v-if="active === 'overview'" class="crep__panel">
-      <div class="crep__stats">
+      <dl class="crep__stats">
         <div v-for="s in stats" :key="s.label" class="crep__stat">
-          <p class="crep__stat-label">{{ s.label }}</p>
-          <p class="crep__stat-value">{{ s.value }}</p>
+          <dt>{{ s.label }}</dt>
+          <dd>{{ s.value }}</dd>
         </div>
-      </div>
+      </dl>
 
-      <p class="crep__h">{{ $t('knowledge.report.important') }}</p>
+      <h3 class="crep__h">{{ $t('knowledge.report.important') }}</h3>
       <ul v-if="report.highlights?.length" class="crep__list">
         <li v-for="h in report.highlights" :key="h.source_id" class="crep__item">
           <span class="crep__level" :class="h.importance >= 85 ? 'crep__level--high' : 'crep__level--mid'">
@@ -149,7 +149,7 @@ const fmtDay = (iso) => (iso
 </script>
 
 <style scoped>
-.crep { display: flex; flex-direction: column; gap: 16px; }
+.crep { display: flex; flex-direction: column; gap: 20px; }
 
 .crep__tabs {
   display: inline-flex; gap: 4px; padding: 4px; align-self: flex-start;
@@ -159,86 +159,74 @@ const fmtDay = (iso) => (iso
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 14px; border: none; border-radius: var(--radius-pill);
   background: none; color: var(--surface-muted);
-  font-size: 12px; font-weight: 600; cursor: pointer;
+  font-size: var(--text-sm); font-weight: 600; cursor: pointer;
   transition: background var(--t-fast), color var(--t-fast);
 }
-.crep__tab:hover { color: var(--surface-text); }
-.crep__tab--active { background: var(--gradient-brand); color: #fff; }
+.crep__tab:hover { color: var(--surface-heading); }
+.crep__tab--active { background: var(--interactive-strong); color: #fff; }
 .crep__tab-count {
-  font-size: 10px; font-weight: 700; padding: 0 6px; border-radius: var(--radius-pill);
+  font-size: var(--text-xs); font-weight: 700; padding: 0 6px; border-radius: var(--radius-pill);
   background: var(--surface-3); color: var(--surface-text);
 }
 .crep__tab--active .crep__tab-count { background: rgba(255, 255, 255, 0.2); color: #fff; }
-.crep__tab-count--warn { background: rgba(245, 158, 11, 0.2); color: var(--status-warning); }
+.crep__tab-count--warn { background: var(--status-warning-soft); color: var(--status-warning); }
 
 .crep__panel { display: flex; flex-direction: column; gap: 14px; }
 
-.crep__stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; max-width: 760px; }
-.crep__stat { padding: 12px 14px; border-radius: var(--radius-md); background: var(--surface-2); }
-.crep__stat-label {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--surface-muted); margin-bottom: 4px;
-}
-.crep__stat-value { font-size: 20px; font-weight: 700; color: var(--surface-heading); font-variant-numeric: tabular-nums; }
+/* Counts read as one line of figures, label after the number */
+.crep__stats { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 0; }
+.crep__stat { display: flex; flex-direction: row-reverse; align-items: baseline; gap: 6px; }
+.crep__stat dt { font-size: var(--text-sm); color: var(--surface-muted); }
+.crep__stat dd { margin: 0; font-size: var(--text-lg); font-weight: 700; color: var(--surface-heading); }
 
-.crep__h {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--surface-muted);
-}
-.crep__list { display: flex; flex-direction: column; gap: 10px; }
-.crep__item { display: flex; gap: 12px; align-items: flex-start; }
+.crep__h { font-size: 15px; font-weight: 700; color: var(--surface-heading); margin-top: 4px; }
+.crep__list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.crep__item { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px; align-items: baseline; }
 .crep__item-body { min-width: 0; }
-.crep__level {
-  flex-shrink: 0; margin-top: 1px; min-width: 56px; text-align: center;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
-  padding: 3px 8px; border-radius: var(--radius-pill);
-}
-.crep__level--high { background: var(--gradient-brand); color: #fff; }
-.crep__level--mid { background: rgba(80, 211, 252, 0.12); color: var(--brand-cyan); }
+.crep__level { font-size: var(--text-xs); font-weight: 700; }
+.crep__level--high { color: var(--interactive); }
+.crep__level--mid { color: var(--surface-muted); }
 
 .crep__link, .crep__doc {
-  color: var(--surface-heading); font-size: 13px; font-weight: 600; text-decoration: none; overflow-wrap: anywhere;
+  color: var(--surface-heading); font-size: 15px; font-weight: 600; text-decoration: none; overflow-wrap: anywhere;
 }
-.crep__link:hover, .crep__doc:hover { color: var(--brand-cyan); }
-.crep__link-icon { font-size: 9px; margin-left: 4px; opacity: 0.5; }
-.crep__muted { font-size: 12px; color: var(--surface-muted); line-height: 1.55; margin-top: 2px; }
+.crep__link:hover, .crep__doc:hover { color: var(--interactive); text-decoration: underline; }
+.crep__link-icon { font-size: 10px; margin-left: 6px; opacity: 0.5; }
+.crep__muted { font-size: var(--text-sm); color: var(--surface-muted); line-height: var(--leading-body); margin-top: 2px; max-width: var(--measure); }
 .crep__unreachable { margin-top: 4px; }
 
 .crep__group { display: flex; flex-direction: column; gap: 8px; }
+.crep__group + .crep__group { margin-top: 8px; }
 .crep__doc { display: inline-flex; align-items: center; gap: 8px; }
-.crep__doc-icon { color: var(--brand-magenta); font-size: 12px; }
+.crep__doc-icon { color: var(--surface-muted); font-size: 13px; }
 
 .crep__table { border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--surface-3); }
 .crep__tr {
   display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) 64px; gap: 12px;
-  padding: 9px 14px; font-size: 12px; color: var(--surface-text);
+  padding: 10px 14px; font-size: var(--text-sm); color: var(--surface-text);
   border-top: 1px solid var(--surface-3);
 }
 .crep__tr:first-child { border-top: none; }
-.crep__tr--head {
-  background: var(--surface-2);
-  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--surface-muted);
-}
+.crep__tr--head { background: var(--surface-2); font-size: var(--text-xs); font-weight: 600; color: var(--surface-muted); }
 .crep__tr--expired { color: var(--surface-muted); }
 .crep__series { font-weight: 600; overflow-wrap: anywhere; }
 .crep__tr--expired .crep__series { font-weight: 500; }
 .crep__zone {
-  margin-left: 8px; font-size: 10px; font-weight: 700; padding: 1px 7px;
+  margin-left: 8px; font-size: var(--text-xs); font-weight: 600; padding: 1px 7px;
   border-radius: var(--radius-pill); background: var(--surface-2); color: var(--surface-text);
 }
-.crep__num { text-align: right; font-variant-numeric: tabular-nums; }
+.crep__num { text-align: right; }
 .crep__expired { color: var(--surface-muted); }
 
 .crep__warn {
-  display: flex; gap: 10px; align-items: flex-start;
-  padding: 10px 12px; border-radius: var(--radius-md);
-  background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.18);
-  font-size: 12px; line-height: 1.55; color: var(--surface-text);
+  display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 10px; align-items: baseline;
+  font-size: var(--text-sm); line-height: var(--leading-body); color: var(--surface-text); max-width: var(--measure);
 }
-.crep__warn-icon { color: var(--status-warning); margin-top: 3px; flex-shrink: 0; }
+.crep__warn-icon { color: var(--status-warning); }
 
 @media (max-width: 640px) {
-  .crep__stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .crep__tabs { align-self: stretch; overflow-x: auto; }
+  .crep__item { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .crep__tr { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px; padding: 8px 10px; }
 }
 </style>

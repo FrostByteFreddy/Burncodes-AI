@@ -22,6 +22,7 @@ const routes = [
     children: [
       { path: "", redirect: { name: "TenantSources" } },
       { path: "sources",   name: "TenantSources",   component: () => import("../components/tenant/Sources.vue") },
+      { path: "sources/crawls/:jobId(\\d+)", name: "TenantCrawl", component: () => import("../components/tenant/CrawlDetail.vue"), props: true },
       { path: "configure", name: "TenantConfigure", component: () => import("../components/tenant/Settings.vue") },
       { path: "insights",  name: "TenantInsights",  component: () => import("../views/Insights.vue") },
       { path: "install",   name: "TenantInstall",   component: () => import("../views/Install.vue") },

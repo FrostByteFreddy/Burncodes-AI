@@ -507,6 +507,19 @@
     }
   },
   "knowledge": {
+    "overview": {
+        "stripTitle": "Termine, die Ihr Chatbot kennt",
+        "stripSub": "Geprüfte Termine aus Ihren Dokumenten für die nächsten 14 Tage. Wer fragt «wann ist die nächste…», bekommt diese Antworten.",
+        "noneUpcoming": "Keine Termine in den nächsten zwei Wochen. Enthalten Ihre Dokumente Kalender, erscheinen sie hier.",
+        "noneUpcomingEnded": "Keine kommenden Termine — die Kalender, die Ihr Chatbot kennt, sind abgelaufen. Siehe unten.",
+        "moved": "verschoben",
+        "needsTitle": "Braucht Sie",
+        "needsNone": "Im Moment braucht nichts Ihre Aufmerksamkeit.",
+        "ended": "{series}: Die veröffentlichten Termine endeten am {date}.",
+        "endedHint": "Ihr Chatbot kann nicht sagen, wann der nächste ist. Veröffentlichen Sie den neuen Kalender und crawlen Sie erneut.",
+        "summary": "{sources} Quellen, {chunks} indexierte Abschnitte. Letzter Crawl am {date}.",
+        "summaryNever": "Noch nichts gelernt."
+      },
     "stats": {
       "pages": "Seiten",
       "files": "Dateien",
@@ -556,6 +569,16 @@
       "FAILED": "Gestoppt"
     },
     "job": {
+      "autoShort": "automatischer Crawl",
+      "summaryDone": "{learned} gelernt, {unchanged} unverändert, CHF {cost}",
+      "summaryScanned": "{n} zu lernen, ca. CHF {cost}",
+      "summaryStopped": "Gestoppt, bevor das Lernen fertig war.",
+      "actionFailed": "Das hat nicht geklappt. Laden Sie die Seite neu und versuchen Sie es nochmals.",
+      "details": "Details",
+      "back": "Wissen",
+      "openSite": "Website öffnen",
+      "activity": "Aktivität",
+      "toReview": "{n} zu prüfen",
       "started": "Gestartet {date}",
       "scheduled": "Automatischer Crawl · {date}",
       "singlePage": "Nur diese Seite",
@@ -594,8 +617,8 @@
       "cost": "Kosten",
       "important": "Wichtigste Inhalte",
       "noImportant": "Nichts fiel als besonders wichtig auf.",
-      "high": "Hoch",
-      "medium": "Mittel",
+      "high": "Sehr wichtig",
+      "medium": "Wichtig",
       "series": "Serie",
       "zone": "Zone",
       "next": "Nächster Termin",
@@ -625,5 +648,16 @@
       "title": "Crawl löschen",
       "message": "Den Crawl von <strong>{url}</strong> und alles, was er indexiert hat, löschen? Das kann nicht rückgängig gemacht werden."
     }
+  },
+  "pages": {
+    "chatbots": "Jeder Chatbot beantwortet Fragen aus der Website und den Dokumenten einer Organisation.",
+    "insights": "Wie oft Ihr Chatbot gefragt wird und was die Leute wissen wollten.",
+    "subscription": "Ihr Guthaben bezahlt Chat-Antworten und das Lernen neuer Inhalte.",
+    "profile": "Ihr Name, Ihr Passwort und Ihr Konto.",
+    "knowledgeTitle": "Wissen",
+    "knowledge": "Was Ihr Chatbot weiss, welche Termine er beantworten kann und wo er Sie braucht.",
+    "configure": "Wie Ihr Chatbot spricht und wie er auf Ihrer Website aussieht.",
+    "installTitle": "Einbinden",
+    "install": "Binden Sie den Chatbot mit einer Zeile Code in Ihre Website ein."
   }
 }

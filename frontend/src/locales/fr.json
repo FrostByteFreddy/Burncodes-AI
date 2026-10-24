@@ -507,6 +507,19 @@
     }
   },
   "knowledge": {
+    "overview": {
+        "stripTitle": "Les dates que votre chatbot connaît",
+        "stripSub": "Dates vérifiées de vos documents pour les 14 prochains jours. Quand on demande « quand est le prochain… », voici les réponses.",
+        "noneUpcoming": "Aucune date dans les deux prochaines semaines. Les calendriers de vos documents apparaissent ici.",
+        "noneUpcomingEnded": "Aucune date à venir — les calendriers connus de votre chatbot sont terminés. Voir ci-dessous.",
+        "moved": "déplacé",
+        "needsTitle": "À traiter",
+        "needsNone": "Rien ne demande votre attention pour le moment.",
+        "ended": "{series} : les dates publiées se sont terminées le {date}.",
+        "endedHint": "Votre chatbot ne peut pas dire quand aura lieu le prochain. Publiez le nouveau calendrier et relancez le crawl.",
+        "summary": "{sources} sources, {chunks} sections indexées. Dernier crawl le {date}.",
+        "summaryNever": "Rien n’a encore été appris."
+      },
     "stats": {
       "pages": "Pages",
       "files": "Fichiers",
@@ -556,6 +569,16 @@
       "FAILED": "Arrêté"
     },
     "job": {
+      "autoShort": "crawl automatique",
+      "summaryDone": "{learned} apprises, {unchanged} inchangées, CHF {cost}",
+      "summaryScanned": "{n} à apprendre, env. CHF {cost}",
+      "summaryStopped": "Arrêté avant la fin de l’apprentissage.",
+      "actionFailed": "Cela n’a pas fonctionné. Rechargez la page et réessayez.",
+      "details": "Détails",
+      "back": "Connaissances",
+      "openSite": "Ouvrir le site",
+      "activity": "Activité",
+      "toReview": "{n} à vérifier",
       "started": "Démarré {date}",
       "scheduled": "Crawl automatique · {date}",
       "singlePage": "Cette page uniquement",
@@ -594,8 +617,8 @@
       "cost": "Coût",
       "important": "Contenus les plus importants",
       "noImportant": "Rien de particulièrement important.",
-      "high": "Élevée",
-      "medium": "Moyenne",
+      "high": "Très important",
+      "medium": "Important",
       "series": "Série",
       "zone": "Zone",
       "next": "Prochaine date",
@@ -625,5 +648,16 @@
       "title": "Supprimer le crawl",
       "message": "Supprimer le crawl de <strong>{url}</strong> et tout ce qu'il a indexé ? Cette action est irréversible."
     }
+  },
+  "pages": {
+    "chatbots": "Chaque chatbot répond aux questions à partir du site et des documents d’une organisation.",
+    "insights": "À quelle fréquence on interroge votre chatbot, et ce que les gens voulaient savoir.",
+    "subscription": "Votre solde prépayé paie les réponses du chat et l’apprentissage de nouveaux contenus.",
+    "profile": "Votre nom, votre mot de passe et votre compte.",
+    "knowledgeTitle": "Connaissances",
+    "knowledge": "Ce que votre chatbot sait, les dates auxquelles il peut répondre et là où il a besoin de vous.",
+    "configure": "Comment votre chatbot parle et à quoi il ressemble sur votre site.",
+    "installTitle": "Intégrer",
+    "install": "Ajoutez le chatbot à votre site avec une seule ligne de code."
   }
 }

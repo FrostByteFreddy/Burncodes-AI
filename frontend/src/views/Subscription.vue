@@ -1,7 +1,10 @@
 <template>
   <div class="page">
-    <div class="page-header">
-      <p class="page-label">{{ $t('subscription.title').toUpperCase() }}</p>
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">{{ $t('subscription.title') }}</h1>
+        <p class="page-lede">{{ $t('pages.subscription') }}</p>
+      </div>
     </div>
 
     <!-- Loading -->
@@ -214,11 +217,6 @@ const handleManageBilling = async () => {
 </script>
 
 <style scoped>
-.page-header { margin-bottom: 28px; }
-.page-label {
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.08em; color: var(--surface-muted);
-}
 
 /* Skeleton */
 .skeleton-block {
