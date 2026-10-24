@@ -912,6 +912,8 @@
   "insights": {
     "title": "Statistiques",
     "findings": {
+      "addAnswer": "Ajouter une réponse",
+      "answerSaved": "Réponse enregistrée. Votre chatbot l'utilise dès maintenant.",
       "title": "À vérifier",
       "sub": "Les questions auxquelles votre chatbot n'a pas bien répondu, trouvées en relisant les conversations terminées.",
       "filter": "Afficher",

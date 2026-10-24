@@ -304,6 +304,7 @@ CREATE INDEX IF NOT EXISTS idx_crawl_job_log_tenant       ON public.crawl_job_lo
 CREATE INDEX IF NOT EXISTS idx_tenant_events_source       ON public.tenant_events (source_id);
 CREATE INDEX IF NOT EXISTS idx_tenant_facts_source        ON public.tenant_facts (source_id);
 CREATE INDEX IF NOT EXISTS idx_tenant_sources_last_job    ON public.tenant_sources (last_job_id);
+ALTER TABLE public.chat_findings ADD COLUMN IF NOT EXISTS topic TEXT NOT NULL DEFAULT '';
 CREATE INDEX IF NOT EXISTS idx_chat_reviews_tenant        ON public.chat_reviews (tenant_id);
 CREATE INDEX IF NOT EXISTS idx_chat_findings_tenant       ON public.chat_findings (tenant_id, status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_chat_logs_tenant_created   ON public.chat_logs (tenant_id, created_at);

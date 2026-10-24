@@ -32,7 +32,14 @@
         <router-link :to="{ name: 'TenantOverview', params: { tenantId }, hash: '#automation' }">{{ $t('knowledge.recrawl.change') }}</router-link>
       </p>
 
-      <template v-if="shownJobs.length">
+      <div v-if="!jobsLoaded" aria-busy="true">
+        <div v-for="n in 2" :key="n" class="ghost-row">
+          <span class="ghost ghost--pill"></span>
+          <div class="ghost-stack" style="flex: 1"><span class="ghost ghost--line" style="width: 55%"></span><span class="ghost ghost--line" style="width: 30%; height: 10px"></span></div>
+          <span class="ghost ghost--btn" style="width: 76px"></span>
+        </div>
+      </div>
+      <template v-else-if="shownJobs.length">
         <ol class="kjobs">
           <CrawlJobRow
             v-for="job in shownJobs"
@@ -158,6 +165,7 @@ const POLL_MS = 5000;
 
 const wizardOpen            = ref(false);
 const crawlingJobs          = ref([]);
+const jobsLoaded            = ref(false);
 const logsByJob             = ref({});
 const showAllJobs           = ref(false);
 const sourceToDelete        = ref(null);
@@ -195,6 +203,7 @@ const fetchCrawlingJobs = async () => {
     const r = await apiClient.get(`/tenants/${tenantId.value}/crawling_jobs`);
     crawlingJobs.value = r.data;
   } catch { addToast(t('tenant.sources.actions.fetchFailed'), 'error'); }
+  finally { jobsLoaded.value = true; }
 };
 
 const fetchLog = async (jobId) => {
@@ -257,6 +266,7 @@ const subscribe = (id) => {
 // re-subscribing each time dropped events in between.
 watch(tenantId, async (id) => {
   crawlingJobs.value = [];
+  jobsLoaded.value = false;
   logsByJob.value = {};
   subscribe(id);
   if (id) {

@@ -79,7 +79,7 @@
   /* Layout */
   --sidebar-width: 248px;
   --sidebar-bg:    var(--surface-0);
-  --content-max:   1200px;
+  --content-max:   1560px;
   --shell-max:     calc(var(--sidebar-width) + var(--content-max) + 96px);
   --measure:       68ch;      /* readable line length */
 

@@ -355,7 +355,7 @@ def list_findings(current_user, tenant_id):
             return jsonify({"error": "Tenant not found or access denied"}), 404
         status = request.args.get('status', 'open')
         query = (supabase.table('chat_findings')
-                 .select("id, conversation_id, log_id, kind, question, problem, suggestion, status, created_at, resolved_at")
+                 .select("id, conversation_id, log_id, kind, question, topic, problem, suggestion, status, created_at, resolved_at")
                  .eq('tenant_id', str(tenant_id)))
         if status in ('open', 'resolved', 'dismissed'):
             query = query.eq('status', status)

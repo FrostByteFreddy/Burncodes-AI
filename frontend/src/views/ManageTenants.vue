@@ -13,7 +13,7 @@
 
     <!-- Loading skeletons -->
     <div v-if="tenantsStore.loading && tenantsStore.tenants.length === 0" class="tenant-list">
-      <div v-for="n in 3" :key="n" class="skeleton-card"></div>
+      <div v-for="n in 3" :key="n" class="skeleton-card ghost"></div>
     </div>
 
     <!-- Empty state -->

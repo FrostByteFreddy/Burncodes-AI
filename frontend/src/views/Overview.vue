@@ -12,23 +12,56 @@
       </div>
     </div>
 
-    <div v-if="!data && loading" class="ov-skeleton"></div>
+    <div v-if="!data && loading" class="ov" aria-busy="true">
+      <div class="ov-controls">
+        <div v-for="n in 3" :key="n" class="ov-control">
+          <div class="ghost-stack" style="flex: 1"><span class="ghost ghost--title" :style="{ width: `${260 - n * 30}px` }"></span><span class="ghost ghost--line" style="width: 60%"></span></div>
+          <span class="ghost" style="width: 44px; height: 24px; border-radius: 999px"></span>
+        </div>
+      </div>
+      <section class="panel">
+        <span class="ghost ghost--title" style="width: 140px; margin-bottom: 18px"></span>
+        <div class="ov-figures">
+          <div v-for="n in 4" :key="n" class="ghost-stack"><span class="ghost ghost--line" style="width: 50%"></span><span class="ghost ghost--figure"></span></div>
+        </div>
+        <div class="ov-ghost-bars"><span v-for="n in 30" :key="n" class="ghost" :style="{ height: `${10 + ((n * 37) % 50)}px` }"></span></div>
+      </section>
+      <div class="ov-grid">
+        <section v-for="n in 2" :key="n" class="panel ghost-stack">
+          <span class="ghost ghost--title" style="width: 120px; margin-bottom: 8px"></span>
+          <span v-for="m in 4" :key="m" class="ghost ghost--line" :style="{ width: `${90 - m * 12}%` }"></span>
+        </section>
+      </div>
+    </div>
     <p v-else-if="!data" class="meta">{{ $t('overview.loadFailed') }}</p>
 
     <template v-else>
-      <!-- On / off: the one thing that has to be unmistakable -->
-      <section class="ov-status" :class="data.is_active ? 'ov-status--on' : 'ov-status--off'">
-        <span class="ov-status__dot" aria-hidden="true"></span>
-        <div class="ov-status__text">
-          <h2>{{ data.is_active ? $t('overview.status.onTitle') : $t('overview.status.offTitle') }}</h2>
-          <p>{{ data.is_active ? (data.widget_enabled ? $t('overview.status.onBody') : $t('overview.status.onHidden')) : $t('overview.status.offBody') }}</p>
+      <!-- The three switches that matter: on/off, re-check websites, review conversations -->
+      <section class="ov-controls" :class="data.is_active ? 'ov-controls--on' : 'ov-controls--off'">
+        <div class="ov-control ov-control--main">
+          <span class="ov-status__dot" aria-hidden="true"></span>
+          <div class="ov-control__text">
+            <label for="sw-active" class="ov-control__name">{{ data.is_active ? $t('overview.status.onTitle') : $t('overview.status.offTitle') }}</label>
+            <p>{{ data.is_active ? (data.widget_enabled ? $t('overview.status.onBody') : $t('overview.status.onHidden')) : $t('overview.status.offBody') }}</p>
+          </div>
+          <input id="sw-active" type="checkbox" role="switch" class="ov-switch" :checked="data.is_active" :disabled="switching" @click.prevent="data.is_active ? (askOff = true) : setActive(true)" />
         </div>
-        <button v-if="data.is_active" type="button" class="btn-quiet ov-status__off" :disabled="switching" @click="askOff = true">
-          <font-awesome-icon :icon="['fas', 'power-off']" /> {{ $t('overview.status.switchOff') }}
-        </button>
-        <button v-else type="button" class="btn-action" :disabled="switching" @click="setActive(true)">
-          <font-awesome-icon :icon="switching ? ['fas', 'spinner'] : ['fas', 'power-off']" :class="{ 'animate-spin': switching }" /> {{ $t('overview.status.switchOn') }}
-        </button>
+        <div class="ov-control">
+          <div class="ov-control__text">
+            <label for="sw-recrawl" class="ov-control__name">{{ $t('overview.auto.recrawl') }}</label>
+            <p>{{ $t('overview.auto.recrawlHow') }}</p>
+            <p class="ov-control__when">{{ when(data.automation.recrawl) }}</p>
+          </div>
+          <input id="sw-recrawl" type="checkbox" role="switch" class="ov-switch" :checked="data.automation.recrawl.enabled" :disabled="savingAuto || !data.automation.recrawl.has_websites" @change="saveAuto({ auto_recrawl: $event.target.checked })" />
+        </div>
+        <div class="ov-control">
+          <div class="ov-control__text">
+            <label for="sw-review" class="ov-control__name">{{ $t('overview.auto.review') }}</label>
+            <p>{{ $t('overview.auto.reviewHow', { cost: fmtChf(data.automation.review.est_chf_per_conversation) }) }}</p>
+            <p class="ov-control__when">{{ when(data.automation.review) }}</p>
+          </div>
+          <input id="sw-review" type="checkbox" role="switch" class="ov-switch" :checked="data.automation.review.enabled" :disabled="savingAuto" @change="saveAuto({ review_chats: $event.target.checked })" />
+        </div>
       </section>
 
       <!-- Usage and money in the period -->
@@ -122,36 +155,6 @@
         </section>
       </div>
 
-      <!-- Everything that runs on a schedule, in one place -->
-      <section id="automation" class="panel">
-        <h2 class="panel-title">{{ $t('overview.auto.title') }}</h2>
-        <p class="panel-sub">{{ $t('overview.auto.sub') }}</p>
-        <ul class="ov-auto">
-          <li class="ov-auto__row">
-            <div class="ov-auto__text">
-              <label for="auto-recrawl" class="ov-auto__name">{{ $t('overview.auto.recrawl') }}</label>
-              <p class="meta">{{ $t('overview.auto.recrawlHow') }}</p>
-              <p class="ov-auto__when">{{ when(data.automation.recrawl) }}</p>
-            </div>
-            <select id="auto-recrawl" class="ov-auto__select" :value="recrawlValue" :disabled="savingAuto || !data.automation.recrawl.has_websites" @change="saveRecrawl($event.target.value)">
-              <option value="off">{{ $t('overview.auto.off') }}</option>
-              <option v-for="n in [7, 14, 30]" :key="n" :value="String(n)">{{ $t(`knowledge.recrawl.every${n}`) }}</option>
-            </select>
-          </li>
-          <li class="ov-auto__row">
-            <div class="ov-auto__text">
-              <label for="auto-review" class="ov-auto__name">{{ $t('overview.auto.review') }}</label>
-              <p class="meta">{{ $t('overview.auto.reviewHow', { cost: fmtChf(data.automation.review.est_chf_per_conversation) }) }}</p>
-              <p class="ov-auto__when">{{ when(data.automation.review) }}</p>
-            </div>
-            <select id="auto-review" class="ov-auto__select" :value="reviewValue" :disabled="savingAuto" @change="saveReview($event.target.value)">
-              <option value="off">{{ $t('overview.auto.off') }}</option>
-              <option value="1">{{ $t('overview.auto.daily') }}</option>
-              <option value="7">{{ $t('overview.auto.weekly') }}</option>
-            </select>
-          </li>
-        </ul>
-      </section>
     </template>
 
     <ConfirmationModal
@@ -200,7 +203,7 @@ watch([tenantId, days], load, { immediate: true });
 watch(data, async (d, before) => {
   if (!d || before || window.location.hash !== '#automation') return;
   await nextTick();
-  document.getElementById('automation')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.querySelector('.ov-controls')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
 const setActive = async (on) => {
@@ -218,8 +221,6 @@ const setActive = async (on) => {
 
 // ── Scheduled tasks ─────────────────────────────────────────────────
 const savingAuto = ref(false);
-const recrawlValue = computed(() => (data.value?.automation.recrawl.enabled ? String(data.value.automation.recrawl.interval_days) : 'off'));
-const reviewValue = computed(() => (data.value?.automation.review.enabled ? String(data.value.automation.review.interval_days) : 'off'));
 const saveAuto = async (payload) => {
   savingAuto.value = true;
   try {
@@ -229,8 +230,6 @@ const saveAuto = async (payload) => {
   } catch { addToast(t('tenant.settings.actions.saveFailed'), 'error'); }
   finally { savingAuto.value = false; }
 };
-const saveRecrawl = (v) => saveAuto(v === 'off' ? { auto_recrawl: false } : { auto_recrawl: true, recrawl_interval_days: Number(v) });
-const saveReview = (v) => saveAuto(v === 'off' ? { review_chats: false } : { review_chats: true, review_interval_days: Number(v) });
 const when = (task) => {
   const parts = [task.last_run ? t('overview.auto.last', { date: fmtDateTime(task.last_run) }) : t('overview.auto.never')];
   if (task.next_run) parts.push(t('overview.auto.next', { date: fmtDateTime(task.next_run) }));
@@ -271,25 +270,40 @@ Trend.props = ['now', 'before'];
 
 <style scoped>
 .ov { display: flex; flex-direction: column; gap: 20px; }
-.ov-skeleton { height: 360px; border-radius: var(--radius-xl); background: var(--surface-1); }
+.ov-ghost-bars { display: flex; align-items: flex-end; gap: 3px; height: 72px; margin-top: 20px; }
+.ov-ghost-bars .ghost { flex: 1; border-radius: 1.5px; }
 
 .ov-period { display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--radius-pill); background: var(--surface-1); border: 1px solid var(--surface-3); }
 .ov-period__btn { padding: 6px 14px; border: none; border-radius: var(--radius-pill); background: none; cursor: pointer; font: inherit; font-size: var(--text-sm); font-weight: 600; color: var(--surface-muted); }
 .ov-period__btn:hover { color: var(--surface-heading); }
 .ov-period__btn--on { background: var(--surface-3); color: var(--surface-heading); }
 
-/* Status */
-.ov-status {
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px;
-  padding: 20px 24px; border-radius: var(--radius-xl); border: 1px solid var(--surface-3); background: var(--surface-1);
+/* Switches */
+.ov-controls { border-radius: var(--radius-xl); border: 1px solid var(--surface-3); background: var(--surface-1); }
+.ov-controls--on { border-color: rgba(60, 203, 154, 0.35); }
+.ov-controls--off { border-color: rgba(255, 107, 107, 0.45); }
+.ov-control { display: flex; align-items: center; gap: 16px; padding: 16px 24px; border-top: 1px solid var(--surface-3); }
+.ov-control:first-child { border-top: none; }
+.ov-control--main { padding: 20px 24px; }
+.ov-controls--off .ov-control--main { background: rgba(255, 107, 107, 0.08); border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+.ov-control__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ov-control__text p { font-size: var(--text-sm); color: var(--surface-text); max-width: var(--measure); }
+.ov-control__name { font-size: 15px; font-weight: 700; color: var(--surface-heading); cursor: pointer; }
+.ov-control--main .ov-control__name { font-size: var(--text-lg); }
+.ov-control__when { font-size: var(--text-xs) !important; color: var(--surface-muted) !important; }
+.ov-status__dot { flex-shrink: 0; width: 14px; height: 14px; border-radius: 50%; background: var(--status-success); box-shadow: 0 0 0 5px rgba(60, 203, 154, 0.18); }
+.ov-controls--off .ov-status__dot { background: var(--status-error); box-shadow: 0 0 0 5px rgba(255, 107, 107, 0.18); }
+.ov-switch {
+  appearance: none; flex-shrink: 0; position: relative; cursor: pointer;
+  width: 44px; height: 24px; border-radius: var(--radius-pill); background: var(--surface-3); transition: background var(--t-fast);
 }
-.ov-status--on { border-color: rgba(60, 203, 154, 0.35); }
-.ov-status--off { border-color: rgba(255, 107, 107, 0.45); background: var(--status-error-soft, rgba(255, 107, 107, 0.08)); }
-.ov-status__dot { width: 14px; height: 14px; border-radius: 50%; background: var(--status-success); box-shadow: 0 0 0 5px rgba(60, 203, 154, 0.18); }
-.ov-status--off .ov-status__dot { background: var(--status-error); box-shadow: 0 0 0 5px rgba(255, 107, 107, 0.18); }
-.ov-status__text h2 { font-size: var(--text-lg); font-weight: 700; color: var(--surface-heading); }
-.ov-status__text p { margin-top: 2px; font-size: 15px; color: var(--surface-text); max-width: var(--measure); }
-.ov-status__off:hover:not(:disabled) { border-color: var(--status-error); color: var(--status-error); }
+.ov-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface-heading); transition: transform var(--t-fast); }
+.ov-switch:checked { background: var(--interactive-strong); }
+.ov-control--main .ov-switch:checked { background: var(--status-success); }
+.ov-switch:checked::after { transform: translateX(20px); }
+.ov-switch:focus-visible { box-shadow: var(--focus-ring); }
+.ov-switch:disabled { opacity: 0.5; cursor: not-allowed; }
+@media (prefers-reduced-motion: reduce) { .ov-switch, .ov-switch::after { transition: none; } }
 
 .ov-panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .ov-link { font-size: var(--text-sm); font-weight: 600; color: var(--interactive); text-decoration: none; }
@@ -325,21 +339,6 @@ Trend.props = ['now', 'before'];
 .ov-crawl__url { font-size: 15px; font-weight: 600; color: var(--surface-heading); text-decoration: none; overflow-wrap: anywhere; }
 .ov-crawl__url:hover { color: var(--interactive); text-decoration: underline; }
 
-/* Scheduled tasks */
-.ov-auto { list-style: none; padding: 0; margin: 16px 0 0; display: flex; flex-direction: column; }
-.ov-auto__row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 14px 0; border-top: 1px solid var(--surface-3); }
-.ov-auto__row:first-child { border-top: none; padding-top: 0; }
-.ov-auto__text { min-width: 0; display: flex; flex-direction: column; gap: 2px; max-width: var(--measure); }
-.ov-auto__name { font-size: 15px; font-weight: 700; color: var(--surface-heading); }
-.ov-auto__when { font-size: var(--text-xs); color: var(--surface-muted); }
-.ov-auto__select {
-  flex-shrink: 0; min-width: 170px; padding: 8px 32px 8px 12px; border-radius: var(--radius-md);
-  background-color: var(--surface-2); border: 1px solid var(--surface-3);
-  color: var(--surface-heading); font: inherit; font-size: var(--text-sm); cursor: pointer;
-}
-.ov-auto__select:hover:not(:disabled) { border-color: var(--surface-muted); }
-.ov-auto__select:disabled { opacity: 0.5; cursor: not-allowed; }
-
 /* Latest questions */
 .ov-questions { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
 .ov-questions li { padding: 10px 0; border-top: 1px solid var(--surface-3); }
@@ -349,8 +348,6 @@ Trend.props = ['now', 'before'];
 @media (max-width: 900px) {
   .ov-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ov-grid { grid-template-columns: minmax(0, 1fr); }
-  .ov-status { grid-template-columns: auto minmax(0, 1fr); }
-  .ov-status > button { grid-column: 1 / -1; justify-self: start; }
-  .ov-auto__row { flex-direction: column; align-items: stretch; }
+  .ov-control { padding: 14px 16px; }
 }
 </style>

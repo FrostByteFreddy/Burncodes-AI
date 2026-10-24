@@ -21,7 +21,17 @@
         </div>
       </div>
 
-      <div v-if="loadingFindings && !findings.length" class="ins-skeleton"></div>
+      <ul v-if="loadingFindings && !findings.length" class="ins-findings" aria-busy="true">
+        <li v-for="n in 3" :key="n" class="ins-finding">
+          <span class="ghost ghost--pill"></span>
+          <div class="ghost-stack">
+            <span class="ghost ghost--title" :style="{ width: `${70 - n * 8}%` }"></span>
+            <span class="ghost ghost--line" style="width: 80%"></span>
+            <span class="ghost ghost--line" style="width: 55%"></span>
+          </div>
+          <div class="ins-finding__actions"><span class="ghost ghost--btn"></span><span class="ghost ghost--btn" style="width: 70px"></span></div>
+        </li>
+      </ul>
       <div v-else-if="!findings.length" class="ins-empty">
         <font-awesome-icon :icon="['fas', 'check']" class="ins-empty__icon" />
         <p>{{ status === 'open' ? (review.enabled ? $t('insights.findings.noneOpen') : $t('insights.findings.reviewOff')) : $t('insights.findings.noneOther') }}</p>
@@ -43,9 +53,9 @@
           </div>
           <div class="ins-finding__actions">
             <template v-if="f.status === 'open'">
-              <router-link :to="{ name: 'TenantSources', params: { tenantId } }" class="btn-quiet">
-                <font-awesome-icon :icon="['fas', 'plus']" /> {{ $t('insights.findings.addKnowledge') }}
-              </router-link>
+              <button type="button" class="btn-quiet" @click="answerFor = f">
+                <font-awesome-icon :icon="['fas', 'plus']" /> {{ $t('insights.findings.addAnswer') }}
+              </button>
               <button type="button" class="btn-quiet" @click="setStatus(f, 'resolved')">
                 <font-awesome-icon :icon="['fas', 'check']" /> {{ $t('insights.findings.done') }}
               </button>
@@ -81,7 +91,12 @@
         </div>
       </div>
 
-      <div v-if="logsLoading && !conversations.length" class="ins-skeleton"></div>
+      <div v-if="logsLoading && !conversations.length" aria-busy="true">
+        <div v-for="n in 5" :key="n" class="ghost-row">
+          <div class="ghost-stack" style="flex: 1"><span class="ghost ghost--line" :style="{ width: `${75 - n * 7}%` }"></span><span class="ghost ghost--line" style="width: 22%; height: 10px"></span></div>
+          <span class="ghost ghost--line" style="width: 90px"></span>
+        </div>
+      </div>
       <p v-else-if="logsError" class="meta">{{ logsError }}</p>
       <p v-else-if="!conversations.length" class="meta">{{ $t('insights.conversations.none') }}</p>
 
@@ -116,6 +131,15 @@
         </div>
       </div>
     </section>
+
+    <!-- Answer a finding with a custom rule: trigger prefilled, staff write the answer -->
+    <AddRuleWizard
+      :open="!!answerFor"
+      :initial-trigger="answerFor?.topic || answerFor?.question || ''"
+      :hint="answerFor?.suggestion || ''"
+      @close="answerFor = null"
+      @add-rule="saveAnswer"
+    />
   </div>
 </template>
 
@@ -126,6 +150,7 @@ import apiClient from '@/utils/api'
 import { useTenantsStore } from '@/stores/tenants'
 import { useToast } from '@/composables/useToast'
 import { processBotMessage } from '@/utils/chatProcessor.js'
+import AddRuleWizard from '@/components/tenant/sources/AddRuleWizard.vue'
 
 const { t, locale } = useI18n()
 const tenantsStore = useTenantsStore()
@@ -163,6 +188,18 @@ const setStatus = async (f, next) => {
     findings.value = findings.value.filter((x) => x.id !== f.id)
     counts.value = { ...counts.value, [f.status]: Math.max(0, (counts.value[f.status] || 1) - 1), [next]: (counts.value[next] || 0) + 1 }
   } catch { addToast(t('tenant.settings.actions.saveFailed'), 'error') }
+}
+
+// Answering a finding adds a custom rule and marks the finding done
+const answerFor = ref(null)
+const saveAnswer = async (rule) => {
+  const finding = answerFor.value
+  const existing = (tenantsStore.currentTenant?.fine_tune_rules || []).map(({ trigger, instruction }) => ({ trigger, instruction }))
+  try {
+    await tenantsStore.updateTenant(tenantId.value, { fine_tune_rules: [...existing, rule] })
+    addToast(t('insights.findings.answerSaved'), 'success')
+    if (finding) await setStatus(finding, 'resolved')
+  } catch { addToast(t('tenant.fineTune.actions.saveFailed'), 'error') }
 }
 
 const runNow = async () => {
@@ -226,7 +263,6 @@ watch(tenantId, (id) => {
 <style scoped>
 .ins { display: flex; flex-direction: column; gap: 20px; }
 .ins-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
-.ins-skeleton { height: 160px; border-radius: var(--radius-lg); background: var(--surface-2); }
 
 .ins-seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--radius-pill); background: var(--surface-2); }
 .ins-seg__btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: none; border-radius: var(--radius-pill); background: none; cursor: pointer; font: inherit; font-size: var(--text-sm); font-weight: 600; color: var(--surface-muted); }

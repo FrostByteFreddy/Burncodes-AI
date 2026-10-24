@@ -8,7 +8,7 @@
     </div>
 
     <!-- Loading -->
-    <div v-if="billingStore.loading && !billingStore.balance" class="skeleton-block" style="height:160px;"></div>
+    <div v-if="billingStore.loading && !billingStore.balance" class="skeleton-block ghost" style="height:160px;"></div>
 
     <div v-else class="billing-grid">
       <!-- ── Balance card ── -->
@@ -121,7 +121,7 @@
           <div class="section-line"></div>
         </div>
 
-        <div v-if="billingStore.loading && !billingStore.history.length" class="skeleton-block" style="height:120px;"></div>
+        <div v-if="billingStore.loading && !billingStore.history.length" class="skeleton-block ghost" style="height:120px;"></div>
         <div v-else-if="!billingStore.history.length" class="empty-history">
           <font-awesome-icon :icon="['fas', 'receipt']" />
           <p>{{ $t('subscription.history.noHistory') }}</p>

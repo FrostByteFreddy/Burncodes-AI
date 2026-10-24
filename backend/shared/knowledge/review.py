@@ -50,6 +50,7 @@ _SCHEMA = {
                     "turn": {"type": "integer", "description": "Number of the turn the finding is about"},
                     "kind": {"type": "string", "enum": list(KINDS)},
                     "question": {"type": "string", "description": "The visitor's question, verbatim"},
+                    "topic": {"type": "string", "description": "2-6 word topic in the visitor's language"},
                     "problem": {"type": "string"},
                     "suggestion": {"type": "string"},
                 },
@@ -77,6 +78,8 @@ If nothing needs attention, return an empty list.
 
 For each finding:
 - question: the visitor's question exactly as written.
+- topic: what the question is about in 2-6 words, in the visitor's language
+  (e.g. "Öffnungszeiten Freibad"). Staff use it as the trigger of a custom answer.
 - problem: one short sentence (at most 20 words) on what went wrong.
 - suggestion: one short sentence (at most 20 words) on what knowledge to add or fix,
   e.g. "Add the opening hours of the recycling centre".
@@ -144,6 +147,7 @@ def _clean(raw: list, logs: list[dict], first_new: int) -> list[dict]:
             "log_id": logs[turn - 1]["id"],
             "kind": f["kind"],
             "question": question[:1000],
+            "topic": (f.get("topic") or "").strip()[:120],
             "problem": problem[:500],
             "suggestion": (f.get("suggestion") or "").strip()[:500],
         })

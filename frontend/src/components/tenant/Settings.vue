@@ -1,6 +1,18 @@
 <template>
   <div class="cfg-page">
-    <div class="cfg-layout">
+    <div v-if="!tenantsStore.currentTenant" class="cfg-layout" aria-busy="true">
+      <div class="cfg-stack">
+        <span class="ghost ghost--title" style="width: 160px; height: 28px"></span>
+        <section v-for="n in 3" :key="n" class="panel ghost-stack">
+          <span class="ghost ghost--title" style="width: 140px"></span>
+          <span class="ghost" style="height: 40px"></span>
+          <span class="ghost ghost--line" style="width: 60%"></span>
+        </section>
+      </div>
+      <div class="cfg-preview"><span class="ghost" style="height: 100%; border-radius: 20px"></span></div>
+    </div>
+
+    <div v-else class="cfg-layout">
       <form class="cfg-form" @submit.prevent="save">
         <div class="page-head">
           <div>

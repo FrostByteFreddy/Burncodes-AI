@@ -912,6 +912,8 @@
   "insights": {
     "title": "Insights",
     "findings": {
+      "addAnswer": "Add answer",
+      "answerSaved": "Answer saved. Your chatbot uses it from now on.",
       "title": "To look at",
       "sub": "Questions your chatbot couldn't answer well, found by reviewing finished conversations.",
       "filter": "Show",

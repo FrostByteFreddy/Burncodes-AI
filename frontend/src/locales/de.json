@@ -912,6 +912,8 @@
   "insights": {
     "title": "Auswertung",
     "findings": {
+      "addAnswer": "Antwort hinzufügen",
+      "answerSaved": "Antwort gespeichert. Ihr Chatbot verwendet sie ab sofort.",
       "title": "Zu prüfen",
       "sub": "Fragen, die Ihr Chatbot nicht gut beantworten konnte – gefunden durch die Prüfung abgeschlossener Gespräche.",
       "filter": "Anzeigen",

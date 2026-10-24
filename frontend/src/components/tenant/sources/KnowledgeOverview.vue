@@ -7,7 +7,13 @@
         <p class="panel-sub">{{ $t('knowledge.overview.stripSub') }}</p>
       </div>
 
-      <div v-if="loading && !data" class="ko-strip__skeleton"></div>
+      <ol v-if="loading && !data" class="ko-days" aria-busy="true">
+        <li v-for="n in 14" :key="n" class="ko-day">
+          <span class="ghost ghost--line" style="width: 28px; height: 10px"></span>
+          <span class="ghost" style="width: 36px; height: 24px; margin: 6px 0 10px"></span>
+          <span v-if="n % 3 === 1" class="ghost" style="height: 34px"></span>
+        </li>
+      </ol>
       <p v-else-if="!data?.upcoming?.length" class="ko-strip__empty">
         {{ data?.ended?.length ? $t('knowledge.overview.noneUpcomingEnded') : $t('knowledge.overview.noneUpcoming') }}
       </p>
@@ -145,7 +151,6 @@ defineExpose({ reload: load });
 }
 .ko-strip__head { margin-bottom: 18px; }
 .ko-strip__empty { font-size: 15px; color: var(--surface-muted); max-width: var(--measure); }
-.ko-strip__skeleton { height: 150px; border-radius: var(--radius-lg); background: var(--surface-2); }
 
 /* Two weeks as two rows of seven days — the shape of a printed collection calendar */
 .ko-days {

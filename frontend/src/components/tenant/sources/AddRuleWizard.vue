@@ -55,6 +55,12 @@
         <p class="step-subtext">{{ $t('tenant.fineTune.wizard.actionDesc') }}</p>
       </div>
 
+      <!-- Opened from a review finding: what visitors were missing -->
+      <div v-if="hint" class="info-box">
+        <font-awesome-icon :icon="['fas', 'lightbulb']" class="info-box__icon" />
+        <p class="step-subtext">{{ hint }}</p>
+      </div>
+
       <div>
         <label for="rule-instruction" class="field-label">{{ $t('tenant.fineTune.instruction.label') }}</label>
         <textarea
@@ -79,7 +85,12 @@
 import { ref, computed, watch } from 'vue';
 import WizardPanel from '../../WizardPanel.vue';
 
-const props = defineProps({ open: { type: Boolean, default: false } });
+const props = defineProps({
+  open: { type: Boolean, default: false },
+  // Prefilled trigger (e.g. from a conversation review); the wizard then starts at the answer step
+  initialTrigger: { type: String, default: '' },
+  hint: { type: String, default: '' },
+});
 const emit = defineEmits(['close', 'add-rule']);
 
 const step        = ref(0);
@@ -87,7 +98,11 @@ const trigger     = ref('');
 const instruction = ref('');
 
 watch(() => props.open, (val) => {
-  if (val) { step.value = 0; trigger.value = ''; instruction.value = ''; }
+  if (val) {
+    trigger.value = props.initialTrigger || '';
+    instruction.value = '';
+    step.value = props.initialTrigger ? 1 : 0;
+  }
 });
 
 const canProceed = computed(() => trigger.value.trim().length > 0);

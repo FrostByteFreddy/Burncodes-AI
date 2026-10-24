@@ -5,7 +5,20 @@
       {{ $t('knowledge.job.back') }}
     </router-link>
 
-    <div v-if="!job && loading" class="crawl-skeleton"></div>
+    <template v-if="!job && loading">
+      <div class="ghost-stack" aria-busy="true">
+        <span class="ghost ghost--pill"></span>
+        <span class="ghost ghost--title" style="width: 45%; height: 26px"></span>
+        <span class="ghost ghost--line" style="width: 30%"></span>
+      </div>
+      <section class="panel ghost-stack">
+        <span class="ghost ghost--title" style="width: 160px"></span>
+        <span v-for="n in 3" :key="n" class="ghost ghost--line" :style="{ width: `${85 - n * 15}%` }"></span>
+      </section>
+      <section class="panel">
+        <div v-for="n in 6" :key="n" class="ghost-row"><span class="ghost ghost--dot" style="width: 10px; height: 10px"></span><span class="ghost ghost--line" :style="{ width: `${60 - (n % 3) * 12}%` }"></span></div>
+      </section>
+    </template>
     <p v-else-if="!job" class="meta">{{ $t('knowledge.job.actionFailed') }}</p>
 
     <template v-else>
@@ -195,7 +208,6 @@ const onDelete = async () => {
   font-size: var(--text-sm); font-weight: 600; color: var(--surface-muted); text-decoration: none;
 }
 .crawl-back:hover { color: var(--interactive); }
-.crawl-skeleton { height: 220px; border-radius: var(--radius-xl); background: var(--surface-1); }
 
 .crawl-head { min-width: 0; }
 .crawl-title { overflow-wrap: anywhere; margin-top: 10px; }
