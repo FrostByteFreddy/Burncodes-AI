@@ -13,11 +13,11 @@ from pathlib import Path
 from urllib.parse import urlparse
 from uuid import UUID
 
-import httpx
 from celery import shared_task
 from celery import current_app as celery_app
 from crawl4ai import AsyncWebCrawler, CrawlerRunConfig
 
+from app.billing.services import BillingService
 from app.database.supabase_client import supabase
 from app.gemini_store.service import GeminiStoreService, INDEXABLE_FILE_EXTENSIONS
 from app.data_processing.crawler import get_crawler, browser_config
@@ -25,6 +25,7 @@ from app.data_processing.soup_extractor import fetch_html, extract_internal_link
 from app.data_processing.ingestion.utils import normalize_url
 from app.models.database import CrawlingStatus, SourceType
 from app.logging_config import error_logger
+from app.security.url_guard import UnsafeURLError, is_public_url, safe_client
 
 
 def _is_file_link(url: str) -> bool:
@@ -191,6 +192,26 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             ).eq("id", task_id).execute()
             return
 
+        # ------------------------------------------------------------------
+        # Safety + billing gates — checked per page so a crawl stops expanding
+        # once the owner's balance runs out.
+        # ------------------------------------------------------------------
+        refusal = None
+        if not is_public_url(url):
+            refusal = ("Refusing to crawl non-public URL: %s", 403)
+        elif not BillingService.tenant_has_balance(tenant_id):
+            refusal = ("Skipping %s: tenant has no balance", 402)
+        if refusal:
+            error_logger.warning(refusal[0], url)
+            supabase.table("crawling_tasks").update(
+                {"status": CrawlingStatus.FAILED.value}
+            ).eq("id", task_id).execute()
+            supabase.table("tenant_sources").insert({
+                "tenant_id": str(tenant_id), "source_type": SourceType.URL.value,
+                "source_location": url, "status": "ERROR", "status_code": refusal[1],
+            }).execute()
+            return
+
         supabase.table("crawling_tasks").update(
             {"status": CrawlingStatus.IN_PROGRESS.value}
         ).eq("id", task_id).execute()
@@ -262,7 +283,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         # ==================================================================
         # Fast-fail: HEAD request before launching browser
         try:
-            with httpx.Client(timeout=10.0, follow_redirects=True) as client:
+            with safe_client(timeout=10.0, follow_redirects=True) as client:
                 fast_check = client.get(
                     url, headers={"User-Agent": "Mozilla/5.0 (compatible; SwiftAnswerBot/1.0)"}
                 )
@@ -277,6 +298,17 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
                         "status_code": fast_check.status_code,
                     }).execute()
                     return
+        except UnsafeURLError as e:
+            # A redirect hop pointed at an internal address — don't hand it to the browser.
+            error_logger.warning("Refusing to crawl %s: %s", url, e)
+            supabase.table("crawling_tasks").update(
+                {"status": CrawlingStatus.FAILED.value}
+            ).eq("id", task_id).execute()
+            supabase.table("tenant_sources").insert({
+                "tenant_id": str(tenant_id), "source_type": SourceType.URL.value,
+                "source_location": url, "status": "ERROR", "status_code": 403,
+            }).execute()
+            return
         except Exception as e:
             error_logger.warning("Fast-check failed for %s, falling back to crawler: %s", url, e)
 
@@ -305,6 +337,14 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
 
         found_links: set[str] = set()
         status_code = getattr(crawl_result, "status_code", None) if crawl_result else None
+
+        # The browser follows redirects on its own; don't index a page that
+        # ended up on an internal address.
+        redirected_url = getattr(crawl_result, "redirected_url", None) if crawl_result else None
+        if redirected_url and redirected_url != url and not is_public_url(redirected_url):
+            error_logger.warning("Discarding %s: redirected to non-public %s", url, redirected_url)
+            crawl_result = None
+            status_code = 403
 
         if crawl_result and crawl_result.success and crawl_result.markdown:
             # Create source record and upload markdown to File Search

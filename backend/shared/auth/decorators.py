@@ -5,20 +5,17 @@ from app.database.supabase_client import supabase
 def token_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        token = None
-        if 'Authorization' in request.headers:
-            token = request.headers['Authorization'].split(" ")[1]
-
-        if not token:
+        scheme, _, token = request.headers.get('Authorization', '').partition(' ')
+        if scheme.lower() != 'bearer' or not token.strip():
             return jsonify({'message': 'Token is missing!'}), 401
 
         try:
-            user_response = supabase.auth.get_user(token)
-            current_user = user_response.user
-            if not current_user:
-                return jsonify({'message': 'Token is invalid!'}), 401
-        except Exception as e:
-            return jsonify({'message': 'Token is invalid!', 'error': str(e)}), 401
+            # get_user only reads; it doesn't change the shared client's session.
+            current_user = supabase.auth.get_user(token.strip()).user
+        except Exception:
+            current_user = None
+        if not current_user:
+            return jsonify({'message': 'Token is invalid!'}), 401
 
         return f(current_user, *args, **kwargs)
 

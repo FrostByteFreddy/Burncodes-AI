@@ -4,12 +4,28 @@ from app.auth.decorators import token_required
 from app.models.database import SourceType
 from app.data_processing.tasks import process_local_file, process_urls, crawl_links_task
 from app.logging_config import error_logger
+from app.billing.services import BillingService
+from app.security.url_guard import is_public_url
 from app import celery
+from uuid import uuid4
+from werkzeug.utils import secure_filename
 import os
 
 UPLOADS_DIR = os.environ.get("UPLOADS_DIR", "/app/data/uploads")
 
 sources_bp = Blueprint('sources', __name__)
+
+
+def _insufficient_balance(user_id):
+    """Returns a 402 response if the user can't pay for indexing, else None."""
+    if BillingService.check_balance(user_id) <= 0:
+        return jsonify({"error": "Insufficient balance. Please recharge."}), 402
+    return None
+
+
+def _invalid_urls(urls):
+    """Returns the subset of urls that must not be fetched (non-http(s) or non-public hosts)."""
+    return [u for u in urls if not isinstance(u, str) or not is_public_url(u)]
 
 @sources_bp.route('/<uuid:tenant_id>/sources', methods=['GET'])
 @token_required
@@ -23,7 +39,7 @@ def get_sources(current_user, tenant_id):
         return jsonify(sources.data), 200
     except Exception as e:
         error_logger.error(f"Error getting sources for tenant {tenant_id} for user {current_user.id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to retrieve sources", "details": str(e)}), 500
+        return jsonify({"error": "Failed to retrieve sources"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/sources/upload', methods=['POST'])
 @token_required
@@ -39,10 +55,20 @@ def upload_source(current_user, tenant_id):
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
-    # Save to local filesystem: /app/data/uploads/{tenant_id}/{filename}
+    if (resp := _insufficient_balance(current_user.id)):
+        return resp
+
+    # Save to local filesystem: /app/data/uploads/{tenant_id}/{uuid}_{filename}.
+    # The client-supplied filename is never used as a path: secure_filename
+    # strips separators and "..", the uuid prefix avoids collisions, and the
+    # realpath check is a final guard against escaping the tenant directory.
+    display_name = os.path.basename(file.filename.replace("\\", "/")) or "upload"
+    safe_name = f"{uuid4().hex}_{secure_filename(display_name) or 'upload'}"
     tenant_upload_dir = os.path.join(UPLOADS_DIR, tenant_id_str)
     os.makedirs(tenant_upload_dir, exist_ok=True)
-    local_path = os.path.join(tenant_upload_dir, file.filename)
+    local_path = os.path.join(tenant_upload_dir, safe_name)
+    if not os.path.realpath(local_path).startswith(os.path.realpath(tenant_upload_dir) + os.sep):
+        return jsonify({"error": "Invalid filename"}), 400
 
     try:
         file.save(local_path)
@@ -51,7 +77,7 @@ def upload_source(current_user, tenant_id):
         source_record = supabase.table('tenant_sources').insert(source_data).execute()
         source_id = source_record.data[0]['id']
 
-        task = process_local_file.delay(local_path, file.filename, source_id, tenant_id_str)
+        task = process_local_file.delay(local_path, display_name, source_id, tenant_id_str)
 
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
@@ -61,7 +87,7 @@ def upload_source(current_user, tenant_id):
                 os.remove(local_path)
         except Exception as cleanup_e:
             error_logger.error(f"Failed to clean up file {local_path} after an error: {cleanup_e}", extra={'user_id': current_user.id})
-        return jsonify({"error": f"Failed to process file: {str(e)}"}), 500
+        return jsonify({"error": "Failed to process file"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/sources/crawl', methods=['POST'])
 @token_required
@@ -77,6 +103,12 @@ def crawl_sources(current_user, tenant_id):
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
+        rejected = _invalid_urls(urls)
+        if rejected:
+            return jsonify({"error": "Only public http(s) URLs can be added", "rejected": rejected}), 400
+        if (resp := _insufficient_balance(current_user.id)):
+            return resp
+
         sources_to_insert = [{"tenant_id": tenant_id_str, "source_type": SourceType.URL, "source_location": url, "status": "QUEUED"} for url in urls]
         source_records = supabase.table('tenant_sources').insert(sources_to_insert).execute()
         urls_with_ids = [(rec['source_location'], rec['id']) for rec in source_records.data]
@@ -86,7 +118,7 @@ def crawl_sources(current_user, tenant_id):
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
         error_logger.error(f"Error processing crawl for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": f"Failed to process URLs: {str(e)}"}), 500
+        return jsonify({"error": "Failed to process URLs"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/sources/discover', methods=['POST'])
 @token_required
@@ -106,6 +138,11 @@ def discover_links(current_user, tenant_id):
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
+        if _invalid_urls([start_url]):
+            return jsonify({"error": "Only public http(s) URLs can be crawled"}), 400
+        if (resp := _insufficient_balance(current_user.id)):
+            return resp
+
         # Persist the selected crawl_mode so all worker tasks pick it up from the DB
         valid_modes = {'soup', 'playwright', 'playwright_llm'}
         if crawl_mode not in valid_modes:
@@ -122,7 +159,7 @@ def discover_links(current_user, tenant_id):
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
         error_logger.error(f"Error discovering links for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": f"Failed to discover links: {str(e)}"}), 500
+        return jsonify({"error": "Failed to discover links"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs', methods=['GET'])
 @token_required
@@ -172,7 +209,7 @@ def get_crawling_jobs(current_user, tenant_id):
         return jsonify(jobs), 200
     except Exception as e:
         error_logger.error(f"Error getting crawling jobs for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to retrieve crawling jobs", "details": str(e)}), 500
+        return jsonify({"error": "Failed to retrieve crawling jobs"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/progress', methods=['GET'])
 @token_required
@@ -211,7 +248,7 @@ def get_crawling_job_progress(current_user, tenant_id, job_id):
         return jsonify(progress), 200
     except Exception as e:
         error_logger.error(f"Error getting job progress for job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to retrieve job progress", "details": str(e)}), 500
+        return jsonify({"error": "Failed to retrieve job progress"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/cancel', methods=['POST'])
 @token_required
@@ -260,7 +297,7 @@ def cancel_crawling_job(current_user, tenant_id, job_id):
 
     except Exception as e:
         error_logger.error(f"Error cancelling crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to cancel crawl job", "details": str(e)}), 500
+        return jsonify({"error": "Failed to cancel crawl job"}), 500
 
 
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>', methods=['DELETE'])
@@ -353,7 +390,7 @@ def delete_crawling_job(current_user, tenant_id, job_id):
 
     except Exception as e:
         error_logger.error(f"Error deleting crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to delete crawl job", "details": str(e)}), 500
+        return jsonify({"error": "Failed to delete crawl job"}), 500
 
 
 @sources_bp.route('/<uuid:tenant_id>/sources/<int:source_id>', methods=['DELETE'])
@@ -398,7 +435,7 @@ def delete_source(current_user, tenant_id, source_id):
 
     except Exception as e:
         error_logger.error(f"Error deleting source {source_id} for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to delete source", "details": str(e)}), 500
+        return jsonify({"error": "Failed to delete source"}), 500
 
 
 @sources_bp.route('/<uuid:tenant_id>/sources', methods=['DELETE'])
@@ -471,7 +508,7 @@ def delete_all_sources(current_user, tenant_id):
             f"Error deleting all sources for tenant {tenant_id}: {e}",
             extra={'user_id': current_user.id}, exc_info=True
         )
-        return jsonify({"error": "Failed to delete all knowledge", "details": str(e)}), 500
+        return jsonify({"error": "Failed to delete all knowledge"}), 500
 
 @sources_bp.route('/tasks/<string:task_id>', methods=['GET'])
 @token_required
@@ -499,7 +536,7 @@ def get_task_status(current_user, task_id):
         return jsonify(response)
     except Exception as e:
         error_logger.error(f"Error getting task status for task {task_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to get task status", "details": str(e)}), 500
+        return jsonify({"error": "Failed to get task status"}), 500
 
 
 @sources_bp.route('/<uuid:tenant_id>/store-stats', methods=['GET'])
@@ -560,4 +597,4 @@ def get_store_stats(current_user, tenant_id):
             f"Error fetching store stats for tenant {tenant_id}: {e}",
             extra={'user_id': current_user.id}, exc_info=True
         )
-        return jsonify({"error": "Failed to fetch store stats", "details": str(e)}), 500
+        return jsonify({"error": "Failed to fetch store stats"}), 500

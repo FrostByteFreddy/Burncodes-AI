@@ -43,7 +43,7 @@ def create_tenant(current_user):
         return jsonify({"message": "Tenant created successfully", "id": str(tenant_id)}), 201
     except Exception as e:
         error_logger.error(f"Error creating tenant for user {current_user.id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to create tenant", "details": str(e)}), 500
+        return jsonify({"error": "Failed to create tenant"}), 500
 
 @tenants_bp.route('', methods=['GET'])
 @token_required
@@ -53,7 +53,7 @@ def get_tenants(current_user):
         return jsonify(tenants.data), 200
     except Exception as e:
         error_logger.error(f"Error fetching tenants for user {current_user.id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to fetch tenants", "details": str(e)}), 500
+        return jsonify({"error": "Failed to fetch tenants"}), 500
 
 @tenants_bp.route('/<uuid:tenant_id>', methods=['GET'])
 @token_required
@@ -72,7 +72,7 @@ def get_tenant(current_user, tenant_id):
         return jsonify(tenant.data), 200
     except Exception as e:
         error_logger.error(f"Error fetching tenant {tenant_id} for user {current_user.id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to fetch tenant", "details": str(e)}), 500
+        return jsonify({"error": "Failed to fetch tenant"}), 500
 
 @tenants_bp.route('/<uuid:tenant_id>/public', methods=['GET'])
 def get_public_tenant(tenant_id):
@@ -120,7 +120,7 @@ def update_tenant(current_user, tenant_id):
         return jsonify({"message": "Tenant updated successfully"}), 200
     except Exception as e:
         error_logger.error(f"Error updating tenant {tenant_id} for user {current_user.id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to update tenant", "details": str(e)}), 500
+        return jsonify({"error": "Failed to update tenant"}), 500
 
 @tenants_bp.route('/<uuid:tenant_id>', methods=['DELETE'])
 @token_required
@@ -149,4 +149,4 @@ def delete_tenant(current_user, tenant_id):
         return jsonify({"message": "Tenant deleted successfully"}), 200
     except Exception as e:
         error_logger.error(f"Error deleting tenant {tenant_id} for user {current_user.id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to delete tenant", "details": str(e)}), 500
+        return jsonify({"error": "Failed to delete tenant"}), 500

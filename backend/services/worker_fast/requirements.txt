@@ -17,3 +17,6 @@ trafilatura==2.0.0
 beautifulsoup4==4.13.4
 lxml==5.4.0
 google-genai>=1.13.0
+
+# Retry helpers used by shared billing/database code
+tenacity

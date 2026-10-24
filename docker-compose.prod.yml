@@ -9,7 +9,9 @@ services:
     build:
       context: ./backend
       dockerfile: services/api/Dockerfile
-    command: gunicorn --workers 8 --bind 0.0.0.0:5000 --timeout 120 "app:create_app()"
+    # gthread: the chat status endpoint long-polls for up to 30 s; with sync
+    # workers 8 waiting widget users would block every other API request.
+    command: gunicorn --workers 8 --worker-class gthread --threads 16 --bind 0.0.0.0:5000 --timeout 120 "app:create_app()"
     restart: always
     volumes:
       - app_data:/app/data

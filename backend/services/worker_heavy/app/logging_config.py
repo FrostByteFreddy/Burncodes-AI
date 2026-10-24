@@ -1,1 +1,1 @@
-../../../../shared/logging_config.py
+../../../shared/logging_config.py

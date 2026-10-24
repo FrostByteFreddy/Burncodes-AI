@@ -4,14 +4,26 @@ worker_fast/app/data_processing/ingestion/file_ingester.py
 Uploads local files and remote file URLs to the tenant's Gemini File Search Store.
 Replaces the old LangChain/ChromaDB pipeline entirely.
 """
-import os
-import httpx
 from pathlib import Path
 from urllib.parse import urlparse
 
+from app.billing.services import BillingService
 from app.database.supabase_client import supabase
+from app.data_processing.soup_extractor import fetch_html
+from app.security.url_guard import UnsafeURLError, safe_client
 from app.gemini_store.service import GeminiStoreService, INDEXABLE_FILE_EXTENSIONS, UNSUPPORTED_EXTENSIONS
 from app.logging_config import error_logger
+
+
+def _require_balance(source_id: int, tenant_id: str) -> bool:
+    """Marks the source as failed (402) and returns False if the owner has no balance."""
+    if BillingService.tenant_has_balance(tenant_id):
+        return True
+    error_logger.warning("Skipping source %s: tenant %s has no balance", source_id, tenant_id)
+    supabase.table("tenant_sources").update({
+        "status": "ERROR", "status_code": 402,
+    }).eq("id", source_id).execute()
+    return False
 
 
 def process_local_file(file_path: str, source_filename: str, source_id: int, tenant_id: str) -> None:
@@ -28,6 +40,8 @@ def process_local_file(file_path: str, source_filename: str, source_id: int, ten
         }).eq("id", source_id).execute()
         return
 
+    if not _require_balance(source_id, tenant_id):
+        return
     supabase.table("tenant_sources").update({"status": "PROCESSING"}).eq("id", source_id).execute()
     try:
         store_name = GeminiStoreService.get_or_create_store(tenant_id)
@@ -62,10 +76,13 @@ def process_file_url(url: str, source_id: int, tenant_id: str) -> None:
         supabase.table("tenant_sources").update({"status": "UNSUPPORTED"}).eq("id", source_id).execute()
         return
 
+    if not _require_balance(source_id, tenant_id):
+        return
     supabase.table("tenant_sources").update({"status": "PROCESSING"}).eq("id", source_id).execute()
     try:
         error_logger.info("Downloading file URL %s", url)
-        response = httpx.get(url, follow_redirects=True, timeout=60.0)
+        with safe_client(follow_redirects=True, timeout=60.0) as client:
+            response = client.get(url)
         response.raise_for_status()
 
         store_name = GeminiStoreService.get_or_create_store(tenant_id)
@@ -81,6 +98,9 @@ def process_file_url(url: str, source_id: int, tenant_id: str) -> None:
             "status": "COMPLETED",
         }).eq("id", source_id).execute()
         error_logger.info("Indexed file URL %s (source %s)", url, source_id)
+    except UnsafeURLError as e:
+        error_logger.warning("Refusing to fetch file URL %s: %s", url, e)
+        supabase.table("tenant_sources").update({"status": "ERROR", "status_code": 403}).eq("id", source_id).execute()
     except Exception as e:
         error_logger.error("Failed to index file URL %s: %s", url, e, exc_info=True)
         supabase.table("tenant_sources").update({"status": "ERROR"}).eq("id", source_id).execute()
@@ -95,13 +115,15 @@ def process_webpage(url: str, source_id: int, tenant_id: str) -> None:
     """
     import trafilatura
 
+    if not _require_balance(source_id, tenant_id):
+        return
     supabase.table("tenant_sources").update({"status": "PROCESSING"}).eq("id", source_id).execute()
     try:
-        downloaded = trafilatura.fetch_url(url)
+        downloaded, status_code = fetch_html(url)
         if not downloaded:
             error_logger.warning("trafilatura: empty response for %s", url)
             supabase.table("tenant_sources").update({
-                "status": "ERROR", "status_code": 0,
+                "status": "ERROR", "status_code": status_code,
             }).eq("id", source_id).execute()
             return
 

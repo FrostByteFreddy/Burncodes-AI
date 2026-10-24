@@ -22,13 +22,21 @@ from app.prompts import FINE_TUNE_RULE_PROMPTS
 
 CHAT_GEMINI_MODEL = os.getenv("CHAT_GEMINI_MODEL", "gemini-3.1-flash-lite-preview")
 
+# Number of previous exchanges (user + AI message pairs) sent as context.
+HISTORY_TURNS = int(os.getenv("CHAT_HISTORY_TURNS", "10"))
+# Per-request timeout for the Gemini call, in milliseconds (google-genai unit).
+GEMINI_TIMEOUT_MS = int(os.getenv("CHAT_GEMINI_TIMEOUT_MS", "90000"))
+
 _client: genai.Client | None = None
 
 
 def _get_client() -> genai.Client:
     global _client
     if _client is None:
-        _client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
+        _client = genai.Client(
+            api_key=os.environ["GOOGLE_API_KEY"],
+            http_options={"timeout": GEMINI_TIMEOUT_MS},
+        )
     return _client
 
 
@@ -44,6 +52,28 @@ def _build_contents(chat_history_json: list, query: str) -> list:
     # Gemini requires the last message to be from "user"
     contents.append({"role": "user", "parts": [{"text": query}]})
     return contents
+
+
+def _load_history(tenant_id: str, conversation_id: str) -> list:
+    """
+    Loads the last HISTORY_TURNS exchanges of this conversation from chat_logs.
+    History is never taken from the client: a public caller could otherwise
+    send megabytes of fake turns and bill the tenant owner for the tokens.
+    """
+    response = (
+        supabase.table("chat_logs")
+        .select("user_message, ai_message")
+        .eq("tenant_id", str(tenant_id))
+        .eq("conversation_id", str(conversation_id))
+        .order("created_at", desc=True)
+        .limit(HISTORY_TURNS)
+        .execute()
+    )
+    history = []
+    for row in reversed(response.data or []):
+        history.append({"type": "human", "content": row["user_message"]})
+        history.append({"type": "ai", "content": row["ai_message"]})
+    return history
 
 
 def _build_system_instruction(tenant_config: dict, fine_tune_rules: list) -> str:
@@ -94,7 +124,7 @@ def _extract_citations(response) -> list[dict]:
     return citations
 
 
-@shared_task(bind=True, queue="chat")
+@shared_task(bind=True, queue="chat", soft_time_limit=110, time_limit=120)
 def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_id=None):
     """
     Celery task to handle a chat turn using Gemini with the File Search tool.
@@ -146,6 +176,9 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
             )
 
         # --- Build contents (conversation history + current query) ---
+        # chat_history_json is ignored (kept in the signature for queued tasks
+        # from older API versions); history comes from the database.
+        chat_history_json = _load_history(tenant_id, conversation_id)
         # Strip leading model messages — Gemini requires first message to be "user"
         history = list(chat_history_json)
         while history and history[0].get("type") != "human":
@@ -163,7 +196,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
             },
         )
 
-        ai_message = response.text
+        ai_message = response.text or ""
 
         # --- Token usage ---
         usage = getattr(response, "usage_metadata", None)
@@ -181,7 +214,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
 
         # --- Billing ---
         cost = 0.0
-        if user_id:
+        if user_id and user_id != "None":
             cost = BillingService.deduct_cost(user_id, CHAT_GEMINI_MODEL, input_tokens, output_tokens)
 
         # --- Log to DB ---

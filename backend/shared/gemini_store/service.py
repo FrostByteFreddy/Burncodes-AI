@@ -145,6 +145,18 @@ class GeminiStoreService:
         # Extract the document resource name from the completed operation
         doc_name = GeminiStoreService._extract_doc_name(operation, store_name, display_name)
         error_logger.info("Indexed %s → %s", display_name, doc_name)
+
+        # Every indexed document is billed to the tenant owner. Uploads carry
+        # tenant_id/source_id in their metadata; the import is local because
+        # the billing module isn't needed by callers that only delete.
+        if metadata and metadata.get("tenant_id"):
+            from app.billing.services import BillingService
+            est_tokens = BillingService.estimate_indexing_tokens(
+                os.path.getsize(file_path), Path(file_path).suffix
+            )
+            BillingService.charge_indexing(
+                metadata["tenant_id"], metadata.get("source_id"), est_tokens
+            )
         return doc_name
 
     @staticmethod
