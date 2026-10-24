@@ -13,6 +13,7 @@ Key changes:
 """
 import os
 import re
+import unicodedata
 from datetime import date, timedelta
 
 from celery import shared_task
@@ -85,7 +86,21 @@ _UPCOMING_PER_SERIES = 4
 _MAX_SERIES = 30
 
 
-def _dates_context(tenant_id: str, today: date) -> str:
+def _calendars_offered(tenant_config: dict) -> bool:
+    # same rule as the public feed: on, enabled and not password-protected
+    return bool(tenant_config.get("calendar_feeds")) and not tenant_config.get("test_password_hash") \
+        and tenant_config.get("is_active") is not False
+
+
+def _calendar_key(series: str, zone: str) -> str:
+    """Same as app/knowledge/calendar.py calendar_key (that package isn't in this service)."""
+    def slug(text):
+        text = unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode()
+        return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+    return slug(series) + (f"--{slug(zone)}" if zone else "")
+
+
+def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, sources_out: dict | None = None) -> str:
     """
     Today's date plus verified dates extracted at indexing time (tenant_events):
     the next few per series, or — when a series has no future dates — when its
@@ -94,7 +109,7 @@ def _dates_context(tenant_id: str, today: date) -> str:
     lines = [f"Today is {_WEEKDAY[today.weekday()]} {today.isoformat()}."]
     rows = (
         supabase.table("tenant_events")
-        .select("series, zone, event_date, is_exception, notes")
+        .select("series, zone, event_date, is_exception, notes, source_id")
         .eq("tenant_id", str(tenant_id))
         .gte("event_date", (today - timedelta(days=400)).isoformat())
         .lte("event_date", (today + timedelta(days=400)).isoformat())
@@ -107,7 +122,8 @@ def _dates_context(tenant_id: str, today: date) -> str:
 
     series: dict[tuple[str, str], dict] = {}
     for r in rows:
-        entry = series.setdefault((r["series"], r["zone"]), {"upcoming": [], "last": None, "notes": r.get("notes") or ""})
+        entry = series.setdefault((r["series"], r["zone"]), {"upcoming": [], "last": None, "notes": r.get("notes") or "",
+                                                             "source_id": r.get("source_id")})
         d = date.fromisoformat(r["event_date"])
         if d >= today:
             if len(entry["upcoming"]) < _UPCOMING_PER_SERIES:
@@ -115,15 +131,37 @@ def _dates_context(tenant_id: str, today: date) -> str:
         else:
             entry["last"] = d
 
+    source_ids = list({e["source_id"] for e in series.values() if e["source_id"]})
+    source_rows = {
+        s["id"]: s for s in (supabase.table("tenant_sources").select("id, title, source_location")
+                             .in_("id", source_ids).execute().data or [])
+    } if source_ids else {}
+    sources = {sid: f"{(s.get('title') or '').strip()} {s['source_location']}".strip() for sid, s in source_rows.items()}
+    if sources_out is not None:
+        # series name -> (title, url), for the source fallback after answering
+        for (name, _zone), entry in series.items():
+            s = source_rows.get(entry["source_id"])
+            if s:
+                sources_out[name] = ((s.get("title") or s["source_location"]).strip(), s["source_location"])
+
     lines.append("Verified dates from this organisation's documents (use these for questions about dates; never invent dates):")
     for (name, zone), entry in list(series.items())[:_MAX_SERIES]:
         label = f"{name} ({zone})" if zone else name
         notes = f" [{entry['notes']}]" if entry["notes"] else ""
         if entry["upcoming"]:
-            lines.append(f"- {label}{notes}: next {', '.join(entry['upcoming'])}")
+            key = f" {{calendar: {_calendar_key(name, zone)}}}" if offer_calendars else ""
+            source = f" {{source: {sources[entry['source_id']]}}}" if entry["source_id"] in sources else ""
+            lines.append(f"- {label}{notes}{key}{source}: next {', '.join(entry['upcoming'])}")
         elif entry["last"]:
             lines.append(f"- {label}{notes}: no future dates known — the published schedule ends "
                          f"{entry['last'].isoformat()}; say so instead of guessing.")
+    if offer_calendars:
+        lines.append(
+            "Residents can subscribe to these dates in their own calendar. When your answer gives dates "
+            "of a series that has a {calendar: KEY}, add the line [[calendar:KEY]] at the very end of your "
+            "answer, once per series you gave dates for (at most three). Never mention the key or this "
+            "marker in your text; the chat turns it into a button."
+        )
     return "\n".join(lines)
 
 
@@ -153,6 +191,62 @@ def _build_system_instruction(tenant_config: dict, fine_tune_rules: list) -> str
         .replace("{fine_tune_instructions}", fine_tune_instructions)
     )
     return re.sub(r"\n{3,}", "\n\n", system_text).strip()
+
+
+_SOURCES_RULE = (
+    "Sources: whenever your answer uses information from a document (dates, phone numbers, opening hours, "
+    "fees, anything), end with one short line naming it as a "
+    "markdown link, e.g. \"Quelle: [Abfallkalender 2026](https://…)\" (in the reply language). Take the address "
+    "only from the document's \"Quelle:\" line or from a {source: …} given with the dates; never make one up. "
+    "Link each document at most once, at most three documents."
+)
+
+_MD_LINK = re.compile(r"\[([^\]]+)\]\((https?://[^)\s]+)\)")
+
+
+def _known_source_urls(tenant_id: str) -> set[str]:
+    rows = (supabase.table("tenant_sources").select("source_location")
+            .eq("tenant_id", str(tenant_id)).limit(20000).execute()).data or []
+    return {r["source_location"] for r in rows if r.get("source_location")}
+
+
+def _keep_known_links(answer: str, known: set[str]) -> str:
+    """Links to anything but the organisation's own sources become plain text (no invented URLs)."""
+    return _MD_LINK.sub(lambda m: m.group(0) if m.group(2) in known else m.group(1), answer)
+
+
+_QUELLE = re.compile(r"Quelle:\s*(https?://\S+)")
+
+
+def _retrieved_sources(response) -> list[tuple[str, str]]:
+    """(title, url) of the documents File Search handed the model, from their "Quelle:" line."""
+    found = []
+    try:
+        for chunk in response.candidates[0].grounding_metadata.grounding_chunks or []:
+            ctx = getattr(chunk, "retrieved_context", None)
+            m = _QUELLE.search(getattr(ctx, "text", None) or "") if ctx else None
+            if m:
+                title = (getattr(ctx, "title", None) or m.group(1)).split(" — ")[0].strip()
+                found.append((title, m.group(1)))
+    except (AttributeError, IndexError, TypeError):
+        pass
+    return found
+
+
+def _ensure_source(answer: str, candidates: list[tuple[str, str]], known: set[str]) -> str:
+    """Every answer drawn from documents ends with a link to one, even if the model forgot."""
+    if any(m.group(2) in known for m in _MD_LINK.finditer(answer)):
+        return answer
+    seen, links = set(), []
+    for title, url in candidates:
+        if url in known and url not in seen:
+            seen.add(url)
+            links.append(f"[{title.replace(']', ')')}]({url})")
+    if not links:
+        return answer
+    # before any calendar markers, which have to stay last
+    body, markers = re.match(r"(.*?)((?:\s*\[\[calendar:[a-z0-9-]+\]\])*)\s*$", answer, re.S).groups()
+    return f"{body.rstrip()}\n\n↗ {', '.join(links[:3])}{markers}"
 
 
 def _language_rule() -> str:
@@ -245,11 +339,13 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
 
         # --- Build system instruction ---
         system_instruction = _build_system_instruction(tenant_config, fine_tune_rules)
+        date_sources: dict[str, tuple[str, str]] = {}
         try:
-            system_instruction += "\n\n" + _dates_context(tenant_id, date.today())
+            system_instruction += "\n\n" + _dates_context(
+                tenant_id, date.today(), offer_calendars=_calendars_offered(tenant_config), sources_out=date_sources)
         except Exception as e:
             error_logger.warning("chat_task: dates context unavailable for tenant %s: %s", tenant_id, e)
-        system_instruction += "\n\n" + _language_rule()
+        system_instruction += "\n\n" + _SOURCES_RULE + "\n\n" + _language_rule()
 
         # --- Build tool config ---
         # Only attach file_search if the tenant has an indexed store
@@ -285,6 +381,13 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         )
 
         ai_message = response.text or ""
+        try:
+            known = _known_source_urls(tenant_id)
+            ai_message = _keep_known_links(ai_message, known)
+            mentioned = [src for name, src in date_sources.items() if name.lower() in ai_message.lower()]
+            ai_message = _ensure_source(ai_message, _retrieved_sources(response) + mentioned, known)
+        except Exception as e:
+            error_logger.warning("chat_task: source links skipped for tenant %s: %s", tenant_id, e)
 
         # --- Token usage ---
         usage = getattr(response, "usage_metadata", None)

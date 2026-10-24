@@ -74,6 +74,8 @@ ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS review_interval_days  INTEGE
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS last_review_at        TIMESTAMPTZ;
 -- Password for a chatbot still in development (werkzeug hash); NULL = open
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS test_password_hash    TEXT;
+-- Residents can subscribe to validated dates as calendar feeds (.ics)
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS calendar_feeds        BOOLEAN NOT NULL DEFAULT true;
 COMMENT ON COLUMN public.tenants.gemini_file_store_name IS
     'Gemini File Search Store resource name (e.g. fileSearchStores/abc123). NULL until the tenant uploads their first source.';
 

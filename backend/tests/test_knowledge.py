@@ -206,13 +206,16 @@ class TestChatDates:
         ]
 
         class Q:
+            def __init__(self, table):
+                self.table = table
+
             def __getattr__(self, name):
                 return lambda *a, **k: self
 
             def execute(self):
-                return type("R", (), {"data": rows})()
+                return type("R", (), {"data": rows if self.table == "tenant_events" else []})()
 
-        monkeypatch.setattr(chat, "supabase", type("S", (), {"table": lambda self, n: Q()})())
+        monkeypatch.setattr(chat, "supabase", type("S", (), {"table": lambda self, n: Q(n)})())
         text = chat._dates_context("t", date(2026, 10, 24))
         assert text.startswith("Today is Sat 2026-10-24.")
         assert "Kehricht (Zone 1): next Mon 2026-10-26, Mon 2026-11-02 (exception)" in text
@@ -338,3 +341,47 @@ class TestReviewFindings:
         ]
         out = _clean(raw, self.LOGS, first_new=1)
         assert len(out) == 1 and out[0]["kind"] == "unanswered" and out[0]["log_id"] == 11
+
+
+class TestCalendar:
+    def test_keys_are_stable_ascii_slugs(self):
+        from app.knowledge.calendar import calendar_key
+        assert calendar_key("Grünabfuhr", "") == "grunabfuhr"
+        assert calendar_key("Hauskehricht und Sperrgut", "Zone 1") == "hauskehricht-und-sperrgut--zone-1"
+
+    def test_ics_has_stable_uids_alarm_and_folded_lines(self):
+        from datetime import datetime, timezone
+        from app.knowledge.calendar import build_ics
+        events = [{"series": "Papier", "zone": "Zone 1", "event_date": "2026-11-03", "is_exception": True,
+                   "notes": "", "source_id": 7}]
+        sources = {7: {"title": "Abfallkalender 2026", "url": "https://www.zofingen.ch/" + "x" * 120 + ".pdf"}}
+        kw = dict(tenant_id="t", title="Zofingen: Papier (Zone 1)", description="d", events=events, sources=sources,
+                  now=datetime(2026, 1, 1, tzinfo=timezone.utc))
+        a, b = build_ics(**kw), build_ics(**kw)
+        assert a == b  # unchanged data, byte-identical feed
+        assert "DTSTART;VALUE=DATE:20261103" in a and "DTEND;VALUE=DATE:20261104" in a
+        assert "TRIGGER:-PT6H" in a and "Moved date" in a
+        assert all(len(line.encode()) <= 75 for line in a.split("\r\n"))
+
+
+class TestSourceLinks:
+    def test_unknown_links_become_plain_text(self):
+        chat = TestSystemInstruction._chat()
+        known = {"https://www.zofingen.ch/abfall.pdf"}
+        text = "Am Montag. Quelle: [Abfallkalender](https://www.zofingen.ch/abfall.pdf), siehe [hier](https://evil.example/x)"
+        out = chat._keep_known_links(text, known)
+        assert "[Abfallkalender](https://www.zofingen.ch/abfall.pdf)" in out
+        assert "evil.example" not in out and "siehe hier" in out
+
+    def test_missing_source_is_appended_before_calendar_markers(self):
+        chat = TestSystemInstruction._chat()
+        url = "https://www.zofingen.ch/kontakt"
+        out = chat._ensure_source("Die Nummer ist 062 745 71 00.\n[[calendar:papier--zone-1]]",
+                                  [("Kontakt", url), ("Kontakt", url), ("Fremd", "https://x.example")], {url})
+        assert out == f"Die Nummer ist 062 745 71 00.\n\n↗ [Kontakt]({url})\n[[calendar:papier--zone-1]]"
+
+    def test_existing_source_link_is_left_alone(self):
+        chat = TestSystemInstruction._chat()
+        url = "https://www.zofingen.ch/kontakt"
+        text = f"Nummer: 062 745 71 00. Quelle: [Kontakt]({url})"
+        assert chat._ensure_source(text, [("Andere", "https://www.zofingen.ch/a")], {url, "https://www.zofingen.ch/a"}) == text

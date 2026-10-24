@@ -36,6 +36,27 @@
           </ul>
         </li>
       </ol>
+
+      <!-- The same dates as calendars residents can subscribe to -->
+      <div class="ko-cal">
+        <div class="ko-cal__row">
+          <div>
+            <label for="ko-cal" class="ko-cal__title">{{ $t('knowledge.calendars.title') }}</label>
+            <p class="meta">{{ $t('knowledge.calendars.sub') }}</p>
+          </div>
+          <input id="ko-cal" type="checkbox" role="switch" class="ko-switch" :checked="calendarsOn" :disabled="savingCal" @change="setCalendars($event.target.checked)" />
+        </div>
+        <p v-if="tenant?.test_protected && calendarsOn" class="meta ko-cal__warn">{{ $t('knowledge.calendars.protected') }}</p>
+        <ul v-else-if="calendarsOn && feeds.length" class="ko-cal__list">
+          <li v-for="f in feeds" :key="f.key" class="ko-cal__feed">
+            <span class="ko-cal__name">{{ f.zone ? `${f.series} (${f.zone})` : f.series }}</span>
+            <span class="meta">{{ $t('knowledge.calendars.dates', { n: f.count }) }}</span>
+            <button type="button" class="ko-cal__copy" @click="copyFeed(f)">
+              <font-awesome-icon :icon="['fas', copied === f.key ? 'check' : 'link']" /> {{ copied === f.key ? $t('knowledge.calendars.copied') : $t('knowledge.calendars.copy') }}
+            </button>
+          </li>
+        </ul>
+      </div>
     </section>
 
     <!-- What needs a person -->
@@ -78,13 +99,15 @@
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';
+import { useTenantsStore } from '@/stores/tenants';
+import { useToast } from '@/composables/useToast';
 
 const props = defineProps({
   tenantId: { type: String, required: true },
   // bump to reload (e.g. after a crawl finished)
   refreshKey: { type: Number, default: 0 },
 });
-const { locale } = useI18n();
+const { t, locale } = useI18n();
 
 const data = ref(null);
 const loading = ref(false);
@@ -133,6 +156,39 @@ const issueGroups = computed(() => {
   return [...groups.values()];
 });
 const needsCount = computed(() => (data.value?.ended?.length || 0) + issueGroups.value.length);
+
+// ── Calendar feeds ──────────────────────────────────────────────────
+const tenantsStore = useTenantsStore();
+const { addToast } = useToast();
+const tenant = computed(() => tenantsStore.currentTenant);
+const calendarsOn = computed(() => tenant.value?.calendar_feeds !== false);
+const feeds = ref([]);
+const savingCal = ref(false);
+const copied = ref(null);
+
+const loadFeeds = async () => {
+  if (!props.tenantId) return;
+  try { feeds.value = (await apiClient.get(`/calendar/${props.tenantId}`)).data.feeds || []; }
+  catch { feeds.value = []; }
+};
+watch(() => [props.tenantId, props.refreshKey, calendarsOn.value], loadFeeds, { immediate: true });
+
+const setCalendars = async (on) => {
+  savingCal.value = true;
+  try {
+    await apiClient.put(`/tenants/${props.tenantId}`, { calendar_feeds: on });
+    await tenantsStore.refetch(props.tenantId);
+    addToast(on ? t('knowledge.calendars.on') : t('knowledge.calendars.off'), 'success');
+  } catch { addToast(t('tenant.settings.actions.saveFailed'), 'error'); }
+  finally { savingCal.value = false; }
+};
+const copyFeed = async (f) => {
+  try {
+    await navigator.clipboard.writeText(f.https);
+    copied.value = f.key;
+    setTimeout(() => { copied.value = null; }, 2000);
+  } catch { addToast(t('testPage.link.copyFailed'), 'error'); }
+};
 
 const fmtDay = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(locale.value, { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -193,6 +249,26 @@ defineExpose({ reload: load });
 .ko-event__series { font-size: 13px; font-weight: 700; color: var(--surface-heading); line-height: 1.25; hyphens: auto; overflow-wrap: break-word; }
 .ko-event__zone { font-size: var(--text-xs); color: var(--surface-text); }
 .ko-event__moved { font-size: var(--text-xs); font-weight: 700; color: var(--status-warning); }
+
+/* ── Calendars ───────────────────────────────────────────────────── */
+.ko-cal { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--surface-3); }
+.ko-cal__row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.ko-cal__title { font-size: 15px; font-weight: 700; color: var(--surface-heading); cursor: pointer; }
+.ko-cal__warn { margin-top: 8px; color: var(--status-warning); }
+.ko-cal__list { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.ko-cal__feed { display: inline-flex; align-items: center; gap: 10px; padding: 6px 6px 6px 12px; border-radius: var(--radius-md); background: var(--surface-2); }
+.ko-cal__name { font-size: var(--text-sm); font-weight: 700; color: var(--surface-heading); }
+.ko-cal__copy { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-sm); border: 1px solid var(--surface-3); background: none; color: var(--surface-text); font: inherit; font-size: var(--text-xs); font-weight: 600; cursor: pointer; }
+.ko-cal__copy:hover { color: var(--surface-heading); border-color: var(--surface-muted); }
+.ko-switch {
+  appearance: none; flex-shrink: 0; position: relative; cursor: pointer;
+  width: 44px; height: 24px; border-radius: var(--radius-pill); background: var(--surface-3); transition: background var(--t-fast);
+}
+.ko-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface-heading); transition: transform var(--t-fast); }
+.ko-switch:checked { background: var(--interactive-strong); }
+.ko-switch:checked::after { transform: translateX(20px); }
+.ko-switch:focus-visible { box-shadow: var(--focus-ring); }
+.ko-switch:disabled { opacity: 0.5; }
 
 /* ── Needs you ───────────────────────────────────────────────────── */
 .ko-needs__head { margin-bottom: 14px; }

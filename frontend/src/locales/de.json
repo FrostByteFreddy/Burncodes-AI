@@ -75,6 +75,14 @@
     "chartLabel": "Anzahl der Nachrichten"
   },
   "chat": {
+    "calendar": {
+      "add": "In meinen Kalender: {name}",
+      "apple": "Apple Kalender oder Outlook",
+      "google": "Google Kalender",
+      "copy": "Kalender-Link kopieren",
+      "copied": "Link kopiert",
+      "hint": "Ihr Kalender aktualisiert sich selbst, wenn sich Termine ändern. Zum Entfernen den Kalender in Ihrer Kalender-App löschen oder abbestellen."
+    },
     "locked": {
       "title": "Dieser Chatbot wird noch getestet",
       "body": "Geben Sie das Passwort ein, das Sie erhalten haben, um ihn auszuprobieren.",
@@ -519,6 +527,16 @@
     }
   },
   "knowledge": {
+    "calendars": {
+      "title": "Kalender für die Bevölkerung",
+      "sub": "Diese Termine lassen sich in jeder Kalender-App abonnieren. Der Chatbot bietet das an, wenn er Termine nennt, und die Kalender aktualisieren sich selbst.",
+      "protected": "Die Kalender sind pausiert, solange der Chatbot ein Passwort verlangt.",
+      "dates": "{n} Termine",
+      "copy": "Link kopieren",
+      "copied": "Kopiert",
+      "on": "Kalender eingeschaltet",
+      "off": "Kalender ausgeschaltet. Abonnierte Kalender leeren sich beim nächsten Abgleich."
+    },
     "recrawl": {
       "onHint": "Prüft alle {n} Tage auf Änderungen.",
       "offHint": "Prüft nicht automatisch auf Änderungen.",

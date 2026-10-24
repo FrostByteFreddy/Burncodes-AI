@@ -115,6 +115,8 @@ def create_app():
     app.register_blueprint(tenants_bp,  url_prefix='/api/tenants')
     app.register_blueprint(sources_bp,  url_prefix='/api/tenants')
     app.register_blueprint(widget_bp,   url_prefix='/api/tenants')
+    from app.tenants.calendar_feed import calendar_bp
+    app.register_blueprint(calendar_bp, url_prefix='/api/calendar')
     app.register_blueprint(chat_bp,     url_prefix='/api/chat')
 
     # Rate-limited callers get JSON the widget can show, not an HTML error page

@@ -23,6 +23,8 @@ PUBLIC_ENDPOINTS = {
     "chat.get_task_status",
     "chat.get_intro_message",
     "chat.unlock_chat",
+    "calendar.list_feeds",
+    "calendar.get_feed",
     "chat.create_share_link",
     "chat.get_shared_conversation",
     "tenants.get_public_tenant",
@@ -394,3 +396,25 @@ def test_unlock_checks_the_password(client, app, monkeypatch):
     assert resp.status_code == 200
     with app.test_request_context(headers={access.HEADER: resp.get_json()["token"]}):
         assert access.token_ok(tenant_id, pw_hash)
+
+
+
+# ── Calendar feeds ────────────────────────────────────────────────────────────
+
+def test_calendar_feed_is_cached_and_empty_when_not_offered(client, monkeypatch):
+    from app.tenants import calendar_feed as cf
+
+    tenant = {"id": "t", "name": "Zofingen", "is_active": True, "calendar_feeds": True, "test_password_hash": None}
+    events = [{"series": "Papier", "zone": "Zone 1", "event_date": "2099-01-05", "is_exception": False,
+               "notes": "", "source_id": None, "created_at": "2026-10-24T10:00:00+00:00"}]
+    monkeypatch.setattr(cf, "_tenant", lambda tid: tenant)
+    monkeypatch.setattr(cf, "_events", lambda tid: events)
+    url = f"/api/calendar/{uuid.uuid4()}/papier--zone-1.ics"
+
+    resp = client.get(url)
+    assert resp.status_code == 200 and resp.mimetype == "text/calendar"
+    assert "SUMMARY:Papier (Zone 1)" in resp.get_data(as_text=True)
+    assert client.get(url, headers={"If-None-Match": resp.headers["ETag"]}).status_code == 304
+
+    tenant["test_password_hash"] = "set"   # password-protected: subscribers see an empty calendar
+    assert "BEGIN:VEVENT" not in client.get(url).get_data(as_text=True)

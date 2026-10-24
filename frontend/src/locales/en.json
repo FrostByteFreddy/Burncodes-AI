@@ -75,6 +75,14 @@
     "chartLabel": "Number of Messages"
   },
   "chat": {
+    "calendar": {
+      "add": "Add to my calendar: {name}",
+      "apple": "Apple Calendar or Outlook",
+      "google": "Google Calendar",
+      "copy": "Copy calendar link",
+      "copied": "Link copied",
+      "hint": "Your calendar updates by itself when dates change. To remove it, delete or unsubscribe the calendar in your calendar app."
+    },
     "locked": {
       "title": "This chatbot is still being tested",
       "body": "Enter the password you were given to try it.",
@@ -519,6 +527,16 @@
     }
   },
   "knowledge": {
+    "calendars": {
+      "title": "Calendars for residents",
+      "sub": "These dates can be subscribed to in any calendar app. The chatbot offers it when it answers with dates, and calendars update by themselves.",
+      "protected": "Calendars are paused while the chatbot needs a password.",
+      "dates": "{n} dates",
+      "copy": "Copy link",
+      "copied": "Copied",
+      "on": "Calendars switched on",
+      "off": "Calendars switched off. Subscribers' calendars empty out on their next update."
+    },
     "recrawl": {
       "onHint": "Checks for changes every {n} days.",
       "offHint": "Doesn't check for changes automatically.",

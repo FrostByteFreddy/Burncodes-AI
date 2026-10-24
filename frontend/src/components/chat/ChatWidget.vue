@@ -55,6 +55,7 @@
     :isThinking="isThinking"
     :isWidget="isWidget"
     :isSharedView="isSharedView"
+    :calendarFeeds="calendarFeeds"
     v-model:userMessage="userMessage"
     @sendMessage="sendMessage"
     @reset="resetChat"
@@ -131,6 +132,16 @@ const unlock = async () => {
   } catch (err) {
     unlockError.value = err.response?.status === 429 ? t('chat.errors.rateLimited') : t('chat.locked.wrong');
   } finally { unlocking.value = false; }
+};
+
+// ── Calendars residents can subscribe to (key → feed) ─────────────────────────
+const calendarFeeds = ref({});
+const fetchCalendars = async () => {
+  if (!props.tenantId) return;
+  try {
+    const { data } = await axios.get(`${API_BASE_URL}/calendar/${props.tenantId}`);
+    calendarFeeds.value = Object.fromEntries((data.feeds || []).map((f) => [f.key, f]));
+  } catch { /* no calendar buttons then */ }
 };
 
 // ── Config resolution ──────────────────────────────────────────────────────────
@@ -276,6 +287,7 @@ const pollTaskStatus = (taskId) => {
           current.html = processBotMessage(current.text).html;
           await new Promise(r => setTimeout(r, Math.random() * 5));
         }
+        current.calendars = processBotMessage(current.text).calendars;
         saveSession(chatHistory.value, conversationId.value);
         return;
       }
@@ -359,7 +371,7 @@ const buildSharedHistory = (messages) =>
     if (m.user_message) entries.push({ text: m.user_message, isUser: true });
     if (m.ai_message) {
       const { text, html } = processBotMessage(m.ai_message);
-      entries.push({ text, html, isUser: false });
+      entries.push({ text, html, isUser: false });  // shared snapshots show no calendar buttons
     }
     return entries;
   });
@@ -393,6 +405,7 @@ onMounted(async () => {
   }
 
   await fetchConfig();
+  fetchCalendars();
   if (!needsPassword.value) await startConversation();
 });
 

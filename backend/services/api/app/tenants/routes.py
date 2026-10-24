@@ -130,6 +130,8 @@ def update_tenant(current_user, tenant_id):
                 return jsonify({"error": "The password needs at least 6 characters"}), 400
             from app.chat.access import hash_password
             tenant_update_data['test_password_hash'] = hash_password(password) if password else None
+        if 'calendar_feeds' in data:
+            tenant_update_data['calendar_feeds'] = bool(data['calendar_feeds'])
         if 'review_chats' in data:
             tenant_update_data['review_chats'] = bool(data['review_chats'])
         if 'review_interval_days' in data:

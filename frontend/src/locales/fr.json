@@ -75,6 +75,14 @@
     "chartLabel": "Nombre de messages"
   },
   "chat": {
+    "calendar": {
+      "add": "Ajouter à mon calendrier : {name}",
+      "apple": "Calendrier Apple ou Outlook",
+      "google": "Google Agenda",
+      "copy": "Copier le lien du calendrier",
+      "copied": "Lien copié",
+      "hint": "Votre calendrier se met à jour tout seul quand les dates changent. Pour le retirer, supprimez ou désabonnez le calendrier dans votre application."
+    },
     "locked": {
       "title": "Ce chatbot est encore en test",
       "body": "Saisissez le mot de passe que vous avez reçu pour l'essayer.",
@@ -519,6 +527,16 @@
     }
   },
   "knowledge": {
+    "calendars": {
+      "title": "Calendriers pour la population",
+      "sub": "Ces dates peuvent être abonnées dans n'importe quelle application de calendrier. Le chatbot le propose quand il donne des dates, et les calendriers se mettent à jour tout seuls.",
+      "protected": "Les calendriers sont en pause tant que le chatbot demande un mot de passe.",
+      "dates": "{n} dates",
+      "copy": "Copier le lien",
+      "copied": "Copié",
+      "on": "Calendriers activés",
+      "off": "Calendriers désactivés. Les calendriers abonnés se vident à la prochaine mise à jour."
+    },
     "recrawl": {
       "onHint": "Vérifie les changements tous les {n} jours.",
       "offHint": "Ne vérifie pas les changements automatiquement.",
