@@ -8,6 +8,8 @@ import os
 
 tenants_bp = Blueprint('tenants', __name__)
 
+SOURCE_COLUMNS = ("id, tenant_id, source_type, source_location, status, status_code, created_at, title, summary, page_type, importance, importance_reason, warnings, last_seen_at, last_changed_at, cost_chf, last_job_id, learned_job_id, indexed_chunks")
+
 @tenants_bp.route('', methods=['POST'])
 @token_required
 def create_tenant(current_user):
@@ -69,7 +71,8 @@ def get_tenant(current_user, tenant_id):
         fine_tune_rules = supabase.table('tenant_fine_tune').select("*").eq('tenant_id', str(tenant_id)).execute()
         tenant.data['fine_tune_rules'] = fine_tune_rules.data
 
-        tenant_sources = supabase.table('tenant_sources').select("*").eq('tenant_id', str(tenant_id)).execute()
+        # Not "*": sources carry their scanned Markdown, which the dashboard never needs.
+        tenant_sources = supabase.table('tenant_sources').select(SOURCE_COLUMNS).eq('tenant_id', str(tenant_id)).limit(20000).execute()
         tenant.data['tenant_sources'] = tenant_sources.data
 
         return jsonify(tenant.data), 200
@@ -101,10 +104,20 @@ def update_tenant(current_user, tenant_id):
 
         tenant_update_data = {}
         allowed_fields = ['name', 'intro_message', 'system_persona', 'rag_prompt_template',
-                          'doc_language', 'translation_target', 'widget_config', 'crawl_mode']
+                          'doc_language', 'translation_target', 'widget_config', 'crawl_mode', 'auto_recrawl']
         for field in allowed_fields:
             if field in data:
                 tenant_update_data[field] = data[field]
+        if 'auto_recrawl' in tenant_update_data:
+            tenant_update_data['auto_recrawl'] = bool(tenant_update_data['auto_recrawl'])
+        if 'recrawl_interval_days' in data:
+            try:
+                days = int(data['recrawl_interval_days'])
+            except (TypeError, ValueError):
+                return jsonify({"error": "recrawl_interval_days must be a number"}), 400
+            if not 1 <= days <= 90:
+                return jsonify({"error": "recrawl_interval_days must be between 1 and 90"}), 400
+            tenant_update_data['recrawl_interval_days'] = days
 
         if tenant_update_data:
             supabase.table('tenants').update(tenant_update_data).eq('id', tenant_id_str).execute()

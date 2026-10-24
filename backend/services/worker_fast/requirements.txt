@@ -20,3 +20,7 @@ google-genai>=1.13.0
 
 # Retry helpers used by shared billing/database code
 tenacity
+
+# Knowledge pipeline (HTML → Markdown, PDF calendar cross-check)
+markdownify==1.2.0
+pdfplumber==0.11.7

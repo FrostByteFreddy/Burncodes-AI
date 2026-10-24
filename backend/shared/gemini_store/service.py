@@ -105,6 +105,7 @@ class GeminiStoreService:
         file_path: str,
         display_name: str,
         metadata: dict | None = None,
+        bill: bool = True,
     ) -> str:
         """
         Uploads a local file path to the store and polls until indexed.
@@ -150,7 +151,7 @@ class GeminiStoreService:
         # Every indexed document is billed to the tenant owner. Uploads carry
         # tenant_id/source_id in their metadata; the import is local because
         # the billing module isn't needed by callers that only delete.
-        if metadata and metadata.get("tenant_id"):
+        if bill and metadata and metadata.get("tenant_id"):
             from app.billing.services import BillingService
             est_tokens = BillingService.estimate_indexing_tokens(
                 os.path.getsize(file_path), Path(file_path).suffix
@@ -166,6 +167,7 @@ class GeminiStoreService:
         text: str,
         display_name: str,
         metadata: dict | None = None,
+        bill: bool = True,
     ) -> str:
         """
         Uploads plain text content (e.g., crawled markdown) to the store.
@@ -182,6 +184,7 @@ class GeminiStoreService:
                 file_path=tmp_path,
                 display_name=display_name,
                 metadata=metadata,
+                bill=bill,
             )
         finally:
             try:

@@ -35,6 +35,10 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 ALTER TYPE public.source_status ADD VALUE IF NOT EXISTS 'QUEUED';
 ALTER TYPE public.source_status ADD VALUE IF NOT EXISTS 'UNSUPPORTED';
 ALTER TYPE public.source_type ADD VALUE IF NOT EXISTS 'FILE_URL';
+-- Crawl job phases: scan (IN_PROGRESS) → SCANNED (estimate, awaiting
+-- confirmation) → INDEXING (Gemini reads changed pages) → COMPLETED
+ALTER TYPE public.crawling_status ADD VALUE IF NOT EXISTS 'SCANNED';
+ALTER TYPE public.crawling_status ADD VALUE IF NOT EXISTS 'INDEXING';
 
 -- ----------------------------------------------------------------------------
 -- Tables
@@ -59,6 +63,9 @@ ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS translation_target     TEXT;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS widget_config          JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS crawl_mode             TEXT NOT NULL DEFAULT 'playwright_llm';
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS gemini_file_store_name TEXT;
+-- Opt-in automatic re-crawl; unchanged pages cost nothing thanks to content hashes
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS auto_recrawl          BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS recrawl_interval_days INTEGER NOT NULL DEFAULT 7;
 COMMENT ON COLUMN public.tenants.gemini_file_store_name IS
     'Gemini File Search Store resource name (e.g. fileSearchStores/abc123). NULL until the tenant uploads their first source.';
 
@@ -87,6 +94,33 @@ ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS gemini_document_name 
 ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS input_tokens         INTEGER;
 ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS output_tokens        INTEGER;
 ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS cost_chf             DECIMAL(10, 6);
+-- What Gemini understood about the source (crawl report, dashboard)
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS title                 TEXT;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS summary               TEXT;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS page_type             TEXT;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS importance            SMALLINT;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS importance_reason     TEXT;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS warnings              JSONB NOT NULL DEFAULT '[]'::jsonb;
+-- Change detection: content_hash = what is indexed, pending_hash = latest scan.
+-- They differ exactly when the source needs (re-)learning.
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS content_markdown      TEXT;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS content_tokens        INTEGER;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS file_pages            INTEGER;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS content_hash          TEXT;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS pending_hash          TEXT;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS etag                  TEXT;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS last_modified         TEXT;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS last_seen_at          TIMESTAMPTZ;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS last_changed_at       TIMESTAMPTZ;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS missed_crawls         INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS last_job_id           BIGINT;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS learned_job_id        BIGINT;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS last_learn_cost_chf   DECIMAL(10, 6);
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS learn_started_at      TIMESTAMPTZ;
+-- One File Search document per section (+ one for facts/dates)
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS gemini_document_names TEXT[] NOT NULL DEFAULT '{}';
+-- Number of indexed chunks (= section documents) — shown in the dashboard
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS indexed_chunks        INTEGER;
 COMMENT ON COLUMN public.tenant_sources.gemini_document_name IS
     'Gemini File Search document resource name. Used to delete the document when the source is removed.';
 
@@ -101,6 +135,15 @@ CREATE TABLE IF NOT EXISTS public.crawling_jobs (
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS excluded_urls TEXT[] DEFAULT '{}'::text[];
+ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS single_page_only BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS crawl_mode       TEXT;
+-- 'manual' or 'scheduled'; scheduled re-crawls are pre-approved (auto_confirm)
+ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS trigger          TEXT NOT NULL DEFAULT 'manual';
+ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS auto_confirm     BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS estimate         JSONB;
+ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS report           JSONB;
+ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS confirmed_at     TIMESTAMPTZ;
+ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS finished_at      TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS public.crawling_tasks (
     id         BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -113,6 +156,11 @@ CREATE TABLE IF NOT EXISTS public.crawling_tasks (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE public.crawling_tasks ADD COLUMN IF NOT EXISTS parent_url TEXT;
+-- Set whenever the task is put on the queue; the scheduler only re-sends
+-- tasks whose message was evidently lost (old enqueued_at).
+ALTER TABLE public.crawling_tasks ADD COLUMN IF NOT EXISTS enqueued_at TIMESTAMPTZ;
+-- Scan result per URL: new / changed / unchanged / error / excluded / refused
+ALTER TABLE public.crawling_tasks ADD COLUMN IF NOT EXISTS outcome TEXT;
 
 CREATE TABLE IF NOT EXISTS public.chat_logs (
     id              BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -158,6 +206,33 @@ CREATE TABLE IF NOT EXISTS public.processed_payments (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Facts extracted from sources (opening hours, fees, contacts, deadlines, ...)
+CREATE TABLE IF NOT EXISTS public.tenant_facts (
+    id         BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    tenant_id  UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+    source_id  INTEGER NOT NULL REFERENCES public.tenant_sources(id) ON DELETE CASCADE,
+    kind       TEXT NOT NULL,
+    label      TEXT NOT NULL,
+    value      TEXT NOT NULL,
+    valid_from DATE,
+    valid_to   DATE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Validated dates (schedules such as waste collection, one-off events).
+-- Answers "when is the next ..." deterministically in the chat.
+CREATE TABLE IF NOT EXISTS public.tenant_events (
+    id           BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    tenant_id    UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+    source_id    INTEGER NOT NULL REFERENCES public.tenant_sources(id) ON DELETE CASCADE,
+    series       TEXT NOT NULL,
+    zone         TEXT NOT NULL DEFAULT '',
+    event_date   DATE NOT NULL,
+    is_exception BOOLEAN NOT NULL DEFAULT false,
+    notes        TEXT NOT NULL DEFAULT '',
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- ----------------------------------------------------------------------------
 -- Legacy objects (pre-Gemini File Search pipeline) — unused by any code
 -- ----------------------------------------------------------------------------
@@ -180,6 +255,32 @@ CREATE INDEX IF NOT EXISTS idx_crawling_tasks_status         ON public.crawling_
 CREATE INDEX IF NOT EXISTS idx_tenant_sources_tenant         ON public.tenant_sources (tenant_id);
 CREATE INDEX IF NOT EXISTS idx_tenants_user                  ON public.tenants (user_id);
 CREATE INDEX IF NOT EXISTS idx_processed_payments_user       ON public.processed_payments (user_id);
+CREATE INDEX IF NOT EXISTS idx_tenant_events_tenant_date ON public.tenant_events (tenant_id, event_date);
+CREATE INDEX IF NOT EXISTS idx_tenant_events_source       ON public.tenant_events (source_id);
+CREATE INDEX IF NOT EXISTS idx_tenant_facts_source        ON public.tenant_facts (source_id);
+CREATE INDEX IF NOT EXISTS idx_tenant_sources_last_job    ON public.tenant_sources (last_job_id);
+
+-- A crawl job visits each URL once. Earlier versions re-queued tasks and
+-- produced duplicate rows; keep the oldest before enforcing uniqueness.
+DELETE FROM public.crawling_tasks a
+    USING public.crawling_tasks b
+    WHERE a.job_id = b.job_id AND a.url = b.url AND a.id > b.id;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_crawling_tasks_job_url ON public.crawling_tasks (job_id, url);
+
+-- One source row per tenant and location. Legacy duplicates must be removed
+-- first by backend/scripts/dedupe_sources.py (it also deletes their indexed
+-- documents in Gemini); until then the index is skipped instead of failing.
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM public.tenant_sources
+        GROUP BY tenant_id, source_location HAVING count(*) > 1
+    ) THEN
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_tenant_sources_location ON public.tenant_sources (tenant_id, source_location);
+    ELSE
+        RAISE NOTICE 'tenant_sources has duplicate locations — run backend/scripts/dedupe_sources.py, then re-apply this migration';
+    END IF;
+END $$;
+
 -- Redundant with the primary key
 DROP INDEX IF EXISTS public.idx_shared_conversations_id;
 
@@ -343,6 +444,8 @@ ALTER TABLE public.chat_logs            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shared_conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_billing         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.processed_payments   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tenant_facts         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tenant_events        ENABLE ROW LEVEL SECURITY;
 
 -- Policies are recreated so their definition here is authoritative.
 DROP POLICY IF EXISTS "Allow users to view their own tenants"                   ON public.tenants;
@@ -393,6 +496,7 @@ CREATE POLICY "crawling_tasks_owner_read" ON public.crawling_tasks FOR SELECT TO
     ));
 
 -- processed_payments and shared_conversations: no policies (service role only).
+-- tenant_facts and tenant_events: no policies (served through the API).
 
 -- ----------------------------------------------------------------------------
 -- Grants

@@ -20,9 +20,11 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: backend/services/api/requirements.txt
+          cache-dependency-path: |
+            backend/services/api/requirements.txt
+            backend/requirements-test.txt
       - name: Install dependencies
-        run: pip install -r services/api/requirements.txt pytest
+        run: pip install -r services/api/requirements.txt -r requirements-test.txt
       - name: Compile all services
         run: python -m compileall -q services shared
       - name: Run tests

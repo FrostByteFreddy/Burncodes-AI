@@ -12,6 +12,8 @@ Key changes:
 - Citations extracted from grounding_metadata and returned to the frontend
 """
 import os
+from datetime import date, timedelta
+
 from celery import shared_task
 from google import genai
 
@@ -74,6 +76,54 @@ def _load_history(tenant_id: str, conversation_id: str) -> list:
         history.append({"type": "human", "content": row["user_message"]})
         history.append({"type": "ai", "content": row["ai_message"]})
     return history
+
+
+_WEEKDAY = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+# Upcoming dates per series given to the model; enough for "next" / "this week"
+_UPCOMING_PER_SERIES = 4
+_MAX_SERIES = 30
+
+
+def _dates_context(tenant_id: str, today: date) -> str:
+    """
+    Today's date plus verified dates extracted at indexing time (tenant_events):
+    the next few per series, or — when a series has no future dates — when its
+    data ends, so the model doesn't present an expired calendar as current.
+    """
+    lines = [f"Today is {_WEEKDAY[today.weekday()]} {today.isoformat()}."]
+    rows = (
+        supabase.table("tenant_events")
+        .select("series, zone, event_date, is_exception, notes")
+        .eq("tenant_id", str(tenant_id))
+        .gte("event_date", (today - timedelta(days=400)).isoformat())
+        .lte("event_date", (today + timedelta(days=400)).isoformat())
+        .order("event_date")
+        .limit(5000)
+        .execute()
+    ).data or []
+    if not rows:
+        return lines[0]
+
+    series: dict[tuple[str, str], dict] = {}
+    for r in rows:
+        entry = series.setdefault((r["series"], r["zone"]), {"upcoming": [], "last": None, "notes": r.get("notes") or ""})
+        d = date.fromisoformat(r["event_date"])
+        if d >= today:
+            if len(entry["upcoming"]) < _UPCOMING_PER_SERIES:
+                entry["upcoming"].append(f"{_WEEKDAY[d.weekday()]} {d.isoformat()}" + (" (exception)" if r["is_exception"] else ""))
+        else:
+            entry["last"] = d
+
+    lines.append("Verified dates from this organisation's documents (use these for questions about dates; never invent dates):")
+    for (name, zone), entry in list(series.items())[:_MAX_SERIES]:
+        label = f"{name} ({zone})" if zone else name
+        notes = f" [{entry['notes']}]" if entry["notes"] else ""
+        if entry["upcoming"]:
+            lines.append(f"- {label}{notes}: next {', '.join(entry['upcoming'])}")
+        elif entry["last"]:
+            lines.append(f"- {label}{notes}: no future dates known — the published schedule ends "
+                         f"{entry['last'].isoformat()}; say so instead of guessing.")
+    return "\n".join(lines)
 
 
 def _build_system_instruction(tenant_config: dict, fine_tune_rules: list) -> str:
@@ -162,6 +212,10 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
 
         # --- Build system instruction ---
         system_instruction = _build_system_instruction(tenant_config, fine_tune_rules)
+        try:
+            system_instruction += "\n\n" + _dates_context(tenant_id, date.today())
+        except Exception as e:
+            error_logger.warning("chat_task: dates context unavailable for tenant %s: %s", tenant_id, e)
 
         # --- Build tool config ---
         # Only attach file_search if the tenant has an indexed store

@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from app.database.supabase_client import supabase
 from app.auth.decorators import token_required
 from app.models.database import SourceType
-from app.data_processing.tasks import process_local_file, process_urls, crawl_links_task
+from app.data_processing.tasks import process_local_file, start_learning_task, crawl_links_task
 from app.logging_config import error_logger
 from app.billing.services import BillingService
 from app.security.url_guard import is_public_url
@@ -23,6 +23,24 @@ def _insufficient_balance(user_id):
     return None
 
 
+def _document_names(source):
+    """Every File Search document of a source (legacy single doc + per-section docs)."""
+    names = list(source.get('gemini_document_names') or [])
+    if source.get('gemini_document_name'):
+        names.append(source['gemini_document_name'])
+    return list(dict.fromkeys(names))
+
+
+def _delete_documents(sources, context):
+    from app.gemini_store.service import GeminiStoreService
+    for src in sources:
+        for name in _document_names(src):
+            try:
+                GeminiStoreService.delete_document(name)
+            except Exception as err:
+                error_logger.warning("%s: could not delete Gemini document %s: %s", context, name, err)
+
+
 def _invalid_urls(urls):
     """Returns the subset of urls that must not be fetched (non-http(s) or non-public hosts)."""
     return [u for u in urls if not isinstance(u, str) or not is_public_url(u)]
@@ -35,7 +53,8 @@ def get_sources(current_user, tenant_id):
         tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
-        sources = supabase.table('tenant_sources').select("*").eq('tenant_id', tenant_id_str).execute()
+        from app.tenants.routes import SOURCE_COLUMNS
+        sources = supabase.table('tenant_sources').select(SOURCE_COLUMNS).eq('tenant_id', tenant_id_str).limit(20000).execute()
         return jsonify(sources.data), 200
     except Exception as e:
         error_logger.error(f"Error getting sources for tenant {tenant_id} for user {current_user.id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
@@ -109,13 +128,13 @@ def crawl_sources(current_user, tenant_id):
         if (resp := _insufficient_balance(current_user.id)):
             return resp
 
-        sources_to_insert = [{"tenant_id": tenant_id_str, "source_type": SourceType.URL, "source_location": url, "status": "QUEUED"} for url in urls]
-        source_records = supabase.table('tenant_sources').insert(sources_to_insert).execute()
-        urls_with_ids = [(rec['source_location'], rec['id']) for rec in source_records.data]
-
-        task = process_urls.delay(urls_with_ids, tenant_id_str)
-
-        return jsonify({"task_id": task.id}), 202
+        # Each URL becomes a single-page crawl: scanned, estimated, then
+        # learned after confirmation like any other crawl.
+        task_ids = [
+            crawl_links_task.delay(tenant_id=tenant_id_str, start_url=url, single_page_only=True).id
+            for url in dict.fromkeys(urls)
+        ]
+        return jsonify({"task_ids": task_ids}), 202
     except Exception as e:
         error_logger.error(f"Error processing crawl for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to process URLs"}), 500
@@ -152,8 +171,9 @@ def discover_links(current_user, tenant_id):
         task = crawl_links_task.delay(
             tenant_id=tenant_id,
             start_url=start_url,
-            single_page_only=single_page_only,
-            excluded_urls=excluded_urls
+            single_page_only=bool(single_page_only),
+            excluded_urls=excluded_urls,
+            crawl_mode=crawl_mode,
         )
 
         return jsonify({"task_id": task.id}), 202
@@ -192,7 +212,8 @@ def get_crawling_jobs(current_user, tenant_id):
         # (avoids httpx "URL component 'query' too long" when crawl jobs contain hundreds of URLs)
         sources_by_url = {}
         if all_crawled_urls:
-            sources_resp = supabase.table('tenant_sources').select("*") \
+            from app.tenants.routes import SOURCE_COLUMNS
+            sources_resp = supabase.table('tenant_sources').select(SOURCE_COLUMNS) \
                 .eq('tenant_id', tenant_id_str) \
                 .limit(10000) \
                 .execute()
@@ -250,6 +271,41 @@ def get_crawling_job_progress(current_user, tenant_id, job_id):
         error_logger.error(f"Error getting job progress for job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to retrieve job progress"}), 500
 
+@sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/confirm', methods=['POST'])
+@token_required
+def confirm_crawling_job(current_user, tenant_id, job_id):
+    """
+    The user accepted the estimate of a scanned crawl: start learning.
+    Requires the balance to cover the estimate (prepaid).
+    """
+    try:
+        tenant_id_str = str(tenant_id)
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute()
+        if not tenant_check.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+
+        job_rows = supabase.table('crawling_jobs').select("id, status, estimate").eq('id', job_id).eq('tenant_id', tenant_id_str).limit(1).execute().data
+        if not job_rows:
+            return jsonify({"error": "Job not found or not part of this tenant"}), 404
+        job = job_rows[0]
+        if job['status'] != 'SCANNED':
+            return jsonify({"error": "This crawl is not waiting for confirmation", "status": job['status']}), 409
+
+        estimate_chf = float((job.get('estimate') or {}).get('cost_chf') or 0)
+        balance = BillingService.check_balance(current_user.id)
+        if balance < estimate_chf:
+            return jsonify({
+                "error": "Insufficient balance for this crawl. Please recharge.",
+                "balance_chf": balance, "estimate_chf": estimate_chf,
+            }), 402
+
+        start_learning_task.delay(job_id)
+        return jsonify({"message": "Learning started"}), 202
+    except Exception as e:
+        error_logger.error(f"Error confirming crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to confirm crawl job"}), 500
+
+
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/cancel', methods=['POST'])
 @token_required
 def cancel_crawling_job(current_user, tenant_id, job_id):
@@ -277,6 +333,8 @@ def cancel_crawling_job(current_user, tenant_id, job_id):
         job_status = job_check.data.get('status')
         if job_status in (CrawlingStatus.COMPLETED.value, CrawlingStatus.FAILED.value):
             return jsonify({"message": "Job is already finished.", "status": job_status}), 200
+        # Sources still waiting to be learned keep their previous index state;
+        # they're picked up again by the next crawl.
 
         # 1. Mark ALL pending/in-progress tasks as FAILED — this prevents the
         #    Celery scheduler from picking them up.
@@ -326,7 +384,7 @@ def delete_crawling_job(current_user, tenant_id, job_id):
 
         # 1. Stop any in-flight tasks
         job_status = job_check.data.get('status')
-        if job_status == CrawlingStatus.IN_PROGRESS.value:
+        if job_status in (CrawlingStatus.IN_PROGRESS.value, CrawlingStatus.SCANNED.value, CrawlingStatus.INDEXING.value):
             supabase.table('crawling_tasks') \
                 .update({"status": CrawlingStatus.FAILED.value}) \
                 .eq('job_id', job_id) \
@@ -349,7 +407,7 @@ def delete_crawling_job(current_user, tenant_id, job_id):
                 url_batch = crawled_urls[i:i + batch_size]
                 
                 sources_resp = supabase.table('tenant_sources') \
-                    .select("id, gemini_document_name") \
+                    .select("id, gemini_document_name, gemini_document_names") \
                     .eq('tenant_id', tenant_id_str) \
                     .in_('source_location', url_batch) \
                     .execute()
@@ -365,13 +423,7 @@ def delete_crawling_job(current_user, tenant_id, job_id):
                 supabase.table('tenant_sources').delete().in_('id', batch_ids).execute()
                 
                 # Delete from Gemini Store
-                for src in batch_sources:
-                    doc_name = src.get('gemini_document_name')
-                    if doc_name:
-                        try:
-                            GeminiStoreService.delete_document(doc_name)
-                        except Exception as vec_err:
-                            error_logger.warning("delete_job: Gemini store cleanup partial failure for job %s: %s", job_id, vec_err)
+                _delete_documents(batch_sources, f"delete_job {job_id}")
 
             error_logger.info("delete_job: purged %d Gemini document(s) for job %s", len(deleted_source_ids), job_id)
 
@@ -408,17 +460,8 @@ def delete_source(current_user, tenant_id, source_id):
 
         source = source_resp.data
 
-        # Delete the document from the Gemini File Search Store
-        gemini_doc_name = source.get('gemini_document_name')
-        if gemini_doc_name:
-            try:
-                from app.gemini_store.service import GeminiStoreService
-                GeminiStoreService.delete_document(gemini_doc_name)
-            except Exception as vec_err:
-                error_logger.error(
-                    "Soft failure: could not delete Gemini document %s for source %s: %s",
-                    gemini_doc_name, source_id, vec_err
-                )
+        # Delete its documents from the Gemini File Search Store
+        _delete_documents([source], f"delete_source {source_id}")
 
         # Delete the local file if this was a user upload
         if source.get('source_type') == 'FILE':

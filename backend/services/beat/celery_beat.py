@@ -21,6 +21,7 @@ celery.conf.update(
     task_routes={
         'app.data_processing.tasks.maintenance_tasks.job_scheduler_task': {'queue': 'fast'},
         'app.data_processing.tasks.maintenance_tasks.zombie_reaper_task': {'queue': 'fast'},
+        'app.data_processing.tasks.maintenance_tasks.weekly_recrawl_task': {'queue': 'fast'},
     },
     beat_schedule={
         'job-scheduler-every-30-seconds': {
@@ -31,6 +32,11 @@ celery.conf.update(
         'zombie-reaper-every-30-minutes': {
             'task': 'app.data_processing.tasks.maintenance_tasks.zombie_reaper_task',
             'schedule': 1800.0,
+        },
+        # Checks every 6 h which opted-in tenants are due (default: weekly)
+        'recrawl-check-every-6-hours': {
+            'task': 'app.data_processing.tasks.maintenance_tasks.weekly_recrawl_task',
+            'schedule': 6 * 3600.0,
         },
     },
 )

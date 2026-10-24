@@ -30,7 +30,9 @@ class CrawlMode(str, Enum):
 
 class CrawlingStatus(str, Enum):
     PENDING = "PENDING"
-    IN_PROGRESS = "IN_PROGRESS"
+    IN_PROGRESS = "IN_PROGRESS"   # job: scanning / task: being processed
+    SCANNED = "SCANNED"           # job: estimate ready, awaiting confirmation
+    INDEXING = "INDEXING"         # job: Gemini learning changed sources
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 

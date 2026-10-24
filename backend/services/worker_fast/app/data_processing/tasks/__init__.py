@@ -1,63 +1,63 @@
 """
 worker_fast/app/data_processing/tasks/__init__.py
 
-Fast-queue Celery tasks. No Playwright — soup/trafilatura only.
-File Search replaces the old ChromaDB/LangChain pipeline.
+Fast-queue Celery tasks: learning (Gemini understanding + indexing) and
+uploads. Crawling/scanning runs in worker_heavy; the job lifecycle lives in
+app.knowledge.jobs.
 """
-from pathlib import Path
-from urllib.parse import urlparse
-
 from celery import shared_task
 
-from app.data_processing.ingestion.file_ingester import (
-    process_local_file as _index_local_file,
-    process_file_url as _index_file_url,
-    process_webpage as _index_webpage,
+from app.database.supabase_client import supabase
+from app.knowledge import jobs
+from app.knowledge.learn import MAX_FILE_BYTES, learn_source
+from app.knowledge.markdown import content_hash, pdf_page_count
+from app.data_processing.tasks.maintenance_tasks import (  # noqa: F401
+    job_scheduler_task,
+    weekly_recrawl_task,
+    zombie_reaper_task,
 )
-from app.gemini_store.service import INDEXABLE_FILE_EXTENSIONS
-from app.data_processing.tasks.maintenance_tasks import job_scheduler_task, zombie_reaper_task  # noqa: F401
 from app.logging_config import error_logger
 
 
-@shared_task(name="app.data_processing.tasks.process_local_file", queue="fast")
+@shared_task(name="app.data_processing.tasks.learn_source_task", queue="fast", time_limit=900, soft_time_limit=870)
+def learn_source_task(source_id: int, job_id: int | None = None):
+    """Gemini reads one new/changed source and indexes what it understood."""
+    learn_source(source_id, job_id)
+
+
+@shared_task(name="app.data_processing.tasks.start_learning_task", queue="fast")
+def start_learning_task(job_id: int):
+    """Sent by the API when the user confirms a scanned crawl's estimate."""
+    jobs.start_learning(job_id)
+
+
+@shared_task(name="app.data_processing.tasks.process_local_file", queue="fast", time_limit=900, soft_time_limit=870)
 def process_local_file(file_path: str, source_filename: str, source_id: int, tenant_id: str):
-    """Index a file already saved on disk into the tenant's File Search Store."""
-    _index_local_file(file_path, source_filename, source_id, str(tenant_id))
-
-
-@shared_task(name="app.data_processing.tasks.process_file_url", queue="fast")
-def process_file_url(url: str, source_id: int, tenant_id: str):
-    """Download a remote file URL and index it in the tenant's File Search Store."""
-    _index_file_url(url, source_id, str(tenant_id))
-
-
-@shared_task(name="app.data_processing.tasks.process_urls", queue="fast")
-def process_urls(urls: list, tenant_id: str):
     """
-    Routes a list of manually-added URLs (url, source_id) pairs.
-
-    - File URLs (PDF, DOCX, images, etc.) → process_file_url task
-    - Web pages → trafilatura extraction → File Search upload (inline, soup mode)
+    An uploaded file: fingerprint it, then learn it right away (the user
+    explicitly chose this one file, so there's no separate confirmation step).
     """
-    for url, source_id in urls:
-        ext = Path(urlparse(url).path).suffix.lower()
-        try:
-            if ext in INDEXABLE_FILE_EXTENSIONS:
-                error_logger.info("process_urls: routing file URL %s to process_file_url", url)
-                process_file_url.apply_async(
-                    args=[url, source_id, str(tenant_id)], queue="fast"
-                )
-            else:
-                error_logger.info("process_urls: indexing web page %s via trafilatura", url)
-                _index_webpage(url, source_id, str(tenant_id))
-        except Exception as e:
-            error_logger.error("process_urls: failed for %s (source %s): %s", url, source_id, e, exc_info=True)
+    try:
+        with open(file_path, "rb") as f:
+            data = f.read(MAX_FILE_BYTES + 1)
+    except OSError as e:
+        error_logger.error("Upload %s unreadable: %s", file_path, e)
+        supabase.table("tenant_sources").update({"status": "ERROR"}).eq("id", source_id).execute()
+        return
+    supabase.table("tenant_sources").update({
+        "pending_hash": content_hash(data),
+        "file_pages": pdf_page_count(data) if source_filename.lower().endswith(".pdf") else 1,
+        "title": source_filename[:500],
+        "last_seen_at": jobs.now_iso(),
+    }).eq("id", source_id).execute()
+    learn_source(source_id, None)
 
 
 __all__ = [
+    "learn_source_task",
+    "start_learning_task",
     "process_local_file",
-    "process_file_url",
-    "process_urls",
     "job_scheduler_task",
+    "weekly_recrawl_task",
     "zombie_reaper_task",
 ]

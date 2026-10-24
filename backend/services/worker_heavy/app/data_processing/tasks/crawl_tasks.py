@@ -1,12 +1,18 @@
 """
 tasks/crawl_tasks.py
-Celery tasks for distributed recursive web crawling.
+Scan phase of the crawl pipeline (job lifecycle: app.knowledge.jobs).
 
-Replaces ChromaDB/LangChain indexing with Gemini File Search Store uploads.
-Crawl4AI still handles JS rendering and markdown extraction — unchanged.
-File links discovered during crawl are routed to process_file_url (worker_fast).
+Each task fetches one URL, converts it to Markdown (pages) or hashes its bytes
+(files), records the result on the tenant's single source row for that URL,
+and queues newly discovered links. No LLM runs here — learning happens after
+the user confirmed the estimate (worker_fast, learn_source_task).
+
+Duplicate protection:
+  - a task is claimed with a conditional UPDATE (PENDING → IN_PROGRESS); a
+    second copy of the same message finds nothing to claim and exits
+  - links are inserted with ON CONFLICT (job_id, url) DO NOTHING and only the
+    rows actually inserted are queued — each URL is visited once per job
 """
-import os
 import asyncio
 import random
 from pathlib import Path
@@ -14,91 +20,198 @@ from urllib.parse import urlparse
 from uuid import UUID
 
 from celery import shared_task
-from celery import current_app as celery_app
 from crawl4ai import AsyncWebCrawler, CrawlerRunConfig
 
 from app.billing.services import BillingService
-from app.database.supabase_client import supabase
-from app.gemini_store.service import GeminiStoreService, INDEXABLE_FILE_EXTENSIONS
-from app.data_processing.crawler import get_crawler, browser_config
-from app.data_processing.soup_extractor import fetch_html, extract_internal_links
+from app.data_processing.crawler import browser_config
 from app.data_processing.ingestion.utils import normalize_url
-from app.models.database import CrawlingStatus, SourceType
+from app.data_processing.soup_extractor import HEADERS, extract_internal_links, fetch_html
+from app.database.supabase_client import supabase
+from app.gemini_store.service import INDEXABLE_FILE_EXTENSIONS, UNSUPPORTED_EXTENSIONS
+from app.knowledge import jobs
+from app.knowledge.markdown import content_hash, estimate_tokens, html_to_markdown, pdf_page_count
 from app.logging_config import error_logger
+from app.models.database import CrawlingStatus, SourceType
 from app.security.url_guard import UnsafeURLError, is_public_url, safe_client
+
+MAX_FILE_BYTES = 50 * 1024 * 1024
+# Pages with less text than this carry nothing worth learning
+MIN_CONTENT_TOKENS = 20
+_INSERT_BATCH = 200
+
+
+# Linked documents worth learning even on "this page only" crawls (not images)
+_DOCUMENT_EXTENSIONS = {".pdf", ".doc", ".docx", ".txt", ".md"}
 
 
 def _is_file_link(url: str) -> bool:
-    """Returns True if the URL path ends in an indexable file extension."""
     ext = Path(urlparse(url).path).suffix.lower()
-    return ext in INDEXABLE_FILE_EXTENSIONS
+    return ext in INDEXABLE_FILE_EXTENSIONS or ext in UNSUPPORTED_EXTENSIONS
 
 
-def _dispatch_file_url(url: str, tenant_id: str) -> None:
+def _site(host: str | None) -> str:
+    """Host without a leading "www." — zofingen.ch and www.zofingen.ch are one site."""
+    host = (host or "").lower()
+    return host[4:] if host.startswith("www.") else host
+
+
+def _canonical_link(href: str) -> str:
     """
-    Creates a FILE_URL source record and dispatches process_file_url to worker_fast.
-    Called when a file link is discovered during a Playwright crawl.
+    Normalised URL for de-duplication. File links drop their query string:
+    CMSs append cache-busters (…/Abfallkalender_2026.pdf?fp=1764757298475)
+    that would otherwise turn one file into many sources.
     """
-    try:
-        rec = supabase.table("tenant_sources").insert({
-            "tenant_id": tenant_id,
-            "source_type": SourceType.FILE_URL.value,
-            "source_location": url,
-            "status": "QUEUED",
-        }).execute()
-        source_id = rec.data[0]["id"]
-        celery_app.send_task(
-            "app.data_processing.tasks.process_file_url",
-            args=[url, source_id, tenant_id],
-            queue="fast",
+    url = normalize_url(href.split("#")[0].strip())
+    if _is_file_link(url):
+        url = url.split("?", 1)[0]
+    return url
+
+
+def _is_excluded(url: str, excluded: list[str]) -> bool:
+    stripped = url.replace("https://", "").replace("http://", "").strip("/")
+    for ex in excluded:
+        ex = ex.replace("https://", "").replace("http://", "").strip("/")
+        if ex and (stripped == ex or stripped.startswith(ex + "/")):
+            return True
+    return False
+
+
+def _finish_task(task_id: int, status: CrawlingStatus, outcome: str) -> None:
+    supabase.table("crawling_tasks").update({"status": status.value, "outcome": outcome}).eq("id", task_id).execute()
+
+
+def _enqueue(task_rows: list[dict], tenant_id: str) -> None:
+    for row in task_rows:
+        process_single_url_task.apply_async(
+            kwargs={"task_id": row["id"], "tenant_id": tenant_id, "parent_url": row.get("parent_url")},
+            queue="heavy",
         )
-        error_logger.info("Dispatched FILE_URL %s (source %s) to worker_fast", url, source_id)
-    except Exception as e:
-        error_logger.error("Failed to dispatch FILE_URL %s: %s", url, e, exc_info=True)
+    ids = [r["id"] for r in task_rows]
+    for i in range(0, len(ids), _INSERT_BATCH):
+        supabase.table("crawling_tasks").update({"enqueued_at": jobs.now_iso()}).in_("id", ids[i:i + _INSERT_BATCH]).execute()
 
 
-def _upload_page_to_store(
-    markdown: str, url: str, source_id: int, tenant_id: str
-) -> None:
-    """Uploads crawled markdown to the tenant's File Search Store and marks the source COMPLETED."""
-    store_name = GeminiStoreService.get_or_create_store(tenant_id)
-    doc_name = GeminiStoreService.upload_text(
-        store_name=store_name,
-        text=markdown,
-        display_name=url,
-        metadata={"tenant_id": tenant_id, "source_id": str(source_id), "source_url": url},
-    )
-    supabase.table("tenant_sources").update({
-        "gemini_document_name": doc_name,
-        "status": "COMPLETED",
-    }).eq("id", source_id).execute()
-    error_logger.info("Indexed page %s (source %s) → %s", url, source_id, doc_name)
+def _add_links(job: dict, tenant_id: str, depth: int, parent_url: str, hrefs: list[str]) -> int:
+    """Inserts unseen links as tasks of this job and queues them. Returns how many were new."""
+    start_site = _site(urlparse(job["start_url"]).hostname)
+    excluded = [normalize_url(str(e).strip()) for e in job.get("excluded_urls") or []]
+    max_depth = job["max_depth"]
+    rows, seen = [], set()
+    for href in hrefs:
+        url = _canonical_link(href)
+        parsed = urlparse(url)
+        if not url or url in seen or parsed.scheme not in ("http", "https"):
+            continue
+        if start_site and _site(parsed.hostname) != start_site:
+            continue  # same site only — no drifting into other subdomains
+        if _is_excluded(url, excluded):
+            continue
+        if _is_file_link(url):
+            if max_depth <= 1 and Path(parsed.path).suffix.lower() not in _DOCUMENT_EXTENSIONS:
+                continue  # "this page only": its documents, but not images
+        elif depth >= max_depth:
+            continue
+        seen.add(url)
+        rows.append({"job_id": job["id"], "url": url, "depth": depth + 1,
+                     "status": CrawlingStatus.PENDING.value, "parent_url": parent_url})
+
+    inserted = []
+    for i in range(0, len(rows), _INSERT_BATCH):
+        inserted += (
+            supabase.table("crawling_tasks")
+            .upsert(rows[i:i + _INSERT_BATCH], on_conflict="job_id,url", ignore_duplicates=True)
+            .execute()
+        ).data or []
+    if inserted:
+        _enqueue(inserted, tenant_id)
+    return len(inserted)
 
 
-def _complete_job_if_done(job_id: int, url: str) -> None:
+def _record_error(tenant_id: str, url: str, source_type: str, job_id: int, status_code: int) -> None:
     """
-    No single worker knows it's "the last one", so after each completion we
-    ask: are there still any PENDING or IN_PROGRESS tasks for this job? If
-    not, we own the responsibility of marking the job COMPLETED.
-    Use limit(1) — we only need to know if at least one exists.
+    Records a failed fetch. A source that was indexed before keeps its content
+    (its last_job_id isn't touched, so repeated failures count as misses and
+    eventually remove it); unknown URLs get an ERROR row for the report.
     """
-    outstanding = (
-        supabase.table("crawling_tasks")
-        .select("id", count="exact")
-        .eq("job_id", job_id)
-        .in_("status", [CrawlingStatus.PENDING.value, CrawlingStatus.IN_PROGRESS.value])
-        .limit(1)
-        .execute()
-    )
-    if not outstanding.data:
-        supabase.table("crawling_jobs").update(
-            {"status": CrawlingStatus.COMPLETED.value}
-        ).eq("id", job_id).eq("status", CrawlingStatus.IN_PROGRESS.value).execute()
-        error_logger.info("Crawl job %s marked COMPLETED (last task finished: %s)", job_id, url)
+    existing = jobs.get_source(tenant_id, url)
+    if existing and existing.get("status") == "COMPLETED":
+        return
+    fields = {"status": "ERROR", "status_code": status_code, "last_job_id": job_id, "last_seen_at": jobs.now_iso()}
+    if existing:
+        supabase.table("tenant_sources").update(fields).eq("id", existing["id"]).execute()
+    else:
+        supabase.table("tenant_sources").insert(
+            {**fields, "tenant_id": tenant_id, "source_location": url, "source_type": source_type}
+        ).execute()
 
 
 # ---------------------------------------------------------------------------
-# Orchestrator task — creates the job and fires the first crawl task
+# Fetching
+# ---------------------------------------------------------------------------
+
+def _fetch_playwright(url: str, parent_url: str | None) -> tuple[str | None, int, list[str]]:
+    """Renders the page. Returns (html, status_code, internal links). Raises UnsafeURLError."""
+    # Fast-fail before launching a browser; the guard also checks every redirect hop.
+    with safe_client(timeout=10.0, follow_redirects=True, headers=HEADERS) as client:
+        check = client.get(url)
+    if check.status_code == 404 or check.status_code >= 500:
+        return None, check.status_code, []
+
+    result = None
+
+    async def crawl():
+        nonlocal result
+        await asyncio.sleep(random.uniform(0.5, 3.0))
+        async with AsyncWebCrawler(config=browser_config) as crawler:
+            result = await crawler.arun(
+                url=url,
+                config=CrawlerRunConfig(wait_until="load", page_timeout=60000, verbose=False),
+                headers={"Referer": parent_url} if parent_url else {},
+            )
+
+    try:
+        asyncio.run(asyncio.wait_for(crawl(), timeout=70.0))
+    except asyncio.TimeoutError:
+        return None, 408, []
+    if not result or not result.success:
+        return None, getattr(result, "status_code", None) or 500, []
+    redirected = getattr(result, "redirected_url", None)
+    if redirected and redirected != url and not is_public_url(redirected):
+        raise UnsafeURLError(f"redirected to non-public {redirected}")
+    links = [l.get("href", "") for l in (result.links or {}).get("internal", [])]
+    return result.html, getattr(result, "status_code", None) or 200, links
+
+
+def _fetch_soup(url: str) -> tuple[str | None, int, list[str]]:
+    html, status = fetch_html(url)
+    if not html:
+        return None, status, []
+    return html, status, extract_internal_links(html, url)
+
+
+def _fetch_file(url: str, previous: dict | None) -> tuple[bytes | None, int, dict]:
+    """Downloads a file; sends ETag/Last-Modified so unchanged files come back as 304."""
+    headers = dict(HEADERS)
+    if previous and previous.get("status") == "COMPLETED":
+        if previous.get("etag"):
+            headers["If-None-Match"] = previous["etag"]
+        if previous.get("last_modified"):
+            headers["If-Modified-Since"] = previous["last_modified"]
+    with safe_client(timeout=60.0, follow_redirects=True, headers=headers) as client:
+        with client.stream("GET", url) as resp:
+            meta = {"etag": resp.headers.get("etag"), "last_modified": resp.headers.get("last-modified")}
+            if resp.status_code == 304 or resp.status_code >= 400:
+                return None, resp.status_code, meta
+            data = b""
+            for chunk in resp.iter_bytes():
+                data += chunk
+                if len(data) > MAX_FILE_BYTES:
+                    return None, 413, meta
+    return data, resp.status_code, meta
+
+
+# ---------------------------------------------------------------------------
+# Tasks
 # ---------------------------------------------------------------------------
 
 @shared_task(bind=True, queue="fast")
@@ -109,421 +222,119 @@ def crawl_links_task(
     single_page_only: bool = False,
     excluded_urls: list[str] = None,
     max_depth: int = 3,
+    trigger: str = "manual",
+    auto_confirm: bool = False,
+    crawl_mode: str | None = None,
 ):
-    """
-    Orchestrator task — creates a CrawlingJob and fires the first CrawlingTask.
-    Unchanged logic; indexing happens in process_single_url_task.
-    """
-    try:
-        start_url = normalize_url(start_url)
-        effective_max_depth = 1 if single_page_only else max_depth
+    """Creates the crawl job and queues the start URL."""
+    start_url = normalize_url(start_url)
+    if not crawl_mode:
+        row = supabase.table("tenants").select("crawl_mode").eq("id", str(tenant_id)).limit(1).execute().data
+        crawl_mode = (row[0].get("crawl_mode") if row else None) or "playwright"
+    job = supabase.table("crawling_jobs").insert({
+        "tenant_id": str(tenant_id),
+        "start_url": start_url,
+        "max_depth": 1 if single_page_only else max_depth,
+        "single_page_only": single_page_only,
+        "status": CrawlingStatus.IN_PROGRESS.value,
+        "excluded_urls": excluded_urls or [],
+        "crawl_mode": crawl_mode,
+        "trigger": trigger,
+        "auto_confirm": auto_confirm,
+    }).execute().data[0]
+    task = supabase.table("crawling_tasks").insert({
+        "job_id": job["id"], "url": start_url, "depth": 1, "status": CrawlingStatus.PENDING.value,
+    }).execute().data[0]
+    _enqueue([task], str(tenant_id))
+    return {"status": "Crawl initiated", "job_id": job["id"]}
 
-        job_data = {
-            "tenant_id": str(tenant_id),
-            "start_url": start_url,
-            "max_depth": effective_max_depth,
-            "status": CrawlingStatus.IN_PROGRESS.value,
-            "excluded_urls": excluded_urls or [],
-        }
-        job_response = supabase.table("crawling_jobs").insert(job_data).execute()
-        job = job_response.data[0]
-        job_id = job["id"]
-
-        self.update_state(state="PROGRESS", meta={"job_id": job_id, "status": "Job created"})
-
-        task_data = {
-            "job_id": job_id,
-            "url": start_url,
-            "depth": 1,
-            "status": CrawlingStatus.PENDING.value,
-        }
-        task_response = supabase.table("crawling_tasks").insert(task_data).execute()
-        task_id = task_response.data[0]["id"]
-
-        process_single_url_task.delay(task_id=task_id, tenant_id=tenant_id)
-        return {"status": "Crawl initiated", "job_id": job_id}
-
-    except Exception as e:
-        error_message = f"Failed to initiate crawl: {e}"
-        error_logger.error(error_message)
-        if "job_id" in locals():
-            supabase.table("crawling_jobs").update(
-                {"status": CrawlingStatus.FAILED.value}
-            ).eq("id", job_id).execute()
-        self.update_state(state="FAILURE", meta={"status": error_message})
-        raise e
-
-
-# ---------------------------------------------------------------------------
-# Worker task — crawls a single URL, indexes it, discovers next links
-# ---------------------------------------------------------------------------
 
 @shared_task(bind=True, queue="heavy", time_limit=600)
 def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str = None):
-    """
-    Crawls one URL with Playwright (via Crawl4AI), uploads the markdown to
-    the Gemini File Search Store, then discovers and enqueues child links.
+    tenant_id = str(tenant_id)
+    claimed = (
+        supabase.table("crawling_tasks")
+        .update({"status": CrawlingStatus.IN_PROGRESS.value})
+        .eq("id", task_id).eq("status", CrawlingStatus.PENDING.value)
+        .execute()
+    ).data
+    if not claimed:
+        return  # already handled by another copy of this message, or job deleted
+    task = claimed[0]
+    job_id = task["job_id"]
+    url = task["url"]
 
-    File links found during discovery are dispatched to process_file_url (worker_fast)
-    and shown as FILE_URL sources in the UI.
-    """
-    task_details = {}
     try:
-        task_response = (
-            supabase.table("crawling_tasks")
-            .select("*, crawling_jobs(*)")
-            .eq("id", task_id)
-            .execute()
-        )
-        if not task_response.data:
-            error_logger.debug("Task %s not found — job deleted while queued, discarding.", task_id)
+        job_rows = supabase.table("crawling_jobs").select("*").eq("id", job_id).limit(1).execute().data
+        if not job_rows or job_rows[0]["status"] != CrawlingStatus.IN_PROGRESS.value:
+            _finish_task(task_id, CrawlingStatus.FAILED, "cancelled")
             return
+        job = job_rows[0]
 
-        task_details = task_response.data[0]
-        job = task_details["crawling_jobs"]
-        job_id = job["id"]
-        url = task_details["url"]
-        depth = task_details["depth"]
-        max_depth = job["max_depth"]
-        excluded_urls = job.get("excluded_urls", [])
-        # Enforce same-host crawling: only follow links whose hostname exactly
-        # matches the start URL. This prevents drifting into subdomains
-        # (e.g. impactlab.fhnw.ch when the user entered www.fhnw.ch).
-        start_hostname = urlparse(job["start_url"]).hostname or ""
-
-        normalized_url = normalize_url(url)
-        normalized_excluded_list = [normalize_url(str(ex).strip()) for ex in excluded_urls]
-
-        # ------------------------------------------------------------------
-        # Exclusion check
-        # ------------------------------------------------------------------
-        is_excluded = False
-        for excluded in normalized_excluded_list:
-            if not excluded:
-                continue
-            stripped_ex = excluded.replace("https://", "").replace("http://", "").strip("/")
-            stripped_url = normalized_url.replace("https://", "").replace("http://", "").strip("/")
-            if stripped_ex and (stripped_ex == stripped_url or stripped_url.startswith(stripped_ex + "/")):
-                is_excluded = True
-                break
-
-        if is_excluded:
-            error_logger.info("Skipping excluded URL: %s", url)
-            supabase.table("crawling_tasks").update(
-                {"status": CrawlingStatus.COMPLETED.value}
-            ).eq("id", task_id).execute()
-            return
-
-        # ------------------------------------------------------------------
-        # Safety + billing gates — checked per page so a crawl stops expanding
-        # once the owner's balance runs out.
-        # ------------------------------------------------------------------
-        refusal = None
         if not is_public_url(url):
-            refusal = ("Refusing to crawl non-public URL: %s", 403)
-        elif not BillingService.tenant_has_balance(tenant_id):
-            refusal = ("Skipping %s: tenant has no balance", 402)
-        if refusal:
-            error_logger.warning(refusal[0], url)
-            supabase.table("crawling_tasks").update(
-                {"status": CrawlingStatus.FAILED.value}
-            ).eq("id", task_id).execute()
-            supabase.table("tenant_sources").insert({
-                "tenant_id": str(tenant_id), "source_type": SourceType.URL.value,
-                "source_location": url, "status": "ERROR", "status_code": refusal[1],
-            }).execute()
+            _record_error(tenant_id, url, SourceType.URL.value, job_id, 403)
+            _finish_task(task_id, CrawlingStatus.FAILED, "refused")
+            return
+        if not BillingService.tenant_has_balance(tenant_id):
+            _finish_task(task_id, CrawlingStatus.FAILED, "no_balance")
             return
 
-        supabase.table("crawling_tasks").update(
-            {"status": CrawlingStatus.IN_PROGRESS.value}
-        ).eq("id", task_id).execute()
-        error_logger.info("Crawling URL: %s at depth %s", url, depth)
-
-        # ------------------------------------------------------------------
-        # Resolve crawl mode
-        # ------------------------------------------------------------------
-        crawl_mode_resp = (
-            supabase.table("tenants")
-            .select("crawl_mode")
-            .eq("id", str(tenant_id))
-            .single()
-            .execute()
-        )
-        crawl_mode = (crawl_mode_resp.data or {}).get("crawl_mode") or "playwright_llm"
-
-        # ==================================================================
-        # SOUP MODE — httpx + trafilatura, no Playwright
-        # ==================================================================
-        if crawl_mode == "soup":
-            error_logger.info("crawl_mode=soup for %s", url)
-
-            html, status_code = fetch_html(url)
-            if not html or status_code >= 400:
-                supabase.table("crawling_tasks").update(
-                    {"status": CrawlingStatus.FAILED.value}
-                ).eq("id", task_id).execute()
-                supabase.table("tenant_sources").insert({
-                    "tenant_id": str(tenant_id), "source_type": SourceType.URL.value,
-                    "source_location": url, "status": "ERROR", "status_code": status_code,
-                }).execute()
-                return
-
-            source_response = supabase.table("tenant_sources").insert({
-                "tenant_id": str(tenant_id), "source_type": SourceType.URL.value,
-                "source_location": url, "status": "PROCESSING", "status_code": status_code,
-            }).execute()
-            source_id = source_response.data[0]["id"]
-
-            # pyrefly: ignore [missing-import]
-            import trafilatura
-            text = trafilatura.extract(html, url=url, output_format="markdown",
-                                       include_links=False, include_images=False)
-            if text:
-                try:
-                    _upload_page_to_store(text, url, source_id, str(tenant_id))
-                except Exception as upload_err:
-                    error_logger.error("soup: Gemini upload failed for %s (source %s): %s", url, source_id, upload_err, exc_info=True)
-                    supabase.table("tenant_sources").update({"status": "ERROR"}).eq("id", source_id).execute()
-            else:
-                error_logger.warning("soup: no content extracted from %s", url)
-                supabase.table("tenant_sources").update({"status": "ERROR"}).eq("id", source_id).execute()
-
-            # Link discovery
-            found_links: set[str] = set()
-            for href in extract_internal_links(html, url):
-                _check_and_add_link(href, normalized_excluded_list, found_links,
-                                    str(tenant_id), job_id, depth, max_depth, url, start_hostname)
-
-            supabase.table("crawling_tasks").update(
-                {"status": CrawlingStatus.COMPLETED.value}
-            ).eq("id", task_id).execute()
-            error_logger.info("soup: completed %s", url)
-            _complete_job_if_done(job_id, url)
-            return
-
-        # ==================================================================
-        # PLAYWRIGHT / PLAYWRIGHT_LLM MODE — Crawl4AI
-        # ==================================================================
-        # Fast-fail: HEAD request before launching browser
-        try:
-            with safe_client(timeout=10.0, follow_redirects=True) as client:
-                fast_check = client.get(
-                    url, headers={"User-Agent": "Mozilla/5.0 (compatible; SwiftAnswerBot/1.0)"}
-                )
-                if fast_check.status_code == 404 or fast_check.status_code >= 500:
-                    error_logger.info("Fast-fail %s with status %s", url, fast_check.status_code)
-                    supabase.table("crawling_tasks").update(
-                        {"status": CrawlingStatus.FAILED.value}
-                    ).eq("id", task_id).execute()
-                    supabase.table("tenant_sources").insert({
-                        "tenant_id": str(tenant_id), "source_type": SourceType.URL.value,
-                        "source_location": url, "status": "ERROR",
-                        "status_code": fast_check.status_code,
-                    }).execute()
-                    return
-        except UnsafeURLError as e:
-            # A redirect hop pointed at an internal address — don't hand it to the browser.
-            error_logger.warning("Refusing to crawl %s: %s", url, e)
-            supabase.table("crawling_tasks").update(
-                {"status": CrawlingStatus.FAILED.value}
-            ).eq("id", task_id).execute()
-            supabase.table("tenant_sources").insert({
-                "tenant_id": str(tenant_id), "source_type": SourceType.URL.value,
-                "source_location": url, "status": "ERROR", "status_code": 403,
-            }).execute()
-            return
-        except Exception as e:
-            error_logger.warning("Fast-check failed for %s, falling back to crawler: %s", url, e)
-
-        headers = {"Referer": parent_url} if parent_url else {}
-        dynamic_run_config = CrawlerRunConfig(wait_until="load", page_timeout=60000, verbose=False)
-        crawl_result = None
-
-        async def crawl_and_close():
-            nonlocal crawl_result
-            await asyncio.sleep(random.uniform(0.5, 5.0))
-            async with AsyncWebCrawler(config=browser_config) as crawler:
-                crawl_result = await crawler.arun(url=url, config=dynamic_run_config, headers=headers)
-
-        try:
-            asyncio.run(asyncio.wait_for(crawl_and_close(), timeout=70.0))
-        except asyncio.TimeoutError:
-            error_logger.error("Timeout loading page %s", url)
-            supabase.table("crawling_tasks").update(
-                {"status": CrawlingStatus.FAILED.value}
-            ).eq("id", task_id).execute()
-            supabase.table("tenant_sources").insert({
-                "tenant_id": str(tenant_id), "source_type": SourceType.URL.value,
-                "source_location": url, "status": "ERROR", "status_code": 408,
-            }).execute()
-            return
-
-        found_links: set[str] = set()
-        status_code = getattr(crawl_result, "status_code", None) if crawl_result else None
-
-        # The browser follows redirects on its own; don't index a page that
-        # ended up on an internal address.
-        redirected_url = getattr(crawl_result, "redirected_url", None) if crawl_result else None
-        if redirected_url and redirected_url != url and not is_public_url(redirected_url):
-            error_logger.warning("Discarding %s: redirected to non-public %s", url, redirected_url)
-            crawl_result = None
-            status_code = 403
-
-        if crawl_result and crawl_result.success and crawl_result.markdown:
-            # Create source record and upload markdown to File Search
-            source_response = supabase.table("tenant_sources").insert({
-                "tenant_id": str(tenant_id), "source_type": SourceType.URL.value,
-                "source_location": url, "status": "PROCESSING", "status_code": status_code,
-            }).execute()
-            source_id = source_response.data[0]["id"]
-
-            try:
-                _upload_page_to_store(crawl_result.markdown, url, source_id, str(tenant_id))
-            except Exception as upload_err:
-                error_logger.error(
-                    "playwright: Gemini upload failed for %s (source %s): %s",
-                    url, source_id, upload_err, exc_info=True
-                )
-                supabase.table("tenant_sources").update({"status": "ERROR"}).eq("id", source_id).execute()
-
-            # Link discovery — use Crawl4AI's pre-filtered internal link list.
-            # Do NOT use raw BS4 on rendered_html: it picks up every <a> tag
-            # (nav, footer, JS-modal links) and generates hundreds of spurious URLs.
-            for lnk in crawl_result.links.get("internal", []):
-                href = lnk.get("href", "").split("#")[0].strip()  # strip fragments
-                if href:
-                    _check_and_add_link(href, normalized_excluded_list, found_links,
-                                        str(tenant_id), job_id, depth, max_depth, url, start_hostname)
-
-            error_logger.info("playwright: found %d page links on %s", len(found_links), url)
+        if _is_file_link(url):
+            outcome = _scan_file(tenant_id, url, job_id)
         else:
-            supabase.table("tenant_sources").insert({
-                "tenant_id": str(tenant_id), "source_type": SourceType.URL.value,
-                "source_location": url, "status": "ERROR",
-                "status_code": status_code if status_code else 500,
-            }).execute()
+            outcome = _scan_page(tenant_id, url, job, task["depth"], parent_url)
+        status = CrawlingStatus.FAILED if outcome in ("error", "refused") else CrawlingStatus.COMPLETED
+        _finish_task(task_id, status, outcome)
 
-        # Enqueue discovered page links (file links already dispatched in _check_and_add_link)
-        if depth < max_depth and found_links:
-            found_list = list(found_links)
-
-            # Deduplicate within the current job only — URLs already in crawling_tasks
-            # for this job_id are skipped. We do NOT check tenant_sources so that
-            # re-crawling the same site across separate jobs works correctly.
-            #
-            # NOTE: PostgREST serialises .in_() values into the query-string, so
-            # large or percent-encoded URL lists can exceed the server's URL-length
-            # limit and return a raw "Bad Request" (non-JSON) 400 response, which
-            # causes a pydantic crash in the postgrest client. Guard against this by
-            # (a) chunking the list into batches of 50 and (b) wrapping in try/except
-            # so a single bad response degrades gracefully instead of aborting the task.
-            already_queued: set[str] = set()
-            try:
-                CHUNK_SIZE = 50
-                for i in range(0, len(found_list), CHUNK_SIZE):
-                    chunk = found_list[i : i + CHUNK_SIZE]
-                    tasks_resp = (
-                        supabase.table("crawling_tasks")
-                        .select("url")
-                        .eq("job_id", job_id)
-                        .in_("url", chunk)
-                        .execute()
-                    )
-                    already_queued.update(item["url"] for item in (tasks_resp.data or []))
-            except Exception as dedup_err:
-                error_logger.warning(
-                    "Dedup query failed for job %s (skipping dedup, may re-enqueue some URLs): %s",
-                    job_id, dedup_err,
-                )
-
-            new_links = found_links - already_queued
-
-            if new_links:
-                new_task_rows = supabase.table("crawling_tasks").insert([
-                    {
-                        "job_id": job_id, "url": link, "depth": depth + 1,
-                        "status": CrawlingStatus.PENDING.value, "parent_url": url,
-                    }
-                    for link in new_links
-                ]).execute()
-                for new_task in new_task_rows.data:
-                    process_single_url_task.apply_async(
-                        kwargs={
-                            "task_id": new_task["id"],
-                            "tenant_id": str(tenant_id),
-                            "parent_url": url,
-                        },
-                        queue="heavy",
-                    )
-
-        supabase.table("crawling_tasks").update(
-            {"status": CrawlingStatus.COMPLETED.value}
-        ).eq("id", task_id).execute()
-        error_logger.info("Completed processing URL: %s", url)
-
-        _complete_job_if_done(job_id, url)
-
+    except UnsafeURLError as e:
+        error_logger.warning("Refusing %s: %s", url, e)
+        _record_error(tenant_id, url, SourceType.URL.value, job_id, 403)
+        _finish_task(task_id, CrawlingStatus.FAILED, "refused")
     except Exception as e:
-        err_str = str(e)
-        if "Connection closed" in err_str or "connection closed" in err_str.lower():
-            error_logger.warning(
-                "Browser connection lost for %s (worker restart?) — task re-queued: %s",
-                task_details.get("url", "unknown"), err_str,
-            )
-        else:
-            error_logger.error(
-                "Error processing URL %s: %s",
-                task_details.get("url", "unknown"), err_str, exc_info=True,
-            )
-        supabase.table("crawling_tasks").update(
-            {"status": CrawlingStatus.FAILED.value}
-        ).eq("id", task_id).execute()
+        error_logger.error("Scanning %s failed: %s", url, e, exc_info=True)
+        _finish_task(task_id, CrawlingStatus.FAILED, "error")
+    finally:
+        jobs.complete_scan_if_done(job_id)
 
 
-# ---------------------------------------------------------------------------
-# Internal helper: classify a discovered link
-# ---------------------------------------------------------------------------
+def _scan_page(tenant_id: str, url: str, job: dict, depth: int, parent_url: str | None) -> str:
+    mode = job.get("crawl_mode") or "playwright"
+    html, status_code, links = _fetch_soup(url) if mode == "soup" else _fetch_playwright(url, parent_url)
+    if not html or status_code >= 400:
+        _record_error(tenant_id, url, SourceType.URL.value, job["id"], status_code or 500)
+        return "error"
 
-def _check_and_add_link(
-    href: str,
-    normalized_excluded_list: list[str],
-    found_page_links: set[str],
-    tenant_id: str,
-    job_id: int,
-    depth: int,
-    max_depth: int,
-    parent_url: str,
-    start_hostname: str = "",
-) -> None:
-    """
-    Evaluates a discovered link:
-    - Different hostname than start URL → skip (prevents subdomain drift)
-    - Excluded → skip
-    - File extension (PDF, DOCX, image, …) → dispatch to process_file_url (worker_fast)
-    - HTML page within depth limit → add to found_page_links for later enqueueing
-    """
-    # Hostname guard — only follow links that belong to the exact same host as
-    # the crawl's start URL. This prevents subdomains (e.g. impactlab.fhnw.ch)
-    # from being enqueued when the user entered www.fhnw.ch.
-    if start_hostname:
-        link_hostname = urlparse(href).hostname or ""
-        if link_hostname and link_hostname != start_hostname:
-            return  # off-domain, skip silently
+    _add_links(job, tenant_id, depth, url, links)
 
-    # Exclusion check
-    for excluded in normalized_excluded_list:
-        if not excluded:
-            continue
-        stripped_ex = excluded.replace("https://", "").replace("http://", "").strip("/")
-        stripped_lnk = href.replace("https://", "").replace("http://", "").strip("/")
-        if stripped_ex and (stripped_ex == stripped_lnk or stripped_lnk.startswith(stripped_ex + "/")):
-            return  # excluded
+    title, markdown = html_to_markdown(html)
+    tokens = estimate_tokens(markdown)
+    if tokens < MIN_CONTENT_TOKENS:
+        _record_error(tenant_id, url, SourceType.URL.value, job["id"], 204)
+        return "empty"
+    _, outcome = jobs.record_scan(
+        tenant_id, url, SourceType.URL.value, job["id"], content_hash(markdown),
+        {"status_code": status_code, "content_markdown": markdown, "content_tokens": tokens, "title": title[:500]},
+    )
+    return outcome
 
-    if _is_file_link(href):
-        # File link: dispatch to worker_fast immediately, don't add to crawling_tasks.
-        # Single-page jobs (max_depth 1) index exactly the given URL, nothing it links to.
-        if max_depth > 1:
-            _dispatch_file_url(href, tenant_id)
-    elif depth < max_depth:
-        # Regular HTML page within depth budget
-        found_page_links.add(href)
+
+def _scan_file(tenant_id: str, url: str, job_id: int) -> str:
+    ext = Path(urlparse(url).path).suffix.lower()
+    if ext in UNSUPPORTED_EXTENSIONS:
+        return "unsupported"
+    previous = jobs.get_source(tenant_id, url)
+    data, status_code, meta = _fetch_file(url, previous)
+    if status_code == 304 and previous:
+        # Unchanged since the last crawl — same hash as what's indexed.
+        jobs.record_scan(tenant_id, url, SourceType.FILE_URL.value, job_id, previous.get("content_hash") or "", {})
+        return "unchanged"
+    if data is None:
+        _record_error(tenant_id, url, SourceType.FILE_URL.value, job_id, status_code)
+        return "error"
+    pages = pdf_page_count(data) if ext == ".pdf" else 1
+    _, outcome = jobs.record_scan(
+        tenant_id, url, SourceType.FILE_URL.value, job_id, content_hash(data),
+        {"status_code": status_code, "file_pages": pages, "content_tokens": None,
+         "etag": meta.get("etag"), "last_modified": meta.get("last_modified")},
+    )
+    return outcome
