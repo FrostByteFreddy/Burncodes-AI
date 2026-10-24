@@ -136,15 +136,18 @@ class TestPdfCrosscheck:
         sched = [{"dates": [{"date": "2025-01-06", "is_exception": False},
                             {"date": "2025-01-13", "is_exception": False},
                             {"date": "2025-04-23", "is_exception": True}]}]
-        assert crosscheck_schedules(b"%PDF", sched) == {}
+        assert crosscheck_schedules(b"%PDF", sched) == {0: []}
 
-    def test_invented_and_miscoloured_dates_fail(self):
+    def test_invented_dates_are_reported_colour_is_ignored(self):
         from app.knowledge.pdf_crosscheck import crosscheck_schedules
         sched = [{"dates": [{"date": "2025-07-03", "is_exception": True},     # not printed at all
-                            {"date": "2025-01-13", "is_exception": True}]}]   # printed black
-        problems = crosscheck_schedules(b"%PDF", sched)[0]
-        assert any("2025-07-03 is not printed" in p for p in problems)
-        assert any("2025-01-13 is flagged as exception but printed in black" in p for p in problems)
+                            {"date": "2025-01-13", "is_exception": True}]}]   # printed (black) — fine
+        assert crosscheck_schedules(b"%PDF", sched) == {0: ["2025-07-03"]}
+
+    def test_series_outside_the_grid_is_not_judged(self):
+        from app.knowledge.pdf_crosscheck import crosscheck_schedules
+        # e.g. "Bottenstein: … und 7. Januar" printed as text below the grid
+        assert crosscheck_schedules(b"%PDF", [{"dates": [{"date": "2025-01-07", "is_exception": False}]}]) == {}
 
     def test_no_month_header_means_no_verdict(self, monkeypatch):
         import pdfplumber
@@ -214,3 +217,57 @@ class TestChatDates:
         assert text.startswith("Today is Sat 2026-10-24.")
         assert "Kehricht (Zone 1): next Mon 2026-10-26, Mon 2026-11-02 (exception)" in text
         assert "Grünabfuhr: no future dates known — the published schedule ends 2025-12-09" in text
+
+
+class TestValidate:
+    """learn._validate: which extracted dates become trusted events."""
+
+    @staticmethod
+    def _run(series, crosscheck):
+        from app.knowledge.learn import _validate
+        result = {"language": "de", "warnings": [], "schedules": series, "_crosscheck": crosscheck}
+        _validate(result)
+        return result
+
+    @staticmethod
+    def _zone2(n=10):
+        # Fridays from 2026-01-02, plus Thursday 2026-04-02 (Good Friday shift, printed black)
+        from datetime import date, timedelta
+        dates = [{"date": (date(2026, 1, 2) + timedelta(weeks=i)).isoformat(), "is_exception": False} for i in range(n)]
+        dates.append({"date": "2026-04-02", "is_exception": True})
+        return {"name": "Hauskehricht", "zone": "Zone 2", "regular_weekday": "Freitag", "notes": "", "dates": dates}
+
+    def test_grid_verified_series_kept_and_exception_from_weekday(self):
+        series = self._zone2()
+        series["dates"][0]["is_exception"] = True   # model wrongly flags a regular Friday
+        result = self._run([series], {0: []})
+        s = result["schedules"][0]
+        assert "_problems" not in s and len(s["dates"]) == 11
+        flags = {d["date"]: d["is_exception"] for d in s["dates"]}
+        assert flags["2026-04-02"] is True and flags["2026-01-02"] is False
+        assert result["warnings"] == []
+
+    def test_few_missing_dates_are_dropped_with_readable_warning(self):
+        result = self._run([self._zone2()], {0: ["2026-01-09"]})
+        s = result["schedules"][0]
+        assert "_problems" not in s and "2026-01-09" not in [d["date"] for d in s["dates"]]
+        assert "09.01.2026" in result["warnings"][0] and "printed" not in result["warnings"][0]
+
+    def test_many_missing_dates_reject_the_series(self):
+        missing = [d["date"] for d in self._zone2()["dates"][:5]]
+        result = self._run([self._zone2()], {0: missing})
+        assert result["schedules"][0]["_problems"]
+        assert "nicht zuverlässig gelesen" in result["warnings"][0]
+
+    def test_series_outside_grid_uses_weekday_rule(self):
+        bottenstein = {"name": "Hauskehricht", "zone": "Bottenstein", "regular_weekday": "", "notes": "",
+                       "dates": [{"date": "2026-01-07", "is_exception": False}]}
+        result = self._run([bottenstein], {})   # crosscheck ran, series not in grid
+        assert "_problems" not in result["schedules"][0]
+        assert result["warnings"] == []
+
+    def test_without_text_layer_unflagged_off_weekday_rejects(self):
+        series = self._zone2()
+        series["dates"][-1]["is_exception"] = False
+        result = self._run([series], None)
+        assert result["schedules"][0]["_problems"]

@@ -505,5 +505,125 @@
       "message": "Votre session a expiré. Veuillez vous reconnecter.",
       "logout": "Se déconnecter"
     }
+  },
+  "knowledge": {
+    "stats": {
+      "pages": "Pages",
+      "files": "Fichiers",
+      "chunks": "Sections indexées",
+      "lastCrawl": "Dernier crawl",
+      "never": "Jamais"
+    },
+    "crawls": {
+      "title": "Crawls",
+      "sub": "Les sites que nous lisons pour votre chatbot",
+      "empty": "Aucun crawl — ajoutez un site pour commencer.",
+      "showAll": "Tout afficher ({n})",
+      "showLess": "Afficher moins"
+    },
+    "content": {
+      "title": "Contenu des sites",
+      "sub": "Tout ce qui a été appris de vos sites, y compris les fichiers trouvés",
+      "filter": "Filtrer les pages…",
+      "empty": "Rien n'a encore été crawlé.",
+      "noMatch": "Aucune page ne correspond à «{q}»."
+    },
+    "files": {
+      "title": "Fichiers téléversés",
+      "sub": "Documents que vous avez téléversés vous-même",
+      "empty": "Aucun fichier téléversé.",
+      "upload": "Téléverser un fichier"
+    },
+    "tree": {
+      "page": "Page",
+      "chunks": "Sections",
+      "changed": "Modifié",
+      "crawled": "Crawlé",
+      "open": "Ouvrir sur le site",
+      "status": {
+        "COMPLETED": "Appris",
+        "QUEUED": "En attente",
+        "PROCESSING": "Apprentissage",
+        "ERROR": "Erreur",
+        "UNSUPPORTED": "Non pris en charge"
+      }
+    },
+    "status": {
+      "IN_PROGRESS": "Analyse",
+      "SCANNED": "Prêt à apprendre",
+      "INDEXING": "Apprentissage",
+      "COMPLETED": "Terminé",
+      "FAILED": "Arrêté"
+    },
+    "job": {
+      "started": "Démarré {date}",
+      "scheduled": "Crawl automatique · {date}",
+      "singlePage": "Cette page uniquement",
+      "stop": "Arrêter",
+      "discard": "Abandonner",
+      "delete": "Supprimer le crawl",
+      "scanProgress": "{done} sur {total} pages analysées",
+      "learnProgress": "{done} sur {total} sources apprises",
+      "report": "Rapport",
+      "hideReport": "Masquer le rapport"
+    },
+    "estimate": {
+      "title": "Analyse terminée",
+      "body": "Gemini va lire {n} sources nouvelles ou modifiées, les découper en sections et noter les faits et dates importants. Les pages inchangées sont ignorées gratuitement.",
+      "nothing": "Rien n'a changé depuis le dernier crawl — rien à apprendre.",
+      "learn": "Apprendre · env. CHF {cost}",
+      "new": "nouvelles",
+      "changed": "modifiées",
+      "unchanged": "inchangées",
+      "removed": "supprimées",
+      "error": "erreurs",
+      "empty": "vides",
+      "refused": "refusées",
+      "unsupported": "non prises en charge",
+      "balanceLow": "Solde insuffisant : CHF {balance} disponible, env. CHF {cost} nécessaire.",
+      "started": "Apprentissage lancé — chaque source apparaît ici une fois terminée."
+    },
+    "report": {
+      "overview": "Aperçu",
+      "dates": "Dates",
+      "review": "À vérifier",
+      "learned": "Apprises",
+      "unchanged": "Inchangées",
+      "removed": "Supprimées",
+      "errors": "Erreurs",
+      "cost": "Coût",
+      "important": "Contenus les plus importants",
+      "noImportant": "Rien de particulièrement important.",
+      "high": "Élevée",
+      "medium": "Moyenne",
+      "series": "Série",
+      "zone": "Zone",
+      "next": "Prochaine date",
+      "count": "Dates",
+      "range": "Période",
+      "expired": "Terminé le {date}",
+      "until": "Jusqu'au {date}",
+      "noDates": "Aucune date trouvée dans ce crawl.",
+      "noReview": "Rien à vérifier — tout est en ordre.",
+      "unreachable": "Inaccessibles : {list}"
+    },
+    "log": {
+      "title": "Activité",
+      "job_started": "Crawl démarré",
+      "scan": "Analyse de {page}",
+      "scanned": "{page} — {outcome}",
+      "links_found": "{count} nouveaux liens sur {page}",
+      "scan_done": "Analyse terminée : {n} sources à apprendre · env. CHF {cost}",
+      "learn_start": "Gemini apprend {n} sources",
+      "learn_source": "Gemini lit {page}",
+      "learned": "{page} appris : {sections} sections · {facts} faits · {dates} dates",
+      "learn_failed": "Impossible d'apprendre {page} : {reason}",
+      "job_done": "Terminé : {n} apprises · CHF {cost}",
+      "empty": "En attente d'activité…"
+    },
+    "deleteJob": {
+      "title": "Supprimer le crawl",
+      "message": "Supprimer le crawl de <strong>{url}</strong> et tout ce qu'il a indexé ? Cette action est irréversible."
+    }
   }
 }

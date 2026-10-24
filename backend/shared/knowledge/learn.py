@@ -19,9 +19,11 @@ from app.billing.services import BillingService
 from app.database.supabase_client import supabase
 from app.gemini_store.service import GeminiStoreService
 from app.knowledge import jobs
-from app.knowledge.markdown import estimate_tokens, normalize_markdown
+from app.knowledge.markdown import estimate_tokens, normalize_markdown, pdf_text
 from app.knowledge.pdf_crosscheck import crosscheck_schedules
 from app.knowledge.understanding import (
+    WEEKDAYS,
+    UnderstandingFailed,
     log_summary,
     section_documents,
     understand_file,
@@ -72,7 +74,8 @@ def understand_source(source: dict) -> tuple[dict, int, int]:
     if len(data) > MAX_FILE_BYTES:
         raise ValueError(f"file larger than {MAX_FILE_BYTES // (1024 * 1024)} MB")
     if ext in _VISUAL_MIME:
-        result, i, o = understand_file(data, _VISUAL_MIME[ext], location)
+        text_layer = pdf_text(data) if ext == ".pdf" else None
+        result, i, o = understand_file(data, _VISUAL_MIME[ext], location, text_layer=text_layer)
         if ext == ".pdf" and result.get("schedules"):
             result["_crosscheck"] = crosscheck_schedules(data, result["schedules"])
         return result, i, o
@@ -93,20 +96,85 @@ class UnsupportedSource(Exception):
     pass
 
 
+# Share of a grid series' dates that may be missing from the PDF before the
+# whole series is considered misread (below that, only those dates are dropped)
+_MAX_MISSING_SHARE = 0.2
+
+_MESSAGES = {
+    "de": {
+        "dropped": "Bei «{label}» wurden {n} Datum/Daten nicht übernommen, weil sie im Dokument nicht gefunden wurden ({dates}). Die übrigen Termine sind geprüft.",
+        "rejected": "Die Termine für «{label}» konnten nicht zuverlässig gelesen werden und werden im Chat nicht als Termine verwendet. Bitte das Dokument prüfen.",
+    },
+    "fr": {
+        "dropped": "Pour «{label}», {n} date(s) n'ont pas été reprises car introuvables dans le document ({dates}). Les autres dates sont vérifiées.",
+        "rejected": "Les dates de «{label}» n'ont pas pu être lues de manière fiable et ne sont pas utilisées dans le chat. Veuillez vérifier le document.",
+    },
+    "en": {
+        "dropped": "For “{label}”, {n} date(s) were left out because they could not be found in the document ({dates}). The remaining dates are verified.",
+        "rejected": "The dates for “{label}” could not be read reliably and are not used in the chat. Please check the document.",
+    },
+}
+
+
+def _fmt(iso: str) -> str:
+    try:
+        return date.fromisoformat(iso).strftime("%d.%m.%Y")
+    except ValueError:
+        return iso
+
+
 def _validate(result: dict) -> None:
-    """Marks schedules that fail validation (_problems) and turns that into a warning."""
-    crosscheck = result.pop("_crosscheck", None) or {}
+    """
+    Decides which extracted dates are trustworthy.
+
+    Grid PDFs (crosscheck available): a date must be printed in its month
+    column; up to 20 % missing dates are dropped individually, more means the
+    series was misread. Exceptions follow from the printed weekday.
+    Everything else: the weekday rule (an off-weekday date must have been
+    marked as exception by the model) — any problem rejects the series.
+    """
+    crosscheck = result.pop("_crosscheck", None)
+    texts = _MESSAGES.get((result.get("language") or "de")[:2], _MESSAGES["de"])
     warnings = list(result.get("warnings") or [])
     for i, series in enumerate(result.get("schedules") or []):
-        problems = validate_schedule(series) + crosscheck.get(i, [])
-        if problems:
+        label = " ".join(p for p in (series.get("name"), series.get("zone")) if p)
+        problems = validate_schedule(series)
+        grid_checked = crosscheck is not None and i in crosscheck
+        missing = crosscheck.get(i, []) if grid_checked else []
+
+        if missing:
+            share = len(missing) / max(1, len(series.get("dates") or []))
+            if share > _MAX_MISSING_SHARE:
+                series["_problems"] = [f"{len(missing)} dates not printed in the grid"]
+            else:
+                series["dates"] = [d for d in series["dates"] if d.get("date", "")[:10] not in missing]
+                warnings.append(texts["dropped"].format(
+                    label=label, n=len(missing), dates=", ".join(_fmt(d) for d in missing[:5])))
+
+        if grid_checked:
+            # Printed in the grid → real. Only structural problems matter now.
+            problems = [p for p in problems if "unparseable" in p]
+        if problems and not series.get("_problems"):
             series["_problems"] = problems
-            label = " ".join(p for p in (series.get("name"), series.get("zone")) if p)
-            warnings.append(
-                f"Die Termine für «{label}» konnten nicht zuverlässig gelesen werden und wurden nicht als "
-                f"verlässliche Termine übernommen ({len(problems)} Unstimmigkeit(en), z. B. {problems[0]})."
-            )
-            error_logger.warning("schedule %r rejected: %s", label, problems[:5])
+        if series.get("_problems"):
+            warnings.append(texts["rejected"].format(label=label))
+            error_logger.warning("schedule %r rejected: %s", label, series["_problems"][:5])
+            continue
+
+        # Exceptions follow from the weekday whenever the series has one
+        weekday = WEEKDAYS.get((series.get("regular_weekday") or "").strip().lower())
+        seen = set()
+        kept = []
+        for d in series.get("dates") or []:
+            iso = _parse_date(d.get("date", ""))
+            if not iso or iso in seen:
+                continue
+            seen.add(iso)
+            d["date"] = iso
+            if weekday is not None:
+                d["is_exception"] = date.fromisoformat(iso).weekday() != weekday
+            kept.append(d)
+        series["dates"] = kept
     result["warnings"] = warnings
 
 
@@ -195,6 +263,8 @@ def learn_source(source_id: int, job_id: int | None = None) -> None:
             supabase.table("tenant_sources").update({"status": "ERROR", "status_code": 402}).eq("id", source_id).execute()
             return
 
+        jobs.log_event(job_id, tenant_id, "learn_source", url=source["source_location"],
+                       title=source.get("title") or "", kind=source["source_type"])
         result, in_tok, out_tok = understand_source(source)
         log_summary(source["source_location"], result)
         _validate(result)
@@ -229,11 +299,25 @@ def learn_source(source_id: int, job_id: int | None = None) -> None:
             "input_tokens": (source.get("input_tokens") or 0) + in_tok + embed_tokens,
             "output_tokens": (source.get("output_tokens") or 0) + out_tok,
         }).eq("id", source_id).execute()
+        jobs.log_event(
+            job_id, tenant_id, "learned", url=source["source_location"], title=result.get("title") or "",
+            sections=len(new_names), facts=len(result.get("facts") or []),
+            dates=sum(len(s.get("dates") or []) for s in result.get("schedules") or [] if not s.get("_problems")),
+            importance=result.get("importance"), cost_chf=round(cost, 4),
+        )
+    except UnderstandingFailed as e:
+        error_logger.warning("Source %s not understood: %s", source_id, e)
+        jobs.log_event(job_id, tenant_id, "learn_failed", url=source["source_location"], reason=str(e))
+        supabase.table("tenant_sources").update({
+            "status": "ERROR", "status_code": 422,
+            "warnings": [f"Gemini konnte dieses Dokument nicht auswerten: {e}"],
+        }).eq("id", source_id).execute()
     except UnsupportedSource as e:
         supabase.table("tenant_sources").update({"status": "UNSUPPORTED"}).eq("id", source_id).execute()
         error_logger.info("Source %s unsupported for learning: %s", source_id, e)
     except Exception as e:
         error_logger.error("Learning source %s failed: %s", source_id, e, exc_info=True)
+        jobs.log_event(job_id, tenant_id, "learn_failed", url=source["source_location"], reason=type(e).__name__)
         supabase.table("tenant_sources").update({"status": "ERROR"}).eq("id", source_id).execute()
     finally:
         if job_id is not None:

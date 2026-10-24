@@ -505,5 +505,125 @@
       "message": "Your session has expired. Please log in again.",
       "logout": "Log Out"
     }
+  },
+  "knowledge": {
+    "stats": {
+      "pages": "Pages",
+      "files": "Files",
+      "chunks": "Indexed chunks",
+      "lastCrawl": "Last crawl",
+      "never": "Never"
+    },
+    "crawls": {
+      "title": "Crawls",
+      "sub": "Websites we read for your chatbot",
+      "empty": "No crawls yet — add a website to get started.",
+      "showAll": "Show all ({n})",
+      "showLess": "Show less"
+    },
+    "content": {
+      "title": "Website content",
+      "sub": "Everything learned from your websites, including files found on them",
+      "filter": "Filter pages…",
+      "empty": "Nothing crawled yet.",
+      "noMatch": "No page matches “{q}”."
+    },
+    "files": {
+      "title": "Uploaded files",
+      "sub": "Documents you uploaded yourself",
+      "empty": "No files uploaded.",
+      "upload": "Upload file"
+    },
+    "tree": {
+      "page": "Page",
+      "chunks": "Chunks",
+      "changed": "Last changed",
+      "crawled": "Last crawled",
+      "open": "Open on website",
+      "status": {
+        "COMPLETED": "Learned",
+        "QUEUED": "Waiting",
+        "PROCESSING": "Learning",
+        "ERROR": "Error",
+        "UNSUPPORTED": "Not supported"
+      }
+    },
+    "status": {
+      "IN_PROGRESS": "Scanning",
+      "SCANNED": "Ready to learn",
+      "INDEXING": "Learning",
+      "COMPLETED": "Completed",
+      "FAILED": "Stopped"
+    },
+    "job": {
+      "started": "Started {date}",
+      "scheduled": "Automatic re-crawl · {date}",
+      "singlePage": "This page only",
+      "stop": "Stop",
+      "discard": "Discard",
+      "delete": "Delete crawl",
+      "scanProgress": "{done} of {total} pages scanned",
+      "learnProgress": "{done} of {total} sources learned",
+      "report": "Report",
+      "hideReport": "Hide report"
+    },
+    "estimate": {
+      "title": "Scan complete",
+      "body": "Gemini will read {n} new or changed sources, split them into sections and note important facts and dates. Unchanged pages are skipped for free.",
+      "nothing": "Nothing changed since the last crawl — nothing to learn.",
+      "learn": "Learn now · approx. CHF {cost}",
+      "new": "new",
+      "changed": "changed",
+      "unchanged": "unchanged",
+      "removed": "removed",
+      "error": "errors",
+      "empty": "empty",
+      "refused": "refused",
+      "unsupported": "unsupported",
+      "balanceLow": "Balance too low: CHF {balance} available, about CHF {cost} needed.",
+      "started": "Learning started — you’ll see each source here as it’s done."
+    },
+    "report": {
+      "overview": "Overview",
+      "dates": "Dates",
+      "review": "To review",
+      "learned": "Learned",
+      "unchanged": "Unchanged",
+      "removed": "Removed",
+      "errors": "Errors",
+      "cost": "Cost",
+      "important": "Most important content",
+      "noImportant": "Nothing stood out as especially important.",
+      "high": "High",
+      "medium": "Medium",
+      "series": "Series",
+      "zone": "Zone",
+      "next": "Next date",
+      "count": "Dates",
+      "range": "Range",
+      "expired": "Ended {date}",
+      "until": "Until {date}",
+      "noDates": "No dates were found in this crawl.",
+      "noReview": "Nothing to review — all good.",
+      "unreachable": "Not reachable: {list}"
+    },
+    "log": {
+      "title": "Activity",
+      "job_started": "Crawl started",
+      "scan": "Scanning {page}",
+      "scanned": "{page} — {outcome}",
+      "links_found": "{count} new links on {page}",
+      "scan_done": "Scan complete: {n} sources to learn · approx. CHF {cost}",
+      "learn_start": "Gemini is learning {n} sources",
+      "learn_source": "Gemini is reading {page}",
+      "learned": "Learned {page}: {sections} sections · {facts} facts · {dates} dates",
+      "learn_failed": "Could not learn {page}: {reason}",
+      "job_done": "Done: {n} learned · CHF {cost}",
+      "empty": "Waiting for activity…"
+    },
+    "deleteJob": {
+      "title": "Delete crawl",
+      "message": "Delete the crawl of <strong>{url}</strong> and everything it indexed? This cannot be undone."
+    }
   }
 }

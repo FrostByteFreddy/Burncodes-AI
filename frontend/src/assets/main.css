@@ -2,8 +2,6 @@
 /* NOTE: @import must come before @tailwind directives in PostCSS      */
 @import './components/tenant/Sources.css';
 @import './components/tenant/Settings.css';
-@import './components/tenant/CrawlingJobProgress.css';
-@import './components/tenant/sources/KnowledgeList.css';
 @import './components/tenant/sources/AddKnowledgeWizard.css';
 @import './components/tenant/settings/AppearanceTab.css';
 @import './components/tenant/settings/BehaviorTab.css';

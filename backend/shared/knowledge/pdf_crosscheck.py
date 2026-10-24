@@ -3,17 +3,21 @@ shared/knowledge/pdf_crosscheck.py
 
 Second, independent reading of calendar grids in born-digital PDFs.
 
-Gemini reads the page visually. That's mostly right, but a wrong date that the
-model also flags as an "exception" passes the weekday rule. Born-digital PDFs
-(InDesign, Word exports) carry every word with its position and fill colour,
-which is enough to verify each extracted date without knowing the layout:
+Gemini reads the page visually. That's mostly right, but it occasionally
+invents a date or takes one from a neighbouring row. Born-digital PDFs
+(InDesign, Word exports) carry every word with its position, which is enough
+to verify each extracted date without knowing the layout:
 
-  - find month header words (Jan, Februar, März, ...) → one column per month
+  - find the header line with the month names (Jan, Februar, März, ...)
+    → one column per month
   - each extracted date's day number must be printed in that month's column
-  - a date flagged as exception must be printed in a non-black colour there
 
-Returns no verdict (None) when the PDF has no text layer or no month headers —
-then only the weekday validation applies.
+Colour is deliberately not checked: designers don't reliably colour every
+moved date (Zofingen prints the Good-Friday shift on 2 April 2026 in black).
+Whether a date is an exception follows from the weekday instead.
+
+Returns None when the PDF has no text layer or no month header line — then
+only the weekday validation applies.
 """
 import io
 import re
@@ -35,20 +39,6 @@ _MONTHS = {
 }
 _MONTH_OF = {name: m for m, names in _MONTHS.items() for name in names}
 _DAY = re.compile(r"^(\d{1,2})\.?$")
-
-
-def _is_black(color) -> bool:
-    if color is None:
-        return True
-    c = tuple(color) if isinstance(color, (list, tuple)) else (color,)
-    if len(c) == 1:          # gray: 0 = black
-        return c[0] <= 0.35
-    if len(c) == 3:          # RGB
-        return max(c) <= 0.35
-    if len(c) == 4:          # CMYK: black = high K or all inks dark
-        cy, m, y, k = c
-        return k >= 0.65 or (cy > 0.6 and m > 0.6 and y > 0.6)
-    return True
 
 
 def _page_columns(words: list[dict]) -> list[tuple[int, float, float, float]] | None:
@@ -76,21 +66,17 @@ def _page_columns(words: list[dict]) -> list[tuple[int, float, float, float]] | 
     return cols
 
 
-def crosscheck_schedules(pdf_bytes: bytes, schedules: list[dict]) -> dict[int, list[str]] | None:
-    """
-    Returns {schedule_index: [problems]} for schedules whose dates are not
-    backed by the PDF's text layer, or None if the PDF can't be checked.
-    """
+def printed_grid_dates(pdf_bytes: bytes) -> set[tuple[int, int]] | None:
+    """{(month, day)} printed below a month header line, or None if there's no grid."""
     try:
         import pdfplumber
     except ImportError:
         return None
-
-    cells: dict[tuple[int, int], list[bool]] = {}   # (month, day) -> [is_black, ...]
+    cells: set[tuple[int, int]] = set()
     try:
         with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
             for page in pdf.pages:
-                words = page.extract_words(extra_attrs=["non_stroking_color"])
+                words = page.extract_words()
                 cols = _page_columns(words)
                 if not cols:
                     continue
@@ -105,26 +91,35 @@ def crosscheck_schedules(pdf_bytes: bytes, schedules: list[dict]) -> dict[int, l
                     xc = (w["x0"] + w["x1"]) / 2
                     for month, left, right, _ in cols:
                         if left <= xc < right:
-                            cells.setdefault((month, day), []).append(_is_black(w.get("non_stroking_color")))
+                            cells.add((month, day))
                             break
     except Exception:
         return None
-    if not cells:
-        return None
+    return cells or None
 
-    problems: dict[int, list[str]] = {}
+
+def crosscheck_schedules(pdf_bytes: bytes, schedules: list[dict]) -> dict[int, list[str]] | None:
+    """
+    Returns {schedule_index: [ISO dates not printed in their month column]}
+    for every schedule that comes from the grid ([] = all dates verified), or
+    None if the PDF can't be checked. A series with *no* date in the grid
+    isn't a grid series (e.g. a line of text under the calendar); it's left
+    out of the result and handled by the weekday validation.
+    """
+    cells = printed_grid_dates(pdf_bytes)
+    if cells is None:
+        return None
+    missing: dict[int, list[str]] = {}
     for i, series in enumerate(schedules):
-        found = []
+        dates = []
         for entry in series.get("dates") or []:
             try:
-                d = date.fromisoformat(entry["date"][:10])
+                dates.append(date.fromisoformat(entry["date"][:10]))
             except (KeyError, ValueError):
                 continue
-            printed = cells.get((d.month, d.day))
-            if not printed:
-                found.append(f"{d.isoformat()} is not printed in the {d.month:02d} column of the PDF")
-            elif entry.get("is_exception") and all(printed):
-                found.append(f"{d.isoformat()} is flagged as exception but printed in black")
-        if found:
-            problems[i] = found
-    return problems
+        if not dates:
+            continue
+        absent = [d.isoformat() for d in dates if (d.month, d.day) not in cells]
+        if len(absent) < len(dates):
+            missing[i] = absent
+    return missing

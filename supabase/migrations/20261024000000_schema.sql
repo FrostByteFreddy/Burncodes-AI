@@ -206,6 +206,17 @@ CREATE TABLE IF NOT EXISTS public.processed_payments (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Live activity of a crawl job, shown in the dashboard (Realtime). Events are
+-- codes + data so the frontend renders them in the user's language.
+CREATE TABLE IF NOT EXISTS public.crawl_job_log (
+    id         BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    job_id     BIGINT NOT NULL REFERENCES public.crawling_jobs(id) ON DELETE CASCADE,
+    tenant_id  UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+    event      TEXT NOT NULL,
+    data       JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Facts extracted from sources (opening hours, fees, contacts, deadlines, ...)
 CREATE TABLE IF NOT EXISTS public.tenant_facts (
     id         BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -256,6 +267,8 @@ CREATE INDEX IF NOT EXISTS idx_tenant_sources_tenant         ON public.tenant_so
 CREATE INDEX IF NOT EXISTS idx_tenants_user                  ON public.tenants (user_id);
 CREATE INDEX IF NOT EXISTS idx_processed_payments_user       ON public.processed_payments (user_id);
 CREATE INDEX IF NOT EXISTS idx_tenant_events_tenant_date ON public.tenant_events (tenant_id, event_date);
+CREATE INDEX IF NOT EXISTS idx_crawl_job_log_job          ON public.crawl_job_log (job_id, id);
+CREATE INDEX IF NOT EXISTS idx_crawl_job_log_tenant       ON public.crawl_job_log (tenant_id, id);
 CREATE INDEX IF NOT EXISTS idx_tenant_events_source       ON public.tenant_events (source_id);
 CREATE INDEX IF NOT EXISTS idx_tenant_facts_source        ON public.tenant_facts (source_id);
 CREATE INDEX IF NOT EXISTS idx_tenant_sources_last_job    ON public.tenant_sources (last_job_id);
@@ -446,6 +459,7 @@ ALTER TABLE public.user_billing         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.processed_payments   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tenant_facts         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tenant_events        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.crawl_job_log        ENABLE ROW LEVEL SECURITY;
 
 -- Policies are recreated so their definition here is authoritative.
 DROP POLICY IF EXISTS "Allow users to view their own tenants"                   ON public.tenants;
@@ -464,6 +478,7 @@ DROP POLICY IF EXISTS "shared_conversations_service_insert" ON public.shared_con
 DROP POLICY IF EXISTS "chat_logs_shared_public_read"        ON public.chat_logs;
 DROP POLICY IF EXISTS "crawling_jobs_owner_read"            ON public.crawling_jobs;
 DROP POLICY IF EXISTS "crawling_tasks_owner_read"           ON public.crawling_tasks;
+DROP POLICY IF EXISTS "crawl_job_log_owner_read"            ON public.crawl_job_log;
 
 -- Owner policies. authenticated only has SELECT on tenants and the crawl
 -- tables (see Grants); the rest keep RLS meaningful if grants are ever added.
@@ -495,6 +510,9 @@ CREATE POLICY "crawling_tasks_owner_read" ON public.crawling_tasks FOR SELECT TO
         WHERE j.id = crawling_tasks.job_id AND t.user_id = auth.uid()
     ));
 
+CREATE POLICY "crawl_job_log_owner_read" ON public.crawl_job_log FOR SELECT TO authenticated
+    USING (EXISTS (SELECT 1 FROM public.tenants t WHERE t.id = crawl_job_log.tenant_id AND t.user_id = auth.uid()));
+
 -- processed_payments and shared_conversations: no policies (service role only).
 -- tenant_facts and tenant_events: no policies (served through the API).
 
@@ -512,7 +530,7 @@ GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO service_role;
 
 -- Realtime on the crawl tables; the crawl RLS policies look up tenant
 -- ownership, so tenants must be readable too (RLS limits it to own rows).
-GRANT SELECT ON public.tenants, public.crawling_jobs, public.crawling_tasks TO authenticated;
+GRANT SELECT ON public.tenants, public.crawling_jobs, public.crawling_tasks, public.crawl_job_log TO authenticated;
 
 -- Trigger functions run as the table owner regardless of grants, but
 -- rls_auto_enable (platform event trigger, if present) must stay callable.
@@ -536,7 +554,7 @@ DECLARE
     t TEXT;
 BEGIN
     IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
-        FOREACH t IN ARRAY ARRAY['crawling_jobs', 'crawling_tasks'] LOOP
+        FOREACH t IN ARRAY ARRAY['crawling_jobs', 'crawling_tasks', 'crawl_job_log'] LOOP
             IF NOT EXISTS (
                 SELECT 1 FROM pg_publication_tables
                 WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = t

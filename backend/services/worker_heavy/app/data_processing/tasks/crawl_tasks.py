@@ -245,6 +245,8 @@ def crawl_links_task(
     task = supabase.table("crawling_tasks").insert({
         "job_id": job["id"], "url": start_url, "depth": 1, "status": CrawlingStatus.PENDING.value,
     }).execute().data[0]
+    jobs.log_event(job["id"], str(tenant_id), "job_started", url=start_url, trigger=trigger,
+                   single_page_only=single_page_only)
     _enqueue([task], str(tenant_id))
     return {"status": "Crawl initiated", "job_id": job["id"]}
 
@@ -279,10 +281,12 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             _finish_task(task_id, CrawlingStatus.FAILED, "no_balance")
             return
 
+        jobs.log_event(job_id, tenant_id, "scan", url=url)
         if _is_file_link(url):
             outcome = _scan_file(tenant_id, url, job_id)
         else:
             outcome = _scan_page(tenant_id, url, job, task["depth"], parent_url)
+        jobs.log_event(job_id, tenant_id, "scanned", url=url, outcome=outcome)
         status = CrawlingStatus.FAILED if outcome in ("error", "refused") else CrawlingStatus.COMPLETED
         _finish_task(task_id, status, outcome)
 
@@ -304,7 +308,9 @@ def _scan_page(tenant_id: str, url: str, job: dict, depth: int, parent_url: str 
         _record_error(tenant_id, url, SourceType.URL.value, job["id"], status_code or 500)
         return "error"
 
-    _add_links(job, tenant_id, depth, url, links)
+    found = _add_links(job, tenant_id, depth, url, links)
+    if found:
+        jobs.log_event(job["id"], tenant_id, "links_found", url=url, count=found)
 
     title, markdown = html_to_markdown(html)
     tokens = estimate_tokens(markdown)

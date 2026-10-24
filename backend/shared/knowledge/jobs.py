@@ -45,6 +45,22 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def log_event(job_id: int | None, tenant_id: str, event: str, **data) -> None:
+    """
+    Appends to the job's live activity log (crawl_job_log, pushed to the
+    dashboard via Realtime). Events are codes + data; the frontend renders
+    them in the user's language. Never raises — logging must not break a crawl.
+    """
+    if job_id is None:
+        return
+    try:
+        supabase.table("crawl_job_log").insert(
+            {"job_id": job_id, "tenant_id": str(tenant_id), "event": event, "data": data}
+        ).execute()
+    except Exception as e:
+        error_logger.debug("crawl_job_log insert failed for job %s: %s", job_id, e)
+
+
 # ---------------------------------------------------------------------------
 # Sources: one row per (tenant, location)
 # ---------------------------------------------------------------------------
@@ -226,6 +242,8 @@ def complete_scan_if_done(job_id: int) -> None:
     estimate["removed"] = removed
     supabase.table("crawling_jobs").update({"estimate": estimate}).eq("id", job_id).execute()
     error_logger.info("Crawl job %s scanned: %s", job_id, estimate)
+    log_event(job_id, job["tenant_id"], "scan_done", to_learn=estimate["to_learn"],
+              cost_chf=estimate["cost_chf"], removed=removed, outcomes=estimate["outcomes"])
 
     # Scheduled re-crawls are pre-approved up to a cap; anything pricier waits
     # for the user like a manual crawl.
@@ -248,6 +266,8 @@ def start_learning(job_id: int) -> bool:
     for src in pending:
         celery_app.send_task(LEARN_TASK, args=[src["id"], job_id], queue="fast")
     error_logger.info("Crawl job %s: learning %d source(s)", job_id, len(pending))
+    if pending:
+        log_event(job_id, moved[0]["tenant_id"], "learn_start", count=len(pending))
     if not pending:
         finish_job_if_learned(job_id)
     return True
@@ -272,11 +292,24 @@ def finish_job_if_learned(job_id: int) -> None:
         .execute()
     ).data
     if not moved:
+        # Older deployments' scheduler sets COMPLETED by id without a report
+        # (it raced this code while both ran against one database). Finish
+        # such jobs properly instead of leaving them without a report.
+        moved = (
+            supabase.table("crawling_jobs")
+            .update({"finished_at": now_iso()})
+            .eq("id", job_id).eq("status", CrawlingStatus.COMPLETED.value)
+            .is_("finished_at", "null").is_("report", "null")
+            .execute()
+        ).data
+    if not moved:
         return
     try:
         report = build_report(moved[0])
         supabase.table("crawling_jobs").update({"report": report}).eq("id", job_id).execute()
         error_logger.info("Crawl job %s completed: %s", job_id, report["counts"])
+        log_event(job_id, moved[0]["tenant_id"], "job_done", learned=report["counts"].get("learned", 0),
+                  cost_chf=report["cost_chf"], attention=len(report["attention"]))
     except Exception as e:
         error_logger.error("Report for crawl job %s failed: %s", job_id, e, exc_info=True)
 
@@ -317,9 +350,11 @@ def build_report(job: dict) -> dict:
         for (source_id, series, zone), dates in sorted(grouped.items()):
             dates.sort()
             src = by_id.get(source_id, {"id": source_id, "source_location": ""})
+            upcoming = [d for d in dates if d >= today]
             schedules.append({
                 **ref(src), "series": series, "zone": zone, "count": len(dates),
-                "first": dates[0], "last": dates[-1], "expired": dates[-1] < today,
+                "first": dates[0], "last": dates[-1], "next": upcoming[0] if upcoming else None,
+                "expired": not upcoming,
             })
 
     attention = []

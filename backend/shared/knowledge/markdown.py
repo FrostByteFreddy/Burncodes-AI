@@ -114,3 +114,27 @@ def slice_lines(md: str, start: int, end: int) -> str:
     if end < start:
         return ""
     return "\n".join(lines[start - 1:end]).strip()
+
+
+# A PDF has a usable text layer when it carries at least this much text per page
+_MIN_TEXT_PER_PAGE = 200
+
+
+def pdf_text(data: bytes) -> str | None:
+    """
+    The PDF's own text layer as normalised text with page markers, or None for
+    scanned/image-only PDFs. Lets Gemini cite sections by line number instead
+    of re-typing the whole document (output tokens are the expensive part).
+    """
+    try:
+        import io
+        import pdfplumber
+        with pdfplumber.open(io.BytesIO(data)) as pdf:
+            pages = [(p.extract_text() or "") for p in pdf.pages]
+    except Exception:
+        return None
+    text = sum(len(p) for p in pages)
+    if not pages or text < _MIN_TEXT_PER_PAGE * len(pages):
+        return None
+    parts = [f"--- Seite {i} ---\n{normalize_markdown(p)}" for i, p in enumerate(pages, start=1) if p.strip()]
+    return "\n\n".join(parts)

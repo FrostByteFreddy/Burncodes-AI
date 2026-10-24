@@ -79,7 +79,7 @@
     <div class="sidebar__section-label">{{ $t('sidebar.account') }}</div>
     <nav class="sidebar__nav">
       <router-link to="/manage-tenants" class="nav-item" active-class="nav-item--active">
-        <font-awesome-icon :icon="['fas', 'grid-2']" class="nav-item__icon" />
+        <font-awesome-icon :icon="['fas', 'table-cells-large']" class="nav-item__icon" />
         <span>{{ $t('sidebar.manageTenants') }}</span>
       </router-link>
     </nav>

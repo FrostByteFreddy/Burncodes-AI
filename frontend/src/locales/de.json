@@ -505,5 +505,125 @@
       "message": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
       "logout": "Abmelden"
     }
+  },
+  "knowledge": {
+    "stats": {
+      "pages": "Seiten",
+      "files": "Dateien",
+      "chunks": "Indexierte Abschnitte",
+      "lastCrawl": "Letzter Crawl",
+      "never": "Noch nie"
+    },
+    "crawls": {
+      "title": "Crawls",
+      "sub": "Websites, die wir für Ihren Chatbot lesen",
+      "empty": "Noch keine Crawls — fügen Sie eine Website hinzu.",
+      "showAll": "Alle anzeigen ({n})",
+      "showLess": "Weniger anzeigen"
+    },
+    "content": {
+      "title": "Website-Inhalte",
+      "sub": "Alles, was von Ihren Websites gelernt wurde — inklusive dort gefundener Dateien",
+      "filter": "Seiten filtern…",
+      "empty": "Noch nichts gecrawlt.",
+      "noMatch": "Keine Seite passt zu «{q}»."
+    },
+    "files": {
+      "title": "Hochgeladene Dateien",
+      "sub": "Dokumente, die Sie selbst hochgeladen haben",
+      "empty": "Keine Dateien hochgeladen.",
+      "upload": "Datei hochladen"
+    },
+    "tree": {
+      "page": "Seite",
+      "chunks": "Abschnitte",
+      "changed": "Zuletzt geändert",
+      "crawled": "Zuletzt gecrawlt",
+      "open": "Auf der Website öffnen",
+      "status": {
+        "COMPLETED": "Gelernt",
+        "QUEUED": "Wartet",
+        "PROCESSING": "Wird gelernt",
+        "ERROR": "Fehler",
+        "UNSUPPORTED": "Nicht unterstützt"
+      }
+    },
+    "status": {
+      "IN_PROGRESS": "Scannt",
+      "SCANNED": "Bereit zum Lernen",
+      "INDEXING": "Lernt",
+      "COMPLETED": "Abgeschlossen",
+      "FAILED": "Gestoppt"
+    },
+    "job": {
+      "started": "Gestartet {date}",
+      "scheduled": "Automatischer Crawl · {date}",
+      "singlePage": "Nur diese Seite",
+      "stop": "Stoppen",
+      "discard": "Verwerfen",
+      "delete": "Crawl löschen",
+      "scanProgress": "{done} von {total} Seiten gescannt",
+      "learnProgress": "{done} von {total} Quellen gelernt",
+      "report": "Bericht",
+      "hideReport": "Bericht ausblenden"
+    },
+    "estimate": {
+      "title": "Scan abgeschlossen",
+      "body": "Gemini liest {n} neue oder geänderte Quellen, teilt sie in Abschnitte und notiert wichtige Fakten und Termine. Unveränderte Seiten werden kostenlos übersprungen.",
+      "nothing": "Seit dem letzten Crawl hat sich nichts geändert — nichts zu lernen.",
+      "learn": "Jetzt lernen · ca. CHF {cost}",
+      "new": "neu",
+      "changed": "geändert",
+      "unchanged": "unverändert",
+      "removed": "entfernt",
+      "error": "Fehler",
+      "empty": "leer",
+      "refused": "abgelehnt",
+      "unsupported": "nicht unterstützt",
+      "balanceLow": "Guthaben zu tief: CHF {balance} verfügbar, ca. CHF {cost} benötigt.",
+      "started": "Lernen gestartet — jede Quelle erscheint hier, sobald sie fertig ist."
+    },
+    "report": {
+      "overview": "Übersicht",
+      "dates": "Termine",
+      "review": "Zu prüfen",
+      "learned": "Gelernt",
+      "unchanged": "Unverändert",
+      "removed": "Entfernt",
+      "errors": "Fehler",
+      "cost": "Kosten",
+      "important": "Wichtigste Inhalte",
+      "noImportant": "Nichts fiel als besonders wichtig auf.",
+      "high": "Hoch",
+      "medium": "Mittel",
+      "series": "Serie",
+      "zone": "Zone",
+      "next": "Nächster Termin",
+      "count": "Termine",
+      "range": "Zeitraum",
+      "expired": "Beendet {date}",
+      "until": "Bis {date}",
+      "noDates": "In diesem Crawl wurden keine Termine gefunden.",
+      "noReview": "Nichts zu prüfen — alles in Ordnung.",
+      "unreachable": "Nicht erreichbar: {list}"
+    },
+    "log": {
+      "title": "Aktivität",
+      "job_started": "Crawl gestartet",
+      "scan": "Scanne {page}",
+      "scanned": "{page} — {outcome}",
+      "links_found": "{count} neue Links auf {page}",
+      "scan_done": "Scan abgeschlossen: {n} Quellen zu lernen · ca. CHF {cost}",
+      "learn_start": "Gemini lernt {n} Quellen",
+      "learn_source": "Gemini liest {page}",
+      "learned": "{page} gelernt: {sections} Abschnitte · {facts} Fakten · {dates} Termine",
+      "learn_failed": "{page} konnte nicht gelernt werden: {reason}",
+      "job_done": "Fertig: {n} gelernt · CHF {cost}",
+      "empty": "Warte auf Aktivität…"
+    },
+    "deleteJob": {
+      "title": "Crawl löschen",
+      "message": "Den Crawl von <strong>{url}</strong> und alles, was er indexiert hat, löschen? Das kann nicht rückgängig gemacht werden."
+    }
   }
 }

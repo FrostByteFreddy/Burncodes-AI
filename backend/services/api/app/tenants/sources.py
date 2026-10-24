@@ -271,6 +271,30 @@ def get_crawling_job_progress(current_user, tenant_id, job_id):
         error_logger.error(f"Error getting job progress for job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to retrieve job progress"}), 500
 
+@sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/log', methods=['GET'])
+@token_required
+def get_crawling_job_log(current_user, tenant_id, job_id):
+    """Latest activity of a crawl job (oldest first). Live updates come via Realtime."""
+    try:
+        tenant_id_str = str(tenant_id)
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute()
+        if not tenant_check.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+        try:
+            limit = max(1, min(int(request.args.get('limit', 100)), 500))
+        except ValueError:
+            limit = 100
+        rows = (
+            supabase.table('crawl_job_log').select("id, event, data, created_at")
+            .eq('job_id', job_id).eq('tenant_id', tenant_id_str)
+            .order('id', desc=True).limit(limit).execute()
+        ).data or []
+        return jsonify(list(reversed(rows))), 200
+    except Exception as e:
+        error_logger.error(f"Error getting log for crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to retrieve crawl log"}), 500
+
+
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/confirm', methods=['POST'])
 @token_required
 def confirm_crawling_job(current_user, tenant_id, job_id):

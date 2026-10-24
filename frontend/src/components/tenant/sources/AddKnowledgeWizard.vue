@@ -102,7 +102,7 @@
                 <label for="wiz-file-upload" class="file-drop" :class="{ 'file-drop--active': selectedFile }">
                   <input id="wiz-file-upload" type="file" @change="handleFileSelect" accept=".pdf,.txt,.csv" class="sr-only" />
                   <div class="file-drop__icon" :class="{ 'file-drop__icon--active': selectedFile }">
-                    <font-awesome-icon :icon="selectedFile ? ['fas', 'file-check'] : ['fas', 'file-arrow-up']" />
+                    <font-awesome-icon :icon="selectedFile ? ['fas', 'file-circle-check'] : ['fas', 'file-arrow-up']" />
                   </div>
                   <div class="text-center">
                     <p class="file-drop__name" :class="{ 'file-drop__name--active': selectedFile }">

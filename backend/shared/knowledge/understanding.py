@@ -24,6 +24,11 @@ from app.logging_config import error_logger
 
 # Per-call timeout (ms, google-genai unit). Long PDFs take a while.
 _TIMEOUT_MS = int(os.getenv("INDEXING_GEMINI_TIMEOUT_MS", "240000"))
+_MAX_OUTPUT_TOKENS = int(os.getenv("INDEXING_MAX_OUTPUT_TOKENS", "32000"))
+
+
+class UnderstandingFailed(Exception):
+    """Gemini returned nothing usable (empty, truncated or unparseable)."""
 
 _client: genai.Client | None = None
 
@@ -162,12 +167,22 @@ def _call(contents: list, schema: dict) -> tuple[dict, int, int]:
             response_mime_type="application/json",
             response_json_schema=schema,
             temperature=0,
+            max_output_tokens=_MAX_OUTPUT_TOKENS,
         ),
     )
     usage = getattr(response, "usage_metadata", None)
     in_tok = getattr(usage, "prompt_token_count", 0) or 0
     out_tok = getattr(usage, "candidates_token_count", 0) or 0
-    return json.loads(response.text or "{}"), in_tok, out_tok
+    finish = str(getattr((response.candidates or [None])[0], "finish_reason", "") or "")
+    if "MAX_TOKENS" in finish:
+        raise UnderstandingFailed(f"answer truncated after {out_tok} output tokens")
+    try:
+        result = json.loads(response.text or "")
+    except (json.JSONDecodeError, TypeError) as e:
+        raise UnderstandingFailed(f"no valid answer (finish_reason={finish or 'unknown'})") from e
+    if not isinstance(result, dict) or not (result.get("sections") or result.get("facts") or result.get("schedules")):
+        raise UnderstandingFailed("empty answer — nothing was extracted")
+    return result, in_tok, out_tok
 
 
 def understand_markdown(markdown: str, source: str, today: date | None = None) -> tuple[dict, int, int]:
@@ -189,15 +204,37 @@ def understand_markdown(markdown: str, source: str, today: date | None = None) -
     return result, in_tok, out_tok
 
 
-def understand_file(data: bytes, mime_type: str, source: str, today: date | None = None) -> tuple[dict, int, int]:
-    """Analyse a PDF/image/document visually. Returns (result, input_tokens, output_tokens)."""
+def understand_file(
+    data: bytes, mime_type: str, source: str, today: date | None = None, text_layer: str | None = None,
+) -> tuple[dict, int, int]:
+    """
+    Analyse a PDF/image visually. Returns (result, input_tokens, output_tokens).
+    With a text layer (born-digital PDFs) Gemini still reads the document
+    visually for facts and dates, but returns sections as line ranges of that
+    text — far fewer output tokens than re-typing a 9-page regulation.
+    """
     today = today or date.today()
+    part = types.Part.from_bytes(data=data, mime_type=mime_type)
+    if text_layer:
+        prompt = _INSTRUCTIONS.format(
+            today=today.isoformat(),
+            source=source,
+            section_rule="Read the document visually. Return each section as a heading plus the line range "
+                         "(start_line/end_line, inclusive) of the numbered TEXT LAYER below. Ranges must not overlap.",
+        )
+        result, in_tok, out_tok = _call(
+            [part, prompt, "TEXT LAYER:\n" + number_lines(text_layer)], _schema(sections_by_lines=True))
+        result["sections"] = [
+            {"heading": s.get("heading", ""), "text": text}
+            for s in result.get("sections") or []
+            if (text := slice_lines(text_layer, s.get("start_line", 0), s.get("end_line", 0)))
+        ]
+        return result, in_tok, out_tok
     prompt = _INSTRUCTIONS.format(
         today=today.isoformat(),
         source=source,
         section_rule="Return each section with its full content as Markdown (tables as Markdown tables).",
     )
-    part = types.Part.from_bytes(data=data, mime_type=mime_type)
     return _call([part, prompt], _schema(sections_by_lines=False))
 
 
@@ -205,7 +242,7 @@ def understand_file(data: bytes, mime_type: str, source: str, today: date | None
 # Deterministic validation of extracted schedules
 # ---------------------------------------------------------------------------
 
-_WEEKDAYS = {
+WEEKDAYS = {
     # de / en / fr
     "montag": 0, "dienstag": 1, "mittwoch": 2, "donnerstag": 3, "freitag": 4, "samstag": 5, "sonntag": 6,
     "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3, "friday": 4, "saturday": 5, "sunday": 6,
@@ -227,7 +264,7 @@ def validate_schedule(series: dict) -> list[str]:
     marked as exceptions, and exceptions that fall on the regular weekday.
     """
     problems = []
-    weekday = _WEEKDAYS.get((series.get("regular_weekday") or "").strip().lower())
+    weekday = WEEKDAYS.get((series.get("regular_weekday") or "").strip().lower())
     seen = set()
     for entry in series.get("dates") or []:
         d = _parse_date(entry.get("date", ""))
