@@ -49,7 +49,10 @@ def create_tenant(current_user):
 @token_required
 def get_tenants(current_user):
     try:
-        tenants = supabase.table('tenants').select("*").eq('user_id', current_user.id).execute()
+        tenants = supabase.table('tenants').select("*, tenant_sources(count)").eq('user_id', current_user.id).execute()
+        for tenant in tenants.data:
+            counts = tenant.pop('tenant_sources', None) or [{}]
+            tenant['source_count'] = counts[0].get('count', 0)
         return jsonify(tenants.data), 200
     except Exception as e:
         error_logger.error(f"Error fetching tenants for user {current_user.id}: {e}", extra={'user_id': current_user.id}, exc_info=True)

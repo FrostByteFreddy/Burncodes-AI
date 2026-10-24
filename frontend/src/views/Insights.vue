@@ -251,12 +251,14 @@ const selectConversation = async (conversationId) => {
   }
 }
 
-watch(() => tenantsStore.currentTenant, (tenant) => {
-  if (tenant) {
-    fetchAnalytics()
-    fetchConversations()
+// Keyed on the id: the store reassigns currentTenant several times while
+// loading, and each reassignment used to refetch everything.
+watch(() => tenantsStore.currentTenant?.id, (tenantId) => {
+  if (tenantId) {
     selectedConversation.value = null
     conversations.value = []
+    fetchAnalytics()
+    fetchConversations()
   }
 }, { immediate: true })
 </script>

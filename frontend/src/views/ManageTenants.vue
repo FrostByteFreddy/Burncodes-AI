@@ -32,11 +32,11 @@
         @click="goToTenant(tenant)"
       >
         <div class="tenant-card__left">
-          <span class="status-dot" :class="tenant.sources?.length ? 'status-dot--active' : ''"></span>
+          <span class="status-dot" :class="tenant.source_count ? 'status-dot--active' : ''"></span>
           <div class="tenant-card__info">
             <h2 class="tenant-card__name">{{ tenant.name }}</h2>
             <p class="tenant-card__meta">
-              <span>{{ $t('manageTenants.sources', { n: tenant.sources?.length ?? 0 }) }}</span>
+              <span>{{ $t('manageTenants.sources', { n: tenant.source_count ?? 0 }) }}</span>
               <span class="meta-sep">·</span>
               <span class="tenant-card__url">/chat/{{ tenant.id.slice(0, 8) }}…</span>
             </p>

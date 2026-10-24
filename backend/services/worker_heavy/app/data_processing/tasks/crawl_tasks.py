@@ -75,6 +75,28 @@ def _upload_page_to_store(
     error_logger.info("Indexed page %s (source %s) → %s", url, source_id, doc_name)
 
 
+def _complete_job_if_done(job_id: int, url: str) -> None:
+    """
+    No single worker knows it's "the last one", so after each completion we
+    ask: are there still any PENDING or IN_PROGRESS tasks for this job? If
+    not, we own the responsibility of marking the job COMPLETED.
+    Use limit(1) — we only need to know if at least one exists.
+    """
+    outstanding = (
+        supabase.table("crawling_tasks")
+        .select("id", count="exact")
+        .eq("job_id", job_id)
+        .in_("status", [CrawlingStatus.PENDING.value, CrawlingStatus.IN_PROGRESS.value])
+        .limit(1)
+        .execute()
+    )
+    if not outstanding.data:
+        supabase.table("crawling_jobs").update(
+            {"status": CrawlingStatus.COMPLETED.value}
+        ).eq("id", job_id).eq("status", CrawlingStatus.IN_PROGRESS.value).execute()
+        error_logger.info("Crawl job %s marked COMPLETED (last task finished: %s)", job_id, url)
+
+
 # ---------------------------------------------------------------------------
 # Orchestrator task — creates the job and fires the first crawl task
 # ---------------------------------------------------------------------------
@@ -276,6 +298,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
                 {"status": CrawlingStatus.COMPLETED.value}
             ).eq("id", task_id).execute()
             error_logger.info("soup: completed %s", url)
+            _complete_job_if_done(job_id, url)
             return
 
         # ==================================================================
@@ -438,24 +461,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         ).eq("id", task_id).execute()
         error_logger.info("Completed processing URL: %s", url)
 
-        # ── Final-task check ───────────────────────────────────────────────
-        # No single worker knows it's "the last one", so after each completion
-        # we ask: are there still any PENDING or IN_PROGRESS tasks for this job?
-        # If not, we own the responsibility of marking the job COMPLETED.
-        # Use limit(1) — we only need to know if at least one exists.
-        outstanding = (
-            supabase.table("crawling_tasks")
-            .select("id", count="exact")
-            .eq("job_id", job_id)
-            .in_("status", [CrawlingStatus.PENDING.value, CrawlingStatus.IN_PROGRESS.value])
-            .limit(1)
-            .execute()
-        )
-        if not outstanding.data:
-            supabase.table("crawling_jobs").update(
-                {"status": CrawlingStatus.COMPLETED.value}
-            ).eq("id", job_id).eq("status", CrawlingStatus.IN_PROGRESS.value).execute()
-            error_logger.info("Crawl job %s marked COMPLETED (last task finished: %s)", job_id, url)
+        _complete_job_if_done(job_id, url)
 
     except Exception as e:
         err_str = str(e)
@@ -514,8 +520,10 @@ def _check_and_add_link(
             return  # excluded
 
     if _is_file_link(href):
-        # File link: dispatch to worker_fast immediately, don't add to crawling_tasks
-        _dispatch_file_url(href, tenant_id)
+        # File link: dispatch to worker_fast immediately, don't add to crawling_tasks.
+        # Single-page jobs (max_depth 1) index exactly the given URL, nothing it links to.
+        if max_depth > 1:
+            _dispatch_file_url(href, tenant_id)
     elif depth < max_depth:
         # Regular HTML page within depth budget
         found_page_links.add(href)

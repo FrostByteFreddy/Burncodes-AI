@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 
 from app.billing.services import BillingService
 from app.database.supabase_client import supabase
-from app.data_processing.soup_extractor import fetch_html
+from app.data_processing.soup_extractor import HEADERS, fetch_html
 from app.security.url_guard import UnsafeURLError, safe_client
 from app.gemini_store.service import GeminiStoreService, INDEXABLE_FILE_EXTENSIONS, UNSUPPORTED_EXTENSIONS
 from app.logging_config import error_logger
@@ -81,7 +81,7 @@ def process_file_url(url: str, source_id: int, tenant_id: str) -> None:
     supabase.table("tenant_sources").update({"status": "PROCESSING"}).eq("id", source_id).execute()
     try:
         error_logger.info("Downloading file URL %s", url)
-        with safe_client(follow_redirects=True, timeout=60.0) as client:
+        with safe_client(follow_redirects=True, timeout=60.0, headers={"User-Agent": HEADERS["User-Agent"]}) as client:
             response = client.get(url)
         response.raise_for_status()
 
