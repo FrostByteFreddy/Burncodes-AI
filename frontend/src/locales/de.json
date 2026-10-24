@@ -76,12 +76,12 @@
   },
   "chat": {
     "calendar": {
-      "add": "In meinen Kalender: {name}",
+      "add": "{name} in meinen Kalender",
       "apple": "Apple Kalender oder Outlook",
       "google": "Google Kalender",
       "copy": "Kalender-Link kopieren",
       "copied": "Link kopiert",
-      "hint": "Ihr Kalender aktualisiert sich selbst, wenn sich Termine ändern. Zum Entfernen den Kalender in Ihrer Kalender-App löschen oder abbestellen."
+      "hint": "Der Kalender aktualisiert sich von selbst, wenn sich Termine ändern. Zum Entfernen löschen oder kündigen Sie das Abo in Ihrer Kalender-App."
     },
     "locked": {
       "title": "Dieser Chatbot wird noch getestet",
@@ -284,24 +284,24 @@
       "addNew": "Neue Quelle hinzufügen",
       "uploadFile": "Datei hochladen",
       "uploading": "Wird hochgeladen...",
-      "crawlWebsite": "Website crawlen",
-      "crawling": "Crawling...",
+      "crawlWebsite": "Website einlesen",
+      "crawling": "Wird eingelesen …",
       "invalidUrl": "Bitte geben Sie eine gültige URL ein (z. B. https://example.com).",
-      "crawlSinglePage": "Nur diese Seite crawlen",
+      "crawlSinglePage": "Nur diese Seite einlesen",
       "excludeUrls": "URLs ausschließen (eine pro Zeile)",
       "excludePlaceholder": "z. B. https://example.com/fr/...",
       "activity": {
-        "title": "Crawling-Aktivität",
-        "noActivity": "Noch keine Crawling-Aktivität",
-        "instruction": "Verwenden Sie die Funktion \"Website crawlen\", um einen neuen Crawl zu starten.",
+        "title": "Aktivität",
+        "noActivity": "Noch keine Aktivität",
+        "instruction": "Wählen Sie «Website einlesen», um zu starten.",
         "status": "Status:"
       },
       "existing": {
         "title": "Vorhandene Quellen",
         "noSources": "Noch keine Quellen",
         "instruction": "Fügen Sie eine Quelle hinzu, um die Wissensbasis Ihres Chatbots aufzubauen.",
-        "crawledUrls": "Gecrawlte URLs",
-        "noCrawledUrls": "Es wurden noch keine URLs gecrawlt.",
+        "crawledUrls": "Gelesene Seiten",
+        "noCrawledUrls": "Es wurden noch keine Seiten gelesen.",
         "uploadedFiles": "Hochgeladene Dateien",
         "noUploadedFiles": "Es wurden noch keine Dateien hochgeladen."
       },
@@ -311,15 +311,15 @@
         "confirm": "Löschen"
       },
       "actions": {
-        "crawlStarted": "Crawling-Job erfolgreich gestartet!",
-        "crawlFailed": "Fehler beim Starten des Crawls:",
+        "crawlStarted": "Die Website wird eingelesen.",
+        "crawlFailed": "Das Einlesen konnte nicht gestartet werden:",
         "uploadSuccess": "Datei erfolgreich hochgeladen!",
         "uploadFailed": "Fehler beim Hochladen der Datei:",
         "deleteSuccess": "Quelle erfolgreich gelöscht!",
         "deleteFailed": "Fehler beim Löschen der Quelle:",
-        "crawlCompleted": "Crawl-Job abgeschlossen! Quellen werden aktualisiert...",
+        "crawlCompleted": "Einlesen abgeschlossen. Die Quellen werden aktualisiert …",
         "scanCompleted": "Scan abgeschlossen — Schätzung prüfen und Lernen starten.",
-        "fetchFailed": "Fehler beim Abrufen der Crawling-Aktivität."
+        "fetchFailed": "Die Aktivität konnte nicht geladen werden."
       },
       "tabs": {
         "website": "Website-Indexierung",
@@ -332,7 +332,7 @@
         "stepConfigure": "Konfigurieren",
         "stepConfirm": "Bereit",
         "typeWebsite": "Website",
-        "typeWebsiteDesc": "Crawlen Sie eine öffentliche URL und indexieren Sie den Textinhalt.",
+        "typeWebsiteDesc": "Geben Sie die Adresse einer öffentlichen Website ein. Der Chatbot liest ihre Seiten und Dokumente.",
         "typeDocument": "Dokument",
         "typeDocumentDesc": "Laden Sie eine PDF-, TXT- oder CSV-Datei hoch.",
         "urlLabel": "Start-URL",
@@ -340,29 +340,31 @@
         "singlePageLabel": "Nur diese Seite (keine Unterseiten)",
         "excludeLabel": "Pfade ausschließen (einer pro Zeile)",
         "excludePlaceholder": "/login\n/dashboard",
-        "crawlModeLabel": "Crawl-Modus",
+        "crawlModeLabel": "Leseverfahren",
         "crawlModeHint": "Bestimmt, wie Seiten abgerufen und verarbeitet werden.",
-        "modeSoup": "Soup",
-        "modeSoupDesc": "Schneller HTTP-Abruf — kein Browser. Optimal für statische Seiten.",
-        "modePlaywright": "Playwright",
-        "modePlaywrightDesc": "Headless-Browser für JS-lastige Seiten. Gemini versteht den Inhalt automatisch.",
+        "modeSoupBadge": "Empfohlen",
+        "modePlaywrightBadge": "Langsamer",
+        "modeSoup": "Schnell",
+        "modeSoupDesc": "Für die meisten Websites. Liest Seiten direkt und ist am schnellsten.",
+        "modePlaywright": "Gründlich",
+        "modePlaywrightDesc": "Für Websites, deren Inhalt erst im Browser erscheint. Langsamer, findet dafür alles.",
         "confirmTitle": "Bestätigen",
         "confirmType": "Typ",
         "confirmUrl": "URL",
         "confirmFile": "Datei",
         "confirmMode": "Modus",
         "confirmSinglePage": "Nur diese Seite",
-        "confirmFullSite": "Vollständiger Crawl",
+        "confirmFullSite": "Ganze Website",
         "confirmScope": "Umfang",
         "confirmExcluded": "Ausgeschlossen",
         "chooseFile": "Datei auswählen",
         "back": "Zurück",
         "next": "Weiter",
-        "startCrawl": "Crawl starten",
+        "startCrawl": "Einlesen starten",
         "uploadFile": "Datei hochladen",
         "infoTitle": "Wie funktioniert das?",
-        "infoWebsite": "Wir senden einen Crawler zur angegebenen URL und indexieren den Textinhalt in die Wissensbasis Ihres Chatbots. Wählen Sie Soup für schnelle statische Seiten, Playwright für JS-lastige Seiten oder Playwright + LLM für beste Qualität.",
-        "infoDocument": "Laden Sie eine PDF-, TXT- oder CSV-Datei hoch und wir extrahieren und indexieren den Textinhalt automatisch."
+        "infoWebsite": "Wir lesen die angegebene Website und die darauf verlinkten Dokumente. Vor dem Lernen sehen Sie, was gefunden wurde und was es kostet.",
+        "infoDocument": "Laden Sie eine PDF-, TXT- oder CSV-Datei hoch. Der Chatbot lernt ihren Inhalt automatisch."
       }
     },
     "fineTune": {
@@ -452,7 +454,7 @@
   },
   "sidebar": {
     "settings": "Einstellungen",
-    "configure": "Einstellungen",
+    "configure": "Anpassen",
     "insights": "Auswertung",
     "overview": "Übersicht",
     "selectTenant": "Chatbot auswählen",
@@ -528,14 +530,14 @@
   },
   "knowledge": {
     "calendars": {
-      "title": "Kalender für die Bevölkerung",
-      "sub": "Diese Termine lassen sich in jeder Kalender-App abonnieren. Der Chatbot bietet das an, wenn er Termine nennt, und die Kalender aktualisieren sich selbst.",
-      "protected": "Die Kalender sind pausiert, solange der Chatbot ein Passwort verlangt.",
+      "title": "Termine im eigenen Kalender",
+      "sub": "Einwohnerinnen und Einwohner können diese Termine in ihrer Kalender-App abonnieren (z. B. Apple, Google oder Outlook). Der Chatbot bietet das bei Fragen zu Terminen an. Neue oder verschobene Termine erscheinen automatisch.",
+      "protected": "Kalender-Abos sind pausiert, solange der Chatbot ein Passwort verlangt.",
       "dates": "{n} Termine",
       "copy": "Link kopieren",
       "copied": "Kopiert",
-      "on": "Kalender eingeschaltet",
-      "off": "Kalender ausgeschaltet. Abonnierte Kalender leeren sich beim nächsten Abgleich."
+      "on": "Kalender-Abos eingeschaltet",
+      "off": "Kalender-Abos ausgeschaltet. Bereits abonnierte Kalender werden bei der nächsten Aktualisierung geleert."
     },
     "recrawl": {
       "onHint": "Prüft alle {n} Tage auf Änderungen.",
@@ -551,28 +553,28 @@
     },
     "overview": {
         "stripTitle": "Termine, die Ihr Chatbot kennt",
-        "stripSub": "Geprüfte Termine aus Ihren Dokumenten für die nächsten 14 Tage. Wer fragt «wann ist die nächste…», bekommt diese Antworten.",
+        "stripSub": "Geprüfte Termine aus Ihren Dokumenten für die nächsten 14 Tage. Auf Fragen wie «Wann ist die nächste …?» antwortet der Chatbot damit.",
         "noneUpcoming": "Keine Termine in den nächsten zwei Wochen. Enthalten Ihre Dokumente Kalender, erscheinen sie hier.",
         "noneUpcomingEnded": "Keine kommenden Termine — die Kalender, die Ihr Chatbot kennt, sind abgelaufen. Siehe unten.",
         "moved": "verschoben",
-        "needsTitle": "Braucht Sie",
-        "needsNone": "Im Moment braucht nichts Ihre Aufmerksamkeit.",
+        "needsTitle": "Handlungsbedarf",
+        "needsNone": "Zurzeit gibt es nichts zu tun.",
         "ended": "{series}: Die veröffentlichten Termine endeten am {date}.",
-        "endedHint": "Ihr Chatbot kann nicht sagen, wann der nächste ist. Veröffentlichen Sie den neuen Kalender und crawlen Sie erneut.",
-        "summary": "{sources} Quellen, {chunks} indexierte Abschnitte. Letzter Crawl am {date}.",
+        "endedHint": "Ihr Chatbot kann deshalb keine nächsten Termine nennen. Veröffentlichen Sie den neuen Kalender und lesen Sie die Website erneut ein.",
+        "summary": "{sources} Quellen, {chunks} gelernte Abschnitte. Zuletzt eingelesen am {date}.",
         "summaryNever": "Noch nichts gelernt."
       },
     "stats": {
       "pages": "Seiten",
       "files": "Dateien",
       "chunks": "Indexierte Abschnitte",
-      "lastCrawl": "Letzter Crawl",
+      "lastCrawl": "Zuletzt eingelesen",
       "never": "Noch nie"
     },
     "crawls": {
-      "title": "Crawls",
+      "title": "Durchläufe",
       "sub": "Websites, die wir für Ihren Chatbot lesen",
-      "empty": "Noch keine Crawls — fügen Sie eine Website hinzu.",
+      "empty": "Noch keine Durchläufe – fügen Sie eine Website hinzu.",
       "showAll": "Alle anzeigen ({n})",
       "showLess": "Weniger anzeigen"
     },
@@ -580,7 +582,7 @@
       "title": "Website-Inhalte",
       "sub": "Alles, was von Ihren Websites gelernt wurde — inklusive dort gefundener Dateien",
       "filter": "Seiten filtern…",
-      "empty": "Noch nichts gecrawlt.",
+      "empty": "Noch nichts eingelesen.",
       "noMatch": "Keine Seite passt zu «{q}»."
     },
     "files": {
@@ -593,7 +595,7 @@
       "page": "Seite",
       "chunks": "Abschnitte",
       "changed": "Zuletzt geändert",
-      "crawled": "Zuletzt gecrawlt",
+      "crawled": "Zuletzt gelesen",
       "open": "Auf der Website öffnen",
       "status": {
         "COMPLETED": "Gelernt",
@@ -611,25 +613,25 @@
       "FAILED": "Gestoppt"
     },
     "job": {
-      "reading": "Liest: {page}",
-      "starting": "Startet…",
-      "autoShort": "automatischer Crawl",
+      "reading": "Wird gelesen: {page}",
+      "starting": "Wird gestartet …",
+      "autoShort": "automatischer Durchlauf",
       "summaryDone": "{learned} gelernt, {unchanged} unverändert, CHF {cost}",
       "summaryScanned": "{n} zu lernen, ca. CHF {cost}",
       "summaryStopped": "Gestoppt, bevor das Lernen fertig war.",
       "actionFailed": "Das hat nicht geklappt. Laden Sie die Seite neu und versuchen Sie es nochmals.",
       "details": "Details",
-      "back": "Wissen",
+      "back": "Zurück zu Wissen",
       "openSite": "Website öffnen",
       "activity": "Aktivität",
       "toReview": "{n} zu prüfen",
-      "started": "Gestartet {date}",
-      "scheduled": "Automatischer Crawl · {date}",
+      "started": "Gestartet am {date}",
+      "scheduled": "Automatischer Durchlauf vom {date}",
       "singlePage": "Nur diese Seite",
       "stop": "Stoppen",
       "discard": "Verwerfen",
-      "delete": "Crawl löschen",
-      "scanProgress": "{done} von {total} Seiten gescannt",
+      "delete": "Durchlauf löschen",
+      "scanProgress": "{done} von {total} Seiten gelesen",
       "learnProgress": "{done} von {total} Quellen gelernt",
       "report": "Bericht",
       "hideReport": "Bericht ausblenden"
@@ -637,7 +639,7 @@
     "estimate": {
       "title": "Scan abgeschlossen",
       "body": "Gemini liest {n} neue oder geänderte Quellen, teilt sie in Abschnitte und notiert wichtige Fakten und Termine. Unveränderte Seiten werden kostenlos übersprungen.",
-      "nothing": "Seit dem letzten Crawl hat sich nichts geändert — nichts zu lernen.",
+      "nothing": "Seit dem letzten Durchlauf hat sich nichts geändert – es gibt nichts Neues zu lernen.",
       "learn": "Jetzt lernen · ca. CHF {cost}",
       "new": "neu",
       "changed": "geändert",
@@ -670,13 +672,13 @@
       "range": "Zeitraum",
       "expired": "Beendet {date}",
       "until": "Bis {date}",
-      "noDates": "In diesem Crawl wurden keine Termine gefunden.",
+      "noDates": "In diesem Durchlauf wurden keine Termine gefunden.",
       "noReview": "Nichts zu prüfen — alles in Ordnung.",
       "unreachable": "Nicht erreichbar: {list}"
     },
     "log": {
       "title": "Aktivität",
-      "job_started": "Crawl gestartet",
+      "job_started": "Durchlauf gestartet",
       "scan": "Scanne {page}",
       "scanned": "{page} — {outcome}",
       "links_found": "{count} neue Links auf {page}",
@@ -689,21 +691,21 @@
       "empty": "Warte auf Aktivität…"
     },
     "deleteJob": {
-      "title": "Crawl löschen",
-      "message": "Den Crawl von <strong>{url}</strong> und alles, was er indexiert hat, löschen? Das kann nicht rückgängig gemacht werden."
+      "title": "Durchlauf löschen",
+      "message": "Den Durchlauf für <strong>{url}</strong> und alles, was dabei gelernt wurde, löschen? Das kann nicht rückgängig gemacht werden."
     }
   },
   "pages": {
     "overviewTitle": "Übersicht",
-    "overview": "Ist Ihr Chatbot eingeschaltet, wie oft wird er genutzt und ist sein Wissen aktuell.",
-    "configureTitle": "Einstellungen",
+    "overview": "Status, Nutzung und Wissensstand Ihres Chatbots auf einen Blick.",
+    "configureTitle": "Anpassen",
     "chatbots": "Jeder Chatbot beantwortet Fragen aus der Website und den Dokumenten einer Organisation.",
-    "insights": "Wo Ihr Chatbot nicht helfen konnte, und alles, was gefragt wurde.",
+    "insights": "Wo Ihr Chatbot nicht weiterhelfen konnte – und alle Gespräche im Überblick.",
     "subscription": "Ihr Guthaben bezahlt Chat-Antworten und das Lernen neuer Inhalte.",
     "profile": "Ihr Name, Ihr Passwort und Ihr Konto.",
     "knowledgeTitle": "Wissen",
-    "knowledge": "Was Ihr Chatbot weiss, welche Termine er beantworten kann und wo er Sie braucht.",
-    "configure": "Wie Ihr Chatbot spricht und wie er auf Ihrer Website aussieht.",
+    "knowledge": "Was Ihr Chatbot weiss, welche Termine er kennt und wo Handlungsbedarf besteht.",
+    "configure": "Wie Ihr Chatbot antwortet und wie er auf Ihrer Website aussieht.",
     "installTitle": "Einbinden",
     "install": "Binden Sie den Chatbot mit einer Zeile Code in Ihre Website ein."
   },
@@ -734,7 +736,7 @@
       "placeholder": "Text im leeren Eingabefeld"
     },
     "tone": {
-      "title": "Wie er spricht",
+      "title": "Tonalität",
       "sub": "Er antwortet immer in der Sprache, in der man ihm schreibt. Wählen Sie einen Ausgangspunkt und passen Sie den Text mit eigenen Worten an.",
       "presets": "Tonvorlagen",
       "formal": "Höflich und formell",
@@ -745,8 +747,8 @@
       "briefDesc": "Ein Satz oder eine kurze Liste.",
       "persona": "Persönlichkeit und Anweisungen",
       "personaHint": "Einfache Worte funktionieren am besten, z. B. «Verweise bei Baugesuchen an die Bauverwaltung.»",
-      "thinking": "Nachrichten während er nachdenkt",
-      "thinkingHint": "Eine pro Zeile. Eine davon wird angezeigt, während eine Antwort entsteht."
+      "thinking": "Wartetexte",
+      "thinkingHint": "Ein Text pro Zeile. Einer davon wird angezeigt, während der Chatbot seine Antwort vorbereitet."
     },
     "advanced": {
       "title": "Erweitert",
@@ -786,7 +788,7 @@
         "starters": "Vorgeschlagene Fragen"
       },
       "labels": {
-        "launcher_background_color": "Farbe des Knopfs",
+        "launcher_background_color": "Farbe des Chat-Knopfs",
         "footer_background_color": "Hintergrund Fusszeile",
         "header_background_color": "Hintergrund Kopfzeile",
         "header_text_color": "Text Kopfzeile",
@@ -797,10 +799,10 @@
         "share_button_color": "Teilen-Knopf",
         "share_button_icon_color": "Teilen-Symbol",
         "chat_background_color": "Chat-Hintergrund",
-        "bot_message_background_color": "Chatbot-Blase",
-        "bot_message_text_color": "Chatbot-Text",
-        "user_message_background_color": "Besucher-Blase",
-        "user_message_text_color": "Besucher-Text",
+        "bot_message_background_color": "Sprechblase Chatbot",
+        "bot_message_text_color": "Text Chatbot",
+        "user_message_background_color": "Sprechblase Besucher",
+        "user_message_text_color": "Text Besucher",
         "input_background_color": "Eingabe-Hintergrund",
         "input_text_color": "Eingabe-Text",
         "input_focus_ring_color": "Eingaberahmen beim Tippen",
@@ -840,8 +842,8 @@
         "conversation": "Gespräch",
         "launcher": "Chat-Knopf"
       },
-      "hint": "Fahren Sie über einen Teil des Chats und klicken Sie, um ihn zu ändern.",
-      "tryHint": "Das ist Ihr echter Chatbot. Er antwortet mit dem, was er gelernt hat.",
+      "hint": "Fahren Sie mit der Maus über einen Bereich des Chats und klicken Sie darauf, um ihn anzupassen.",
+      "tryHint": "Das ist Ihr echter Chatbot. Er antwortet mit seinem aktuellen Wissen.",
       "hardToRead": "Schwer lesbar: {parts}. Wählen Sie Farben mit mehr Kontrast.",
       "addQuestion": "Frage hinzufügen",
       "question": "Frage",
@@ -872,8 +874,8 @@
   },
   "overview": {
     "auto": {
-      "title": "Läuft automatisch",
-      "sub": "Aufgaben, die für diesen Chatbot nach Zeitplan laufen. Jede kostet nur, was sie verarbeitet.",
+      "title": "Automatische Aufgaben",
+      "sub": "Diese Aufgaben laufen für diesen Chatbot nach Zeitplan. Kosten entstehen nur für das, was tatsächlich verarbeitet wird.",
       "recrawl": "Websites auf Änderungen prüfen",
       "recrawlHow": "Liest Ihre Websites erneut und lernt nur, was sich geändert hat. Unveränderte Seiten kosten nichts.",
       "review": "Gespräche prüfen",
@@ -894,7 +896,7 @@
       "onBody": "Er antwortet auf Ihrer Website und auf der öffentlichen Testseite.",
       "onHidden": "Er antwortet auf der öffentlichen Testseite. Der Chat-Knopf ist auf Ihrer Website ausgeblendet.",
       "offTitle": "Ihr Chatbot ist ausgeschaltet",
-      "offBody": "Er erscheint auf keiner Website und beantwortet keine Fragen. In der Vorschau unter Einstellungen können Sie ihn weiterhin ausprobieren.",
+      "offBody": "Er erscheint auf keiner Website und beantwortet keine Fragen. In der Vorschau unter «Anpassen» können Sie ihn weiterhin testen.",
       "switchOff": "Ausschalten",
       "switchOn": "Einschalten",
       "switchedOff": "Chatbot ausgeschaltet",
@@ -908,7 +910,7 @@
       "conversations": "Gespräche",
       "questions": "Beantwortete Fragen",
       "spent": "Ausgegeben",
-      "spentSplit": "CHF {chat} Antworten, CHF {learning} Lernen",
+      "spentSplit": "Antworten CHF {chat}, Lernen CHF {learning}",
       "balance": "Guthaben",
       "topUp": "Aufladen",
       "chartLabel": "{n} Fragen in den letzten {days} Tagen",
@@ -925,8 +927,8 @@
       "sections": "gelernte Abschnitte",
       "upcoming": "Termine in den nächsten 2 Wochen",
       "attention": "{n} Dokumente brauchen Ihre Aufmerksamkeit",
-      "lastCrawl": "Letzter Crawl",
-      "noCrawl": "Noch keine Website gelesen.",
+      "lastCrawl": "Zuletzt eingelesen",
+      "noCrawl": "Noch keine Website eingelesen.",
       "crawlCounts": "{learned} gelernt, {unchanged} unverändert",
       "recrawlOn": "Prüft alle {n} Tage auf Änderungen.",
       "recrawlOff": "Prüft nicht automatisch auf Änderungen."
@@ -1011,9 +1013,9 @@
       "passwordTitle": "Passwort",
       "passwordHint": "Mindestens 8 Zeichen.",
       "sessionsTitle": "Angemeldete Geräte",
-      "sessionsSub": "Meldet Sie auf allen Geräten und Browsern ab, auch auf diesem. Andere Geräte bleiben höchstens noch eine Stunde angemeldet. Nutzen Sie dies, wenn Sie sich irgendwo angemeldet haben, dem Sie nicht mehr trauen.",
+      "sessionsSub": "Meldet Sie auf allen Geräten und Browsern ab, auch auf diesem. Andere Geräte bleiben höchstens noch eine Stunde angemeldet. Nützlich, wenn Sie sich auf einem fremden Gerät angemeldet haben.",
       "signOutAll": "Überall abmelden",
-      "signOutFailed": "Abmelden auf allen Geräten hat nicht geklappt. Versuchen Sie es erneut."
+      "signOutFailed": "Die Abmeldung auf allen Geräten hat nicht geklappt. Bitte versuchen Sie es erneut."
     },
     "billing": {
       "balance": "Guthaben",
@@ -1038,10 +1040,10 @@
     },
     "schedules": {
       "title": "Zeitpläne",
-      "sub": "Wie oft jeder Chatbot seine Websites prüft und seine Gespräche auswertet.",
+      "sub": "Wie oft jeder Chatbot seine Websites neu einliest und seine Gespräche prüft.",
       "none": "Noch keine Chatbots.",
       "chatbot": "Chatbot",
-      "websites": "Websites prüfen",
+      "websites": "Websites neu einlesen",
       "reviews": "Gespräche prüfen",
       "off": "Aus",
       "switchedOff": "ausgeschaltet",
@@ -1050,9 +1052,9 @@
     "danger": {
       "title": "Konto löschen",
       "sub": "Das kann nicht rückgängig gemacht werden. Beim Löschen Ihres Kontos werden entfernt:",
-      "chatbots": "alle Chatbots mit ihrem Wissen und ihren Gesprächen, sofort von allen Websites",
-      "balance": "Ihr verbleibendes Guthaben, das nicht zurückerstattet wird",
-      "subscription": "eine monatliche Aufladung, die gekündigt wird",
+      "chatbots": "alle Chatbots samt Wissen und Gesprächen – sie verschwinden sofort von allen Websites",
+      "balance": "Ihr restliches Guthaben (es wird nicht zurückerstattet)",
+      "subscription": "eine allfällige monatliche Aufladung (sie wird gekündigt)",
       "typeEmail": "Geben Sie {email} zur Bestätigung ein",
       "delete": "Konto endgültig löschen",
       "failed": "Das Konto konnte nicht gelöscht werden."
@@ -1068,7 +1070,7 @@
       "copied": "Kopiert",
       "copyFailed": "Kopieren hat nicht geklappt. Markieren Sie den Link und kopieren Sie ihn von Hand.",
       "open": "Seite öffnen",
-      "off": "Ihr Chatbot ist ausgeschaltet, daher zeigt die Seite nur, dass er aus ist.",
+      "off": "Ihr Chatbot ist ausgeschaltet. Die Seite zeigt deshalb nur einen entsprechenden Hinweis.",
       "offLink": "Einschalten",
       "protected": "Besucher brauchen das Passwort, bevor sie chatten können."
     },
@@ -1084,11 +1086,11 @@
       "cancel": "Abbrechen",
       "change": "Passwort ändern",
       "isSet": "Ein Passwort ist gesetzt.",
-      "saved": "Passwort gespeichert. Wer die Seite schon geöffnet hatte, braucht das neue.",
+      "saved": "Passwort gespeichert. Wer die Seite bereits geöffnet hat, braucht nun das neue.",
       "removed": "Passwort entfernt. Alle mit dem Link können chatten.",
-      "widgetNote": "Der Chat-Knopf auf Ihrer Website fragt ebenfalls nach dem Passwort. Schalten Sie dies also aus, wenn Sie live gehen.",
+      "widgetNote": "Auch der Chat-Knopf auf Ihrer Website fragt dann nach dem Passwort. Entfernen Sie es deshalb, bevor Sie den Chatbot öffentlich machen.",
       "shareNote": "Senden Sie Link und Passwort getrennt, zum Beispiel das Passwort per Telefon.",
-      "previewNote": "In der Vorschau unter Einstellungen brauchen Sie kein Passwort."
+      "previewNote": "In der Vorschau unter «Anpassen» brauchen Sie kein Passwort."
     }
   },
   "install": {

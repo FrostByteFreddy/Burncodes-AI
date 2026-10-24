@@ -205,7 +205,7 @@
                   <div class="confirm-item">
                     <span class="confirm-item__icon"><font-awesome-icon :icon="['fas', 'bolt']" /></span>
                     <span class="confirm-item__label">{{ $t('tenant.sources.wizard.confirmMode') }}</span>
-                    <span class="confirm-item__value">{{ crawlMode }}</span>
+                    <span class="confirm-item__value">{{ crawlModes.find((m) => m.value === crawlMode)?.label }}</span>
                   </div>
 
                   <!-- Scope -->
@@ -264,8 +264,8 @@ const lastStep = computed(() => {
 });
 
 const crawlModes = computed(() => [
-  { value: 'soup',       emoji: '⚡', label: t('tenant.sources.wizard.modeSoup'),       desc: t('tenant.sources.wizard.modeSoupDesc'),      badge: 'Fastest',  badgeClass: 'bg-success/15 text-success' },
-  { value: 'playwright', emoji: '🌐', label: t('tenant.sources.wizard.modePlaywright'), desc: t('tenant.sources.wizard.modePlaywrightDesc'), badge: 'JS sites', badgeClass: 'bg-warning/15 text-warning'  },
+  { value: 'soup',       emoji: '⚡', label: t('tenant.sources.wizard.modeSoup'),       desc: t('tenant.sources.wizard.modeSoupDesc'),      badge: t('tenant.sources.wizard.modeSoupBadge'),       badgeClass: 'bg-success/15 text-success' },
+  { value: 'playwright', emoji: '🌐', label: t('tenant.sources.wizard.modePlaywright'), desc: t('tenant.sources.wizard.modePlaywrightDesc'), badge: t('tenant.sources.wizard.modePlaywrightBadge'), badgeClass: 'bg-warning/15 text-warning'  },
 ]);
 const url = ref('');
 const crawlMode = ref('soup');

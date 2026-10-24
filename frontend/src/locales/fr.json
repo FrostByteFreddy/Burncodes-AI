@@ -342,10 +342,12 @@
         "excludePlaceholder": "/login\n/dashboard",
         "crawlModeLabel": "Mode de crawl",
         "crawlModeHint": "Contrôle la façon dont les pages sont récupérées et traitées.",
-        "modeSoup": "Soup",
-        "modeSoupDesc": "Requête HTTP rapide — sans navigateur. Idéal pour les sites statiques.",
-        "modePlaywright": "Playwright",
-        "modePlaywrightDesc": "Navigateur headless pour les sites JS. Gemini comprend le contenu automatiquement.",
+        "modeSoupBadge": "Recommandé",
+        "modePlaywrightBadge": "Plus lent",
+        "modeSoup": "Rapide",
+        "modeSoupDesc": "Pour la plupart des sites. Lit les pages directement et va le plus vite.",
+        "modePlaywright": "Approfondi",
+        "modePlaywrightDesc": "Pour les sites dont le contenu n'apparaît que dans un navigateur. Plus lent, mais trouve tout.",
         "confirmTitle": "Confirmer",
         "confirmType": "Type",
         "confirmUrl": "URL",
@@ -361,7 +363,7 @@
         "startCrawl": "Démarrer le crawl",
         "uploadFile": "Télécharger le fichier",
         "infoTitle": "Comment ça fonctionne ?",
-        "infoWebsite": "Nous envoyons un crawler à l'URL fournie et indexons le contenu dans la base de connaissances de votre chatbot. Choisissez Soup pour les sites statiques rapides, Playwright pour les sites JS, ou Playwright + LLM pour la meilleure qualité.",
+        "infoWebsite": "Nous lisons le site indiqué et les documents qui y sont liés. Avant l'apprentissage, vous voyez ce qui a été trouvé et ce que cela coûte.",
         "infoDocument": "Téléchargez un PDF, TXT ou CSV et nous extrayons et indexons automatiquement le contenu textuel."
       }
     },
@@ -528,8 +530,8 @@
   },
   "knowledge": {
     "calendars": {
-      "title": "Calendriers pour la population",
-      "sub": "Ces dates peuvent être abonnées dans n'importe quelle application de calendrier. Le chatbot le propose quand il donne des dates, et les calendriers se mettent à jour tout seuls.",
+      "title": "Dates dans son propre calendrier",
+      "sub": "Les habitantes et habitants peuvent s'abonner à ces dates dans leur application de calendrier (p. ex. Apple, Google ou Outlook). Le chatbot le propose lors de questions sur des dates. Les nouvelles dates et les changements apparaissent automatiquement.",
       "protected": "Les calendriers sont en pause tant que le chatbot demande un mot de passe.",
       "dates": "{n} dates",
       "copy": "Copier le lien",
