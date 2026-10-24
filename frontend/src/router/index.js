@@ -15,7 +15,6 @@ const routes = [
   },
   {
     path: `/tenant/:tenantId(${uuidRegex})`,
-    name: "Tenant",
     component: () => import("../views/Tenant.vue"),
     meta: { requiresAuth: true },
     props: true,
