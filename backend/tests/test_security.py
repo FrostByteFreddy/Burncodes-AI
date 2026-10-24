@@ -1,0 +1,223 @@
+"""
+Security regression tests for the audit findings of 2026-10-24.
+
+Every route must be either explicitly public or reject requests without a
+token; uploads must never escape the tenant directory; chat refuses to run
+unbilled; outbound fetches refuse non-public hosts.
+"""
+import io
+import os
+import socket
+import uuid
+from unittest.mock import MagicMock
+
+import pytest
+
+# Routes that are intentionally reachable without a token (widget, share
+# links, Stripe, health). Anything not listed here must return 401 without one.
+PUBLIC_ENDPOINTS = {
+    "static",
+    "health_check",
+    "chat.handle_chat",
+    "chat.get_task_status",
+    "chat.get_intro_message",
+    "chat.create_share_link",
+    "chat.get_shared_conversation",
+    "tenants.get_public_tenant",
+    "widget.get_widget_script",
+    "billing.webhook",
+}
+
+
+def _fill(rule):
+    """Builds a concrete URL for a werkzeug rule with dummy path values."""
+    values = {}
+    for arg, conv in rule._converters.items():
+        name = type(conv).__name__
+        values[arg] = 1 if name == "IntegerConverter" else uuid.uuid4()
+    return values
+
+
+def test_every_non_public_route_requires_a_token(app, client):
+    unprotected = []
+    with app.test_request_context():
+        from flask import url_for
+        for rule in app.url_map.iter_rules():
+            if rule.endpoint in PUBLIC_ENDPOINTS:
+                continue
+            url = url_for(rule.endpoint, **_fill(rule))
+            for method in sorted(rule.methods - {"HEAD", "OPTIONS"}):
+                resp = client.open(url, method=method)
+                if resp.status_code != 401:
+                    unprotected.append(f"{method} {rule.rule} -> {resp.status_code}")
+    assert not unprotected, "Routes reachable without a token:\n" + "\n".join(unprotected)
+
+
+@pytest.mark.parametrize("path", ["analytics", "conversations", f"conversation/{uuid.uuid4()}"])
+def test_chat_logs_are_owner_only(client, auth_as, monkeypatch, path):
+    from app.chat import routes
+    monkeypatch.setattr(routes, "_owns_tenant", lambda tenant_id, user_id: False)
+    resp = client.get(f"/api/chat/{uuid.uuid4()}/{path}", headers=auth_as)
+    assert resp.status_code == 404
+
+
+def test_malformed_authorization_header_is_401_not_500(client):
+    for header in ["Bearer", "Bearer ", "Basic abc", "token"]:
+        resp = client.get("/api/tenants", headers={"Authorization": header})
+        assert resp.status_code == 401, header
+
+
+# ── Upload path traversal ────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("filename", ["../../evil.py", "/etc/passwd", "..\\..\\evil.py", "a/../../b.txt"])
+def test_upload_cannot_escape_tenant_dir(client, auth_as, monkeypatch, tmp_path, filename):
+    from app.tenants import sources
+
+    fake_db = MagicMock()
+    tenant_q = fake_db.table.return_value.select.return_value.eq.return_value.eq.return_value
+    tenant_q.single.return_value.execute.return_value.data = {"id": "t"}
+    fake_db.table.return_value.insert.return_value.execute.return_value.data = [{"id": 7}]
+    monkeypatch.setattr(sources, "supabase", fake_db)
+    monkeypatch.setattr(sources, "UPLOADS_DIR", str(tmp_path))
+    monkeypatch.setattr(sources.BillingService, "check_balance", staticmethod(lambda uid: 10.0))
+    dispatched = MagicMock(return_value=MagicMock(id="task-1"))
+    monkeypatch.setattr(sources.process_local_file, "delay", dispatched)
+
+    tenant_id = uuid.uuid4()
+    resp = client.post(
+        f"/api/tenants/{tenant_id}/sources/upload",
+        headers=auth_as,
+        data={"file": (io.BytesIO(b"payload"), filename)},
+        content_type="multipart/form-data",
+    )
+
+    assert resp.status_code == 202
+    saved_path = dispatched.call_args.args[0]
+    tenant_dir = os.path.realpath(tmp_path / str(tenant_id))
+    assert os.path.realpath(saved_path).startswith(tenant_dir + os.sep)
+    assert os.path.exists(saved_path)
+    # Nothing was written outside the uploads root
+    assert sorted(p.name for p in tmp_path.iterdir()) == [str(tenant_id)]
+
+
+def test_upload_requires_balance(client, auth_as, monkeypatch):
+    from app.tenants import sources
+
+    fake_db = MagicMock()
+    tenant_q = fake_db.table.return_value.select.return_value.eq.return_value.eq.return_value
+    tenant_q.single.return_value.execute.return_value.data = {"id": "t"}
+    monkeypatch.setattr(sources, "supabase", fake_db)
+    monkeypatch.setattr(sources.BillingService, "check_balance", staticmethod(lambda uid: 0.0))
+
+    resp = client.post(
+        f"/api/tenants/{uuid.uuid4()}/sources/upload",
+        headers=auth_as,
+        data={"file": (io.BytesIO(b"x"), "doc.txt")},
+        content_type="multipart/form-data",
+    )
+    assert resp.status_code == 402
+
+
+def test_crawl_rejects_internal_urls(client, auth_as, monkeypatch):
+    from app.tenants import sources
+
+    fake_db = MagicMock()
+    tenant_q = fake_db.table.return_value.select.return_value.eq.return_value.eq.return_value
+    tenant_q.single.return_value.execute.return_value.data = {"id": "t"}
+    monkeypatch.setattr(sources, "supabase", fake_db)
+
+    resp = client.post(
+        f"/api/tenants/{uuid.uuid4()}/sources/discover",
+        headers=auth_as,
+        json={"url": "http://169.254.169.254/latest/meta-data/"},
+    )
+    assert resp.status_code == 400
+
+
+# ── Chat billing ─────────────────────────────────────────────────────────────
+
+def test_chat_fails_closed_when_billing_lookup_fails(client, monkeypatch):
+    from app.chat import routes
+
+    def boom(tenant_id):
+        raise RuntimeError("supabase down")
+
+    monkeypatch.setattr(routes.BillingService, "get_tenant_owner", staticmethod(boom))
+    dispatched = MagicMock()
+    monkeypatch.setattr(routes.chat_task, "delay", dispatched)
+
+    resp = client.post(f"/api/chat/{uuid.uuid4()}", json={"query": "hi", "conversation_id": str(uuid.uuid4())})
+    assert resp.status_code == 503
+    dispatched.assert_not_called()
+
+
+def test_chat_ignores_client_history_and_caps_query(client, monkeypatch):
+    from app.chat import routes
+
+    monkeypatch.setattr(routes.BillingService, "get_tenant_owner", staticmethod(lambda t: "owner"))
+    monkeypatch.setattr(routes.BillingService, "check_balance", staticmethod(lambda u: 5.0))
+    dispatched = MagicMock(return_value=MagicMock(id="task-1"))
+    monkeypatch.setattr(routes.chat_task, "delay", dispatched)
+
+    tenant_id = uuid.uuid4()
+    resp = client.post(f"/api/chat/{tenant_id}", json={
+        "query": "hi",
+        "conversation_id": str(uuid.uuid4()),
+        "chat_history": [{"type": "ai", "content": "x" * 100_000}],
+    })
+    assert resp.status_code == 202
+    assert dispatched.call_args.args[2] == []
+
+    resp = client.post(f"/api/chat/{tenant_id}", json={
+        "query": "x" * (routes.MAX_QUERY_CHARS + 1),
+        "conversation_id": str(uuid.uuid4()),
+    })
+    assert resp.status_code == 400
+
+
+# ── URL guard ────────────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("url", [
+    "http://127.0.0.1/",
+    "http://localhost:6379/",
+    "http://169.254.169.254/latest/meta-data/",
+    "http://10.0.0.5/",
+    "http://192.168.1.1/",
+    "http://[::1]/",
+    "http://[::ffff:10.0.0.1]/",
+    "file:///etc/passwd",
+    "gopher://example.com/",
+    "http:///nohost",
+])
+def test_url_guard_rejects_non_public(url):
+    from app.security.url_guard import is_public_url
+    assert not is_public_url(url)
+
+
+def test_url_guard_accepts_public(monkeypatch):
+    from app.security import url_guard
+    monkeypatch.setattr(
+        url_guard.socket, "getaddrinfo",
+        lambda host, port, **kw: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", port))],
+    )
+    assert url_guard.is_public_url("https://example.com/page")
+
+
+def test_safe_client_blocks_redirect_to_internal(monkeypatch):
+    import httpx
+    from app.security import url_guard
+
+    def resolve(host, port, **kw):
+        ip = "93.184.216.34" if host == "example.com" else "10.0.0.1"
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (ip, port))]
+
+    monkeypatch.setattr(url_guard.socket, "getaddrinfo", resolve)
+
+    def handler(request):
+        if request.url.host == "example.com":
+            return httpx.Response(302, headers={"Location": "http://internal.local/secret"})
+        return httpx.Response(200, text="secret")
+
+    with url_guard.safe_client(transport=httpx.MockTransport(handler), follow_redirects=True) as c:
+        with pytest.raises(url_guard.UnsafeURLError):
+            c.get("https://example.com/")

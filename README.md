@@ -2,7 +2,7 @@
 
 SwiftAnswer is a multi-tenant, Retrieval-Augmented Generation (RAG) platform. Users create isolated knowledge bases by uploading documents or crawling websites. An AI chat interface then answers natural-language questions grounded in those sources. Each tenant is fully isolated, and access is gated by Supabase Auth with a prepaid CHF credit billing system powered by Stripe.
 
-**Tech Stack:** Vue 3 · Flask · Celery · Redis · ChromaDB · Supabase · Stripe · Docker Compose
+**Tech Stack:** Vue 3 · Flask · Celery · Redis · Gemini File Search · Supabase · Stripe · Docker Compose
 
 ---
 
@@ -10,56 +10,70 @@ SwiftAnswer is a multi-tenant, Retrieval-Augmented Generation (RAG) platform. Us
 
 | Area | Details |
 |---|---|
-| **Knowledge ingestion** | Upload PDFs, DOCX, TXT, CSV **or** provide a URL for full recursive site crawls via Playwright/Crawl4AI |
-| **RAG chat** | Per-tenant vector store (ChromaDB) with Gemini models for embedding and answer generation |
+| **Knowledge ingestion** | Upload PDFs, DOCX, TXT, images **or** crawl a website (Playwright via Crawl4AI, or a lightweight httpx/trafilatura "soup" mode) |
+| **RAG chat** | One Gemini File Search store per tenant; Gemini handles chunking, embedding and retrieval, and answers with citations |
 | **Multi-tenancy** | Each user manages isolated tenants; tenant is addressed by UUID in the URL |
-| **Embeddable widget** | `/api/tenants/:id/widget` endpoint serves a self-contained chat widget for third-party embedding |
-| **Authentication** | Supabase Auth (email/password); Flask routes protected by a `@token_required` JWT decorator |
-| **Billing** | Prepaid CHF balance via Stripe Checkout; one-time top-up or recurring monthly subscription; Stripe Customer Portal for self-serve management |
-| **Usage tracking** | Per-user token and cost aggregation across chat and indexing jobs, exposed in the dashboard |
-| **Analytics** | Chat log viewer with per-tenant session history |
-| **i18n** | Vue i18n with locale files under `frontend/src/locales/` |
-| **Background jobs** | Celery workers handle all long-running tasks (crawls, file processing, chat streaming) |
-| **Job scheduler** | Celery Beat runs a `job_scheduler_task` every 30 s for recurring maintenance |
+| **Embeddable widget** | `/api/tenants/widget.js` injects a launcher + iframe (`/chat/:tenantId?widget`) into any site |
+| **Authentication** | Supabase Auth in the frontend (supabase-js); Flask routes check the JWT with `@token_required` |
+| **Billing** | Prepaid CHF balance via Stripe Checkout (one-time or monthly). Chat and indexing are deducted from the tenant owner's balance; Stripe credits are idempotent (`processed_payments`) |
+| **Insights** | Per-tenant message volume chart and conversation viewer (owner only) |
+| **Sharing** | End users can share a conversation via a 24 h link (`/share/:id`) |
+| **i18n** | Vue i18n with locale files under `frontend/src/locales/` (en, de, fr) |
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────┐     HTTP      ┌──────────────────┐     tasks      ┌─────────────────┐
-│  Vue 3 SPA  │ ────────────▶ │   Flask API       │ ─────────────▶ │  Celery Worker  │
-│  (port 5173)│               │   (port 5000)     │               │  (concurrency=12│
-└─────────────┘               └──────────────────┘               │  in prod)       │
-                                       │                          └────────┬────────┘
-                               ┌───────┴────────┐                         │
-                               │   Supabase     │                  ┌──────▼───────┐
-                               │  (auth + DB)   │                  │    Redis     │
-                               └────────────────┘                  │  (broker +   │
-                                                                    │   results)   │
-                                                                    └──────────────┘
+ customer site ── widget.js ──▶ iframe /chat/:tenantId?widget
+                                        │
+ ┌────────────┐  /api/  ┌───────────────▼────────────┐
+ │ nginx (TLS)│────────▶│ api: Flask + gunicorn      │◀── Stripe webhooks
+ │            │  /      │ (gthread, 8×16)            │
+ │            │────────▶│ frontend: static SPA       │
+ └────────────┘         └──────┬──────────┬──────────┘
+                    Supabase ◀─┘          │ Celery (Redis broker)
+                    (auth + PG)           ▼
+          ┌──────────────┬────────────────┬──────────────┐
+          │ worker_fast  │ worker_heavy   │ worker_chat  │  beat
+          │ files, soup  │ Playwright     │ Gemini chat  │  (scheduler)
+          └──────┬───────┴───────┬────────┴──────┬───────┘
+                 └───────────────┴───────────────┴──▶ Gemini File Search
 ```
 
-**Flask blueprints:**
+Each service lives in `backend/services/<name>/` with its own Dockerfile and
+`requirements.txt`. Code used by more than one service lives in
+`backend/shared/` (auth, database client, models, logging, Gemini store,
+billing, URL guard, soup extractor). It is symlinked into each service's
+`app/` for local development and copied into the image by the Dockerfiles.
+
+**Flask blueprints (api service):**
 
 | Blueprint | Prefix | Responsibilities |
 |---|---|---|
-| `auth_bp` | `/api/auth` | Login, signup, token validation |
-| `tenants_bp` | `/api/tenants` | Tenant CRUD |
-| `sources_bp` | `/api/tenants` | File upload, URL crawl, link discovery |
-| `widget_bp` | `/api/tenants` | Public embeddable widget endpoint |
-| `chat_bp` | `/api/chat` | Streaming RAG chat |
+| `auth_bp` | `/api/auth` | Change password (login/signup happen in supabase-js) |
+| `tenants_bp` | `/api/tenants` | Tenant CRUD, public tenant config |
+| `sources_bp` | `/api/tenants` | File upload, URL crawl, link discovery, crawl jobs |
+| `widget_bp` | `/api/tenants` | Embeddable `widget.js` |
+| `chat_bp` | `/api/chat` | Public chat + task polling, share links, owner-only insights |
 | `billing_bp` | `/api/billing` | Balance, usage, Stripe checkout, portal, webhooks |
 
 **Celery tasks:**
 
-| Task | File | Trigger |
+| Task | Worker | Trigger |
 |---|---|---|
-| `chat_task` | `app/chat/tasks.py` | `POST /api/chat` |
-| `process_local_filepath` | `app/data_processing/tasks.py` | File upload route |
-| `process_urls` | `app/data_processing/tasks.py` | URL crawl route |
-| `crawl_links_task` | `app/data_processing/tasks.py` | Link discovery route |
-| `job_scheduler_task` | `app/data_processing/tasks.py` | Celery Beat every 30 s |
+| `chat_task` | worker_chat | `POST /api/chat/<tenant>` |
+| `process_local_file` | worker_fast | File upload route |
+| `process_urls` / `process_file_url` | worker_fast | URL route, files found while crawling |
+| `crawl_links_task` → `process_single_url_task` | worker_heavy | Link discovery route |
+| `job_scheduler_task` | worker_fast | Celery Beat every 30 s |
+| `zombie_reaper_task` | worker_fast | Celery Beat |
+
+**Security notes:**
+
+- Every route is either explicitly public or requires a token; `backend/tests/test_security.py` walks the URL map and fails if a new route is neither.
+- All outbound fetches of user-supplied URLs go through `shared/security/url_guard.py`, which rejects non-public addresses, including on redirects.
+- Never call `sign_in_*` / `sign_out` on the shared service-role Supabase client (see `shared/auth/routes.py`).
 
 ---
 
@@ -71,12 +85,14 @@ SwiftAnswer is a multi-tenant, Retrieval-Augmented Generation (RAG) platform. Us
 
 ### 1. Configure Environment Variables
 
-Copy `.env` (already present in the repo) and ensure the following keys are set:
+Create `.env` in the repo root with:
 
 ```env
 # Supabase
 SUPABASE_URL=https://<your-project>.supabase.co
 SUPABASE_SERVICE_KEY=<your-service-key>
+VITE_SUPABASE_URL=https://<your-project>.supabase.co
+VITE_SUPABASE_ANON_KEY=<your-anon-key>
 
 # Google Gemini
 GOOGLE_API_KEY=<your-google-api-key>
@@ -86,7 +102,9 @@ SECRET_KEY=<random-hex-string>   # python -c "import secrets; print(secrets.toke
 
 # Models (optional — defaults shown)
 CHAT_GEMINI_MODEL=gemini-3.1-flash-lite-preview
-INDEXING_GEMINI_MODEL=gemini-3.1-pro-preview
+
+# Pricing (optional) — CHF per 1M tokens charged for indexing
+INDEXING_RATE_CHF_PER_1M_TOKENS=0.15
 
 # Stripe (use test keys locally)
 STRIPE_PUBLIC_KEY=pk_test_...
@@ -95,7 +113,7 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 FRONTEND_URL=http://localhost:5173
 ```
 
-> `VITE_API_BASE_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, Redis URLs, and data-path variables are pre-configured for local Docker use and do not need to be changed.
+Apply the database migrations in `supabase/migrations/` (e.g. `supabase db push`).
 
 ### 2. Start the Stack
 
@@ -105,78 +123,53 @@ docker compose up --build
 
 > ⚠️ The first build downloads Playwright/Chromium browsers for web crawling and can take several minutes.
 
-### Accessing the Application
-
 | Service | URL |
 |---|---|
 | Frontend dashboard | http://localhost:5173 (hot-reload) |
 | Backend API | http://localhost:5000 (hot-reload) |
 | Health check | http://localhost:5000/api/health |
 
-### Stopping
+### 3. Run the Tests
 
 ```sh
-docker compose down
+cd backend
+pip install -r services/api/requirements.txt pytest
+python -m pytest
 ```
+
+CI (`.github/workflows/ci.yml`) runs the backend tests, a frontend build and `npm audit --audit-level=high` on every PR.
 
 ---
 
 ## Production Deployment
 
-Production uses `docker-compose.prod.yml`, which differs from the dev config in the following ways:
+Production uses `docker-compose.prod.yml`:
 
-- **Backend** runs under Gunicorn (8 workers, 120 s timeout)
-- **Celery worker** runs with `--concurrency=12`
-- **Frontend** is built as a static bundle served by Nginx
-- **Nginx** terminates TLS and reverse-proxies to the backend and frontend containers
+- **api** runs under Gunicorn (8 gthread workers × 16 threads, 120 s timeout)
+- **frontend** is built as a static bundle served by Nginx
+- **nginx** terminates TLS and reverse-proxies `/api/` to the API and everything else to the frontend; `/chat/` is frameable from any origin for the widget
 - All services have `restart: always`
 
-### Deploying
-
-Run the one-shot deploy script from your local machine:
-
-```sh
-./deploy.sh
-```
-
-This script:
-1. `rsync`s the repo to the server at `root@142.132.206.182:/var/www/burncodes-ai`
-2. Installs Docker on the server if not present
-3. Provisions a Let's Encrypt TLS certificate for `ai.burn.codes` via Certbot if one doesn't exist
-4. Runs `docker compose -f docker-compose.prod.yml build && up -d --force-recreate`
-
-### Useful Commands on the Server
-
-```sh
-# View logs for all services
-./logs.sh
-
-# Rebuild and restart
-docker compose -f docker-compose.prod.yml build && docker compose -f docker-compose.prod.yml up -d --force-recreate
-```
+| Script | Purpose |
+|---|---|
+| `./_prod_deploy.sh` | rsync the repo to the server, provision TLS if needed, rebuild and restart all services |
+| `./_prod_frontend_deploy.sh` | Rebuild and restart only the frontend |
+| `./_prod_logs.sh` | Tail service logs on the server |
+| `./_restart_docker.sh` | Restart the stack |
 
 ---
 
 ## Frontend Views
 
-| View | Route | Description |
+| Route | Component | Description |
 |---|---|---|
-| `Login.vue` | `/login` | Supabase email/password login |
-| `Signup.vue` | `/signup` | New user registration |
-| `Tenant.vue` | `/tenant/:id` | Per-tenant dashboard (sources + chat) |
-| `Chat.vue` | `/chat/:tenantId` | Full-page chat interface |
-| `ChatLogs.vue` | `/logs` | Historical chat session viewer |
-| `Subscription.vue` | `/billing` | Balance, top-up, usage stats, billing history |
-| `Analytics.vue` | `/analytics` | Usage analytics across tenants |
-| `Profile.vue` | `/profile` | Account settings |
-| `ManageTenants.vue` | `/tenants` | Create / manage tenants |
-
----
-
-## Known Issues & Technical Debt
-
-See [`tasks.md`](./tasks.md) for the full backlog. Key items:
-
-- **Zombie PROCESSING states** — if a container restarts mid-crawl, the source row is permanently stuck in `PROCESSING`. A Celery Beat reconciliation cron ("Zombie Reaper") is planned.
-- **Celery Late ACKs** — already configured (`task_acks_late=True`, `worker_prefetch_multiplier=1`) so tasks are requeued on worker crash, but idempotency of crawl tasks still needs hardening.
-- **Headless browser concurrency** — jitter delays and `shm_size: 2gb` are in place; queue separation (Playwright-heavy vs. fast text tasks) is a planned improvement.
+| `/login`, `/signup` | `Login.vue`, `Signup.vue` | Supabase email/password auth |
+| `/manage-tenants` | `ManageTenants.vue` | Create / manage tenants |
+| `/tenant/:id/sources` | `tenant/Sources.vue` | Knowledge sources and crawl jobs |
+| `/tenant/:id/configure` | `tenant/Settings.vue` | Persona, behaviour, appearance |
+| `/tenant/:id/insights` | `Insights.vue` | Message volume and conversation viewer |
+| `/tenant/:id/install` | `Install.vue` | Widget embed snippet |
+| `/chat/:tenantId` | `Chat.vue` | Full-page / widget chat |
+| `/share/:shareId` | `ShareView.vue` | Shared conversation |
+| `/subscription` | `Subscription.vue` | Balance, top-up, usage, billing history |
+| `/profile` | `Profile.vue` | Account settings |
