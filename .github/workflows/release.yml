@@ -1,0 +1,76 @@
+name: Release
+
+# Push a version tag to ship it:  git tag v1.4.0 && git push origin v1.4.0
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  # one production deploy at a time; a newer tag waits instead of racing
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: checks
+    runs-on: ubuntu-latest
+    # Settings > Environments > production: holds the secrets below and can
+    # require a manual approval before anything reaches the server
+    environment:
+      name: production
+      url: https://ai.burn.codes
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Only release what's on main
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Tag $GITHUB_REF_NAME points to a commit that isn't on main."
+            exit 1
+          fi
+
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host *\n  IdentityFile ~/.ssh/id_deploy\n  StrictHostKeyChecking yes\n' > ~/.ssh/config
+
+      - name: Deploy
+        env:
+          DEPLOY_SERVER: ${{ secrets.PROD_SERVER }}
+        run: ./_prod_deploy.sh
+
+      - name: Check the site answers
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS -o /dev/null https://ai.burn.codes/api/health; then echo "API is up"; exit 0; fi
+            sleep 10
+          done
+          echo "::error::https://ai.burn.codes/api/health didn't answer within 5 minutes"
+          exit 1
+
+  release:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag

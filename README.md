@@ -164,6 +164,32 @@ Production uses `docker-compose.prod.yml`:
 | `./_prod_logs.sh` | Tail service logs on the server |
 | `./_restart_docker.sh` | Restart the stack |
 
+### Releasing
+
+Push a version tag from `main` to ship it:
+
+```bash
+git tag v1.4.0
+git push origin v1.4.0
+```
+
+`.github/workflows/release.yml` then runs the CI checks, verifies the tag is on
+`main`, deploys with `_prod_deploy.sh`, waits for `/api/health` and creates a
+GitHub release with generated notes. A failed check stops the release before
+anything reaches the server.
+
+One-time setup in GitHub → Settings → Environments → `production`:
+
+| Secret | Value |
+|---|---|
+| `PROD_SSH_KEY` | private key of a deploy key allowed on the server |
+| `PROD_KNOWN_HOSTS` | output of `ssh-keyscan 142.132.206.182` |
+| `PROD_SERVER` | optional, defaults to `root@142.132.206.182` |
+
+Add yourself under "Required reviewers" there to approve each deploy by hand.
+Database migrations are not part of the release; apply them with the Supabase
+CLI before tagging when `supabase/migrations` changed.
+
 ---
 
 ## Frontend Views
