@@ -58,15 +58,18 @@ const go = (key) => router.push({ name: 'AccountSettings', params: { section: ke
 <style scoped>
 .set-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 32px; align-items: start; }
 .set-nav { position: sticky; top: 40px; display: flex; flex-direction: column; gap: 2px; }
+/* Same look as the sidebar's nav items */
 .set-nav__item {
-  display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-md);
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius-md);
   font-size: 15px; font-weight: 500; color: var(--surface-muted); text-decoration: none;
+  transition: color var(--t-fast), background var(--t-fast);
 }
-.set-nav__item:hover { color: var(--surface-heading); background: var(--surface-1); }
-.set-nav__item--on { color: var(--surface-heading); background: var(--surface-1); font-weight: 700; box-shadow: inset 3px 0 0 var(--interactive); }
+.set-nav__item:hover { color: var(--surface-text); background: var(--surface-1); }
+.set-nav__item--on { color: var(--surface-heading); background: var(--surface-1); font-weight: 700; }
+.set-nav__item--on .set-nav__icon { color: var(--interactive); }
 .set-nav__item--danger { margin-top: 12px; }
-.set-nav__item--danger.set-nav__item--on { box-shadow: inset 3px 0 0 var(--status-error); }
-.set-nav__icon { width: 16px; }
+.set-nav__item--danger.set-nav__item--on .set-nav__icon { color: var(--status-error); }
+.set-nav__icon { width: 16px; flex-shrink: 0; }
 .set-select { display: none; }
 .set-body { min-width: 0; display: flex; flex-direction: column; gap: 20px; max-width: 820px; }
 
