@@ -983,7 +983,7 @@
       "passwordTitle": "Password",
       "passwordHint": "At least 8 characters.",
       "sessionsTitle": "Signed-in devices",
-      "sessionsSub": "Signs you out on every device and browser, this one included. Use it if you signed in somewhere you no longer trust.",
+      "sessionsSub": "Signs you out on every device and browser, this one included. Other devices can't stay signed in for more than an hour. Use it if you signed in somewhere you no longer trust.",
       "signOutAll": "Sign out everywhere",
       "signOutFailed": "Could not sign out everywhere. Try again."
     },

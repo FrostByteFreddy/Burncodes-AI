@@ -983,7 +983,7 @@
       "passwordTitle": "Mot de passe",
       "passwordHint": "Au moins 8 caractères.",
       "sessionsTitle": "Appareils connectés",
-      "sessionsSub": "Vous déconnecte de tous les appareils et navigateurs, y compris celui-ci. Utile si vous vous êtes connecté quelque part où vous n'avez plus confiance.",
+      "sessionsSub": "Vous déconnecte de tous les appareils et navigateurs, y compris celui-ci. Les autres appareils restent connectés une heure au plus. Utile si vous vous êtes connecté quelque part où vous n'avez plus confiance.",
       "signOutAll": "Se déconnecter partout",
       "signOutFailed": "La déconnexion globale a échoué. Réessayez."
     },

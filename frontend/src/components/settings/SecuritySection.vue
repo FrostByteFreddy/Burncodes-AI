@@ -66,13 +66,18 @@ const changePassword = async () => {
   finally { savingPw.value = false; }
 };
 
-// Ends every session of this account, this browser included
+// Revokes every session of this account: other devices can't renew their
+// sign-in and are logged out within the hour at most (when their current
+// access token expires); our API refuses them right away.
 const signOutEverywhere = async () => {
   signingOut.value = true;
-  try {
-    await supabase.auth.signOut({ scope: 'global' });
-    await authStore.logout();
-    router.push('/login');
-  } catch { addToast(t('settings.security.signOutFailed'), 'error'); signingOut.value = false; }
+  const { error } = await supabase.auth.signOut({ scope: 'global' });
+  if (error && error.code !== 'session_not_found') {
+    addToast(t('settings.security.signOutFailed'), 'error');
+    signingOut.value = false;
+    return;
+  }
+  await authStore.logout();
+  router.push('/login');
 };
 </script>

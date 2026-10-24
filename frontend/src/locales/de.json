@@ -983,7 +983,7 @@
       "passwordTitle": "Passwort",
       "passwordHint": "Mindestens 8 Zeichen.",
       "sessionsTitle": "Angemeldete Geräte",
-      "sessionsSub": "Meldet Sie auf allen Geräten und Browsern ab, auch auf diesem. Nutzen Sie dies, wenn Sie sich irgendwo angemeldet haben, dem Sie nicht mehr trauen.",
+      "sessionsSub": "Meldet Sie auf allen Geräten und Browsern ab, auch auf diesem. Andere Geräte bleiben höchstens noch eine Stunde angemeldet. Nutzen Sie dies, wenn Sie sich irgendwo angemeldet haben, dem Sie nicht mehr trauen.",
       "signOutAll": "Überall abmelden",
       "signOutFailed": "Abmelden auf allen Geräten hat nicht geklappt. Versuchen Sie es erneut."
     },
