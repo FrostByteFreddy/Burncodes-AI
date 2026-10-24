@@ -19,13 +19,16 @@ export function useCrawlText() {
   });
   const fmtTime = (iso) => new Date(iso).toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-  // "page" label for a URL: title, last path segment (decoded) or host
+  // "page" label for a URL: its title, else the most telling part of the path.
+  // Many CMSs end URLs in an ID (…/entsorgen.html/299), so bare numbers are skipped.
   const pageLabel = (data = {}) => {
     if (data.title) return data.title;
     try {
       const u = new URL(data.url);
-      const last = u.pathname.split('/').filter(Boolean).pop();
-      return last ? decodeURIComponent(last) : u.host;
+      const parts = u.pathname.split('/').filter(Boolean).map((p) => decodeURIComponent(p));
+      const named = [...parts].reverse().find((p) => !/^\d+$/.test(p));
+      if (!named) return u.host;
+      return named.replace(/\.(html?|php|aspx?)$/i, '').replace(/[-_]+/g, ' ').trim() || u.host;
     } catch { return data.url || ''; }
   };
 
@@ -59,7 +62,8 @@ export function useCrawlText() {
     }
     const rows = [];
     for (const e of entries) {
-      if (FINISH_EVENTS.includes(e.event)) continue;
+      // link counts read like a jumping progress counter; the pages themselves tell the story
+      if (FINISH_EVENTS.includes(e.event) || e.event === 'links_found') continue;
       let entry = e;
       let state = 'info';
       if (FINISHES[e.event]) {
@@ -76,11 +80,17 @@ export function useCrawlText() {
     return rows;
   }
 
-  // The latest running item, else the latest row — "what is happening now"
+  // Title of the page read last. While scanning nobody knows how big the site
+  // is, so this shows that something is happening without pretending a total.
+  function latestPage(entries = []) {
+    const e = [...entries].reverse().find((x) => x.event === 'scanned' && x.data?.outcome !== 'error');
+    return e ? pageLabel(e.data) : '';
+  }
+
+  // The page being worked on right now; counts like "12 new links" stay in the log
   function currentActivity(entries = []) {
-    const rows = foldLog(entries);
-    const running = [...rows].reverse().find((r) => r.state === 'running');
-    return (running || rows[rows.length - 1])?.text || '';
+    const running = [...foldLog(entries)].reverse().find((r) => r.state === 'running');
+    return running?.text || '';
   }
 
   // One line describing a job, for the list
@@ -100,7 +110,7 @@ export function useCrawlText() {
     return '';
   }
 
-  return { fmtChf, fmtDateTime, fmtTime, pageLabel, displayUrl, formatEntry, foldLog, currentActivity, jobSummary };
+  return { fmtChf, fmtDateTime, fmtTime, pageLabel, displayUrl, formatEntry, foldLog, currentActivity, latestPage, jobSummary };
 }
 
 export function useCrawlActions(getTenantId) {

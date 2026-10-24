@@ -12,9 +12,18 @@
       </p>
 
       <!-- Running: progress + what is happening right now -->
-      <div v-if="job.status === 'IN_PROGRESS' || job.status === 'INDEXING'" class="cjr__live">
-        <div class="cjr__bar"><div class="cjr__bar-fill" :style="{ width: progress + '%' }"></div></div>
-        <p class="cjr__now">{{ currentActivity(log) || $t('knowledge.log.empty') }}</p>
+      <!-- Scanning: which page, not how many (the total isn't known until the end) -->
+      <p v-if="job.status === 'IN_PROGRESS'" class="cjr__reading">
+        <span class="cjr__pulse" aria-hidden="true"></span>
+        <span class="cjr__page">{{ latestPage(log) ? $t('knowledge.job.reading', { page: latestPage(log) }) : $t('knowledge.job.starting') }}</span>
+      </p>
+      <!-- Learning: the number of pages is known, so a real bar -->
+      <div v-else-if="job.status === 'INDEXING'" class="cjr__live">
+        <div class="cjr__bar"><div class="cjr__bar-fill" :style="{ width: progress.percent + '%' }"></div></div>
+        <p class="cjr__now">
+          <span class="cjr__count">{{ progress.label }}</span>
+          <span v-if="currentActivity(log)" class="cjr__page">{{ currentActivity(log) }}</span>
+        </p>
       </div>
       <p v-else class="cjr__summary">
         {{ jobSummary(job) }}
@@ -34,6 +43,7 @@
 
 <script setup>
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useCrawlActions, useCrawlText } from '@/composables/useCrawl';
 
 const props = defineProps({
@@ -42,23 +52,19 @@ const props = defineProps({
   log:      { type: Array, default: () => [] },
 });
 const emit = defineEmits(['changed']);
-const { fmtChf, fmtDateTime, displayUrl, currentActivity, jobSummary } = useCrawlText();
+const { t } = useI18n();
+const { fmtChf, fmtDateTime, displayUrl, currentActivity, latestPage, jobSummary } = useCrawlText();
 const { confirm } = useCrawlActions(() => props.tenantId);
 
 const busy = ref(false);
 const detailRoute = computed(() => ({ name: 'TenantCrawl', params: { tenantId: props.tenantId, jobId: props.job.id } }));
 const reviewCount = computed(() => (props.job.status === 'COMPLETED' ? props.job.report?.attention?.length || 0 : 0));
 
-// Scan: scanned / discovered so far; learning: learned / to learn
+// Learning only: learned / to learn (known from the estimate)
 const progress = computed(() => {
-  if (props.job.status === 'INDEXING') {
-    const total = props.job.estimate?.to_learn || 0;
-    const done = props.log.filter((e) => e.event === 'learned' || e.event === 'learn_failed').length;
-    return total ? Math.min(100, (done / total) * 100) : 0;
-  }
-  const started = props.log.filter((e) => e.event === 'scan').length;
-  const done = props.log.filter((e) => e.event === 'scanned').length;
-  return started ? Math.min(100, (done / Math.max(started, props.job.task_count || 0)) * 100) : 0;
+  const total = props.job.estimate?.to_learn || 0;
+  const done = props.log.filter((e) => e.event === 'learned' || e.event === 'learn_failed').length;
+  return { percent: total ? Math.min(100, (done / total) * 100) : 0, label: t('knowledge.job.learnProgress', { done, total: total || '…' }) };
 });
 
 const onConfirm = async () => {
@@ -109,7 +115,14 @@ const onConfirm = async () => {
 .cjr__live { margin-top: 10px; max-width: 520px; }
 .cjr__bar { height: 4px; border-radius: var(--radius-pill); background: var(--surface-3); overflow: hidden; }
 .cjr__bar-fill { height: 100%; width: 0; background: var(--ai); transition: width var(--t-slow); }
-.cjr__now { margin-top: 6px; font-size: var(--text-sm); color: var(--surface-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cjr__now { margin-top: 6px; display: flex; gap: 12px; align-items: baseline; font-size: var(--text-sm); color: var(--surface-text); min-width: 0; }
+.cjr__reading { margin-top: 8px; display: flex; align-items: center; gap: 10px; font-size: var(--text-sm); color: var(--surface-text); min-width: 0; }
+.cjr__reading .cjr__page { color: var(--surface-text); }
+.cjr__pulse { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--ai); animation: cjr-pulse 1.2s ease-in-out infinite; }
+@keyframes cjr-pulse { 0%, 100% { opacity: 0.35; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .cjr__pulse { animation: none; } }
+.cjr__count { flex-shrink: 0; font-weight: 700; color: var(--surface-heading); }
+.cjr__page { min-width: 0; color: var(--surface-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .cjr__actions { display: flex; align-items: center; gap: 8px; }
 .cjr__actions .btn-quiet { text-decoration: none; }

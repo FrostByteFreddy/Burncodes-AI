@@ -16,7 +16,7 @@ Duplicate protection:
 import asyncio
 import random
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 from uuid import UUID
 
 from celery import shared_task
@@ -282,11 +282,12 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
             return
 
         jobs.log_event(job_id, tenant_id, "scan", url=url)
+        info = {}  # the scan fills in what it learned about the page, e.g. its title
         if _is_file_link(url):
-            outcome = _scan_file(tenant_id, url, job_id)
+            outcome = _scan_file(tenant_id, url, job_id, info)
         else:
-            outcome = _scan_page(tenant_id, url, job, task["depth"], parent_url)
-        jobs.log_event(job_id, tenant_id, "scanned", url=url, outcome=outcome)
+            outcome = _scan_page(tenant_id, url, job, task["depth"], parent_url, info)
+        jobs.log_event(job_id, tenant_id, "scanned", url=url, outcome=outcome, title=info.get("title"))
         status = CrawlingStatus.FAILED if outcome in ("error", "refused") else CrawlingStatus.COMPLETED
         _finish_task(task_id, status, outcome)
 
@@ -301,7 +302,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         jobs.complete_scan_if_done(job_id)
 
 
-def _scan_page(tenant_id: str, url: str, job: dict, depth: int, parent_url: str | None) -> str:
+def _scan_page(tenant_id: str, url: str, job: dict, depth: int, parent_url: str | None, info: dict | None = None) -> str:
     mode = job.get("crawl_mode") or "playwright"
     html, status_code, links = _fetch_soup(url) if mode == "soup" else _fetch_playwright(url, parent_url)
     if not html or status_code >= 400:
@@ -313,6 +314,8 @@ def _scan_page(tenant_id: str, url: str, job: dict, depth: int, parent_url: str 
         jobs.log_event(job["id"], tenant_id, "links_found", url=url, count=found)
 
     title, markdown = html_to_markdown(html)
+    if info is not None and title:
+        info["title"] = title[:200]
     tokens = estimate_tokens(markdown)
     if tokens < MIN_CONTENT_TOKENS:
         _record_error(tenant_id, url, SourceType.URL.value, job["id"], 204)
@@ -324,8 +327,11 @@ def _scan_page(tenant_id: str, url: str, job: dict, depth: int, parent_url: str 
     return outcome
 
 
-def _scan_file(tenant_id: str, url: str, job_id: int) -> str:
+def _scan_file(tenant_id: str, url: str, job_id: int, info: dict | None = None) -> str:
     ext = Path(urlparse(url).path).suffix.lower()
+    if info is not None:
+        # the document's name as people see it, e.g. "Abfallkalender 2026"
+        info["title"] = unquote(Path(urlparse(url).path).stem).replace("_", " ").replace("-", " ")[:200]
     if ext in UNSUPPORTED_EXTENSIONS:
         return "unsupported"
     previous = jobs.get_source(tenant_id, url)

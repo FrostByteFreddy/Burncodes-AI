@@ -65,8 +65,13 @@
         </div>
       </section>
 
-      <!-- Running: progress -->
-      <section v-if="job.status === 'IN_PROGRESS' || job.status === 'INDEXING'" class="panel crawl-progress">
+      <!-- Scanning: what's being read (no total, it isn't known yet) -->
+      <section v-if="job.status === 'IN_PROGRESS'" class="panel crawl-reading">
+        <span class="crawl-pulse" aria-hidden="true"></span>
+        <p>{{ latestPage(log) ? $t('knowledge.job.reading', { page: latestPage(log) }) : $t('knowledge.job.starting') }}</p>
+      </section>
+      <!-- Learning: a real bar, the number of pages is known -->
+      <section v-if="job.status === 'INDEXING'" class="panel crawl-progress">
         <div class="crawl-progress__bar"><div class="crawl-progress__fill" :style="{ width: progress.percent + '%' }"></div></div>
         <p class="meta">{{ progress.label }}</p>
       </section>
@@ -112,7 +117,7 @@ const props = defineProps({
 });
 const router = useRouter();
 const { t } = useI18n();
-const { fmtChf, fmtDateTime, displayUrl } = useCrawlText();
+const { fmtChf, fmtDateTime, displayUrl, latestPage } = useCrawlText();
 const actions = useCrawlActions(() => props.tenantId);
 
 const job = ref(null);
@@ -131,14 +136,9 @@ const outcomes = computed(() => {
 });
 
 const progress = computed(() => {
-  if (job.value?.status === 'INDEXING') {
-    const total = estimate.value.to_learn || 0;
-    const done = log.value.filter((e) => e.event === 'learned' || e.event === 'learn_failed').length;
-    return { percent: total ? Math.min(100, (done / total) * 100) : 0, label: t('knowledge.job.learnProgress', { done, total: total || '…' }) };
-  }
-  const started = log.value.filter((e) => e.event === 'scan').length;
-  const done = log.value.filter((e) => e.event === 'scanned').length;
-  return { percent: started ? (done / started) * 100 : 0, label: t('knowledge.job.scanProgress', { done, total: started || '…' }) };
+  const total = estimate.value.to_learn || 0;
+  const done = log.value.filter((e) => e.event === 'learned' || e.event === 'learn_failed').length;
+  return { percent: total ? Math.min(100, (done / total) * 100) : 0, label: t('knowledge.job.learnProgress', { done, total: total || '…' }) };
 });
 
 const base = computed(() => `/tenants/${props.tenantId}/crawling_jobs/${props.jobId}`);
@@ -231,6 +231,11 @@ const onDelete = async () => {
 .crawl-estimate__body { font-size: 15px; color: var(--surface-text); max-width: var(--measure); }
 
 .crawl-progress { display: flex; flex-direction: column; gap: 8px; }
+.crawl-reading { display: flex; align-items: center; gap: 12px; font-size: 15px; color: var(--surface-heading); }
+.crawl-reading p { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crawl-pulse { flex-shrink: 0; width: 10px; height: 10px; border-radius: 50%; background: var(--ai); animation: crawl-pulse 1.2s ease-in-out infinite; }
+@keyframes crawl-pulse { 0%, 100% { opacity: 0.35; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .crawl-pulse { animation: none; } }
 .crawl-progress__bar { height: 6px; border-radius: var(--radius-pill); background: var(--surface-3); overflow: hidden; }
 .crawl-progress__fill { height: 100%; width: 0; background: var(--ai); transition: width var(--t-slow); }
 

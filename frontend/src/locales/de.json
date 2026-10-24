@@ -611,6 +611,8 @@
       "FAILED": "Gestoppt"
     },
     "job": {
+      "reading": "Liest: {page}",
+      "starting": "Startet…",
       "autoShort": "automatischer Crawl",
       "summaryDone": "{learned} gelernt, {unchanged} unverändert, CHF {cost}",
       "summaryScanned": "{n} zu lernen, ca. CHF {cost}",

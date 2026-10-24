@@ -611,6 +611,8 @@
       "FAILED": "Arrêté"
     },
     "job": {
+      "reading": "Lecture : {page}",
+      "starting": "Démarrage…",
       "autoShort": "crawl automatique",
       "summaryDone": "{learned} apprises, {unchanged} inchangées, CHF {cost}",
       "summaryScanned": "{n} à apprendre, env. CHF {cost}",
