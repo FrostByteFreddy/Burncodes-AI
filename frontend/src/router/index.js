@@ -26,6 +26,7 @@ const routes = [
       { path: "configure", name: "TenantConfigure", component: () => import("../components/tenant/Settings.vue") },
       { path: "insights",  name: "TenantInsights",  component: () => import("../views/Insights.vue") },
       { path: "install",   name: "TenantInstall",   component: () => import("../views/Install.vue") },
+      { path: "test-page", name: "TenantTestPage",  component: () => import("../views/TestPage.vue") },
     ],
 
   },

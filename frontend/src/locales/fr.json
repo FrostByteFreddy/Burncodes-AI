@@ -75,6 +75,13 @@
     "chartLabel": "Nombre de messages"
   },
   "chat": {
+    "locked": {
+      "title": "Ce chatbot est encore en test",
+      "body": "Saisissez le mot de passe que vous avez reçu pour l'essayer.",
+      "password": "Mot de passe",
+      "open": "Ouvrir le chat",
+      "wrong": "Ce mot de passe n'est pas correct. Vérifiez-le et réessayez."
+    },
     "switchedOff": "Ce chatbot est actuellement désactivé.",
     "inputPlaceholder": "Posez-moi une question...",
     "thinking": "Je réfléchis...",
@@ -1029,6 +1036,39 @@
       "typeEmail": "Saisissez {email} pour confirmer",
       "delete": "Supprimer définitivement le compte",
       "failed": "Le compte n'a pas pu être supprimé."
+    }
+  },
+  "testPage": {
+    "title": "Page de test publique",
+    "lede": "Une page où toute personne ayant le lien peut essayer votre chatbot, sans l'installer sur un site.",
+    "link": {
+      "title": "Lien",
+      "sub": "Envoyez-le à vos collègues ou testeurs. Il affiche toujours la version actuelle de votre chatbot.",
+      "copy": "Copier le lien",
+      "copied": "Copié",
+      "copyFailed": "La copie a échoué. Sélectionnez le lien et copiez-le à la main.",
+      "open": "Ouvrir la page",
+      "off": "Votre chatbot est désactivé, la page indique donc seulement qu'il est désactivé.",
+      "offLink": "L'activer",
+      "protected": "Les visiteurs ont besoin du mot de passe avant de pouvoir discuter."
+    },
+    "password": {
+      "title": "Demander un mot de passe",
+      "sub": "Tant que le chatbot est en développement : seules les personnes ayant le mot de passe peuvent discuter.",
+      "label": "Mot de passe",
+      "new": "Nouveau mot de passe",
+      "hint": "Au moins 6 caractères.",
+      "show": "Afficher",
+      "hide": "Masquer",
+      "save": "Enregistrer le mot de passe",
+      "cancel": "Annuler",
+      "change": "Changer le mot de passe",
+      "isSet": "Un mot de passe est défini.",
+      "saved": "Mot de passe enregistré. Les personnes ayant déjà ouvert la page ont besoin du nouveau.",
+      "removed": "Mot de passe supprimé. Toute personne ayant le lien peut discuter.",
+      "widgetNote": "Le bouton de chat sur votre site demande aussi le mot de passe : désactivez ceci lors de la mise en ligne.",
+      "shareNote": "Envoyez le lien et le mot de passe séparément, par exemple le mot de passe par téléphone.",
+      "previewNote": "Vous n'avez pas besoin du mot de passe dans l'aperçu sous Configuration."
     }
   }
 }

@@ -22,6 +22,7 @@ PUBLIC_ENDPOINTS = {
     "chat.handle_chat",
     "chat.get_task_status",
     "chat.get_intro_message",
+    "chat.unlock_chat",
     "chat.create_share_link",
     "chat.get_shared_conversation",
     "tenants.get_public_tenant",
@@ -157,7 +158,7 @@ def test_chat_ignores_client_history_and_caps_query(client, monkeypatch):
 
     monkeypatch.setattr(routes.BillingService, "get_tenant_owner", staticmethod(lambda t: "owner"))
     monkeypatch.setattr(routes.BillingService, "check_balance", staticmethod(lambda u: 5.0))
-    monkeypatch.setattr(routes, "_chatbot_active", lambda t: True)
+    monkeypatch.setattr(routes, "_gate", lambda t: {"active": True, "password_hash": None})
     dispatched = MagicMock(return_value=MagicMock(id="task-1"))
     monkeypatch.setattr(routes.chat_task, "delay", dispatched)
 
@@ -183,7 +184,7 @@ def test_switched_off_chatbot_only_answers_its_owner(client, monkeypatch):
 
     monkeypatch.setattr(routes.BillingService, "get_tenant_owner", staticmethod(lambda t: "owner-id"))
     monkeypatch.setattr(routes.BillingService, "check_balance", staticmethod(lambda u: 5.0))
-    monkeypatch.setattr(routes, "_chatbot_active", lambda t: False)
+    monkeypatch.setattr(routes, "_gate", lambda t: {"active": False, "password_hash": None})
     dispatched = MagicMock(return_value=MagicMock(id="task-off"))
     monkeypatch.setattr(routes.chat_task, "delay", dispatched)
     body = {"query": "hi", "conversation_id": str(uuid.uuid4())}
@@ -237,7 +238,7 @@ def test_chat_is_rate_limited_per_tenant(app, monkeypatch):
     monkeypatch.setattr(routes.BillingService, "get_tenant_owner", staticmethod(lambda t: "owner"))
     monkeypatch.setattr(routes.BillingService, "check_balance", staticmethod(lambda u: 5.0))
     monkeypatch.setattr(routes.chat_task, "delay", MagicMock(return_value=MagicMock(id="t")))
-    monkeypatch.setattr(routes, "_chatbot_active", lambda t: True)
+    monkeypatch.setattr(routes, "_gate", lambda t: {"active": True, "password_hash": None})
     limiter.enabled = True
     limiter.reset()
     client = app.test_client()
@@ -344,3 +345,52 @@ def test_delete_account_removes_chatbots_and_user(client, auth_as, monkeypatch, 
     assert resp.status_code == 200
     assert ("delete", "tenants") in calls
     deleted.assert_called_once_with(user.id)
+
+
+# ── Password-protected test page ─────────────────────────────────────────────
+
+def test_protected_chatbot_needs_the_password_token(client, app, monkeypatch):
+    from types import SimpleNamespace
+    from app.chat import access, routes
+
+    pw_hash = access.hash_password("letmein")
+    tenant_id = "11111111-2222-3333-4444-555555555555"
+    with app.app_context():
+        good = access.make_token(tenant_id, pw_hash)
+        stale = access.make_token(tenant_id, access.hash_password("previous"))
+
+    monkeypatch.setattr(routes.BillingService, "get_tenant_owner", staticmethod(lambda t: "owner-id"))
+    monkeypatch.setattr(routes.BillingService, "check_balance", staticmethod(lambda u: 5.0))
+    monkeypatch.setattr(routes, "_gate", lambda t: {"active": True, "password_hash": pw_hash})
+    monkeypatch.setattr(routes, "optional_user", lambda: None)
+    monkeypatch.setattr(routes.chat_task, "delay", MagicMock(return_value=MagicMock(id="task-pw")))
+    body = {"query": "hi", "conversation_id": str(uuid.uuid4())}
+
+    resp = client.post(f"/api/chat/{tenant_id}", json=body)
+    assert resp.status_code == 401 and resp.get_json()["code"] == "password_required"
+    # a token from before the password changed no longer works
+    assert client.post(f"/api/chat/{tenant_id}", json=body, headers={access.HEADER: stale}).status_code == 401
+    assert client.post(f"/api/chat/{tenant_id}", json=body, headers={access.HEADER: good}).status_code == 202
+    # the owner's preview gets through without a token
+    monkeypatch.setattr(routes, "optional_user", lambda: SimpleNamespace(id="owner-id"))
+    assert client.post(f"/api/chat/{tenant_id}", json=body).status_code == 202
+
+
+def test_unlock_checks_the_password(client, app, monkeypatch):
+    from app.chat import access, routes
+
+    pw_hash = access.hash_password("letmein")
+
+    class Q:
+        def __getattr__(self, name):
+            return lambda *a, **k: self
+        def execute(self):
+            return SimpleNamespace(data=[{"test_password_hash": pw_hash}])
+
+    monkeypatch.setattr(routes.supabase, "table", lambda name: Q())
+    tenant_id = "11111111-2222-3333-4444-555555555555"
+    assert client.post(f"/api/chat/{tenant_id}/unlock", json={"password": "nope"}).status_code == 401
+    resp = client.post(f"/api/chat/{tenant_id}/unlock", json={"password": "letmein"})
+    assert resp.status_code == 200
+    with app.test_request_context(headers={access.HEADER: resp.get_json()["token"]}):
+        assert access.token_ok(tenant_id, pw_hash)

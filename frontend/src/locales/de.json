@@ -75,6 +75,13 @@
     "chartLabel": "Anzahl der Nachrichten"
   },
   "chat": {
+    "locked": {
+      "title": "Dieser Chatbot wird noch getestet",
+      "body": "Geben Sie das Passwort ein, das Sie erhalten haben, um ihn auszuprobieren.",
+      "password": "Passwort",
+      "open": "Chat öffnen",
+      "wrong": "Das Passwort stimmt nicht. Prüfen Sie es und versuchen Sie es erneut."
+    },
     "switchedOff": "Dieser Chatbot ist zurzeit ausgeschaltet.",
     "inputPlaceholder": "Stell mir eine Frage...",
     "thinking": "Denke nach...",
@@ -1029,6 +1036,39 @@
       "typeEmail": "Geben Sie {email} zur Bestätigung ein",
       "delete": "Konto endgültig löschen",
       "failed": "Das Konto konnte nicht gelöscht werden."
+    }
+  },
+  "testPage": {
+    "title": "Öffentliche Testseite",
+    "lede": "Eine Seite, auf der alle mit dem Link Ihren Chatbot ausprobieren können, ohne ihn auf einer Website einzubinden.",
+    "link": {
+      "title": "Link",
+      "sub": "Senden Sie ihn an Kolleginnen, Kollegen oder Testpersonen. Er zeigt immer die aktuelle Version Ihres Chatbots.",
+      "copy": "Link kopieren",
+      "copied": "Kopiert",
+      "copyFailed": "Kopieren hat nicht geklappt. Markieren Sie den Link und kopieren Sie ihn von Hand.",
+      "open": "Seite öffnen",
+      "off": "Ihr Chatbot ist ausgeschaltet, daher zeigt die Seite nur, dass er aus ist.",
+      "offLink": "Einschalten",
+      "protected": "Besucher brauchen das Passwort, bevor sie chatten können."
+    },
+    "password": {
+      "title": "Passwort verlangen",
+      "sub": "Solange der Chatbot noch in Entwicklung ist: Nur wer das Passwort kennt, kann chatten.",
+      "label": "Passwort",
+      "new": "Neues Passwort",
+      "hint": "Mindestens 6 Zeichen.",
+      "show": "Anzeigen",
+      "hide": "Verbergen",
+      "save": "Passwort speichern",
+      "cancel": "Abbrechen",
+      "change": "Passwort ändern",
+      "isSet": "Ein Passwort ist gesetzt.",
+      "saved": "Passwort gespeichert. Wer die Seite schon geöffnet hatte, braucht das neue.",
+      "removed": "Passwort entfernt. Alle mit dem Link können chatten.",
+      "widgetNote": "Der Chat-Knopf auf Ihrer Website fragt ebenfalls nach dem Passwort. Schalten Sie dies also aus, wenn Sie live gehen.",
+      "shareNote": "Senden Sie Link und Passwort getrennt, zum Beispiel das Passwort per Telefon.",
+      "previewNote": "In der Vorschau unter Einstellungen brauchen Sie kein Passwort."
     }
   }
 }

@@ -53,6 +53,7 @@ def get_tenants(current_user):
     try:
         tenants = supabase.table('tenants').select("*, tenant_sources(count)").eq('user_id', current_user.id).execute()
         for tenant in tenants.data:
+            tenant['test_protected'] = bool(tenant.pop('test_password_hash', None))
             counts = tenant.pop('tenant_sources', None) or [{}]
             tenant['source_count'] = counts[0].get('count', 0)
         return jsonify(tenants.data), 200
@@ -70,6 +71,7 @@ def get_tenant(current_user, tenant_id):
 
         fine_tune_rules = supabase.table('tenant_fine_tune').select("*").eq('tenant_id', str(tenant_id)).execute()
         tenant.data['fine_tune_rules'] = fine_tune_rules.data
+        tenant.data['test_protected'] = bool(tenant.data.pop('test_password_hash', None))
 
         # Not "*": sources carry their scanned Markdown, which the dashboard never needs.
         tenant_sources = supabase.table('tenant_sources').select(SOURCE_COLUMNS).eq('tenant_id', str(tenant_id)).limit(20000).execute()
@@ -83,13 +85,18 @@ def get_tenant(current_user, tenant_id):
 @tenants_bp.route('/<uuid:tenant_id>/public', methods=['GET'])
 def get_public_tenant(tenant_id):
     try:
-        tenant = supabase.table('tenants').select("name, intro_message, widget_config, is_active").eq('id', str(tenant_id)).single().execute()
+        tenant = supabase.table('tenants').select("name, intro_message, widget_config, is_active, test_password_hash").eq('id', str(tenant_id)).single().execute()
         if not tenant.data:
             return jsonify({"error": "Tenant not found"}), 404
         if tenant.data.get('is_active') is False:
             # Switched off: nothing to render. widget_enabled=false also stops
             # widget.js copies cached before the is_active check existed.
             return jsonify({"is_active": False, "widget_config": {"widget_enabled": False}}), 200
+        protected = bool(tenant.data.pop('test_password_hash', None))
+        if protected:
+            # the look is fine to show; the content waits for the password
+            tenant.data.pop('intro_message', None)
+        tenant.data['protected'] = protected
         return jsonify(tenant.data), 200
     except Exception as e:
         error_logger.error(f"Error fetching public tenant info for {tenant_id}: {e}", exc_info=True)
@@ -116,6 +123,13 @@ def update_tenant(current_user, tenant_id):
             tenant_update_data['auto_recrawl'] = bool(tenant_update_data['auto_recrawl'])
         if 'is_active' in data:
             tenant_update_data['is_active'] = bool(data['is_active'])
+        if 'test_password' in data:
+            # empty / null removes the protection
+            password = data['test_password'] or ''
+            if password and len(password) < 6:
+                return jsonify({"error": "The password needs at least 6 characters"}), 400
+            from app.chat.access import hash_password
+            tenant_update_data['test_password_hash'] = hash_password(password) if password else None
         if 'review_chats' in data:
             tenant_update_data['review_chats'] = bool(data['review_chats'])
         if 'review_interval_days' in data:

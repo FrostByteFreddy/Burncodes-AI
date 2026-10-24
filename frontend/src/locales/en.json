@@ -75,6 +75,13 @@
     "chartLabel": "Number of Messages"
   },
   "chat": {
+    "locked": {
+      "title": "This chatbot is still being tested",
+      "body": "Enter the password you were given to try it.",
+      "password": "Password",
+      "open": "Open chat",
+      "wrong": "That password isn't right. Check it and try again."
+    },
     "switchedOff": "This chatbot is currently switched off.",
     "inputPlaceholder": "Ask me a question...",
     "thinking": "Thinking...",
@@ -1029,6 +1036,39 @@
       "typeEmail": "Type {email} to confirm",
       "delete": "Delete account for good",
       "failed": "The account could not be deleted."
+    }
+  },
+  "testPage": {
+    "title": "Public test page",
+    "lede": "A page anyone with the link can use to try your chatbot, without installing it on a website.",
+    "link": {
+      "title": "Link",
+      "sub": "Send it to colleagues or testers. It always shows the current version of your chatbot.",
+      "copy": "Copy link",
+      "copied": "Copied",
+      "copyFailed": "Could not copy. Select the link and copy it by hand.",
+      "open": "Open page",
+      "off": "Your chatbot is switched off, so the page only says that it's off.",
+      "offLink": "Switch it on",
+      "protected": "Visitors need the password before they can chat."
+    },
+    "password": {
+      "title": "Ask for a password",
+      "sub": "For while the chatbot is still in development: only people with the password can chat.",
+      "label": "Password",
+      "new": "New password",
+      "hint": "At least 6 characters.",
+      "show": "Show",
+      "hide": "Hide",
+      "save": "Save password",
+      "cancel": "Cancel",
+      "change": "Change password",
+      "isSet": "A password is set.",
+      "saved": "Password saved. Anyone who opened the page before needs the new one.",
+      "removed": "Password removed. Anyone with the link can chat.",
+      "widgetNote": "The chat button on your website asks for the password too, so turn this off when you go live.",
+      "shareNote": "Send the link and the password separately, for example the password by phone.",
+      "previewNote": "You don't need the password in the preview under Configure."
     }
   }
 }

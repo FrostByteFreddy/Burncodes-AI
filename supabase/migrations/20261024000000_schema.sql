@@ -72,6 +72,8 @@ ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS is_active             BOOLEA
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS review_chats          BOOLEAN NOT NULL DEFAULT true;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS review_interval_days  INTEGER NOT NULL DEFAULT 1;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS last_review_at        TIMESTAMPTZ;
+-- Password for a chatbot still in development (werkzeug hash); NULL = open
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS test_password_hash    TEXT;
 COMMENT ON COLUMN public.tenants.gemini_file_store_name IS
     'Gemini File Search Store resource name (e.g. fileSearchStores/abc123). NULL until the tenant uploads their first source.';
 

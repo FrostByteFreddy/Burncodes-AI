@@ -4,6 +4,19 @@
     <p>{{ $t('chat.switchedOff') }}</p>
   </div>
 
+  <!-- Still in development: ask for the password first -->
+  <form v-else-if="needsPassword" class="chat-lock" @submit.prevent="unlock">
+    <div class="chat-lock__card">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+      <h1>{{ $t('chat.locked.title') }}</h1>
+      <p>{{ $t('chat.locked.body') }}</p>
+      <label for="chat-lock-pw" class="chat-lock__label">{{ $t('chat.locked.password') }}</label>
+      <input id="chat-lock-pw" v-model="password" type="password" autocomplete="current-password" class="chat-lock__input" autofocus />
+      <p v-if="unlockError" class="chat-lock__error" role="alert">{{ unlockError }}</p>
+      <button type="submit" class="chat-lock__btn" :disabled="!password || unlocking">{{ $t('chat.locked.open') }}</button>
+    </div>
+  </form>
+
   <!-- Collapsed state (non-widget mode only — in widget mode the parent hides the iframe) -->
   <div
     v-else-if="!isChatOpen"
@@ -84,6 +97,42 @@ const previewAuthHeaders = async () => {
   return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
 };
 
+// ── Password (chatbot still in development) ───────────────────────────────────
+// The token from /unlock is kept per chatbot; the server checks it on every message
+const accessKey = computed(() => `burncodes-chat-access:${props.tenantId}`);
+const readAccess = () => { try { return localStorage.getItem(accessKey.value) || ''; } catch { return ''; } };
+const writeAccess = (token) => {
+  try { token ? localStorage.setItem(accessKey.value, token) : localStorage.removeItem(accessKey.value); } catch { /* private mode */ }
+};
+const needsPassword = ref(false);
+const password = ref('');
+const unlocking = ref(false);
+const unlockError = ref('');
+
+const chatHeaders = async () => {
+  const access = readAccess();
+  return { ...(await previewAuthHeaders()), ...(access ? { 'X-Chat-Access': access } : {}) };
+};
+
+// The server says the password is missing or no longer valid: ask again
+const isPasswordError = (err) => err.response?.status === 401 && err.response?.data?.code === 'password_required';
+const askForPassword = () => { writeAccess(''); needsPassword.value = true; isThinking.value = false; };
+
+const unlock = async () => {
+  if (!password.value || unlocking.value) return;
+  unlocking.value = true;
+  unlockError.value = '';
+  try {
+    const { data } = await axios.post(`${API_BASE_URL}/chat/${props.tenantId}/unlock`, { password: password.value });
+    writeAccess(data.token || '');
+    needsPassword.value = false;
+    password.value = '';
+    await startConversation();
+  } catch (err) {
+    unlockError.value = err.response?.status === 429 ? t('chat.errors.rateLimited') : t('chat.locked.wrong');
+  } finally { unlocking.value = false; }
+};
+
 // ── Config resolution ──────────────────────────────────────────────────────────
 const fetchedConfig  = ref(null);
 const switchedOff    = ref(false);
@@ -162,6 +211,7 @@ const fetchConfig = async () => {
     const { data } = await axios.get(`${API_BASE_URL}/tenants/${props.tenantId}/public`);
     if (data.is_active === false) { switchedOff.value = true; return; }
     fetchedConfig.value = data.widget_config || {};
+    if (data.protected && !readAccess()) needsPassword.value = true;
   } catch (err) {
     console.error('[ChatWidget] Failed to fetch tenant config', err);
   }
@@ -172,11 +222,12 @@ const fetchIntroMessage = async () => {
   if (!props.tenantId) return;
   isThinking.value = true;
   try {
-    const { data } = await axios.get(`${API_BASE_URL}/chat/${props.tenantId}/intro`);
+    const { data } = await axios.get(`${API_BASE_URL}/chat/${props.tenantId}/intro`, { headers: await chatHeaders() });
     const { text, html } = processBotMessage(data.intro_message);
     chatHistory.value.push({ text, html, isUser: false });
     saveSession(chatHistory.value, conversationId.value);
   } catch (err) {
+    if (isPasswordError(err)) { askForPassword(); return; }
     const { text, html } = processBotMessage(`Error: ${err.response?.data?.error || t('chat.errors.initialMessage')}`);
     chatHistory.value.push({ text, html, isUser: false });
     saveSession(chatHistory.value, conversationId.value);
@@ -267,13 +318,19 @@ const sendMessage = async () => {
     const { data } = await axios.post(`${API_BASE_URL}/chat/${props.tenantId}`, {
       query: current,
       conversation_id: conversationId.value,
-    }, { headers: await previewAuthHeaders() });
+    }, { headers: await chatHeaders() });
     if (data.task_id) {
       pollTaskStatus(data.task_id);
     } else {
       throw new Error('No task_id received');
     }
   } catch (err) {
+    if (isPasswordError(err)) {
+      chatHistory.value.pop();
+      userMessage.value = current;
+      askForPassword();
+      return;
+    }
     const code = err.response?.data?.code;
     const { text, html } = processBotMessage(code === 'chatbot_off'
       ? t('chat.switchedOff')
@@ -336,18 +393,21 @@ onMounted(async () => {
   }
 
   await fetchConfig();
-
-  if (props.tenantId) {
-    const session = loadSession();
-    if (session?.history?.length) {
-      chatHistory.value = session.history;
-      conversationId.value = session.conversationId || uuidv4();
-    } else {
-      conversationId.value = uuidv4();
-      await fetchIntroMessage();
-    }
-  }
+  if (!needsPassword.value) await startConversation();
 });
+
+// Restores this tab's conversation, or starts a new one with the welcome message
+async function startConversation() {
+  if (!props.tenantId) return;
+  const session = loadSession();
+  if (session?.history?.length) {
+    chatHistory.value = session.history;
+    conversationId.value = session.conversationId || uuidv4();
+  } else {
+    conversationId.value = uuidv4();
+    await fetchIntroMessage();
+  }
+}
 
 onUnmounted(() => {
   if (activeAbortController.value) {
@@ -389,6 +449,21 @@ onUnmounted(() => {
 .chat-off {
   display: flex; align-items: center; justify-content: center;
   height: 100%; min-height: 200px; padding: 24px; text-align: center;
-  font-family: system-ui, sans-serif; color: #4B5563; background: #F9FAFB;
+  font-family: var(--font-sans, system-ui, sans-serif); color: #4B5563; background: #F9FAFB;
 }
+.chat-lock {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; min-height: 320px; padding: 24px;
+  font-family: var(--font-sans, system-ui, sans-serif); background: #F9FAFB; color: #1F2937;
+}
+.chat-lock__card { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 10px; text-align: left; }
+.chat-lock__card svg { color: #6B7280; }
+.chat-lock__card h1 { font-size: 18px; font-weight: 700; margin: 0; color: #111827; }
+.chat-lock__card p { font-size: 14px; color: #4B5563; margin: 0; line-height: 1.45; }
+.chat-lock__label { font-size: 14px; font-weight: 600; margin-top: 6px; }
+.chat-lock__input { padding: 10px 12px; border: 1px solid #D1D5DB; border-radius: 8px; font-size: 16px; background: #fff; color: #111827; }
+.chat-lock__input:focus { outline: 2px solid #5F6DFF; outline-offset: 1px; }
+.chat-lock__error { color: #B91C1C !important; }
+.chat-lock__btn { padding: 10px 14px; border: none; border-radius: 8px; background: #1F2937; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
+.chat-lock__btn:disabled { opacity: 0.45; cursor: not-allowed; }
 </style>

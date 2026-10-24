@@ -7,6 +7,7 @@ from app.auth.decorators import optional_user, token_required
 from app import limiter
 from celery.result import AsyncResult
 import uuid
+from app.chat import access
 from app.chat.guard import (
     CHAT_LIMIT_PER_IP, CHAT_LIMIT_PER_TENANT, STATUS_LIMIT_PER_IP,
     is_known_task, long_poll_slot, remember_task,
@@ -23,9 +24,11 @@ def _tenant_key():
     return f"chat-tenant:{request.view_args.get('tenant_id')}"
 
 
-def _chatbot_active(tenant_id) -> bool:
-    resp = supabase.table('tenants').select('is_active').eq('id', str(tenant_id)).limit(1).execute()
-    return bool(resp.data) and resp.data[0].get('is_active') is not False
+def _gate(tenant_id) -> dict:
+    """Whether the chatbot is switched on, and its test-page password hash (None = open)."""
+    resp = supabase.table('tenants').select('is_active, test_password_hash').eq('id', str(tenant_id)).limit(1).execute()
+    row = resp.data[0] if resp.data else {}
+    return {"active": bool(row) and row.get('is_active') is not False, "password_hash": row.get('test_password_hash')}
 
 
 def _owns_tenant(tenant_id, user_id):
@@ -61,11 +64,14 @@ def handle_chat(tenant_id):
             user_id = BillingService.get_tenant_owner(tenant_id)
             if not user_id:
                 return jsonify({"error": "Tenant not found"}), 404
-            # Switched off: only the owner's signed-in preview may still chat
-            if not _chatbot_active(tenant_id):
+            # Switched off or password-protected: the owner's signed-in preview may still chat
+            gate = _gate(tenant_id)
+            if not gate["active"] or not access.token_ok(tenant_id, gate["password_hash"]):
                 viewer = optional_user()
                 if not viewer or str(viewer.id) != str(user_id):
-                    return jsonify({"error": "This chatbot is switched off.", "code": "chatbot_off"}), 403
+                    if not gate["active"]:
+                        return jsonify({"error": "This chatbot is switched off.", "code": "chatbot_off"}), 403
+                    return jsonify({"error": "This chatbot needs a password.", "code": "password_required"}), 401
             if BillingService.check_balance(user_id) <= 0:
                 return jsonify({"error": "Insufficient balance. Please recharge."}), 402
         except Exception as e:
@@ -190,12 +196,36 @@ def get_conversation_logs(current_user, tenant_id, conversation_id):
 @limiter.limit("60 per minute")
 def get_intro_message(tenant_id):
     try:
-        tenant = supabase.table('tenants').select("intro_message").eq('id', str(tenant_id)).single().execute()
+        tenant = supabase.table('tenants').select("intro_message, user_id, test_password_hash").eq('id', str(tenant_id)).single().execute()
         if not tenant.data:
             return jsonify({"error": f"Tenant '{tenant_id}' not found"}), 404
+        if not access.token_ok(tenant_id, tenant.data.get('test_password_hash')):
+            viewer = optional_user()
+            if not viewer or str(viewer.id) != str(tenant.data['user_id']):
+                return jsonify({"error": "This chatbot needs a password.", "code": "password_required"}), 401
         return jsonify({"intro_message": tenant.data['intro_message']})
     except Exception as e:
         error_logger.error(f"Error getting intro message for tenant {tenant_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal error occurred"}), 500
+
+
+@chat_bp.route('/<uuid:tenant_id>/unlock', methods=['POST'])
+@limiter.limit("10 per minute;30 per hour")
+def unlock_chat(tenant_id):
+    """Swaps the test-page password for an access token the browser keeps."""
+    try:
+        password = (request.get_json(silent=True) or {}).get('password') or ''
+        rows = supabase.table('tenants').select('test_password_hash').eq('id', str(tenant_id)).limit(1).execute().data
+        if not rows:
+            return jsonify({"error": "Tenant not found"}), 404
+        password_hash = rows[0].get('test_password_hash')
+        if not password_hash:
+            return jsonify({"token": None}), 200
+        if not access.check_password(password_hash, password):
+            return jsonify({"error": "Wrong password", "code": "wrong_password"}), 401
+        return jsonify({"token": access.make_token(tenant_id, password_hash)}), 200
+    except Exception as e:
+        error_logger.error(f"Error unlocking chat for tenant {tenant_id}: {e}", exc_info=True)
         return jsonify({"error": "An internal error occurred"}), 500
 
 
