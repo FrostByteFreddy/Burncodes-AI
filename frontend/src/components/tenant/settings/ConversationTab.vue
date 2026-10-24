@@ -21,39 +21,6 @@
       </div>
     </section>
 
-    <!-- First impression -->
-    <section class="panel">
-      <h2 class="panel-title">{{ $t('configure.welcome.title') }}</h2>
-      <p class="panel-sub">{{ $t('configure.welcome.sub') }}</p>
-      <div class="cfg-fields">
-        <div>
-          <label for="cfg-intro" class="form-field">{{ $t('configure.welcome.intro') }}</label>
-          <AutoGrowTextarea v-model="local.intro_message" id="cfg-intro" rows="2" class="form-input" />
-        </div>
-
-        <div>
-          <p class="form-field" id="cfg-starters-label">{{ $t('configure.welcome.starters') }}</p>
-          <p class="field-hint field-hint--above">{{ $t('configure.welcome.startersHint') }}</p>
-          <ul class="cfg-starters" aria-labelledby="cfg-starters-label">
-            <li v-for="s in starters" :key="s.id" class="cfg-starter">
-              <input v-model="s.label" type="text" :placeholder="$t('configure.welcome.starterPlaceholder')" class="form-input" :aria-label="$t('configure.welcome.starters')" />
-              <button type="button" class="cfg-icon-btn" :aria-label="$t('configure.remove')" @click="removeStarter(s.id)">
-                <font-awesome-icon :icon="['fas', 'xmark']" />
-              </button>
-            </li>
-          </ul>
-          <button type="button" class="btn-quiet cfg-add" @click="addStarter">
-            <font-awesome-icon :icon="['fas', 'plus']" /> {{ $t('configure.welcome.addStarter') }}
-          </button>
-        </div>
-
-        <div>
-          <label for="cfg-placeholder" class="form-field">{{ $t('configure.welcome.placeholder') }}</label>
-          <input v-model="local.widget_config.input_placeholder" id="cfg-placeholder" type="text" class="form-input" />
-        </div>
-      </div>
-    </section>
-
     <!-- How it talks -->
     <section class="panel">
       <h2 class="panel-title">{{ $t('configure.tone.title') }}</h2>
@@ -117,7 +84,6 @@
 
 <script setup>
 import { computed } from 'vue';
-import { v4 as uuidv4 } from 'uuid';
 import AutoGrowTextarea from '../../AutoGrowTextarea.vue';
 import { CHATBOT_LANGUAGES, PROMPT_TEMPLATES, TONES } from '@/utils/chatbotDefaults';
 
@@ -132,15 +98,6 @@ const language = computed({
   get: () => local.value.translation_target || local.value.doc_language || 'de',
   set: (v) => { local.value.translation_target = v; local.value.doc_language = v; },
 });
-
-const starters = computed(() => {
-  if (!local.value.widget_config.conversation_starters) local.value.widget_config.conversation_starters = [];
-  return local.value.widget_config.conversation_starters;
-});
-const addStarter = () => starters.value.push({ id: uuidv4(), label: '' });
-const removeStarter = (id) => {
-  local.value.widget_config.conversation_starters = starters.value.filter((s) => s.id !== id);
-};
 
 const thinkingMessages = computed({
   get: () => (local.value.widget_config.thinking_messages || []).join('\n'),
@@ -170,11 +127,6 @@ const restoreTemplate = () => { local.value.rag_prompt_template = PROMPT_TEMPLAT
 .cfg-tone--active { border-color: var(--interactive); background: var(--interactive-soft); }
 .cfg-tone__name { font-size: 15px; font-weight: 700; color: var(--surface-heading); }
 .cfg-tone__desc { font-size: var(--text-sm); color: var(--surface-muted); line-height: 1.4; }
-
-.cfg-starters { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 8px; }
-.cfg-starters:empty { display: none; }
-.cfg-starter { display: flex; gap: 8px; align-items: center; }
-.cfg-add { margin-top: 10px; }
 
 .cfg-advanced { padding: 0; }
 .cfg-advanced__summary {

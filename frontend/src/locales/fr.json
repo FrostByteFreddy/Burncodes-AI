@@ -680,7 +680,7 @@
     "discard": "Annuler",
     "save": "Enregistrer",
     "saved": "Modifications enregistrées",
-    "preview": "Aperçu — cliquez sur un crayon pour modifier les couleurs ou le logo",
+    "preview": "Aperçu",
     "remove": "Supprimer",
     "basics": {
       "title": "Bases",
@@ -752,6 +752,7 @@
         "starters": "Questions suggérées"
       },
       "labels": {
+        "footer_background_color": "Fond du pied de page",
         "header_background_color": "Fond de l'en-tête",
         "header_text_color": "Texte de l'en-tête",
         "reset_button_color": "Bouton recommencer",
@@ -793,19 +794,39 @@
       "iconHint": "Facultatif. Sans icône, une bulle de dialogue s'affiche."
     },
     "edit": {
+      "modeLabel": "Mode d'aperçu",
+      "stateLabel": "Ce qui est affiché",
+      "modes": {
+        "edit": "Modifier l'apparence",
+        "try": "Essayer"
+      },
+      "states": {
+        "start": "Début",
+        "conversation": "Conversation",
+        "launcher": "Bouton de chat"
+      },
+      "hint": "Survolez une partie du chat et cliquez pour la modifier.",
+      "tryHint": "C'est votre vrai chatbot. Il répond avec ce qu'il a appris.",
+      "hardToRead": "Difficile à lire : {parts}. Choisissez des couleurs plus contrastées.",
+      "addQuestion": "Ajouter une question",
+      "question": "Question",
+      "removeQuestion": "Supprimer la question",
+      "startersShared": "Les couleurs s'appliquent à toutes les questions suggérées.",
       "custom": "Couleur personnalisée",
       "close": "Fermer",
-      "editPart": "Modifier : {part}",
       "parts": {
         "header": "En-tête",
-        "title": "Titre et logo",
-        "buttons": "Boutons de l'en-tête",
+        "reset": "Bouton recommencer",
+        "share": "Bouton partager",
+        "close": "Bouton fermer",
+        "background": "Fond du chat",
         "bot": "Messages du chatbot",
         "user": "Messages des visiteurs",
-        "starters": "Questions suggérées",
-        "background": "Fond du chat",
+        "starter": "Question suggérée",
+        "footer": "Pied de page",
         "input": "Champ de saisie",
-        "send": "Bouton d'envoi"
+        "send": "Bouton d'envoi",
+        "launcher": "Bouton de chat"
       }
     },
     "image": {

@@ -109,7 +109,7 @@
           @input="onInput"
           @keyup.enter.exact.prevent="$emit('sendMessage')"
           :placeholder="config.input_placeholder || $t('chat.inputPlaceholder')"
-          class="chat-input outline-none border px-4 py-3 focus:outline-none focus:ring-1 rounded-custom transition-all"
+          class="chat-input outline-none border px-4 py-3 focus:outline-none rounded-custom transition-all"
           rows="1"
           style="resize: none; overflow-y: hidden"
         ></textarea>
@@ -338,9 +338,10 @@ const widgetCssVariables = computed(() => {
       "#F9FAFB"
     ),
     "--chat-input-text-color": findColor(styles.input_text_color, "#1F2937"),
-    "--chat-input-focus-ring-color": findColor(
-      styles.input_focus_ring_color,
-      "#A855F7"
+    // Footer had no colour of its own before; it followed the header
+    "--chat-footer-background-color": findColor(
+      styles.footer_background_color || styles.header_background_color,
+      "#F3F4F6"
     ),
     "--chat-background-color": findColor(
       styles.chat_background_color,
@@ -486,7 +487,7 @@ const widgetCssVariables = computed(() => {
 }
 
 .chat-footer {
-  background-color: var(--chat-header-background-color);
+  background-color: var(--chat-footer-background-color);
   padding: 0.75rem;
   /* Extend padding into the safe area so the home indicator / gesture bar
      never clips the input on iOS and Android. */
@@ -505,8 +506,7 @@ const widgetCssVariables = computed(() => {
 .chat-input {
   background-color: var(--chat-input-background-color);
   color: var(--chat-input-text-color);
-  border-color: var(--chat-header-background-color);
-  --tw-ring-color: var(--chat-input-focus-ring-color);
+  border-color: var(--chat-footer-background-color);
   /* Full-width — button overlays on top of the right edge */
   width: 100%;
   /* Offset text from the overlaid send button */

@@ -680,7 +680,7 @@
     "discard": "Verwerfen",
     "save": "Änderungen speichern",
     "saved": "Änderungen gespeichert",
-    "preview": "Vorschau — klicken Sie auf einen Stift, um Farben oder das Logo zu ändern",
+    "preview": "Vorschau",
     "remove": "Entfernen",
     "basics": {
       "title": "Grundlagen",
@@ -752,6 +752,7 @@
         "starters": "Vorgeschlagene Fragen"
       },
       "labels": {
+        "footer_background_color": "Hintergrund Fusszeile",
         "header_background_color": "Hintergrund Kopfzeile",
         "header_text_color": "Text Kopfzeile",
         "reset_button_color": "Neustart-Knopf",
@@ -793,19 +794,39 @@
       "iconHint": "Optional. Ohne Symbol wird eine Sprechblase angezeigt."
     },
     "edit": {
+      "modeLabel": "Vorschaumodus",
+      "stateLabel": "Was angezeigt wird",
+      "modes": {
+        "edit": "Aussehen bearbeiten",
+        "try": "Ausprobieren"
+      },
+      "states": {
+        "start": "Start",
+        "conversation": "Gespräch",
+        "launcher": "Chat-Knopf"
+      },
+      "hint": "Fahren Sie über einen Teil des Chats und klicken Sie, um ihn zu ändern.",
+      "tryHint": "Das ist Ihr echter Chatbot. Er antwortet mit dem, was er gelernt hat.",
+      "hardToRead": "Schwer lesbar: {parts}. Wählen Sie Farben mit mehr Kontrast.",
+      "addQuestion": "Frage hinzufügen",
+      "question": "Frage",
+      "removeQuestion": "Frage entfernen",
+      "startersShared": "Die Farben gelten für alle vorgeschlagenen Fragen.",
       "custom": "Eigene Farbe",
       "close": "Schliessen",
-      "editPart": "{part} bearbeiten",
       "parts": {
         "header": "Kopfzeile",
-        "title": "Titel und Logo",
-        "buttons": "Knöpfe in der Kopfzeile",
+        "reset": "Neustart-Knopf",
+        "share": "Teilen-Knopf",
+        "close": "Schliessen-Knopf",
+        "background": "Chat-Hintergrund",
         "bot": "Chatbot-Nachrichten",
         "user": "Besucher-Nachrichten",
-        "starters": "Vorgeschlagene Fragen",
-        "background": "Chat-Hintergrund",
+        "starter": "Vorgeschlagene Frage",
+        "footer": "Fusszeile",
         "input": "Eingabefeld",
-        "send": "Senden-Knopf"
+        "send": "Senden-Knopf",
+        "launcher": "Chat-Knopf"
       }
     },
     "image": {

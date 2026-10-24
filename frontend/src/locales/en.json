@@ -680,7 +680,7 @@
     "discard": "Discard",
     "save": "Save changes",
     "saved": "Changes saved",
-    "preview": "Preview — click a pen to change colours or the logo",
+    "preview": "Preview",
     "remove": "Remove",
     "basics": {
       "title": "Basics",
@@ -752,6 +752,7 @@
         "starters": "Suggested questions"
       },
       "labels": {
+        "footer_background_color": "Footer background",
         "header_background_color": "Header background",
         "header_text_color": "Header text",
         "reset_button_color": "Restart button",
@@ -793,19 +794,39 @@
       "iconHint": "Optional. Without an icon, a speech bubble is shown."
     },
     "edit": {
+      "modeLabel": "Preview mode",
+      "stateLabel": "What to show",
+      "modes": {
+        "edit": "Edit look",
+        "try": "Try it out"
+      },
+      "states": {
+        "start": "Start",
+        "conversation": "Conversation",
+        "launcher": "Chat button"
+      },
+      "hint": "Hover over a part of the chat and click it to change it.",
+      "tryHint": "This is your real chatbot. It answers from what it has learned.",
+      "hardToRead": "Hard to read: {parts}. Pick colours with more contrast.",
+      "addQuestion": "Add question",
+      "question": "Question",
+      "removeQuestion": "Remove question",
+      "startersShared": "The colours apply to all suggested questions.",
       "custom": "Custom colour",
       "close": "Close",
-      "editPart": "Edit {part}",
       "parts": {
         "header": "Header",
-        "title": "Title and logo",
-        "buttons": "Header buttons",
+        "reset": "Restart button",
+        "share": "Share button",
+        "close": "Close button",
+        "background": "Chat background",
         "bot": "Chatbot messages",
         "user": "Visitor messages",
-        "starters": "Suggested questions",
-        "background": "Chat background",
+        "starter": "Suggested question",
+        "footer": "Footer",
         "input": "Input field",
-        "send": "Send button"
+        "send": "Send button",
+        "launcher": "Chat button"
       }
     },
     "image": {

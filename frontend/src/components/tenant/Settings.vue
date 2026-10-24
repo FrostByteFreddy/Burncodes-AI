@@ -9,21 +9,7 @@
           </div>
         </div>
 
-        <div class="cfg-tabs" role="tablist">
-          <button
-            v-for="tab in TABS"
-            :key="tab"
-            type="button"
-            role="tab"
-            class="cfg-tabs__btn"
-            :class="{ 'cfg-tabs__btn--active': activeTab === tab }"
-            :aria-selected="activeTab === tab"
-            @click="activeTab = tab"
-          >{{ $t(`configure.tabs.${tab}`) }}</button>
-        </div>
-
-        <ConversationTab v-show="activeTab === 'conversation'" :model-value="formData" />
-        <LookTab v-show="activeTab === 'look'" :model-value="formData" />
+        <ConversationTab :model-value="formData" />
 
         <!-- Appears once something changed; one save for both tabs -->
         <Transition name="cfg-bar">
@@ -41,10 +27,7 @@
       </form>
 
       <aside class="cfg-preview" :aria-label="$t('configure.preview')">
-        <p class="meta cfg-preview__label">{{ $t('configure.preview') }}</p>
-        <div class="cfg-preview__frame">
-          <EditablePreview :config="formData.widget_config" :tenant-id="tenantsStore.currentTenant?.id || ''" />
-        </div>
+        <EditablePreview :form="formData" :tenant-id="tenantsStore.currentTenant?.id || ''" />
       </aside>
     </div>
   </div>
@@ -56,15 +39,12 @@ import { useI18n } from 'vue-i18n';
 import { useTenantsStore } from '../../stores/tenants';
 import { useToast } from '../../composables/useToast';
 import ConversationTab from './settings/ConversationTab.vue';
-import LookTab from './settings/LookTab.vue';
 import EditablePreview from './settings/EditablePreview.vue';
 
 const tenantsStore = useTenantsStore();
 const { addToast } = useToast();
 const { t } = useI18n();
 
-const TABS = ['conversation', 'look'];
-const activeTab = ref('conversation');
 const saving = ref(false);
 
 const defaultWidgetConfig = () => ({
@@ -91,7 +71,7 @@ const defaultWidgetConfig = () => ({
     bot_message_background_color: 'c_secondary', bot_message_text_color: 'c_black',
     send_button_background_color: 'c_primary', send_button_text_color: 'c_white',
     input_background_color: 'c_secondary', input_text_color: 'c_black',
-    input_focus_ring_color: 'c_primary', chat_background_color: 'c_white',
+    footer_background_color: 'c_secondary', chat_background_color: 'c_white',
     reset_button_color: 'c_primary', reset_button_icon_color: 'c_white',
     close_button_background_color: 'c_primary', close_button_icon_color: 'c_white',
     share_button_color: 'c_primary', share_button_icon_color: 'c_white',
@@ -113,7 +93,12 @@ const fromTenant = (tenant) => {
       ...base,
       ...clone(saved),
       color_palette: clone(saved.color_palette || base.color_palette),
-      component_styles: { ...base.component_styles, ...(saved.component_styles || {}) },
+      component_styles: {
+        ...base.component_styles,
+        // the footer used to follow the header colour; keep that look until changed
+        footer_background_color: saved.component_styles?.header_background_color || base.component_styles.footer_background_color,
+        ...(saved.component_styles || {}),
+      },
     },
   };
 };
@@ -155,18 +140,6 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload)
 .cfg-layout { display: grid; grid-template-columns: minmax(0, 600px) minmax(360px, 1fr); gap: 32px; align-items: start; }
 .cfg-form { min-width: 0; }
 
-.cfg-tabs {
-  display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 20px;
-  border-radius: var(--radius-pill); background: var(--surface-1); border: 1px solid var(--surface-3);
-}
-.cfg-tabs__btn {
-  padding: 8px 18px; border: none; border-radius: var(--radius-pill);
-  background: none; color: var(--surface-muted); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
-  transition: background var(--t-fast), color var(--t-fast);
-}
-.cfg-tabs__btn:hover { color: var(--surface-heading); }
-.cfg-tabs__btn--active { background: var(--interactive-strong); color: #fff; }
-
 .cfg-savebar {
   position: sticky; bottom: 32px; z-index: 20;
   display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
@@ -185,8 +158,6 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload)
   height: calc(100dvh - 80px);
   display: flex; flex-direction: column;
 }
-.cfg-preview__label { margin-bottom: 8px; }
-.cfg-preview__frame { flex: 1; min-height: 0; }
 
 @media (max-width: 1100px) {
   .cfg-layout { grid-template-columns: minmax(0, 1fr); }

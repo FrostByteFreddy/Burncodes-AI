@@ -46,3 +46,22 @@ export const defaultsFor = (lang) => ({
   doc_language: lang,
   translation_target: lang,
 });
+
+// Sample exchange for designing the chat window, in the chatbot's language
+export const SAMPLE_CONVERSATION = {
+  de: {
+    question: 'Wann ist die nächste Papiersammlung?',
+    answer: 'Die nächste Papiersammlung ist am **Dienstag, 3. November**. Bitte stellen Sie das gebündelte Papier bis 7 Uhr an den Strassenrand.',
+    newQuestion: 'Neue Frage',
+  },
+  en: {
+    question: 'When is the next paper collection?',
+    answer: 'The next paper collection is on **Tuesday, 3 November**. Please put the bundled paper out by the road by 7 am.',
+    newQuestion: 'New question',
+  },
+  fr: {
+    question: 'Quand a lieu le prochain ramassage du papier ?',
+    answer: 'Le prochain ramassage du papier a lieu le **mardi 3 novembre**. Merci de déposer le papier ficelé au bord de la route avant 7 h.',
+    newQuestion: 'Nouvelle question',
+  },
+};
