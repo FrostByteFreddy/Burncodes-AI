@@ -113,7 +113,7 @@
     <ConfirmationModal
       :show="showDeleteJobModal"
       title="Delete Crawl Job"
-      :message="`Delete the crawl of <strong>${jobToDelete?.start_url}</strong>?<br><br>${jobToDelete?.task_count || 0} pages attempted · ${successCount(jobToDelete)} indexed · ${errorCount(jobToDelete)} errors.<br>All indexed data will be removed. This cannot be undone.`"
+      :message="`Delete the crawl of <strong>${escapeHtml(jobToDelete?.start_url)}</strong>?<br><br>${jobToDelete?.task_count || 0} pages attempted · ${successCount(jobToDelete)} indexed · ${errorCount(jobToDelete)} errors.<br>All indexed data will be removed. This cannot be undone.`"
       confirmButtonText="Delete"
       @confirm="executeDeleteJob"
       @cancel="jobToDelete = null; showDeleteJobModal = false"
@@ -122,6 +122,7 @@
 </template>
 
 <script setup>
+import { escapeHtml } from '@/utils/escapeHtml';
 import { ref, computed } from 'vue';
 import { useTenantsStore } from '../../../stores/tenants';
 import { useToast } from '../../../composables/useToast';
@@ -161,7 +162,9 @@ const stopJob = async (job) => {
 };
 
 // ── File helpers ──────────────────────────────────────
-const fileName = (s) => s.source_location.split('/').pop().split('?')[0] || s.source_location;
+// Uploaded files are stored as "<32-hex uuid>_<name>"; show only the original name.
+const fileName = (s) =>
+  s.source_location.split('/').pop().split('?')[0].replace(/^[0-9a-f]{32}_/, '') || s.source_location;
 const fileExt  = (s) => { const n = fileName(s); return n.includes('.') ? n.split('.').pop().toLowerCase() : 'file'; };
 const fileIcon = (s) => {
   const e = fileExt(s);

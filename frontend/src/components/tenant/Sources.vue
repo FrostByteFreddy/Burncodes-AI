@@ -72,7 +72,7 @@
     <ConfirmationModal
       :show="showConfirmationModal"
       :title="$t('tenant.sources.deleteModal.title')"
-      :message="$t('tenant.sources.deleteModal.message', { source: sourceToDelete?.source_location })"
+      :message="$t('tenant.sources.deleteModal.message', { source: escapeHtml(sourceToDelete?.source_location) })"
       :confirmButtonText="$t('tenant.sources.deleteModal.confirm')"
       @confirm="handleDelete"
       @cancel="cancelDelete"
@@ -90,6 +90,7 @@ import { supabase } from '@/supabase';
 import KnowledgeList from './sources/KnowledgeList.vue';
 import AddKnowledgeWizard from './sources/AddKnowledgeWizard.vue';
 import ConfirmationModal from '../ConfirmationModal.vue';
+import { escapeHtml } from '@/utils/escapeHtml';
 import RulesTab from './sources/RulesTab.vue';
 
 const tenantsStore = useTenantsStore();

@@ -197,29 +197,16 @@ const pollTaskStatus = (taskId) => {
         activeAbortController.value = null;
         isThinking.value = false;
 
-        const fullHistory = task_result.chat_history;
-        const last = fullHistory[fullHistory.length - 1];
+        // The backend keeps the conversation server-side; we only append the
+        // new answer to the local transcript (which already has the user turn).
+        const answer = task_result.answer || '';
+        chatHistory.value.push({ text: '', html: '', isUser: false });
 
-        if (last?.type === 'ai') {
-          chatHistory.value = fullHistory.slice(0, -1).map(msg =>
-            msg.type === 'ai'
-              ? { ...processBotMessage(msg.content), isUser: false }
-              : { text: msg.content, html: null, isUser: true }
-          );
-          chatHistory.value.push({ text: '', html: '', isUser: false });
-
-          const current = chatHistory.value[chatHistory.value.length - 1];
-          for (const part of last.content.split(/(\s+)/)) {
-            current.text += part;
-            current.html = processBotMessage(current.text).html;
-            await new Promise(r => setTimeout(r, Math.random() * 5));
-          }
-        } else {
-          chatHistory.value = fullHistory.map(msg =>
-            msg.type === 'ai'
-              ? { ...processBotMessage(msg.content), isUser: false }
-              : { text: msg.content, html: null, isUser: true }
-          );
+        const current = chatHistory.value[chatHistory.value.length - 1];
+        for (const part of answer.split(/(\s+)/)) {
+          current.text += part;
+          current.html = processBotMessage(current.text).html;
+          await new Promise(r => setTimeout(r, Math.random() * 5));
         }
         saveSession(chatHistory.value, conversationId.value);
         return;
@@ -253,11 +240,6 @@ const sendMessage = async () => {
   if (!userMessage.value.trim() || !props.tenantId || isThinking.value) return;
 
   const current = userMessage.value;
-  const historyForBackend = chatHistory.value.map(m => ({
-    type: m.isUser ? 'human' : 'ai',
-    content: m.text,
-  }));
-
   chatHistory.value.push({ text: current, html: null, isUser: true });
   saveSession(chatHistory.value, conversationId.value);
   userMessage.value = '';
@@ -266,7 +248,6 @@ const sendMessage = async () => {
   try {
     const { data } = await axios.post(`${API_BASE_URL}/chat/${props.tenantId}`, {
       query: current,
-      chat_history: historyForBackend,
       conversation_id: conversationId.value,
     });
     if (data.task_id) {
