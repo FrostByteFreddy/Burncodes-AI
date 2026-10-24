@@ -6,6 +6,7 @@ Total image: ~180MB.
 """
 import os
 from celery import Celery
+from celery.schedules import crontab
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -39,10 +40,11 @@ celery.conf.update(
             'task': 'app.data_processing.tasks.maintenance_tasks.weekly_recrawl_task',
             'schedule': 6 * 3600.0,
         },
-        # Reviews conversations that went quiet for unanswered questions and pushback
-        'review-conversations-hourly': {
+        # Once a night: reviews conversations not reviewed before for unanswered
+        # questions and pushback (most chatbots see few conversations a day)
+        'review-conversations-daily': {
             'task': 'app.data_processing.tasks.maintenance_tasks.review_conversations_task',
-            'schedule': 3600.0,
+            'schedule': crontab(hour=3, minute=0),
         },
     },
 )

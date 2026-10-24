@@ -920,7 +920,7 @@
     },
     "review": {
       "toggle": "Review conversations",
-      "how": "Finished conversations are checked every hour, about CHF {cost} each.",
+      "how": "Finished conversations are checked once a night, about CHF {cost} each. Each conversation is checked once.",
       "stats": "Last 30 days: {n} conversations, CHF {cost}.",
       "off": "Turn this on to find questions your chatbot couldn't answer.",
       "now": "Review now",

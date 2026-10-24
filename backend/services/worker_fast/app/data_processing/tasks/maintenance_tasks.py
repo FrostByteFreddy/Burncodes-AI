@@ -146,8 +146,9 @@ def weekly_recrawl_task(self):
 @shared_task(bind=True, queue="fast", soft_time_limit=1500, time_limit=1800)
 def review_conversations_task(self, tenant_id=None):
     """
-    Hourly (or on demand for one tenant): review conversations that went quiet,
-    store what staff should act on, and bill the owner per reviewed conversation.
+    Nightly (or on demand for one tenant): review conversations that went quiet
+    and were never reviewed, store what staff should act on, and bill the owner
+    per reviewed conversation.
     """
     from app.billing.services import BillingService
     from app.knowledge import review

@@ -6,9 +6,8 @@ questions the chatbot couldn't answer, answers people pushed back on or
 corrected, and questions it misunderstood. Each finding says what went wrong
 and what knowledge would fix it, written in the dashboard user's language.
 
-A conversation counts as finished after QUIET_MINUTES without a message.
-If it continues later, only the new turns are reviewed (with the earlier
-ones as context).
+Runs once a night. A conversation counts as finished after QUIET_MINUTES
+without a message, and each conversation is reviewed once.
 """
 import json
 import os
@@ -22,8 +21,8 @@ from app.database.supabase_client import supabase
 from app.logging_config import error_logger
 
 QUIET_MINUTES = int(os.getenv("REVIEW_QUIET_MINUTES", "30"))
-LOOKBACK_DAYS = int(os.getenv("REVIEW_LOOKBACK_DAYS", "7"))
-MAX_CONVERSATIONS_PER_RUN = int(os.getenv("REVIEW_MAX_CONVERSATIONS_PER_RUN", "50"))
+LOOKBACK_DAYS = int(os.getenv("REVIEW_LOOKBACK_DAYS", "14"))
+MAX_CONVERSATIONS_PER_RUN = int(os.getenv("REVIEW_MAX_CONVERSATIONS_PER_RUN", "200"))
 # Long conversations are cut to their newest turns; plenty to judge them
 MAX_TURNS = 30
 
@@ -161,7 +160,7 @@ def _owner_language(user_id: str) -> str:
 
 def due_conversations(tenant_id: str, now: datetime | None = None) -> list[dict]:
     """
-    Conversations that went quiet and have turns not reviewed yet.
+    Finished conversations that were never reviewed.
     Returns [{"conversation_id", "logs" (oldest first), "first_new"}].
     """
     now = now or datetime.now(timezone.utc)
@@ -178,23 +177,20 @@ def due_conversations(tenant_id: str, now: datetime | None = None) -> list[dict]
         by_convo.setdefault(r["conversation_id"], []).append(r)
     if not by_convo:
         return []
-    reviewed = {
-        r["conversation_id"]: r["last_log_id"] for r in (
-            supabase.table("chat_reviews").select("conversation_id, last_log_id")
-            .in_("conversation_id", list(by_convo)).execute()
-        ).data or []
-    }
+    # in batches: every id ends up in the request URL
+    ids, reviewed = list(by_convo), set()
+    for i in range(0, len(ids), 100):
+        reviewed |= {
+            r["conversation_id"] for r in (
+                supabase.table("chat_reviews").select("conversation_id")
+                .in_("conversation_id", ids[i:i + 100]).execute()
+            ).data or []
+        }
     due = []
     for convo, logs in by_convo.items():
-        if logs[-1]["created_at"] > quiet_since:
-            continue  # still going
-        last = reviewed.get(convo)
-        first_new = next((i for i, log in enumerate(logs) if last is None or log["id"] > last), None)
-        if first_new is None:
-            continue
-        # keep the newest turns; the new ones are always among them
-        cut = max(0, len(logs) - MAX_TURNS)
-        due.append({"conversation_id": convo, "logs": logs[cut:], "first_new": max(0, first_new - cut)})
+        if convo in reviewed or logs[-1]["created_at"] > quiet_since:
+            continue  # done before, or still going
+        due.append({"conversation_id": convo, "logs": logs[-MAX_TURNS:], "first_new": 0})
     due.sort(key=lambda d: d["logs"][-1]["id"])
     return due[:MAX_CONVERSATIONS_PER_RUN]
 

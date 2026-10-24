@@ -920,7 +920,7 @@
     },
     "review": {
       "toggle": "Gespräche prüfen",
-      "how": "Abgeschlossene Gespräche werden stündlich geprüft, etwa CHF {cost} pro Gespräch.",
+      "how": "Abgeschlossene Gespräche werden einmal pro Nacht geprüft, etwa CHF {cost} pro Gespräch. Jedes Gespräch wird nur einmal geprüft.",
       "stats": "Letzte 30 Tage: {n} Gespräche, CHF {cost}.",
       "off": "Schalten Sie dies ein, um Fragen zu finden, die Ihr Chatbot nicht beantworten konnte.",
       "now": "Jetzt prüfen",

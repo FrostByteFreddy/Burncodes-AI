@@ -920,7 +920,7 @@
     },
     "review": {
       "toggle": "Relire les conversations",
-      "how": "Les conversations terminées sont relues toutes les heures, environ CHF {cost} chacune.",
+      "how": "Les conversations terminées sont relues une fois par nuit, environ CHF {cost} chacune. Chaque conversation n'est relue qu'une fois.",
       "stats": "30 derniers jours : {n} conversations, CHF {cost}.",
       "off": "Activez ceci pour trouver les questions auxquelles votre chatbot n'a pas pu répondre.",
       "now": "Relire maintenant",
