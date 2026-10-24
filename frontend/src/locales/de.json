@@ -485,15 +485,16 @@
   },
   "modals": {
     "createTenant": {
-      "title": "Neuen Mandanten erstellen",
-      "name": "Mandantenname",
+      "title": "Neuer Chatbot",
+      "name": "Name",
       "introMessage": "Begrüßungsnachricht",
       "systemPersona": "System-Persona",
       "ragPromptTemplate": "RAG-Prompt-Vorlage",
       "docLanguage": "Dokumentsprache",
       "translationTarget": "Übersetzungsziel",
       "cancel": "Abbrechen",
-      "create": "Erstellen"
+      "create": "Chatbot erstellen",
+      "languageHint": "Die Sprache, in der die Leute schreiben. Texte und Farben können Sie danach unter Einstellungen anpassen."
     },
     "confirmation": {
       "cancel": "Abbrechen",
@@ -507,6 +508,15 @@
     }
   },
   "knowledge": {
+    "recrawl": {
+      "label": "Auf Änderungen prüfen",
+      "off": "Nie",
+      "every7": "Jede Woche",
+      "every14": "Alle 2 Wochen",
+      "every30": "Jeden Monat",
+      "hint": "Wir lesen Ihre Websites erneut und lernen nur, was sich geändert hat. Unveränderte Seiten kosten nichts.",
+      "saved": "Gespeichert"
+    },
     "overview": {
         "stripTitle": "Termine, die Ihr Chatbot kennt",
         "stripSub": "Geprüfte Termine aus Ihren Dokumenten für die nächsten 14 Tage. Wer fragt «wann ist die nächste…», bekommt diese Antworten.",
@@ -650,6 +660,7 @@
     }
   },
   "pages": {
+    "configureTitle": "Einstellungen",
     "chatbots": "Jeder Chatbot beantwortet Fragen aus der Website und den Dokumenten einer Organisation.",
     "insights": "Wie oft Ihr Chatbot gefragt wird und was die Leute wissen wollten.",
     "subscription": "Ihr Guthaben bezahlt Chat-Antworten und das Lernen neuer Inhalte.",
@@ -659,5 +670,132 @@
     "configure": "Wie Ihr Chatbot spricht und wie er auf Ihrer Website aussieht.",
     "installTitle": "Einbinden",
     "install": "Binden Sie den Chatbot mit einer Zeile Code in Ihre Website ein."
+  },
+  "configure": {
+    "tabs": {
+      "conversation": "Gespräch",
+      "look": "Aussehen"
+    },
+    "unsaved": "Sie haben ungespeicherte Änderungen",
+    "discard": "Verwerfen",
+    "save": "Änderungen speichern",
+    "saved": "Änderungen gespeichert",
+    "preview": "Vorschau — probieren Sie es aus",
+    "remove": "Entfernen",
+    "basics": {
+      "title": "Grundlagen",
+      "name": "Name",
+      "nameHint": "Wird nur hier im Dashboard angezeigt.",
+      "language": "Sprache",
+      "languageHint": "Die Sprache, in der die Leute schreiben. Ihre Regeln werden in dieser Sprache angewendet."
+    },
+    "welcome": {
+      "title": "Erster Eindruck",
+      "sub": "Was die Leute sehen, wenn sie den Chat öffnen.",
+      "intro": "Begrüssung",
+      "starters": "Vorgeschlagene Fragen",
+      "startersHint": "Schaltflächen unter der Begrüssung, damit man mit einem Klick fragen kann.",
+      "starterPlaceholder": "z. B. Wann ist die nächste Papiersammlung?",
+      "addStarter": "Frage hinzufügen",
+      "placeholder": "Text im leeren Eingabefeld"
+    },
+    "tone": {
+      "title": "Wie er spricht",
+      "sub": "Wählen Sie einen Ausgangspunkt und passen Sie den Text mit eigenen Worten an.",
+      "presets": "Tonvorlagen",
+      "formal": "Höflich und formell",
+      "formalDesc": "Sachlich, spricht die Leute mit «Sie» an.",
+      "friendly": "Freundlich",
+      "friendlyDesc": "Herzlich und locker, erklärt einfach.",
+      "brief": "Kurz und sachlich",
+      "briefDesc": "Ein Satz oder eine kurze Liste.",
+      "persona": "Persönlichkeit und Anweisungen",
+      "personaHint": "Einfache Worte funktionieren am besten, z. B. «Verweise bei Baugesuchen an die Bauverwaltung.»",
+      "thinking": "Nachrichten während er nachdenkt",
+      "thinkingHint": "Eine pro Zeile. Eine davon wird angezeigt, während eine Antwort entsteht."
+    },
+    "advanced": {
+      "title": "Erweitert",
+      "sub": "Der vollständige Anweisungstext, den der Chatbot erhält.",
+      "warning": "Ändern Sie dies nur, wenn Sie wissen, was es bewirkt. {persona} wird durch die Persönlichkeit oben ersetzt, {fine_tune_instructions} durch Ihre eigenen Regeln.",
+      "template": "Anweisungsvorlage",
+      "missingPersona": "{persona} fehlt, daher wird die Persönlichkeit oben ignoriert.",
+      "restore": "Standard wiederherstellen"
+    },
+    "colors": {
+      "title": "Farben",
+      "sub": "Ihre Markenfarben. Klicken Sie auf eine Farbe, um sie zu ändern.",
+      "name": "Farbname",
+      "add": "Farbe hinzufügen",
+      "newColor": "Neue Farbe",
+      "base": {
+        "c_primary": "Hauptfarbe",
+        "c_secondary": "Heller Hintergrund",
+        "c_black": "Text",
+        "c_white": "Weiss"
+      },
+      "allReadable": "Alle Texte sind gut lesbar.",
+      "hardToRead": "Einige Texte sind womöglich schwer lesbar. Wählen Sie Farben mit mehr Kontrast für:",
+      "pairs": {
+        "header": "Kopfzeile",
+        "botMessage": "Chatbot-Nachrichten",
+        "userMessage": "Besucher-Nachrichten",
+        "input": "Eingabefeld",
+        "sendButton": "Senden-Knopf",
+        "starters": "Vorgeschlagene Fragen"
+      },
+      "usage": "Festlegen, wo welche Farbe verwendet wird",
+      "groups": {
+        "header": "Kopfzeile",
+        "messages": "Nachrichten",
+        "input": "Eingabefeld",
+        "starters": "Vorgeschlagene Fragen"
+      },
+      "labels": {
+        "header_background_color": "Hintergrund Kopfzeile",
+        "header_text_color": "Text Kopfzeile",
+        "reset_button_color": "Neustart-Knopf",
+        "reset_button_icon_color": "Neustart-Symbol",
+        "close_button_background_color": "Schliessen-Knopf",
+        "close_button_icon_color": "Schliessen-Symbol",
+        "share_button_color": "Teilen-Knopf",
+        "share_button_icon_color": "Teilen-Symbol",
+        "chat_background_color": "Chat-Hintergrund",
+        "bot_message_background_color": "Chatbot-Blase",
+        "bot_message_text_color": "Chatbot-Text",
+        "user_message_background_color": "Besucher-Blase",
+        "user_message_text_color": "Besucher-Text",
+        "input_background_color": "Eingabe-Hintergrund",
+        "input_text_color": "Eingabe-Text",
+        "input_focus_ring_color": "Eingaberahmen beim Tippen",
+        "send_button_background_color": "Senden-Knopf",
+        "send_button_text_color": "Senden-Symbol",
+        "starter_background_color": "Hintergrund der Schaltfläche",
+        "starter_text_color": "Text der Schaltfläche"
+      }
+    },
+    "header": {
+      "title": "Chatfenster",
+      "chatTitle": "Titel",
+      "chatTitleHint": "Wird oben im Chat angezeigt. Leer lassen, um nur das Logo zu zeigen.",
+      "logo": "Logo",
+      "logoHint": "PNG oder SVG mit transparentem Hintergrund eignen sich am besten.",
+      "reset": "Knopf für ein neues Gespräch anzeigen",
+      "share": "Knopf zum Teilen des Gesprächs anzeigen"
+    },
+    "launcher": {
+      "title": "Chat-Knopf",
+      "sub": "Der runde Knopf in der Ecke Ihrer Website, der den Chat öffnet.",
+      "enabled": "Chat-Knopf auf meiner Website anzeigen",
+      "disabledHint": "Der Chat ist auf Ihrer Website ausgeblendet. Der eingebundene Code kann bleiben.",
+      "color": "Farbe",
+      "icon": "Symbol",
+      "iconHint": "Optional. Ohne Symbol wird eine Sprechblase angezeigt."
+    },
+    "image": {
+      "choose": "Bild wählen",
+      "replace": "Ersetzen",
+      "remove": "Entfernen"
+    }
   }
 }

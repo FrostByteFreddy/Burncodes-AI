@@ -219,6 +219,33 @@ class TestChatDates:
         assert "Grünabfuhr: no future dates known — the published schedule ends 2025-12-09" in text
 
 
+class TestSystemInstruction:
+    @staticmethod
+    def _chat():
+        import importlib
+        import sys
+        sys.modules.setdefault("app.prompts", type(sys)("app.prompts"))
+        sys.modules["app.prompts"].FINE_TUNE_RULE_PROMPTS = {"en": "When {trigger}: {instruction}"}
+        spec = importlib.util.spec_from_file_location(
+            "chat_tasks", __file__.replace("tests/test_knowledge.py", "services/worker_chat/app/chat/tasks.py"))
+        chat = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(chat)
+        return chat
+
+    def test_legacy_template_slots_are_removed(self):
+        chat = self._chat()
+        cfg = {"translation_target": "en", "system_persona": "Be polite.",
+               "rag_prompt_template": "{persona}\n\n{fine_tune_instructions}\n\nAnswer from context.\n\n<context>\n{context}\n</context>\n\nFrage: {input}\n"}
+        text = chat._build_system_instruction(cfg, [{"trigger": "asked about fees", "instruction": "link the fee list"}])
+        assert text == "Be polite.\n\nWhen asked about fees: link the fee list\n\nAnswer from context."
+
+    def test_persona_and_rules_survive_an_edited_template(self):
+        chat = self._chat()
+        cfg = {"translation_target": "en", "system_persona": "Be brief.", "rag_prompt_template": "Only use the documents."}
+        text = chat._build_system_instruction(cfg, [{"trigger": "x", "instruction": "y"}])
+        assert text.startswith("Be brief.") and "When x: y" in text and text.endswith("Only use the documents.")
+
+
 class TestValidate:
     """learn._validate: which extracted dates become trusted events."""
 

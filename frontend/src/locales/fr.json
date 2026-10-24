@@ -485,15 +485,16 @@
   },
   "modals": {
     "createTenant": {
-      "title": "Créer un nouveau locataire",
-      "name": "Nom du locataire",
+      "title": "Nouveau chatbot",
+      "name": "Nom",
       "introMessage": "Message d'introduction",
       "systemPersona": "Persona système",
       "ragPromptTemplate": "Modèle de prompt RAG",
       "docLanguage": "Langue du document",
       "translationTarget": "Cible de traduction",
       "cancel": "Annuler",
-      "create": "Créer"
+      "create": "Créer le chatbot",
+      "languageHint": "La langue dans laquelle les gens écrivent. Vous pourrez ensuite adapter les textes et les couleurs sous Configuration."
     },
     "confirmation": {
       "cancel": "Annuler",
@@ -507,6 +508,15 @@
     }
   },
   "knowledge": {
+    "recrawl": {
+      "label": "Vérifier les changements",
+      "off": "Jamais",
+      "every7": "Chaque semaine",
+      "every14": "Toutes les 2 semaines",
+      "every30": "Chaque mois",
+      "hint": "Nous relisons vos sites et n'apprenons que ce qui a changé. Les pages inchangées ne coûtent rien.",
+      "saved": "Enregistré"
+    },
     "overview": {
         "stripTitle": "Les dates que votre chatbot connaît",
         "stripSub": "Dates vérifiées de vos documents pour les 14 prochains jours. Quand on demande « quand est le prochain… », voici les réponses.",
@@ -650,6 +660,7 @@
     }
   },
   "pages": {
+    "configureTitle": "Configuration",
     "chatbots": "Chaque chatbot répond aux questions à partir du site et des documents d’une organisation.",
     "insights": "À quelle fréquence on interroge votre chatbot, et ce que les gens voulaient savoir.",
     "subscription": "Votre solde prépayé paie les réponses du chat et l’apprentissage de nouveaux contenus.",
@@ -659,5 +670,132 @@
     "configure": "Comment votre chatbot parle et à quoi il ressemble sur votre site.",
     "installTitle": "Intégrer",
     "install": "Ajoutez le chatbot à votre site avec une seule ligne de code."
+  },
+  "configure": {
+    "tabs": {
+      "conversation": "Conversation",
+      "look": "Apparence"
+    },
+    "unsaved": "Vous avez des modifications non enregistrées",
+    "discard": "Annuler",
+    "save": "Enregistrer",
+    "saved": "Modifications enregistrées",
+    "preview": "Aperçu — essayez-le",
+    "remove": "Supprimer",
+    "basics": {
+      "title": "Bases",
+      "name": "Nom",
+      "nameHint": "Affiché uniquement ici dans le tableau de bord.",
+      "language": "Langue",
+      "languageHint": "La langue dans laquelle les gens écrivent. Vos règles sont appliquées dans cette langue."
+    },
+    "welcome": {
+      "title": "Première impression",
+      "sub": "Ce que les gens voient en ouvrant le chat.",
+      "intro": "Message de bienvenue",
+      "starters": "Questions suggérées",
+      "startersHint": "Boutons affichés sous le message de bienvenue, pour poser une question en un clic.",
+      "starterPlaceholder": "p. ex. Quand a lieu le prochain ramassage du papier ?",
+      "addStarter": "Ajouter une question",
+      "placeholder": "Texte dans le champ de saisie vide"
+    },
+    "tone": {
+      "title": "Sa façon de parler",
+      "sub": "Choisissez un point de départ, puis adaptez le texte avec vos mots.",
+      "presets": "Tons prédéfinis",
+      "formal": "Poli et formel",
+      "formalDesc": "Factuel, vouvoie les gens.",
+      "friendly": "Amical",
+      "friendlyDesc": "Chaleureux et décontracté, explique simplement.",
+      "brief": "Court et factuel",
+      "briefDesc": "Une phrase ou une courte liste.",
+      "persona": "Personnalité et instructions",
+      "personaHint": "Des mots simples fonctionnent le mieux, p. ex. « Renvoie vers le service des constructions pour les permis de construire. »",
+      "thinking": "Messages pendant la réflexion",
+      "thinkingHint": "Un par ligne. L'un d'eux s'affiche pendant la rédaction d'une réponse."
+    },
+    "advanced": {
+      "title": "Avancé",
+      "sub": "Le texte d'instructions complet que reçoit le chatbot.",
+      "warning": "Ne modifiez ceci que si vous savez ce que cela fait. {persona} est remplacé par la personnalité ci-dessus, {fine_tune_instructions} par vos règles.",
+      "template": "Modèle d'instructions",
+      "missingPersona": "{persona} manque, la personnalité ci-dessus est donc ignorée.",
+      "restore": "Rétablir la valeur par défaut"
+    },
+    "colors": {
+      "title": "Couleurs",
+      "sub": "Vos couleurs de marque. Cliquez sur une couleur pour la modifier.",
+      "name": "Nom de la couleur",
+      "add": "Ajouter une couleur",
+      "newColor": "Nouvelle couleur",
+      "base": {
+        "c_primary": "Couleur principale",
+        "c_secondary": "Fond clair",
+        "c_black": "Texte",
+        "c_white": "Blanc"
+      },
+      "allReadable": "Tous les textes sont bien lisibles.",
+      "hardToRead": "Certains textes risquent d'être difficiles à lire. Choisissez des couleurs plus contrastées pour :",
+      "pairs": {
+        "header": "En-tête",
+        "botMessage": "Messages du chatbot",
+        "userMessage": "Messages des visiteurs",
+        "input": "Champ de saisie",
+        "sendButton": "Bouton d'envoi",
+        "starters": "Questions suggérées"
+      },
+      "usage": "Choisir où chaque couleur est utilisée",
+      "groups": {
+        "header": "En-tête",
+        "messages": "Messages",
+        "input": "Champ de saisie",
+        "starters": "Questions suggérées"
+      },
+      "labels": {
+        "header_background_color": "Fond de l'en-tête",
+        "header_text_color": "Texte de l'en-tête",
+        "reset_button_color": "Bouton recommencer",
+        "reset_button_icon_color": "Icône recommencer",
+        "close_button_background_color": "Bouton fermer",
+        "close_button_icon_color": "Icône fermer",
+        "share_button_color": "Bouton partager",
+        "share_button_icon_color": "Icône partager",
+        "chat_background_color": "Fond du chat",
+        "bot_message_background_color": "Bulle du chatbot",
+        "bot_message_text_color": "Texte du chatbot",
+        "user_message_background_color": "Bulle du visiteur",
+        "user_message_text_color": "Texte du visiteur",
+        "input_background_color": "Fond de saisie",
+        "input_text_color": "Texte de saisie",
+        "input_focus_ring_color": "Contour pendant la saisie",
+        "send_button_background_color": "Bouton d'envoi",
+        "send_button_text_color": "Icône d'envoi",
+        "starter_background_color": "Fond du bouton",
+        "starter_text_color": "Texte du bouton"
+      }
+    },
+    "header": {
+      "title": "Fenêtre de chat",
+      "chatTitle": "Titre",
+      "chatTitleHint": "Affiché en haut du chat. Laissez vide pour n'afficher que le logo.",
+      "logo": "Logo",
+      "logoHint": "Un PNG ou SVG à fond transparent convient le mieux.",
+      "reset": "Afficher un bouton pour recommencer la conversation",
+      "share": "Afficher un bouton pour partager la conversation"
+    },
+    "launcher": {
+      "title": "Bouton de chat",
+      "sub": "Le bouton rond dans le coin de votre site qui ouvre le chat.",
+      "enabled": "Afficher le bouton de chat sur mon site",
+      "disabledHint": "Le chat est masqué sur votre site. Le code installé peut rester en place.",
+      "color": "Couleur",
+      "icon": "Icône",
+      "iconHint": "Facultatif. Sans icône, une bulle de dialogue s'affiche."
+    },
+    "image": {
+      "choose": "Choisir une image",
+      "replace": "Remplacer",
+      "remove": "Supprimer"
+    }
   }
 }

@@ -12,6 +12,7 @@ Key changes:
 - Citations extracted from grounding_metadata and returned to the frontend
 """
 import os
+import re
 from datetime import date, timedelta
 
 from celery import shared_task
@@ -142,12 +143,33 @@ def _build_system_instruction(tenant_config: dict, fine_tune_rules: list) -> str
         for rule in fine_tune_rules
     ])
 
+    persona = tenant_config.get("system_persona") or ""
+    template = _strip_legacy_placeholders(tenant_config.get("rag_prompt_template") or "")
+    # The persona and rules must reach the model even if someone edited them out
+    if "{persona}" not in template:
+        template = "{persona}\n\n" + template
+    if "{fine_tune_instructions}" not in template:
+        template = template.replace("{persona}", "{persona}\n\n{fine_tune_instructions}", 1)
+
     system_text = (
-        tenant_config.get("rag_prompt_template", "")
-        .replace("{persona}", tenant_config.get("system_persona", ""))
+        template
+        .replace("{persona}", persona)
         .replace("{fine_tune_instructions}", fine_tune_instructions)
     )
-    return system_text
+    return re.sub(r"\n{3,}", "\n\n", system_text).strip()
+
+
+# Older templates carried LangChain-era slots; documents now come through
+# File Search and the question is the user turn, so these would reach the
+# model as literal text.
+_LEGACY_CONTEXT = re.compile(r"<context>\s*\{context\}\s*</context>", re.IGNORECASE)
+_LEGACY_INPUT_LINE = re.compile(r"^[^\n{]*\{input\}[^\n]*$", re.MULTILINE)
+
+
+def _strip_legacy_placeholders(template: str) -> str:
+    template = _LEGACY_CONTEXT.sub("", template)
+    template = _LEGACY_INPUT_LINE.sub("", template)
+    return template.replace("{context}", "")
 
 
 def _extract_citations(response) -> list[dict]:

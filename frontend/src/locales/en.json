@@ -485,15 +485,16 @@
   },
   "modals": {
     "createTenant": {
-      "title": "Create New Tenant",
-      "name": "Tenant Name",
+      "title": "New chatbot",
+      "name": "Name",
       "introMessage": "Intro Message",
       "systemPersona": "System Persona",
       "ragPromptTemplate": "RAG Prompt Template",
       "docLanguage": "Document Language",
       "translationTarget": "Translation Target",
       "cancel": "Cancel",
-      "create": "Create"
+      "create": "Create chatbot",
+      "languageHint": "The language residents write in. You can change texts and colours afterwards under Configure."
     },
     "confirmation": {
       "cancel": "Cancel",
@@ -507,6 +508,15 @@
     }
   },
   "knowledge": {
+    "recrawl": {
+      "label": "Check for changes",
+      "off": "Never",
+      "every7": "Every week",
+      "every14": "Every 2 weeks",
+      "every30": "Every month",
+      "hint": "We re-read your websites and only learn what changed. Unchanged pages cost nothing.",
+      "saved": "Saved"
+    },
     "overview": {
         "stripTitle": "Dates your chatbot knows",
         "stripSub": "Verified dates from your documents for the next 14 days. Residents asking “when is the next…” get these answers.",
@@ -650,6 +660,7 @@
     }
   },
   "pages": {
+    "configureTitle": "Configure",
     "chatbots": "Each chatbot answers questions from one organisation’s website and documents.",
     "insights": "How often people ask your chatbot, and what they wanted to know.",
     "subscription": "Your prepaid balance pays for chat answers and for learning new content.",
@@ -659,5 +670,132 @@
     "configure": "How your chatbot talks and how it looks on your website.",
     "installTitle": "Install",
     "install": "Add the chatbot to your website with one line of code."
+  },
+  "configure": {
+    "tabs": {
+      "conversation": "Conversation",
+      "look": "Look"
+    },
+    "unsaved": "You have unsaved changes",
+    "discard": "Discard",
+    "save": "Save changes",
+    "saved": "Changes saved",
+    "preview": "Preview — try it out",
+    "remove": "Remove",
+    "basics": {
+      "title": "Basics",
+      "name": "Name",
+      "nameHint": "Only shown here in the dashboard.",
+      "language": "Language",
+      "languageHint": "The language residents write in. Your rules are applied in this language."
+    },
+    "welcome": {
+      "title": "First impression",
+      "sub": "What people see when they open the chat.",
+      "intro": "Welcome message",
+      "starters": "Suggested questions",
+      "startersHint": "Buttons shown under the welcome message, so people can ask with one click.",
+      "starterPlaceholder": "e.g. When is the next paper collection?",
+      "addStarter": "Add question",
+      "placeholder": "Text in the empty input field"
+    },
+    "tone": {
+      "title": "How it talks",
+      "sub": "Pick a starting point, then adjust the text in your own words.",
+      "presets": "Tone presets",
+      "formal": "Polite and formal",
+      "formalDesc": "Factual, addresses people formally.",
+      "friendly": "Friendly",
+      "friendlyDesc": "Warm and casual, explains simply.",
+      "brief": "Short and factual",
+      "briefDesc": "One sentence or a short list.",
+      "persona": "Personality and instructions",
+      "personaHint": "Plain words work best, e.g. “Refer to the town office for anything about building permits.”",
+      "thinking": "Messages while it thinks",
+      "thinkingHint": "One per line. One of them is shown while an answer is being written."
+    },
+    "advanced": {
+      "title": "Advanced",
+      "sub": "The full instruction text the chatbot receives.",
+      "warning": "Only change this if you know what it does. {persona} is replaced with the personality above, {fine_tune_instructions} with your custom rules.",
+      "template": "Instruction template",
+      "missingPersona": "{persona} is missing, so the personality above is ignored.",
+      "restore": "Restore default"
+    },
+    "colors": {
+      "title": "Colours",
+      "sub": "Your brand colours. Click a colour to change it.",
+      "name": "Colour name",
+      "add": "Add colour",
+      "newColor": "New colour",
+      "base": {
+        "c_primary": "Main colour",
+        "c_secondary": "Light background",
+        "c_black": "Text",
+        "c_white": "White"
+      },
+      "allReadable": "All text is easy to read.",
+      "hardToRead": "Some text may be hard to read. Pick colours with more contrast for:",
+      "pairs": {
+        "header": "Header",
+        "botMessage": "Chatbot messages",
+        "userMessage": "Visitor messages",
+        "input": "Input field",
+        "sendButton": "Send button",
+        "starters": "Suggested questions"
+      },
+      "usage": "Choose where each colour is used",
+      "groups": {
+        "header": "Header",
+        "messages": "Messages",
+        "input": "Input field",
+        "starters": "Suggested questions"
+      },
+      "labels": {
+        "header_background_color": "Header background",
+        "header_text_color": "Header text",
+        "reset_button_color": "Restart button",
+        "reset_button_icon_color": "Restart icon",
+        "close_button_background_color": "Close button",
+        "close_button_icon_color": "Close icon",
+        "share_button_color": "Share button",
+        "share_button_icon_color": "Share icon",
+        "chat_background_color": "Chat background",
+        "bot_message_background_color": "Chatbot bubble",
+        "bot_message_text_color": "Chatbot text",
+        "user_message_background_color": "Visitor bubble",
+        "user_message_text_color": "Visitor text",
+        "input_background_color": "Input background",
+        "input_text_color": "Input text",
+        "input_focus_ring_color": "Input outline when typing",
+        "send_button_background_color": "Send button",
+        "send_button_text_color": "Send icon",
+        "starter_background_color": "Button background",
+        "starter_text_color": "Button text"
+      }
+    },
+    "header": {
+      "title": "Chat window",
+      "chatTitle": "Title",
+      "chatTitleHint": "Shown at the top of the chat. Leave empty to show only the logo.",
+      "logo": "Logo",
+      "logoHint": "PNG or SVG with a transparent background works best.",
+      "reset": "Show a button to start a new conversation",
+      "share": "Show a button to share the conversation"
+    },
+    "launcher": {
+      "title": "Chat button",
+      "sub": "The round button in the corner of your website that opens the chat.",
+      "enabled": "Show the chat button on my website",
+      "disabledHint": "The chat is hidden on your website. The installed code can stay in place.",
+      "color": "Colour",
+      "icon": "Icon",
+      "iconHint": "Optional. Without an icon, a speech bubble is shown."
+    },
+    "image": {
+      "choose": "Choose image",
+      "replace": "Replace",
+      "remove": "Remove"
+    }
   }
 }

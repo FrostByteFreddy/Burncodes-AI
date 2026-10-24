@@ -24,11 +24,9 @@
 
 .form-field {
   display: block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--surface-muted);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--surface-heading);
   margin-bottom: 6px;
 }
 
@@ -47,8 +45,8 @@
 }
 
 .form-input:focus {
-  border-color: var(--brand-indigo);
-  box-shadow: 0 0 0 3px rgba(10, 31, 171, 0.15);
+  border-color: var(--interactive);
+  box-shadow: var(--focus-ring);
 }
 
 .form-input--mono {

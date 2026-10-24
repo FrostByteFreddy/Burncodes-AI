@@ -26,7 +26,15 @@
             <p class="knowledge-panel__sub">{{ $t('knowledge.crawls.sub') }}</p>
           </div>
         </div>
+        <div v-if="crawlingJobs.length" class="krecrawl">
+          <label for="krecrawl" class="krecrawl__label">{{ $t('knowledge.recrawl.label') }}</label>
+          <select id="krecrawl" v-model="recrawl" class="krecrawl__select" :disabled="savingRecrawl" aria-describedby="krecrawl-hint">
+            <option value="off">{{ $t('knowledge.recrawl.off') }}</option>
+            <option v-for="n in [7, 14, 30]" :key="n" :value="String(n)">{{ $t(`knowledge.recrawl.every${n}`) }}</option>
+          </select>
+        </div>
       </div>
+      <p v-if="crawlingJobs.length" id="krecrawl-hint" class="krecrawl__hint">{{ $t('knowledge.recrawl.hint') }}</p>
 
       <template v-if="shownJobs.length">
         <ol class="kjobs">
@@ -288,6 +296,25 @@ const onJobChanged = async () => {
   await loadLogs();
 };
 
+// ── Automatic re-crawl ─────────────────────────────────────────────────
+const savingRecrawl = ref(false);
+const recrawl = computed({
+  get: () => {
+    const tnt = tenantsStore.currentTenant;
+    return tnt?.auto_recrawl ? String(tnt.recrawl_interval_days || 7) : 'off';
+  },
+  set: async (v) => {
+    savingRecrawl.value = true;
+    try {
+      await tenantsStore.updateTenant(tenantId.value, v === 'off'
+        ? { auto_recrawl: false }
+        : { auto_recrawl: true, recrawl_interval_days: Number(v) });
+      addToast(t('knowledge.recrawl.saved'), 'success');
+    } catch { addToast(t('tenant.settings.actions.saveFailed'), 'error'); }
+    finally { savingRecrawl.value = false; }
+  },
+});
+
 // ── Uploaded files ─────────────────────────────────────────────────────
 const fileName = (s) => (s.source_location || '').split('/').pop().split('?')[0].replace(/^[0-9a-f]{32}_/, '');
 const fileExt = (s) => { const n = fileName(s); return n.includes('.') ? n.split('.').pop().toLowerCase() : 'file'; };
@@ -314,6 +341,15 @@ const handleDelete = async () => {
 .ksummary { margin-top: 10px; font-size: var(--text-sm); color: var(--surface-text); }
 
 .kjobs { list-style: none; padding: 0; margin: 0; }
+.krecrawl { display: flex; align-items: center; gap: 10px; }
+.krecrawl__label { font-size: var(--text-sm); font-weight: 600; color: var(--surface-text); }
+.krecrawl__select {
+  padding: 7px 32px 7px 12px; border-radius: var(--radius-md);
+  background-color: var(--surface-2); border: 1px solid var(--surface-3);
+  color: var(--surface-heading); font: inherit; font-size: var(--text-sm); cursor: pointer;
+}
+.krecrawl__select:hover { border-color: var(--surface-muted); }
+.krecrawl__hint { margin: -6px 0 12px; font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); }
 .kjobs__more {
   align-self: center; padding: 6px 14px; border-radius: var(--radius-pill);
   border: 1px solid var(--surface-3); background: none; cursor: pointer;
