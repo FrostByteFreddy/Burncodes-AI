@@ -148,8 +148,8 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload)
 </script>
 
 <style scoped>
-/* Settings get a readable column; the preview takes every remaining pixel */
-.cfg-layout { display: grid; grid-template-columns: minmax(0, 600px) minmax(360px, 1fr); gap: 32px; align-items: start; }
+/* Settings and preview share the width evenly */
+.cfg-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; align-items: start; }
 .cfg-form { min-width: 0; }
 
 .cfg-savebar {
