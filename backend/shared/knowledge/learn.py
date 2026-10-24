@@ -19,6 +19,7 @@ from app.billing.services import BillingService
 from app.database.supabase_client import supabase
 from app.gemini_store.service import GeminiStoreService
 from app.knowledge import jobs
+from app.ai_models import count_tokens
 from app.knowledge.markdown import estimate_tokens, normalize_markdown, pdf_text
 from app.knowledge.pdf_crosscheck import crosscheck_schedules
 from app.knowledge.understanding import (
@@ -240,7 +241,10 @@ def _index(tenant_id: str, source: dict, result: dict) -> tuple[list[str], int]:
 
     with ThreadPoolExecutor(max_workers=_UPLOAD_THREADS) as pool:
         names = list(pool.map(upload, docs))
-    return names, sum(estimate_tokens(text) for _, text in docs)
+    texts = [text for _, text in docs]
+    # exact embedding tokens; the estimate only if count_tokens can't be reached
+    exact = count_tokens(texts)
+    return names, exact if exact is not None else sum(estimate_tokens(t) for t in texts)
 
 
 def learn_source(source_id: int, job_id: int | None = None) -> None:

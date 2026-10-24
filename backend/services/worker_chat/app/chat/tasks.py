@@ -23,7 +23,7 @@ from app.database.supabase_client import fetch_all, supabase
 from app.billing.services import BillingService
 from app.logging_config import error_logger
 from app.prompts import FINE_TUNE_RULE_PROMPT
-from app.ai_models import CHAT_GEMINI_MODEL
+from app.ai_models import CHAT_GEMINI_MODEL, billable_tokens
 
 
 # Number of previous exchanges (user + AI message pairs) sent as context.
@@ -390,8 +390,8 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         # --- Token usage ---
         usage = getattr(response, "usage_metadata", None)
         if usage:
-            input_tokens = getattr(usage, "prompt_token_count", 0) or 0
-            output_tokens = getattr(usage, "candidates_token_count", 0) or 0
+            # includes File Search context (input) and thinking (output), as billed
+            input_tokens, output_tokens = billable_tokens(usage)
         else:
             # Fallback estimation
             input_tokens = len(query + str(chat_history_json)) // 4

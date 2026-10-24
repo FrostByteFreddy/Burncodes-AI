@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 from google import genai
 from google.genai import types
 
-from app.ai_models import RATES, REVIEW_GEMINI_MODEL
+from app.ai_models import RATES, REVIEW_GEMINI_MODEL, billable_tokens
 from app.database.supabase_client import fetch_all, supabase
 from app.logging_config import error_logger
 
@@ -116,9 +116,7 @@ def review_transcript(logs: list[dict], first_new: int, language: str) -> tuple[
             max_output_tokens=4096,
         ),
     )
-    usage = getattr(response, "usage_metadata", None)
-    in_tok = getattr(usage, "prompt_token_count", 0) or 0
-    out_tok = getattr(usage, "candidates_token_count", 0) or 0
+    in_tok, out_tok = billable_tokens(getattr(response, "usage_metadata", None))
     try:
         raw = json.loads(response.text or "").get("findings") or []
     except (json.JSONDecodeError, TypeError, AttributeError):

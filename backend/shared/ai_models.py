@@ -57,3 +57,38 @@ RATES = {
         "output": _rate("EXTRACTION_RATE_CHF_PER_1M_OUTPUT", 17.5),
     },
 }
+
+
+def billable_tokens(usage) -> tuple[int, int]:
+    """
+    (input, output) tokens as Google bills them, from a response's usage_metadata.
+    Input includes what tools pulled in (File Search context); output includes
+    the model's thinking, which is billed at the output rate.
+    """
+    if usage is None:
+        return 0, 0
+    get = lambda name: getattr(usage, name, 0) or 0
+    return (get("prompt_token_count") + get("tool_use_prompt_token_count"),
+            get("candidates_token_count") + get("thoughts_token_count"))
+
+
+_count_client = None
+
+
+def count_tokens(texts: list[str], model: str | None = None) -> int | None:
+    """
+    Exact token count from Gemini's count_tokens endpoint (free, no generation).
+    Returns None if it can't be reached, so callers fall back to an estimate.
+    """
+    global _count_client
+    texts = [t for t in texts if t]
+    if not texts:
+        return 0
+    try:
+        if _count_client is None:
+            from google import genai
+            _count_client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"], http_options={"timeout": 30_000})
+        return _count_client.models.count_tokens(
+            model=model or EMBEDDING_GEMINI_MODEL, contents=texts).total_tokens
+    except Exception:
+        return None

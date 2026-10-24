@@ -29,6 +29,7 @@ from app.data_processing.soup_extractor import HEADERS, extract_internal_links, 
 from app.database.supabase_client import supabase
 from app.gemini_store.service import INDEXABLE_FILE_EXTENSIONS, UNSUPPORTED_EXTENSIONS
 from app.knowledge import jobs
+from app.ai_models import INDEXING_GEMINI_MODEL, count_tokens
 from app.knowledge.markdown import content_hash, estimate_tokens, html_to_markdown, pdf_page_count
 from app.logging_config import error_logger
 from app.models.database import CrawlingStatus, SourceType
@@ -322,6 +323,9 @@ def _scan_page(tenant_id: str, url: str, job: dict, depth: int, parent_url: str 
     if info is not None and title:
         info["title"] = title[:200]
     tokens = estimate_tokens(markdown)
+    if tokens >= MIN_CONTENT_TOKENS:
+        # exact size for the cost estimate (free call); the guess only as fallback
+        tokens = count_tokens([markdown], INDEXING_GEMINI_MODEL) or tokens
     if tokens < MIN_CONTENT_TOKENS:
         _record_error(tenant_id, url, SourceType.URL.value, job["id"], 204)
         return "empty"

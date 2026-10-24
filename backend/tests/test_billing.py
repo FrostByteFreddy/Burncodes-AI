@@ -40,3 +40,22 @@ class TestCalculateCost:
 
 
 import pytest
+
+
+def test_billable_tokens_include_thinking_and_tool_context():
+    from types import SimpleNamespace
+    from app.ai_models import billable_tokens
+    usage = SimpleNamespace(prompt_token_count=1000, tool_use_prompt_token_count=3000,
+                            candidates_token_count=200, thoughts_token_count=800, cached_content_token_count=0)
+    assert billable_tokens(usage) == (4000, 1000)
+    # older responses without the extra fields
+    assert billable_tokens(SimpleNamespace(prompt_token_count=10, candidates_token_count=5)) == (10, 5)
+    assert billable_tokens(None) == (0, 0)
+
+
+def test_count_tokens_falls_back_to_none_when_unreachable(monkeypatch):
+    from app import ai_models
+    monkeypatch.setattr(ai_models, "_count_client", type("C", (), {"models": type("M", (), {
+        "count_tokens": staticmethod(lambda **k: (_ for _ in ()).throw(RuntimeError("offline")))})()})())
+    assert ai_models.count_tokens(["hello"]) is None
+    assert ai_models.count_tokens([]) == 0

@@ -18,7 +18,7 @@ from datetime import date
 from google import genai
 from google.genai import types
 
-from app.ai_models import INDEXING_GEMINI_MODEL
+from app.ai_models import INDEXING_GEMINI_MODEL, billable_tokens
 from app.knowledge.markdown import number_lines, slice_lines
 from app.logging_config import error_logger
 
@@ -170,9 +170,7 @@ def _call(contents: list, schema: dict) -> tuple[dict, int, int]:
             max_output_tokens=_MAX_OUTPUT_TOKENS,
         ),
     )
-    usage = getattr(response, "usage_metadata", None)
-    in_tok = getattr(usage, "prompt_token_count", 0) or 0
-    out_tok = getattr(usage, "candidates_token_count", 0) or 0
+    in_tok, out_tok = billable_tokens(getattr(response, "usage_metadata", None))
     finish = str(getattr((response.candidates or [None])[0], "finish_reason", "") or "")
     if "MAX_TOKENS" in finish:
         raise UnderstandingFailed(f"answer truncated after {out_tok} output tokens")
