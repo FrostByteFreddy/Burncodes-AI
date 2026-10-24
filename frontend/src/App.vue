@@ -29,7 +29,7 @@
       <router-view />
     </template>
 
-    <ToastContainer />
+    <ToastContainer :with-sidebar="layout === 'default'" />
     <SessionExpiredModal v-if="authStore.sessionExpired" />
     <CreateTenantModal v-if="showCreateModal" @close="showCreateModal = false" />
   </div>

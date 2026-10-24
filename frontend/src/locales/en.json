@@ -1,5 +1,6 @@
 {
   "common": {
+    "close": "Close",
     "loading": "Loading...",
     "error": "Error",
     "success": "Success"
