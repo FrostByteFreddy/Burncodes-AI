@@ -435,6 +435,7 @@
     }
   },
   "sidebar": {
+    "settings": "Einstellungen",
     "configure": "Einstellungen",
     "insights": "Auswertung",
     "overview": "Übersicht",
@@ -957,6 +958,76 @@
       "questions": "{n} Fragen",
       "flagged": "zu prüfen",
       "close": "Gespräch schliessen"
+    }
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "lede": "Ihr Konto, die Abrechnung und was automatisch läuft.",
+    "save": "Änderungen speichern",
+    "saved": "Gespeichert",
+    "sections": {
+      "profile": "Profil",
+      "security": "Sicherheit",
+      "billing": "Abrechnung",
+      "schedules": "Zeitpläne",
+      "danger": "Konto löschen"
+    },
+    "profile": {
+      "title": "Profil",
+      "sub": "Wie Sie im Dashboard erscheinen.",
+      "emailHint": "Ihre Anmeldeadresse. Kontaktieren Sie uns, um sie zu ändern.",
+      "language": "Sprache des Dashboards",
+      "languageHint": "Gilt auch für Prüfergebnisse und die Texte neuer Chatbots."
+    },
+    "security": {
+      "passwordTitle": "Passwort",
+      "passwordHint": "Mindestens 8 Zeichen.",
+      "sessionsTitle": "Angemeldete Geräte",
+      "sessionsSub": "Meldet Sie auf allen Geräten und Browsern ab, auch auf diesem. Nutzen Sie dies, wenn Sie sich irgendwo angemeldet haben, dem Sie nicht mehr trauen.",
+      "signOutAll": "Überall abmelden",
+      "signOutFailed": "Abmelden auf allen Geräten hat nicht geklappt. Versuchen Sie es erneut."
+    },
+    "billing": {
+      "balance": "Guthaben",
+      "portal": "Zahlungsmittel und Rechnungen",
+      "answers": "Antworten",
+      "learning": "Lernen",
+      "reviews": "Prüfungen",
+      "total": "Total",
+      "spentHint": "Alles, was seit der Kontoeröffnung ausgegeben wurde.",
+      "topUpTitle": "Aufladen",
+      "topUpSub": "Ihr Guthaben bezahlt Antworten, Lernen und Prüfungen. Es verfällt nie.",
+      "once": "Einmalig",
+      "monthly": "Jeden Monat",
+      "custom": "Anderer Betrag",
+      "onceHint": "Mindestens CHF 5.",
+      "monthlyHint": "Wird monatlich belastet, bis Sie im Zahlungsportal kündigen.",
+      "pay": "CHF {amount} bezahlen",
+      "payMonthly": "CHF {amount} pro Monat bezahlen",
+      "historyTitle": "Zahlungen",
+      "noHistory": "Noch keine Zahlungen.",
+      "invoice": "Rechnung"
+    },
+    "schedules": {
+      "title": "Zeitpläne",
+      "sub": "Wie oft jeder Chatbot seine Websites prüft und seine Gespräche auswertet.",
+      "none": "Noch keine Chatbots.",
+      "chatbot": "Chatbot",
+      "websites": "Websites prüfen",
+      "reviews": "Gespräche prüfen",
+      "off": "Aus",
+      "switchedOff": "ausgeschaltet",
+      "reviewNote": "Jedes abgeschlossene Gespräch wird einmal geprüft und pro Gespräch verrechnet. Ergebnisse erscheinen in der Auswertung."
+    },
+    "danger": {
+      "title": "Konto löschen",
+      "sub": "Das kann nicht rückgängig gemacht werden. Beim Löschen Ihres Kontos werden entfernt:",
+      "chatbots": "alle Chatbots mit ihrem Wissen und ihren Gesprächen, sofort von allen Websites",
+      "balance": "Ihr verbleibendes Guthaben, das nicht zurückerstattet wird",
+      "subscription": "eine monatliche Aufladung, die gekündigt wird",
+      "typeEmail": "Geben Sie {email} zur Bestätigung ein",
+      "delete": "Konto endgültig löschen",
+      "failed": "Das Konto konnte nicht gelöscht werden."
     }
   }
 }

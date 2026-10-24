@@ -31,21 +31,18 @@ const routes = [
 
   },
   {
-    path: "/profile",
-    name: "Profile",
-    component: () => import("../views/Profile.vue"),
+    path: "/settings/:section?",
+    name: "AccountSettings",
+    component: () => import("../views/AccountSettings.vue"),
     meta: { requiresAuth: true },
   },
+  // Old addresses; Stripe sessions started before the move return to /subscription
+  { path: "/profile", redirect: { name: "AccountSettings", params: { section: "profile" } } },
+  { path: "/subscription", redirect: (to) => ({ name: "AccountSettings", params: { section: "billing" }, query: to.query }) },
   {
     path: "/manage-tenants",
     name: "ManageTenants",
     component: () => import("../views/ManageTenants.vue"),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: "/subscription",
-    name: "Subscription",
-    component: () => import("../views/Subscription.vue"),
     meta: { requiresAuth: true },
   },
   {

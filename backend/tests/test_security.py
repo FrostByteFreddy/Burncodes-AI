@@ -9,6 +9,7 @@ import io
 import os
 import socket
 import uuid
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -297,3 +298,49 @@ def test_safe_client_blocks_redirect_to_internal(monkeypatch):
     with url_guard.safe_client(transport=httpx.MockTransport(handler), follow_redirects=True) as c:
         with pytest.raises(url_guard.UnsafeURLError):
             c.get("https://example.com/")
+
+
+# ── Account deletion ─────────────────────────────────────────────────────────
+
+def test_delete_account_needs_matching_email_and_password(client, auth_as, monkeypatch):
+    from app.auth import routes
+    deleted = MagicMock()
+    monkeypatch.setattr(routes.supabase.auth.admin, "delete_user", deleted)
+
+    resp = client.delete("/api/auth/account", headers=auth_as, json={"confirm_email": "someone@else.com", "password": "pw"})
+    assert resp.status_code == 400
+
+    def bad_password(email, password):
+        raise RuntimeError("Invalid login credentials")
+    monkeypatch.setattr(routes, "_verify_password", bad_password)
+    resp = client.delete("/api/auth/account", headers=auth_as, json={"confirm_email": "OWNER@example.com", "password": "nope"})
+    assert resp.status_code == 401
+    deleted.assert_not_called()
+
+
+def test_delete_account_removes_chatbots_and_user(client, auth_as, monkeypatch, user):
+    from app.auth import routes
+    monkeypatch.setattr(routes, "_verify_password", lambda email, password: None)
+    calls = []
+
+    class Q:
+        def __init__(self, table):
+            self.table = table
+        def __getattr__(self, name):
+            def step(*a, **k):
+                if name == "delete":
+                    calls.append(("delete", self.table))
+                return self
+            return step
+        def execute(self):
+            data = [{"id": "t1", "gemini_file_store_name": None}] if self.table == "tenants" else []
+            return SimpleNamespace(data=data)
+
+    monkeypatch.setattr(routes.supabase, "table", lambda name: Q(name))
+    deleted = MagicMock()
+    monkeypatch.setattr(routes.supabase.auth.admin, "delete_user", deleted)
+
+    resp = client.delete("/api/auth/account", headers=auth_as, json={"confirm_email": user.email, "password": "pw"})
+    assert resp.status_code == 200
+    assert ("delete", "tenants") in calls
+    deleted.assert_called_once_with(user.id)

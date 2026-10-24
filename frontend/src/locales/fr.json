@@ -435,6 +435,7 @@
     }
   },
   "sidebar": {
+    "settings": "Paramètres",
     "configure": "Configuration",
     "insights": "Statistiques",
     "overview": "Aperçu",
@@ -957,6 +958,76 @@
       "questions": "{n} questions",
       "flagged": "à vérifier",
       "close": "Fermer la conversation"
+    }
+  },
+  "settings": {
+    "title": "Paramètres",
+    "lede": "Votre compte, la facturation et ce qui s'exécute automatiquement.",
+    "save": "Enregistrer",
+    "saved": "Enregistré",
+    "sections": {
+      "profile": "Profil",
+      "security": "Sécurité",
+      "billing": "Facturation",
+      "schedules": "Planification",
+      "danger": "Supprimer le compte"
+    },
+    "profile": {
+      "title": "Profil",
+      "sub": "Comment vous apparaissez dans le tableau de bord.",
+      "emailHint": "Votre adresse de connexion. Contactez-nous pour la modifier.",
+      "language": "Langue du tableau de bord",
+      "languageHint": "Aussi utilisée pour les résultats de relecture et les textes des nouveaux chatbots."
+    },
+    "security": {
+      "passwordTitle": "Mot de passe",
+      "passwordHint": "Au moins 8 caractères.",
+      "sessionsTitle": "Appareils connectés",
+      "sessionsSub": "Vous déconnecte de tous les appareils et navigateurs, y compris celui-ci. Utile si vous vous êtes connecté quelque part où vous n'avez plus confiance.",
+      "signOutAll": "Se déconnecter partout",
+      "signOutFailed": "La déconnexion globale a échoué. Réessayez."
+    },
+    "billing": {
+      "balance": "Solde",
+      "portal": "Moyens de paiement et factures",
+      "answers": "Réponses",
+      "learning": "Apprentissage",
+      "reviews": "Relectures",
+      "total": "Total",
+      "spentHint": "Tout ce qui a été dépensé depuis l'ouverture du compte.",
+      "topUpTitle": "Recharger",
+      "topUpSub": "Votre solde paie les réponses, l'apprentissage et les relectures. Il n'expire jamais.",
+      "once": "Une fois",
+      "monthly": "Chaque mois",
+      "custom": "Autre montant",
+      "onceHint": "Minimum CHF 5.",
+      "monthlyHint": "Prélevé chaque mois jusqu'à résiliation dans le portail de paiement.",
+      "pay": "Payer CHF {amount}",
+      "payMonthly": "Payer CHF {amount} par mois",
+      "historyTitle": "Paiements",
+      "noHistory": "Aucun paiement pour l'instant.",
+      "invoice": "Facture"
+    },
+    "schedules": {
+      "title": "Planification",
+      "sub": "À quelle fréquence chaque chatbot vérifie ses sites et relit ses conversations.",
+      "none": "Aucun chatbot pour l'instant.",
+      "chatbot": "Chatbot",
+      "websites": "Vérifier les sites",
+      "reviews": "Relire les conversations",
+      "off": "Désactivé",
+      "switchedOff": "désactivé",
+      "reviewNote": "Chaque conversation terminée est relue une fois et facturée à l'unité. Les résultats apparaissent dans les statistiques."
+    },
+    "danger": {
+      "title": "Supprimer le compte",
+      "sub": "Cette action est irréversible. La suppression de votre compte retire :",
+      "chatbots": "tous les chatbots, leurs connaissances et leurs conversations, immédiatement de tous les sites",
+      "balance": "votre solde restant, qui n'est pas remboursé",
+      "subscription": "toute recharge mensuelle, qui est résiliée",
+      "typeEmail": "Saisissez {email} pour confirmer",
+      "delete": "Supprimer définitivement le compte",
+      "failed": "Le compte n'a pas pu être supprimé."
     }
   }
 }

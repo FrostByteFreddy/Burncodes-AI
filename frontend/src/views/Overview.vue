@@ -14,8 +14,8 @@
 
     <div v-if="!data && loading" class="ov" aria-busy="true">
       <div class="ov-controls">
-        <div v-for="n in 3" :key="n" class="ov-control">
-          <div class="ghost-stack" style="flex: 1"><span class="ghost ghost--title" :style="{ width: `${260 - n * 30}px` }"></span><span class="ghost ghost--line" style="width: 60%"></span></div>
+        <div class="ov-control">
+          <div class="ghost-stack" style="flex: 1"><span class="ghost ghost--title" style="width: 220px"></span><span class="ghost ghost--line" style="width: 60%"></span></div>
           <span class="ghost" style="width: 44px; height: 24px; border-radius: 999px"></span>
         </div>
       </div>
@@ -36,7 +36,7 @@
     <p v-else-if="!data" class="meta">{{ $t('overview.loadFailed') }}</p>
 
     <template v-else>
-      <!-- The three switches that matter: on/off, re-check websites, review conversations -->
+      <!-- On / off: the one thing that has to be unmistakable -->
       <section class="ov-controls" :class="data.is_active ? 'ov-controls--on' : 'ov-controls--off'">
         <div class="ov-control ov-control--main">
           <span class="ov-status__dot" aria-hidden="true"></span>
@@ -45,22 +45,6 @@
             <p>{{ data.is_active ? (data.widget_enabled ? $t('overview.status.onBody') : $t('overview.status.onHidden')) : $t('overview.status.offBody') }}</p>
           </div>
           <input id="sw-active" type="checkbox" role="switch" class="ov-switch" :checked="data.is_active" :disabled="switching" @click.prevent="data.is_active ? (askOff = true) : setActive(true)" />
-        </div>
-        <div class="ov-control">
-          <div class="ov-control__text">
-            <label for="sw-recrawl" class="ov-control__name">{{ $t('overview.auto.recrawl') }}</label>
-            <p>{{ $t('overview.auto.recrawlHow') }}</p>
-            <p class="ov-control__when">{{ when(data.automation.recrawl) }}</p>
-          </div>
-          <input id="sw-recrawl" type="checkbox" role="switch" class="ov-switch" :checked="data.automation.recrawl.enabled" :disabled="savingAuto || !data.automation.recrawl.has_websites" @change="saveAuto({ auto_recrawl: $event.target.checked })" />
-        </div>
-        <div class="ov-control">
-          <div class="ov-control__text">
-            <label for="sw-review" class="ov-control__name">{{ $t('overview.auto.review') }}</label>
-            <p>{{ $t('overview.auto.reviewHow', { cost: fmtChf(data.automation.review.est_chf_per_conversation) }) }}</p>
-            <p class="ov-control__when">{{ when(data.automation.review) }}</p>
-          </div>
-          <input id="sw-review" type="checkbox" role="switch" class="ov-switch" :checked="data.automation.review.enabled" :disabled="savingAuto" @change="saveAuto({ review_chats: $event.target.checked })" />
         </div>
       </section>
 
@@ -87,7 +71,7 @@
           <div>
             <dt>{{ $t('overview.usage.balance') }}</dt>
             <dd :class="{ 'ov-low': data.costs.balance_chf < 5 }">CHF {{ fmtChf(data.costs.balance_chf) }}</dd>
-            <router-link :to="{ name: 'Subscription' }" class="ov-split ov-link">{{ $t('overview.usage.topUp') }}</router-link>
+            <router-link :to="{ name: 'AccountSettings', params: { section: 'billing' } }" class="ov-split ov-link">{{ $t('overview.usage.topUp') }}</router-link>
           </div>
         </dl>
 
@@ -169,7 +153,7 @@
 </template>
 
 <script setup>
-import { computed, h, nextTick, ref, watch } from 'vue';
+import { computed, h, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';
 import { useToast } from '@/composables/useToast';
@@ -199,13 +183,6 @@ const load = async () => {
 };
 watch([tenantId, days], load, { immediate: true });
 
-// Links from Knowledge and Insights point at the scheduled tasks panel
-watch(data, async (d, before) => {
-  if (!d || before || window.location.hash !== '#automation') return;
-  await nextTick();
-  document.querySelector('.ov-controls')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-});
-
 const setActive = async (on) => {
   askOff.value = false;
   switching.value = true;
@@ -217,23 +194,6 @@ const setActive = async (on) => {
   } catch {
     addToast(t('tenant.settings.actions.saveFailed'), 'error');
   } finally { switching.value = false; }
-};
-
-// ── Scheduled tasks ─────────────────────────────────────────────────
-const savingAuto = ref(false);
-const saveAuto = async (payload) => {
-  savingAuto.value = true;
-  try {
-    await apiClient.put(`/tenants/${tenantId.value}`, payload);
-    await load();
-    addToast(t('overview.auto.saved'), 'success');
-  } catch { addToast(t('tenant.settings.actions.saveFailed'), 'error'); }
-  finally { savingAuto.value = false; }
-};
-const when = (task) => {
-  const parts = [task.last_run ? t('overview.auto.last', { date: fmtDateTime(task.last_run) }) : t('overview.auto.never')];
-  if (task.next_run) parts.push(t('overview.auto.next', { date: fmtDateTime(task.next_run) }));
-  return parts.join('. ') + '.';
 };
 
 const fmtInt = (n) => Number(n || 0).toLocaleString(locale.value);

@@ -101,13 +101,9 @@
         </div>
       </div>
       <div class="sidebar__footer-links">
-        <router-link to="/profile" class="footer-link">
-          <font-awesome-icon :icon="['fas', 'user']" />
-          {{ $t('sidebar.profile') }}
-        </router-link>
-        <router-link to="/subscription" class="footer-link">
-          <font-awesome-icon :icon="['fas', 'credit-card']" />
-          {{ $t('sidebar.subscription') }}
+        <router-link :to="{ name: 'AccountSettings', params: { section: 'profile' } }" class="footer-link" :class="{ 'footer-link--on': route.name === 'AccountSettings' }">
+          <font-awesome-icon :icon="['fas', 'gear']" />
+          {{ $t('sidebar.settings') }}
         </router-link>
         <button @click="handleLogout" class="footer-link footer-link--danger">
           <font-awesome-icon :icon="['fas', 'arrow-right-from-bracket']" />
@@ -400,6 +396,7 @@ watch(
   text-align: left;
 }
 .footer-link:hover { color: var(--surface-text); background: var(--surface-1); }
+.footer-link--on { color: var(--surface-heading); font-weight: 700; }
 .footer-link--danger:hover { color: var(--status-error); background: var(--status-error-soft); }
 
 /* ── Mobile overlay ────────────────────────────────── */

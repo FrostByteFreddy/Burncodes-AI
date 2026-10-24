@@ -61,7 +61,7 @@ def customer_portal(current_user):
         customer_id = response.data[0].get("stripe_customer_id")
         
         # This is the URL to which the user is redirected after they are done managing their billing in the portal.
-        return_url = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip("/") + "/subscription"
+        return_url = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip("/") + "/settings/billing"
 
         portal_session = stripe.billing_portal.Session.create(
             customer=customer_id,
@@ -92,13 +92,20 @@ def get_usage(current_user):
         row = (response.data or [{}])[0]
         chat_cost = float(row.get('chat_cost') or 0)
         sources_cost = float(row.get('sources_cost') or 0)
+        tenant_ids = [t['id'] for t in (supabase.table('tenants').select('id').eq('user_id', current_user.id).execute().data or [])]
+        review_cost = sum(
+            float(r.get('cost_chf') or 0) for r in (
+                supabase.table('chat_reviews').select('cost_chf').in_('tenant_id', tenant_ids).limit(50000).execute().data or []
+            )
+        ) if tenant_ids else 0.0
 
         return jsonify({
-            'total_cost': chat_cost + sources_cost,
+            'total_cost': chat_cost + sources_cost + review_cost,
             'input_tokens': int(row.get('chat_input') or 0) + int(row.get('sources_input') or 0),
             'output_tokens': int(row.get('chat_output') or 0) + int(row.get('sources_output') or 0),
             'chat_cost': chat_cost,
-            'sources_cost': sources_cost
+            'sources_cost': sources_cost,
+            'review_cost': round(review_cost, 4)
         })
     except Exception as e:
         error_logger.error(f"Error getting usage: {e}")

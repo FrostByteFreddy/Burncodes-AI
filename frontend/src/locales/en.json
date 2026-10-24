@@ -435,6 +435,7 @@
     }
   },
   "sidebar": {
+    "settings": "Settings",
     "configure": "Configure",
     "insights": "Insights",
     "overview": "Overview",
@@ -957,6 +958,76 @@
       "questions": "{n} questions",
       "flagged": "to look at",
       "close": "Close conversation"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "lede": "Your account, billing, and what runs automatically.",
+    "save": "Save changes",
+    "saved": "Saved",
+    "sections": {
+      "profile": "Profile",
+      "security": "Security",
+      "billing": "Billing",
+      "schedules": "Schedules",
+      "danger": "Delete account"
+    },
+    "profile": {
+      "title": "Profile",
+      "sub": "How you appear in the dashboard.",
+      "emailHint": "Your sign-in address. Contact us to change it.",
+      "language": "Dashboard language",
+      "languageHint": "Also used for review findings and the texts of new chatbots."
+    },
+    "security": {
+      "passwordTitle": "Password",
+      "passwordHint": "At least 8 characters.",
+      "sessionsTitle": "Signed-in devices",
+      "sessionsSub": "Signs you out on every device and browser, this one included. Use it if you signed in somewhere you no longer trust.",
+      "signOutAll": "Sign out everywhere",
+      "signOutFailed": "Could not sign out everywhere. Try again."
+    },
+    "billing": {
+      "balance": "Balance",
+      "portal": "Payment methods and invoices",
+      "answers": "Answers",
+      "learning": "Learning",
+      "reviews": "Reviews",
+      "total": "Total",
+      "spentHint": "Everything spent since the account was opened.",
+      "topUpTitle": "Top up",
+      "topUpSub": "Your balance pays for answers, learning and reviews. It never expires.",
+      "once": "Once",
+      "monthly": "Every month",
+      "custom": "Other amount",
+      "onceHint": "Minimum CHF 5.",
+      "monthlyHint": "Charged every month until you cancel in the payment portal.",
+      "pay": "Pay CHF {amount}",
+      "payMonthly": "Pay CHF {amount} every month",
+      "historyTitle": "Payments",
+      "noHistory": "No payments yet.",
+      "invoice": "Invoice"
+    },
+    "schedules": {
+      "title": "Schedules",
+      "sub": "How often each chatbot checks its websites and reviews its conversations.",
+      "none": "No chatbots yet.",
+      "chatbot": "Chatbot",
+      "websites": "Check websites",
+      "reviews": "Review conversations",
+      "off": "Off",
+      "switchedOff": "switched off",
+      "reviewNote": "Reviews read each finished conversation once and are billed per conversation. Findings appear in Insights."
+    },
+    "danger": {
+      "title": "Delete account",
+      "sub": "This can't be undone. Deleting your account removes:",
+      "chatbots": "all chatbots, their knowledge and their conversations, from every website right away",
+      "balance": "your remaining balance, which isn't refunded",
+      "subscription": "any monthly top-up, which is cancelled",
+      "typeEmail": "Type {email} to confirm",
+      "delete": "Delete account for good",
+      "failed": "The account could not be deleted."
     }
   }
 }

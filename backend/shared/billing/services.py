@@ -114,8 +114,8 @@ class BillingService:
                 "customer": customer_id,
                 "line_items": [{"price_data": price_data, "quantity": 1}],
                 "mode": "subscription" if is_recurring else "payment",
-                "success_url": f"{FRONTEND_URL}/subscription?success=true&session_id={{CHECKOUT_SESSION_ID}}",
-                "cancel_url": f"{FRONTEND_URL}/subscription?canceled=true",
+                "success_url": f"{FRONTEND_URL}/settings/billing?success=true&session_id={{CHECKOUT_SESSION_ID}}",
+                "cancel_url": f"{FRONTEND_URL}/settings/billing?canceled=true",
                 "client_reference_id": str(user_id),
                 "metadata": {"user_id": str(user_id)},
             }
