@@ -41,9 +41,25 @@
       </tbody>
     </table>
 
+    <!-- What re-crawls leave out: set in a crawl's selection, removable here -->
+    <section v-for="t in tenantsWithExclusions" :key="`ex-${t.id}`" class="sch-ex">
+      <h3 class="sch-ex__title">{{ $t('settings.schedules.excludedTitle', { name: t.name }) }}</h3>
+      <ul class="sch-ex__list">
+        <li v-for="r in excludedOf(t)" :key="r.path || r.url" class="sch-ex__item">
+          <font-awesome-icon :icon="['fas', r.path ? 'folder' : 'file-lines']" class="sch-ex__icon" />
+          <span class="sch-ex__label">
+            {{ r.title || r.path || r.url }}
+            <span class="meta">{{ r.path || r.url }}</span>
+          </span>
+          <button type="button" class="btn-quiet" :disabled="saving === t.id" @click="removeExclusion(t, r)">{{ $t('settings.schedules.excludedRemove') }}</button>
+        </li>
+      </ul>
+    </section>
+
     <ul class="sch-notes">
       <li>{{ $t('overview.auto.recrawlHow') }}</li>
       <li>{{ $t('settings.schedules.reviewNote') }}</li>
+      <li v-if="tenantsWithExclusions.length">{{ $t('settings.schedules.excludedNote') }}</li>
     </ul>
   </section>
 </template>
@@ -61,6 +77,17 @@ const { t } = useI18n();
 const loaded = ref(false);
 const saving = ref(null);
 const tenants = computed(() => tenantsStore.tenants || []);
+
+// Only "leave out" rules are listed; "keep" rules are exceptions inside them
+const excludedOf = (tenant) => (tenant.crawl_exclusions || []).filter((r) => r.exclude);
+const tenantsWithExclusions = computed(() => tenants.value.filter((x) => excludedOf(x).length));
+const inside = (path, folder) => path === folder || path.startsWith(`${folder.replace(/\/$/, '')}/`);
+const removeExclusion = (tenant, rule) => {
+  const rest = (tenant.crawl_exclusions || []).filter((r) => r !== rule
+    // a folder's exceptions go with it
+    && !(rule.path && r.path && !r.exclude && inside(r.path, rule.path)));
+  return save(tenant, { crawl_exclusions: rest });
+};
 
 onMounted(async () => { await tenantsStore.fetchTenants(); loaded.value = true; });
 
@@ -91,6 +118,13 @@ const save = async (tenant, payload) => {
   color: var(--surface-heading); font: inherit; font-size: var(--text-sm); cursor: pointer;
 }
 .sch-select:hover:not(:disabled) { border-color: var(--surface-muted); }
+.sch-ex { margin-top: 22px; display: flex; flex-direction: column; gap: 8px; }
+.sch-ex__title { font-size: 15px; font-weight: 700; color: var(--surface-heading); }
+.sch-ex__list { list-style: none; padding: 0; display: flex; flex-direction: column; border: 1px solid var(--surface-3); border-radius: var(--radius-md); }
+.sch-ex__item { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-top: 1px solid var(--surface-3); font-size: var(--text-sm); }
+.sch-ex__item:first-child { border-top: none; }
+.sch-ex__icon { color: var(--surface-muted); flex-shrink: 0; }
+.sch-ex__label { flex: 1; min-width: 0; display: flex; flex-direction: column; color: var(--surface-heading); overflow-wrap: anywhere; }
 .sch-notes { margin: 18px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); }
 
 @media (max-width: 760px) {

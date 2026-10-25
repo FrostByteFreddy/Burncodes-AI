@@ -8,7 +8,6 @@ A chatbot that is off, password-protected or has calendars disabled serves
 an empty calendar, which clears the dates from every subscriber.
 """
 import hashlib
-import os
 from datetime import date, timedelta
 
 from flask import Blueprint, Response, jsonify, request
@@ -24,7 +23,8 @@ PAST_DAYS = 30  # keep last month's dates so a calendar doesn't look empty right
 
 
 def _api_base() -> str:
-    return os.environ.get('API_BASE_URL', 'http://localhost:5000').rstrip('/')
+    from app.public_url import public_api_base
+    return public_api_base()
 
 
 def _tenant(tenant_id):

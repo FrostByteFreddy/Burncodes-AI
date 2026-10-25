@@ -125,7 +125,11 @@ const load = () => {
   formData.value = fromTenant(tenant);
   snapshot.value = JSON.stringify(formData.value);
 };
-watch(() => tenantsStore.currentTenant?.id, load, { immediate: true });
+// The store first shows the copy cached in the browser, then the fresh one from
+// the server: take the fresh one too, unless the user already started editing.
+watch(() => tenantsStore.currentTenant, (tenant, previous) => {
+  if (!dirty.value || tenant?.id !== previous?.id) load();
+}, { immediate: true });
 
 const save = async () => {
   if (!tenantsStore.currentTenant || saving.value) return;

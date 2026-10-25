@@ -7,7 +7,8 @@ widget_bp = Blueprint('widget', __name__)
 @widget_bp.route('/widget.js', methods=['GET'])
 def get_widget_script():
     try:
-        api_base_url = os.environ.get('API_BASE_URL', 'http://localhost:5000')
+        from app.public_url import public_api_base
+        api_base_url = public_api_base()
         frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
 
         js_content = f"""

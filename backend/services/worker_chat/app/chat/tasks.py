@@ -14,6 +14,7 @@ Key changes:
 import os
 import re
 import unicodedata
+from urllib.parse import urlparse
 from datetime import date, timedelta
 
 from celery import shared_task
@@ -192,20 +193,35 @@ def _build_system_instruction(tenant_config: dict, fine_tune_rules: list) -> str
 
 
 _SOURCES_RULE = (
-    "Sources: whenever your answer uses information from a document (dates, phone numbers, opening hours, "
-    "fees, anything), end with one short line naming it as a "
-    "markdown link, e.g. \"Quelle: [Abfallkalender 2026](https://…)\" (in the reply language). Take the address "
-    "only from the document's \"Quelle:\" line or from a {source: …} given with the dates; never make one up. "
-    "Link each document at most once, at most three documents."
+    "Sources: don't name or link the documents you used; links to them are added to your answer "
+    "automatically. A link inside the answer is fine only for a form or page the visitor should open; "
+    "take its address from that document's \"Quelle:\" line."
 )
 
 _MD_LINK = re.compile(r"\[([^\]]+)\]\((https?://[^)\s]+)\)")
 
 
-def _known_source_urls(tenant_id: str) -> set[str]:
-    rows = fetch_all(lambda: supabase.table("tenant_sources").select("source_location")
+def _known_source_urls(tenant_id: str) -> dict[str, str]:
+    """url → title of every source of the tenant (a dict, so `in` works like a set)."""
+    rows = fetch_all(lambda: supabase.table("tenant_sources").select("source_location, title")
                      .eq("tenant_id", str(tenant_id)).order("id"))
-    return {r["source_location"] for r in rows if r.get("source_location")}
+    return {r["source_location"]: (r.get("title") or "") for r in rows if r.get("source_location")}
+
+
+_QUOTES = str.maketrans({c: '"' for c in "„“”«»‹›‚‘’'"})
+_MIN_TITLE_MATCH = 10   # shorter titles ("Papier", "Glas") would match by accident
+
+
+def _named_page(line: str, known: dict) -> tuple[str, str] | None:
+    """The page a line is about, if it names one by its title, e.g. an event listed on the home page."""
+    text = line.translate(_QUOTES).lower()
+    best = None
+    for url, title in known.items():
+        t = (title or "").translate(_QUOTES).lower().strip()
+        if len(t) >= _MIN_TITLE_MATCH and t in text and urlparse(url).path not in ("", "/"):
+            if best is None or len(t) > len(best[0]):
+                best = (t, (title, url))
+    return best[1] if best else None
 
 
 def _keep_known_links(answer: str, known: set[str]) -> str:
@@ -216,35 +232,127 @@ def _keep_known_links(answer: str, known: set[str]) -> str:
 _QUELLE = re.compile(r"Quelle:\s*(https?://\S+)")
 
 
+def _chunk_source(chunk) -> tuple[str, str] | None:
+    """(title, url) of one File Search chunk: the url from the document's metadata, else its "Quelle:" line."""
+    ctx = getattr(chunk, "retrieved_context", None)
+    if not ctx:
+        return None
+    url = next((m.string_value for m in getattr(ctx, "custom_metadata", None) or []
+                if getattr(m, "key", None) == "source_url" and m.string_value), None)
+    if not url:
+        m = _QUELLE.search(getattr(ctx, "text", None) or "")
+        url = m.group(1) if m else None
+    if not url:
+        return None
+    title = (getattr(ctx, "title", None) or url).split(" — ")[0].strip()
+    return title, url
+
+
 def _retrieved_sources(response) -> list[tuple[str, str]]:
-    """(title, url) of the documents File Search handed the model, from their "Quelle:" line."""
-    found = []
+    """
+    (title, url) of the documents the answer actually rests on, in the order
+    the answer uses them (grounding supports). Without supports: everything
+    File Search handed the model.
+    """
     try:
-        for chunk in response.candidates[0].grounding_metadata.grounding_chunks or []:
-            ctx = getattr(chunk, "retrieved_context", None)
-            m = _QUELLE.search(getattr(ctx, "text", None) or "") if ctx else None
-            if m:
-                title = (getattr(ctx, "title", None) or m.group(1)).split(" — ")[0].strip()
-                found.append((title, m.group(1)))
+        meta = response.candidates[0].grounding_metadata
+        chunks = meta.grounding_chunks or []
+        supports = sorted(meta.grounding_supports or [],
+                          key=lambda s: getattr(getattr(s, "segment", None), "start_index", 0) or 0)
+        order = [i for s in supports for i in (s.grounding_chunk_indices or [])] or list(range(len(chunks)))
+        found = [_chunk_source(chunks[i]) for i in order if 0 <= i < len(chunks)]
+        return [f for f in found if f]
     except (AttributeError, IndexError, TypeError):
-        pass
-    return found
+        return []
 
 
-def _ensure_source(answer: str, candidates: list[tuple[str, str]], known: set[str]) -> str:
-    """Every answer drawn from documents ends with a link to one, even if the model forgot."""
-    if any(m.group(2) in known for m in _MD_LINK.finditer(answer)):
-        return answer
-    seen, links = set(), []
+def _source_links(candidates: list[tuple[str, str]], known: set[str], limit: int = 3) -> list[str]:
+    """Markdown links, each document once; the home page only when nothing more specific was used."""
+    seen, picked = set(), []
     for title, url in candidates:
         if url in known and url not in seen:
             seen.add(url)
-            links.append(f"[{title.replace(']', ')')}]({url})")
-    if not links:
+            picked.append((title, url))
+    specific = [p for p in picked if urlparse(p[1]).path not in ("", "/")]
+    return [_chip(t, u) for t, u in (specific or picked)[:limit]]
+
+
+_SOURCES_MARKER = "[[sources]]"
+# a source link in the answer: [short title](url "source: full title"); the widget shows it as a chip
+_CHIP_TITLE_CHARS = 32
+
+
+def _chip(title: str, url: str) -> str:
+    title = " ".join(title.split()).replace("[", "(").replace("]", ")")
+    short = title if len(title) <= _CHIP_TITLE_CHARS else title[:_CHIP_TITLE_CHARS - 1].rstrip() + "…"
+    # only the markdown title needs its quotes swapped
+    return f'[{short}]({url} "source: {title.replace(chr(34), chr(39))}")'
+
+
+def _inline_sources(answer: str, response, known: set[str]) -> tuple[str, set[str]]:
+    """
+    Puts a link to the source at the end of each line that rests on it (from
+    Gemini's grounding supports). Each document once, at its first use; the
+    home page only where nothing more specific backs the line. Returns the
+    answer and the urls linked.
+    """
+    try:
+        meta = response.candidates[0].grounding_metadata
+        chunks = meta.grounding_chunks or []
+        supports = meta.grounding_supports or []
+    except (AttributeError, IndexError, TypeError):
+        return answer, set()
+    if not supports or not chunks:
+        return answer, set()
+    raw = answer.encode("utf-8")
+    by_line: dict[int, list[tuple[str, str]]] = {}
+    linked: set[str] = set()
+    for s in sorted(supports, key=lambda s: getattr(getattr(s, "segment", None), "end_index", 0) or 0):
+        seg = getattr(s, "segment", None)
+        if seg is None or (getattr(seg, "part_index", 0) or 0) != 0:
+            continue
+        sources = [_chunk_source(chunks[i]) for i in (s.grounding_chunk_indices or []) if 0 <= i < len(chunks)]
+        sources = [x for x in sources if x and x[1] in known]
+        specific = [x for x in sources if urlparse(x[1]).path not in ("", "/")]
+        # segment offsets are bytes; the link goes at the end of that line
+        end = len(raw[: getattr(seg, "end_index", 0) or 0].decode("utf-8", errors="ignore"))
+        line_end = answer.find("\n", max(0, end - 1))
+        line_end = len(answer) if line_end == -1 else line_end
+        line_start = answer.rfind("\n", 0, line_end) + 1
+        if not specific and isinstance(known, dict):
+            # backed only by an overview (the home page): the line's own page, if it names one
+            named = _named_page(answer[line_start:line_end], known)
+            specific = [named] if named else []
+        pick = next((x for x in (specific or sources) if x[1] not in linked), None)
+        if not pick:
+            continue
+        if answer[line_start:line_end].lstrip().startswith("|"):
+            continue   # a link after a table row would break the table
+        if len(by_line.setdefault(line_end, [])) < 2:
+            by_line[line_end].append(pick)
+            linked.add(pick[1])
+    for pos in sorted(by_line, reverse=True):
+        chips = " ".join(_chip(t, u) for t, u in by_line[pos])
+        answer = answer[:pos].rstrip() + " " + chips + answer[pos:]
+    return answer, linked
+
+
+def _ensure_source(answer: str, candidates: list[tuple[str, str]], known: set[str]) -> str:
+    """
+    Fills the model's "Quelle: [[sources]]" line with the documents the answer
+    used. If the model forgot the line, the links are appended anyway.
+    """
+    links = _source_links(candidates, known)
+    if _SOURCES_MARKER in answer:
+        if links:
+            return answer.replace(_SOURCES_MARKER, " ".join(links), 1).replace(_SOURCES_MARKER, "")
+        # nothing to link: drop the whole "Quelle: [[sources]]" line
+        return re.sub(r"[^\n]*\[\[sources\]\][^\n]*\n?", "", answer).rstrip()
+    if any(m.group(2) in known for m in _MD_LINK.finditer(answer)) or not links:
         return answer
     # before any calendar markers, which have to stay last
     body, markers = re.match(r"(.*?)((?:\s*\[\[calendar:[a-z0-9-]+\]\])*)\s*$", answer, re.S).groups()
-    return f"{body.rstrip()}\n\n↗ {', '.join(links[:3])}{markers}"
+    return f"{body.rstrip()}\n\n{' '.join(links[:3])}{markers}"
 
 
 def _language_rule() -> str:
@@ -383,7 +491,13 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
             known = _known_source_urls(tenant_id)
             ai_message = _keep_known_links(ai_message, known)
             mentioned = [src for name, src in date_sources.items() if name.lower() in ai_message.lower()]
-            ai_message = _ensure_source(ai_message, _retrieved_sources(response) + mentioned, known)
+            ai_message, linked = _inline_sources(ai_message, response, known)
+            if linked:
+                ai_message = _ensure_source(ai_message, [], known)   # only drops a stray [[sources]] line
+            else:
+                # nothing to attach inline (e.g. an answer from the verified dates): one line at the end,
+                # verified dates naming their document first
+                ai_message = _ensure_source(ai_message, mentioned + _retrieved_sources(response), known)
         except Exception as e:
             error_logger.warning("chat_task: source links skipped for tenant %s: %s", tenant_id, e)
 

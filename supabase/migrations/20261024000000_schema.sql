@@ -78,6 +78,8 @@ ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS last_review_at        TIMEST
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS test_password_hash    TEXT;
 -- Residents can subscribe to validated dates as calendar feeds (.ics)
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS calendar_feeds        BOOLEAN NOT NULL DEFAULT true;
+-- what the customer left out of learning (folders/sources); every crawl applies it
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS crawl_exclusions      JSONB NOT NULL DEFAULT '[]'::jsonb;
 COMMENT ON COLUMN public.tenants.gemini_file_store_name IS
     'Gemini File Search Store resource name (e.g. fileSearchStores/abc123). NULL until the tenant uploads their first source.';
 
@@ -180,6 +182,8 @@ ALTER TABLE public.crawling_tasks ADD COLUMN IF NOT EXISTS parent_url TEXT;
 ALTER TABLE public.crawling_tasks ADD COLUMN IF NOT EXISTS enqueued_at TIMESTAMPTZ;
 -- Scan result per URL: new / changed / unchanged / error / excluded / refused
 ALTER TABLE public.crawling_tasks ADD COLUMN IF NOT EXISTS outcome TEXT;
+-- how often the page was retried because the website said "too many requests"
+ALTER TABLE public.crawling_tasks ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS public.chat_logs (
     id              BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,

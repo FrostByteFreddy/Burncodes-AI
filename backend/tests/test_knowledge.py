@@ -346,13 +346,14 @@ class TestValidate:
         result = self._run([self._zone2()], {0: ["2026-01-09"]})
         s = result["schedules"][0]
         assert "_problems" not in s and "2026-01-09" not in [d["date"] for d in s["dates"]]
-        assert "09.01.2026" in result["warnings"][0] and "printed" not in result["warnings"][0]
+        assert result["warnings"] == [{"kind": "dates_dropped", "subject": "Hauskehricht Zone 2",
+                                       "n": 1, "dates": ["09.01.2026"]}]
 
     def test_many_missing_dates_reject_the_series(self):
         missing = [d["date"] for d in self._zone2()["dates"][:5]]
         result = self._run([self._zone2()], {0: missing})
         assert result["schedules"][0]["_problems"]
-        assert "nicht zuverlässig gelesen" in result["warnings"][0]
+        assert result["warnings"] == [{"kind": "dates_rejected", "subject": "Hauskehricht Zone 2"}]
 
     def test_series_outside_grid_uses_weekday_rule(self):
         bottenstein = {"name": "Hauskehricht", "zone": "Bottenstein", "regular_weekday": "", "notes": "",
@@ -437,13 +438,94 @@ class TestSourceLinks:
         url = "https://www.zofingen.ch/kontakt"
         out = chat._ensure_source("Die Nummer ist 062 745 71 00.\n[[calendar:papier--zone-1]]",
                                   [("Kontakt", url), ("Kontakt", url), ("Fremd", "https://x.example")], {url})
-        assert out == f"Die Nummer ist 062 745 71 00.\n\n↗ [Kontakt]({url})\n[[calendar:papier--zone-1]]"
+        assert out == f'Die Nummer ist 062 745 71 00.\n\n[Kontakt]({url} "source: Kontakt")\n[[calendar:papier--zone-1]]'
 
     def test_existing_source_link_is_left_alone(self):
         chat = TestSystemInstruction._chat()
         url = "https://www.zofingen.ch/kontakt"
         text = f"Nummer: 062 745 71 00. Quelle: [Kontakt]({url})"
         assert chat._ensure_source(text, [("Andere", "https://www.zofingen.ch/a")], {url, "https://www.zofingen.ch/a"}) == text
+
+
+    def test_marker_is_filled_with_the_used_documents_home_page_last_resort(self):
+        chat = TestSystemInstruction._chat()
+        home, concert, ziegler = ("https://www.brittnau.ch", "https://www.brittnau.ch/_rte/anlass/7727767",
+                                  "https://www.brittnau.ch/_rte/anlass/7257347")
+        known = {home, concert, ziegler}
+        text = "Konzert am 6. November.\n\nQuelle: [[sources]]\n[[calendar:konzert]]"
+        out = chat._ensure_source(text, [("Startseite", home), ("Konzert", concert), ("Konzert", concert),
+                                         ("Zieglerrunde", ziegler)], known)
+        assert out == (f'Konzert am 6. November.\n\nQuelle: [Konzert]({concert} "source: Konzert") '
+                       f'[Zieglerrunde]({ziegler} "source: Zieglerrunde")\n[[calendar:konzert]]')
+        # only the home page was used: it is linked after all
+        assert chat._ensure_source("x\nQuelle: [[sources]]", [("Startseite", home)], known) == \
+            f'x\nQuelle: [Startseite]({home} "source: Startseite")'
+        # nothing known: the line disappears
+        assert chat._ensure_source("x\n\nSource: [[sources]]", [], known) == "x"
+
+    def test_used_documents_come_from_metadata_in_the_order_of_the_answer(self):
+        from types import SimpleNamespace as NS
+        chat = TestSystemInstruction._chat()
+        def chunk(title, url):
+            meta = [NS(key="source_id", string_value="1"), NS(key="source_url", string_value=url)]
+            return NS(retrieved_context=NS(title=f"{title} — Abschnitt", text="no Quelle line here", custom_metadata=meta))
+        chunks = [chunk("Startseite", "https://x.ch"), chunk("Konzert", "https://x.ch/a/1"), chunk("Ziegler", "https://x.ch/a/2")]
+        supports = [NS(segment=NS(start_index=80), grounding_chunk_indices=[2]),
+                    NS(segment=NS(start_index=10), grounding_chunk_indices=[1])]
+        response = NS(candidates=[NS(grounding_metadata=NS(grounding_chunks=chunks, grounding_supports=supports))])
+        assert chat._retrieved_sources(response) == [("Konzert", "https://x.ch/a/1"), ("Ziegler", "https://x.ch/a/2")]
+
+
+    def test_sources_go_inline_after_the_line_they_back(self):
+        from types import SimpleNamespace as NS
+        chat = TestSystemInstruction._chat()
+        home, a, b = "https://x.ch", "https://x.ch/_rte/anlass/1", "https://x.ch/_rte/anlass/2"
+        def chunk(title, url):
+            return NS(retrieved_context=NS(title=f"{title} — Info", text="",
+                                           custom_metadata=[NS(key="source_url", string_value=url)]))
+        chunks = [chunk("Startseite", home), chunk("Konzert «Akkordeon auf Reisen» in der Mehrzweckhalle", a),
+                  chunk("Zieglerrunde", b)]
+        answer = ("Demnächst:\n\n* **Konzert «Akkordeon»**: Fr, 6. November, Mehrzweckhalle.\n"
+                  "* **Zieglerrunde**: Sa, 14. November.\n* **Gemeindeversammlung**: Di, 17. November.\n"
+                  "| Tag | Anlass |\n[[calendar:konzert]]")
+        def seg(text):   # Gemini counts bytes
+            start = answer.encode().index(text.encode())
+            return NS(start_index=start, end_index=start + len(text.encode()), part_index=0)
+        supports = [NS(segment=seg("Fr, 6. November"), grounding_chunk_indices=[0, 1]),
+                    NS(segment=seg("Sa, 14. November"), grounding_chunk_indices=[2]),
+                    NS(segment=seg("Mehrzweckhalle"), grounding_chunk_indices=[1]),      # same page again: not repeated
+                    NS(segment=seg("Di, 17. November"), grounding_chunk_indices=[0]),    # only the home page backs it
+                    NS(segment=seg("Anlass"), grounding_chunk_indices=[2])]              # table row: left alone
+        response = NS(candidates=[NS(grounding_metadata=NS(grounding_chunks=chunks, grounding_supports=supports))])
+        out, linked = chat._inline_sources(answer, response, {home, a, b})
+        lines = out.split("\n")
+        assert lines[2].endswith(f'Mehrzweckhalle. [Konzert «Akkordeon auf Reisen»…]({a} '
+                                 f'"source: Konzert «Akkordeon auf Reisen» in der Mehrzweckhalle")')
+        assert lines[3].endswith(f'14. November. [Zieglerrunde]({b} "source: Zieglerrunde")')
+        assert lines[4].endswith(f'17. November. [Startseite]({home} "source: Startseite")')
+        assert lines[5] == "| Tag | Anlass |" and lines[6] == "[[calendar:konzert]]"
+        assert linked == {home, a, b}
+
+
+    def test_a_line_backed_by_the_home_page_links_the_page_it_names(self):
+        from types import SimpleNamespace as NS
+        chat = TestSystemInstruction._chat()
+        home, ziegler = "https://x.ch", "https://x.ch/_rte/anlass/7257347"
+        known = {home: "Startseite Gemeinde Brittnau", ziegler: 'Chetti - Daniel Ziegler mit "Zieglerrunde"',
+                 "https://x.ch/_rte/abfallart/1": "Glas"}
+        chunks = [NS(retrieved_context=NS(title="Startseite Gemeinde Brittnau — Anlässe", text="",
+                                          custom_metadata=[NS(key="source_url", string_value=home)]))]
+        answer = "* **Chetti - Daniel Ziegler mit „Zieglerrunde“**: Samstag, 14. November.\n* Glas: Sammelstelle."
+        def seg(text):
+            start = answer.encode().index(text.encode())
+            return NS(start_index=start, end_index=start + len(text.encode()), part_index=0)
+        supports = [NS(segment=seg("14. November"), grounding_chunk_indices=[0]),
+                    NS(segment=seg("Sammelstelle"), grounding_chunk_indices=[0])]
+        response = NS(candidates=[NS(grounding_metadata=NS(grounding_chunks=chunks, grounding_supports=supports))])
+        out, _ = chat._inline_sources(answer, response, known)
+        first, second = out.split("\n")
+        assert f"({ziegler} " in first and f"({home} " not in first
+        assert second.endswith(f'[Startseite Gemeinde Brittnau]({home} "source: Startseite Gemeinde Brittnau")')  # "Glas" too short
 
 
 class TestFetchAll:
@@ -481,3 +563,91 @@ class TestContactLinks:
         _, md = html_to_markdown(html)
         assert "Kulturabteilung (kultur@zofingen.ch)" in md
         assert md.count("info@zofingen.ch") == 1   # already visible: not doubled
+
+
+class TestExclusionRules:
+    def _sel(self):
+        from app.knowledge import selection
+        return selection
+
+    def test_files_sit_in_the_folder_of_their_page(self):
+        s = self._sel()
+        assert s.folder_of("https://www.zofingen.ch/politik/einwohnerrat/", "zofingen.ch") == "/politik/einwohnerrat"
+        assert s.folder_of("https://shop.zofingen.ch/a", "zofingen.ch") == "//shop.zofingen.ch/a"
+        assert s._ancestors("/a/b") == ["/a", "/a/b"]
+        assert s._ancestors("//shop.x.ch/a") == ["//shop.x.ch", "//shop.x.ch/a"]
+        assert s._ancestors("/") == []
+        # a section's overview page belongs to its folder
+        assert s.folder_of("https://www.zofingen.ch/politik.html", "zofingen.ch") == "/politik"
+        assert s.folder_of("https://www.zofingen.ch/index.html", "zofingen.ch") == "/"
+        assert s.folder_of("https://www.zofingen.ch/politik.html/2/print/html", "zofingen.ch") == "/politik/2/print/html"
+        assert s.folder_of("https://www.zofingen.ch/politik/aktuell.html/73", "zofingen.ch") == "/politik/aktuell/73"
+
+    def test_url_wins_then_the_longest_folder(self):
+        s = self._sel()
+        rules = [
+            {"path": "/politik", "exclude": True},
+            {"path": "/politik/aktuell", "exclude": False},
+            {"url": "https://x.ch/politik/aktuell/old.pdf", "exclude": True},
+        ]
+        assert s.is_excluded(rules, "https://x.ch/politik/wahlen", "/politik/wahlen")
+        assert not s.is_excluded(rules, "https://x.ch/politik/aktuell/a", "/politik/aktuell/a")
+        assert s.is_excluded(rules, "https://x.ch/politik/aktuell/old.pdf", "/politik/aktuell")
+        assert not s.is_excluded(rules, "https://x.ch/politikum", "/politikum")   # prefix, not a subfolder
+
+    def test_rules_stay_minimal(self):
+        s = self._sel()
+        folders = {"https://x.ch/politik/a.pdf": "/politik"}
+        rules = s._set_rule([], folders, url="https://x.ch/politik/a.pdf", exclude=True)
+        rules = s._set_rule(rules, folders, path="/politik/aktuell", exclude=False)
+        assert rules == [{"url": "https://x.ch/politik/a.pdf", "exclude": True, "title": None}]  # nothing to keep
+        # excluding the whole folder replaces everything below it
+        rules = s._set_rule(rules, folders, path="/politik", exclude=True)
+        assert rules == [{"path": "/politik", "exclude": True, "title": None}]
+        # ticking a subfolder back in is a "keep" inside the excluded folder
+        rules = s._set_rule(rules, folders, path="/politik/aktuell", exclude=False)
+        assert {"path": "/politik/aktuell", "exclude": False, "title": None} in rules
+        # and ticking the folder back in removes both
+        assert s._set_rule(rules, folders, path="/politik", exclude=False) == []
+
+
+class TestWarnings:
+    def test_only_allowed_kinds_at_most_two_none_on_minor_pages(self):
+        from app.knowledge.understanding import clean_warnings
+        noisy = {"importance": 80, "warnings": [
+            {"kind": "typo", "subject": "hätlst"},                       # not a kind we report
+            "Zeile 53: Telefonnummer fehlt",                              # old free text
+            {"kind": "expired", "subject": "Online-Schnuppertag 23. Januar 2026"},
+            {"kind": "not_readable", "subject": "  "},                   # nothing to show
+            {"kind": "contradiction", "subject": "Öffnungszeiten Werkhof"},
+            {"kind": "expired", "subject": "Anmeldeschluss 2025"},
+        ]}
+        assert clean_warnings(noisy) == [
+            {"kind": "expired", "subject": "Online-Schnuppertag 23. Januar 2026"},
+            {"kind": "contradiction", "subject": "Öffnungszeiten Werkhof"},
+        ]
+        assert clean_warnings({**noisy, "importance": 20}) == []
+
+    def test_old_free_text_warnings_are_not_shown(self):
+        assert jobs.issues_of(["Tippfehler in Zeile 5", {"kind": "expired", "subject": "x"}, None]) == \
+            [{"kind": "expired", "subject": "x"}]
+        assert jobs.issues_of(None) == []
+
+
+class TestLinkExtraction:
+    def test_links_inside_escaped_json_widgets_are_found(self):
+        """i-web "Wie, wann, wo": the table's links only exist as escaped HTML in a data attribute."""
+        from app.data_processing.soup_extractor import extract_internal_links
+        html = (
+            '<html><body><a href="/abfallarten">Abfallarten</a>'
+            '<div data-entities="[{&quot;name&quot;:&quot;&lt;a href=\\&quot;\\/_rte\\/regelmaessigeranlass\\/4885'
+            '\\&quot;&gt;Abfallkalender&lt;\\/a&gt;&quot;}]"></div>'
+            '<script>window.x = {"html": "<a href=\\"\\/_rte\\/anlass\\/7\\">Fest</a>"};</script>'
+            '<div data-x="&lt;a href=&quot;https://other.example/x&quot;&gt;"></div>'
+            '</body></html>'
+        )
+        links = extract_internal_links(html, "https://www.brittnau.ch/abfall")
+        assert "https://www.brittnau.ch/abfallarten" in links
+        assert "https://www.brittnau.ch/_rte/regelmaessigeranlass/4885" in links
+        assert "https://www.brittnau.ch/_rte/anlass/7" in links
+        assert not any("other.example" in l for l in links)

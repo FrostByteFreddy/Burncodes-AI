@@ -25,8 +25,8 @@
       <div class="page-head">
         <div class="crawl-head">
           <span class="crawl-status" :class="`crawl-status--${job.status.toLowerCase()}`">
-            <font-awesome-icon v-if="job.status === 'IN_PROGRESS' || job.status === 'INDEXING'" :icon="['fas', 'spinner']" class="animate-spin" />
-            {{ $t(`knowledge.status.${job.status}`) }}
+            <font-awesome-icon v-if="job.status === 'IN_PROGRESS' || job.status === 'INDEXING' || isPreparing(job)" :icon="['fas', 'spinner']" class="animate-spin" />
+            {{ statusLabel(job) }}
           </span>
           <h1 class="page-title crawl-title">{{ displayUrl(job.start_url) }}</h1>
           <p class="page-lede">
@@ -48,46 +48,24 @@
       </div>
 
       <!-- Scan finished: what learning will do and cost -->
-      <section v-if="job.status === 'SCANNED'" class="panel crawl-estimate">
+      <section v-if="isPreparing(job)" class="panel crawl-reading">
+        <span class="crawl-pulse" aria-hidden="true"></span>
+        <p>{{ $t('knowledge.estimate.preparing') }}</p>
+      </section>
+      <section v-else-if="job.status === 'SCANNED'" class="panel crawl-estimate">
         <h2 class="panel-title">{{ $t('knowledge.estimate.title') }}</h2>
         <ul class="crawl-outcomes">
           <li v-for="o in outcomes" :key="o.key"><strong>{{ o.n }}</strong> {{ $t(`knowledge.estimate.${o.key}`) }}</li>
         </ul>
         <p class="crawl-estimate__body">
-          {{ estimate.to_learn ? $t('knowledge.estimate.body', { n: estimate.to_learn }) : $t('knowledge.estimate.nothing') }}
+          {{ estimate.to_learn ? $t('knowledge.estimate.body', { n: estimate.to_learn }) : $t(estimate.skipped ? 'knowledge.estimate.noneSelected' : 'knowledge.estimate.nothing') }}
         </p>
         <p v-if="estimate.index_only" class="meta">
           {{ $t('knowledge.estimate.indexOnly', { n: estimate.index_only, pages: estimate.max_pages }) }}
         </p>
 
-        <!-- What the sorting step set aside: visible, and reversible before learning -->
-        <div v-if="estimate.skipped" class="crawl-skipped">
-          <div class="crawl-skipped__head">
-            <p>
-              <strong>{{ $t('knowledge.estimate.skipped', { n: estimate.skipped }) }}</strong>
-              <span class="meta"> — {{ skippedSummary }}</span>
-            </p>
-            <button type="button" class="btn-quiet" :aria-expanded="showSkipped" @click="toggleSkipped">
-              {{ showSkipped ? $t('knowledge.estimate.hideList') : $t('knowledge.estimate.showList') }}
-            </button>
-          </div>
-          <div v-if="showSkipped" class="crawl-skipped__list">
-            <p v-if="!skipped" class="meta">…</p>
-            <section v-for="group in skippedGroups" :key="group.reason" class="crawl-skipped__group">
-              <div class="crawl-skipped__group-head">
-                <h3>{{ $t(`knowledge.skipReasons.${group.reason}`) }} <span class="meta">({{ group.items.length }})</span></h3>
-                <button type="button" class="btn-quiet" :disabled="busy" @click="include(group.items.map((s) => s.id))">{{ $t('knowledge.estimate.includeAll') }}</button>
-              </div>
-              <ul>
-                <li v-for="s in group.items" :key="s.id">
-                  <a :href="s.source_location" target="_blank" rel="noopener noreferrer">{{ s.title || pageLabel({ url: s.source_location }) }}</a>
-                  <span v-if="s.file_pages" class="meta">{{ $t('knowledge.estimate.pages', { n: s.file_pages }) }}</span>
-                  <button type="button" class="crawl-skipped__take" :disabled="busy" @click="include([s.id])">{{ $t('knowledge.estimate.include') }}</button>
-                </li>
-              </ul>
-            </section>
-          </div>
-        </div>
+        <!-- Gemini's savings suggestions, what was sorted out, and the folder tree -->
+        <CrawlSelection :key="job.id" :base="base" :host="displayUrl(job.start_url)" @estimate="onEstimate" />
         <div class="page-actions">
           <button class="btn-action" :disabled="busy || !estimate.to_learn" @click="onConfirm">
             <font-awesome-icon v-if="busy" :icon="['fas', 'spinner']" class="animate-spin" />
@@ -138,9 +116,10 @@ import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';
 import { supabase } from '@/supabase';
 import { escapeHtml } from '@/utils/escapeHtml';
-import { ACTIVE_STATUSES, useCrawlActions, useCrawlText } from '@/composables/useCrawl';
+import { ACTIVE_STATUSES, isPreparing, useCrawlActions, useCrawlText } from '@/composables/useCrawl';
 import ActivityLog from './sources/ActivityLog.vue';
 import CrawlReport from './sources/CrawlReport.vue';
+import CrawlSelection from './sources/CrawlSelection.vue';
 import ConfirmationModal from '../ConfirmationModal.vue';
 
 const props = defineProps({
@@ -149,7 +128,7 @@ const props = defineProps({
 });
 const router = useRouter();
 const { t } = useI18n();
-const { fmtChf, fmtDateTime, displayUrl, latestPage, pageLabel } = useCrawlText();
+const { statusLabel, fmtChf, fmtDateTime, displayUrl, latestPage } = useCrawlText();
 const actions = useCrawlActions(() => props.tenantId);
 
 const job = ref(null);
@@ -216,35 +195,8 @@ onUnmounted(() => {
   clearInterval(poll);
 });
 
-// ── Sorted out before learning ──────────────────────────────────────
-const showSkipped = ref(false);
-const skipped = ref(null);
-const SKIP_ORDER = ['archive_finance', 'old_minutes', 'outdated', 'older_version', 'internal', 'manual', 'other'];
-const skippedSummary = computed(() => Object.entries(estimate.value.skipped_by_reason || {})
-  .sort(([a], [b]) => SKIP_ORDER.indexOf(a) - SKIP_ORDER.indexOf(b))
-  .map(([reason, n]) => `${t(`knowledge.skipReasons.${reason}`)} ${n}`).join(', '));
-const skippedGroups = computed(() => {
-  const groups = {};
-  for (const s of skipped.value || []) (groups[s.skip_reason || 'other'] ||= []).push(s);
-  return SKIP_ORDER.filter((r) => groups[r]).map((reason) => ({ reason, items: groups[reason] }));
-});
-const loadSkipped = async () => {
-  try { skipped.value = (await apiClient.get(`${base.value}/skipped`)).data; }
-  catch { skipped.value = []; }
-};
-const toggleSkipped = () => {
-  showSkipped.value = !showSkipped.value;
-  if (showSkipped.value && !skipped.value) loadSkipped();
-};
-const include = async (ids) => {
-  busy.value = true;
-  try {
-    const { data } = await apiClient.post(`${base.value}/selection`, { include: ids });
-    job.value = { ...job.value, estimate: data };
-    skipped.value = (skipped.value || []).filter((s) => !ids.includes(s.id));
-  } catch { /* the toast in actions covers other errors; keep the list as it is */ }
-  finally { busy.value = false; }
-};
+// ── The selection changed: the estimate comes back recomputed ──
+const onEstimate = (estimate) => { job.value = { ...job.value, estimate }; };
 
 const onConfirm = async () => {
   busy.value = true;
@@ -293,18 +245,6 @@ const onDelete = async () => {
 .crawl-estimate__body { font-size: 15px; color: var(--surface-text); max-width: var(--measure); }
 
 .crawl-progress { display: flex; flex-direction: column; gap: 8px; }
-.crawl-skipped { border-top: 1px solid var(--surface-3); padding-top: 14px; display: flex; flex-direction: column; gap: 12px; }
-.crawl-skipped__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.crawl-skipped__head p { font-size: 15px; color: var(--surface-heading); max-width: var(--measure); }
-.crawl-skipped__list { display: flex; flex-direction: column; gap: 16px; max-height: 480px; overflow-y: auto; padding-right: 4px; }
-.crawl-skipped__group-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
-.crawl-skipped__group-head h3 { font-size: 15px; font-weight: 700; color: var(--surface-heading); }
-.crawl-skipped__group ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
-.crawl-skipped__group li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: baseline; gap: 12px; padding: 7px 0; border-top: 1px solid var(--surface-3); font-size: var(--text-sm); }
-.crawl-skipped__group li a { color: var(--surface-text); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.crawl-skipped__group li a:hover { color: var(--interactive); text-decoration: underline; }
-.crawl-skipped__take { border: none; background: none; padding: 0; cursor: pointer; font: inherit; font-size: var(--text-sm); font-weight: 600; color: var(--interactive); }
-.crawl-skipped__take:disabled { opacity: 0.5; cursor: not-allowed; }
 .crawl-reading { display: flex; align-items: center; gap: 12px; font-size: 15px; color: var(--surface-heading); }
 .crawl-reading p { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .crawl-pulse { flex-shrink: 0; width: 10px; height: 10px; border-radius: 50%; background: var(--ai); animation: crawl-pulse 1.2s ease-in-out infinite; }

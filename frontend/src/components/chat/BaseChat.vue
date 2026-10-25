@@ -294,6 +294,12 @@ const processBotMessage = (html) => {
   links.forEach((link) => {
     link.setAttribute("target", "_blank");
     link.setAttribute("rel", "noopener noreferrer");
+    // the server marks where an answer comes from: [short](url "source: full title")
+    const title = link.getAttribute("title") || "";
+    if (title.startsWith("source:")) {
+      link.classList.add("src-chip");
+      link.setAttribute("title", title.slice(7).trim());
+    }
   });
 
   // Return the modified HTML from the body of the parsed document
@@ -437,6 +443,9 @@ const widgetCssVariables = computed(() => {
   height: 100dvh;
 }
 
+/* the dashboard's global heading colour (App.vue) must not reach the widget */
+.chat-header h1 { color: inherit; }
+
 .chat-header {
   background-color: var(--chat-header-background-color);
   color: var(--chat-header-text-color);
@@ -513,6 +522,28 @@ const widgetCssVariables = computed(() => {
   text-underline-offset: 2px;
   font-weight: 600;
 }
+
+/* where a statement comes from: small, quiet, right after it */
+.bot-message-prose :deep(a.src-chip) {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
+  margin-left: 2px;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--chat-bot-message-text-color) 22%, transparent);
+  font-size: 0.75em;
+  font-weight: 500;
+  line-height: 1.6;
+  text-decoration: none;
+  vertical-align: 0.1em;
+  white-space: nowrap;
+  opacity: 0.8;
+}
+.bot-message-prose :deep(a.src-chip)::after { content: "↗"; font-size: 0.9em; }
+.bot-message-prose :deep(a.src-chip:hover),
+.bot-message-prose :deep(a.src-chip:focus-visible) { opacity: 1; border-color: currentColor; }
 
 .bot-message-prose :deep(a:hover) {
   opacity: 0.8;

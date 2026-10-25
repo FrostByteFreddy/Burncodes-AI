@@ -10,10 +10,13 @@ leaves the previously indexed knowledge intact.
 """
 import mimetypes
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from pathlib import Path
 from urllib.parse import urlparse
+
+from google.genai import errors as genai_errors
 
 from app.billing.services import BillingService
 from app.database.supabase_client import supabase
@@ -25,6 +28,7 @@ from app.knowledge.pdf_crosscheck import crosscheck_schedules
 from app.knowledge.understanding import (
     WEEKDAYS,
     UnderstandingFailed,
+    clean_warnings,
     log_summary,
     section_documents,
     understand_file,
@@ -130,21 +134,6 @@ class UnsupportedSource(Exception):
 # whole series is considered misread (below that, only those dates are dropped)
 _MAX_MISSING_SHARE = 0.2
 
-_MESSAGES = {
-    "de": {
-        "dropped": "Bei «{label}» wurden {n} Datum/Daten nicht übernommen, weil sie im Dokument nicht gefunden wurden ({dates}). Die übrigen Termine sind geprüft.",
-        "rejected": "Die Termine für «{label}» konnten nicht zuverlässig gelesen werden und werden im Chat nicht als Termine verwendet. Bitte das Dokument prüfen.",
-    },
-    "fr": {
-        "dropped": "Pour «{label}», {n} date(s) n'ont pas été reprises car introuvables dans le document ({dates}). Les autres dates sont vérifiées.",
-        "rejected": "Les dates de «{label}» n'ont pas pu être lues de manière fiable et ne sont pas utilisées dans le chat. Veuillez vérifier le document.",
-    },
-    "en": {
-        "dropped": "For “{label}”, {n} date(s) were left out because they could not be found in the document ({dates}). The remaining dates are verified.",
-        "rejected": "The dates for “{label}” could not be read reliably and are not used in the chat. Please check the document.",
-    },
-}
-
 
 def _fmt(iso: str) -> str:
     try:
@@ -164,8 +153,8 @@ def _validate(result: dict) -> None:
     marked as exception by the model) — any problem rejects the series.
     """
     crosscheck = result.pop("_crosscheck", None)
-    texts = _MESSAGES.get((result.get("language") or "de")[:2], _MESSAGES["de"])
-    warnings = list(result.get("warnings") or [])
+    # warnings are {kind, subject, …}; the dashboard words them in the user's language
+    warnings = clean_warnings(result)
     for i, series in enumerate(result.get("schedules") or []):
         label = " ".join(p for p in (series.get("name"), series.get("zone")) if p)
         problems = validate_schedule(series)
@@ -178,8 +167,8 @@ def _validate(result: dict) -> None:
                 series["_problems"] = [f"{len(missing)} dates not printed in the grid"]
             else:
                 series["dates"] = [d for d in series["dates"] if d.get("date", "")[:10] not in missing]
-                warnings.append(texts["dropped"].format(
-                    label=label, n=len(missing), dates=", ".join(_fmt(d) for d in missing[:5])))
+                warnings.append({"kind": "dates_dropped", "subject": label, "n": len(missing),
+                                 "dates": [_fmt(d) for d in missing[:5]]})
 
         if grid_checked:
             # Printed in the grid → real. Only structural problems matter now.
@@ -187,7 +176,7 @@ def _validate(result: dict) -> None:
         if problems and not series.get("_problems"):
             series["_problems"] = problems
         if series.get("_problems"):
-            warnings.append(texts["rejected"].format(label=label))
+            warnings.append({"kind": "dates_rejected", "subject": label})
             error_logger.warning("schedule %r rejected: %s", label, series["_problems"][:5])
             continue
 
@@ -265,8 +254,15 @@ def _index(tenant_id: str, source: dict, result: dict) -> tuple[list[str], int]:
 
     def upload(doc: tuple[str, str]) -> str:
         name, text = doc
-        return GeminiStoreService.upload_text(store_name=store, text=text, display_name=name,
-                                              metadata=metadata, bill=False)
+        for attempt in range(3):
+            try:
+                return GeminiStoreService.upload_text(store_name=store, text=text, display_name=name,
+                                                      metadata=metadata, bill=False)
+            except genai_errors.ClientError as e:
+                # a store created moments ago can answer 404 for a few seconds
+                if e.code != 404 or attempt == 2:
+                    raise
+                time.sleep(5 * (attempt + 1))
 
     with ThreadPoolExecutor(max_workers=_UPLOAD_THREADS) as pool:
         names = list(pool.map(upload, docs))
@@ -347,7 +343,7 @@ def learn_source(source_id: int, job_id: int | None = None) -> None:
         jobs.log_event(job_id, tenant_id, "learn_failed", url=source["source_location"], reason=str(e))
         supabase.table("tenant_sources").update({
             "status": "ERROR", "status_code": 422,
-            "warnings": [f"Gemini konnte dieses Dokument nicht auswerten: {e}"],
+            "warnings": [{"kind": "unreadable", "subject": source.get("title") or ""}],
         }).eq("id", source_id).execute()
     except UnsupportedSource as e:
         supabase.table("tenant_sources").update({"status": "UNSUPPORTED"}).eq("id", source_id).execute()

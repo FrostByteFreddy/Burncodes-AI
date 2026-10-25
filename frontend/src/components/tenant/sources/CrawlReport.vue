@@ -75,20 +75,8 @@
 
     <!-- To review, grouped by document -->
     <div v-else class="crep__panel">
-      <p v-if="!reviewGroups.length" class="crep__muted">{{ $t('knowledge.report.noReview') }}</p>
-      <section v-for="g in reviewGroups" :key="g.source_id" class="crep__group">
-        <a :href="g.url" target="_blank" rel="noopener noreferrer" class="crep__doc">
-          <font-awesome-icon :icon="['fas', 'file-lines']" class="crep__doc-icon" />
-          {{ g.title }}
-          <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" class="crep__link-icon" />
-        </a>
-        <ul class="crep__list">
-          <li v-for="(m, i) in g.items" :key="i" class="crep__warn">
-            <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="crep__warn-icon" />
-            <span>{{ m }}</span>
-          </li>
-        </ul>
-      </section>
+      <p v-if="!issues.length" class="crep__muted">{{ $t('knowledge.report.noReview') }}</p>
+      <IssueList v-else :issues="issues" />
     </div>
   </div>
 </template>
@@ -96,6 +84,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import IssueList from './IssueList.vue';
 
 const props = defineProps({ report: { type: Object, required: true } });
 const { t, locale } = useI18n();
@@ -119,9 +108,10 @@ const dateGroups = computed(() =>
     items: g.items.sort((a, b) => (a.ended - b.ended) || String(a.next || a.last).localeCompare(String(b.next || b.last))),
   }))
 );
-const reviewGroups = computed(() => groupBy(props.report.attention, (a) => a.message));
+// reports from before 2026-10-25 carry free-text warnings; only structured issues are shown
+const issues = computed(() => (props.report.attention || []).filter((a) => a.kind));
 
-const reviewCount = computed(() => (props.report.attention || []).length);
+const reviewCount = computed(() => issues.value.length);
 const tabs = computed(() => [
   { key: 'overview', label: t('knowledge.report.overview') },
   { key: 'dates', label: t('knowledge.report.dates'), count: (props.report.schedules || []).length },
@@ -218,11 +208,6 @@ const fmtDay = (iso) => (iso
 .crep__num { text-align: right; }
 .crep__expired { color: var(--surface-muted); }
 
-.crep__warn {
-  display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 10px; align-items: baseline;
-  font-size: var(--text-sm); line-height: var(--leading-body); color: var(--surface-text); max-width: var(--measure);
-}
-.crep__warn-icon { color: var(--status-warning); }
 
 @media (max-width: 640px) {
   .crep__tabs { align-self: stretch; overflow-x: auto; }

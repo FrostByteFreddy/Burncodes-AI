@@ -6,8 +6,11 @@ import { useToast } from './useToast';
 
 export const ACTIVE_STATUSES = ['IN_PROGRESS', 'SCANNED', 'INDEXING'];
 
+// Scan finished, but the sorting step and the cost estimate are still being prepared
+export const isPreparing = (job) => job?.status === 'SCANNED' && !job.estimate;
+
 // Start events are folded into their finishing event so each item is one row
-const FINISHES = { scan: ['scanned'], learn_source: ['learned', 'learn_failed'] };
+const FINISHES = { scan: ['scanned'], learn_source: ['learned', 'learn_failed'], triage_start: ['triage'] };
 const FINISH_EVENTS = Object.values(FINISHES).flat();
 
 export function useCrawlText() {
@@ -42,6 +45,8 @@ export function useCrawlText() {
       case 'scan':         return t('knowledge.log.scan', { page });
       case 'scanned':      return t('knowledge.log.scanned', { page, outcome: t(`knowledge.estimate.${d.outcome}`, d.outcome || '') });
       case 'links_found':  return t('knowledge.log.links_found', { page, count: d.count });
+      case 'triage_start': return t('knowledge.log.triage_start');
+      case 'triage':       return t('knowledge.log.triage', { n: d.skipped || 0 });
       case 'scan_done':    return t('knowledge.log.scan_done', { n: d.to_learn, cost: fmtChf(d.cost_chf) });
       case 'learn_start':  return t('knowledge.log.learn_start', { n: d.count });
       case 'learn_source': return t('knowledge.log.learn_source', { page });
@@ -70,7 +75,7 @@ export function useCrawlText() {
         const end = finished.get(`${e.event}:${e.data?.url}`);
         entry = end || e;
         state = !end ? 'running'
-          : end.event === 'learn_failed' || ['error', 'refused'].includes(end.data?.outcome) ? 'failed'
+          : end.event === 'learn_failed' || ['error', 'refused', 'timeout', 'rate_limited'].includes(end.data?.outcome) ? 'failed'
           : 'done';
       } else if (e.event === 'job_done' || e.event === 'scan_done') {
         state = 'done';
@@ -101,6 +106,7 @@ export function useCrawlText() {
       const c = r.counts || {};
       return t('knowledge.job.summaryDone', { learned: c.learned || 0, unchanged: c.unchanged || 0, cost: fmtChf(r.cost_chf) });
     }
+    if (isPreparing(job)) return t('knowledge.estimate.preparing');
     if (job.status === 'SCANNED') {
       return e.to_learn
         ? t('knowledge.job.summaryScanned', { n: e.to_learn, cost: fmtChf(e.cost_chf) })
@@ -110,7 +116,9 @@ export function useCrawlText() {
     return '';
   }
 
-  return { fmtChf, fmtDateTime, fmtTime, pageLabel, displayUrl, formatEntry, foldLog, currentActivity, latestPage, jobSummary };
+  const statusLabel = (job) => (isPreparing(job) ? t('knowledge.status.PREPARING') : t(`knowledge.status.${job.status}`));
+
+  return { statusLabel, fmtChf, fmtDateTime, fmtTime, pageLabel, displayUrl, formatEntry, foldLog, currentActivity, latestPage, jobSummary };
 }
 
 export function useCrawlActions(getTenantId) {

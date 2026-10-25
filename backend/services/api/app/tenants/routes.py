@@ -1,3 +1,4 @@
+import json
 from flask import Blueprint, request, jsonify
 from app.database.supabase_client import fetch_all, supabase
 from app.auth.decorators import token_required
@@ -132,6 +133,14 @@ def update_tenant(current_user, tenant_id):
             tenant_update_data['test_password_hash'] = hash_password(password) if password else None
         if 'calendar_feeds' in data:
             tenant_update_data['calendar_feeds'] = bool(data['calendar_feeds'])
+        if 'crawl_exclusions' in data:
+            # the settings only remove rules; new ones come from the crawl's selection
+            current = supabase.table('tenants').select('crawl_exclusions').eq('id', tenant_id_str).limit(1).execute().data
+            keep = {json.dumps(r, sort_keys=True) for r in (data['crawl_exclusions'] or []) if isinstance(r, dict)}
+            tenant_update_data['crawl_exclusions'] = [
+                r for r in ((current[0].get('crawl_exclusions') if current else None) or [])
+                if json.dumps(r, sort_keys=True) in keep
+            ]
         if 'review_chats' in data:
             tenant_update_data['review_chats'] = bool(data['review_chats'])
         if 'review_interval_days' in data:
@@ -288,6 +297,7 @@ def get_tenant_overview(current_user, tenant_id):
                          for j in jobs if (j.get('finished_at') or '') >= since.isoformat())
         last = jobs[0] if jobs else None
 
+        from app.knowledge.jobs import issues_of
         sources = fetch_all(lambda: (
             supabase.table('tenant_sources')
             .select("source_type, status, indexed_chunks, warnings")
@@ -338,7 +348,7 @@ def get_tenant_overview(current_user, tenant_id):
                 "pages": sum(1 for s in sources if s['source_type'] == 'URL'),
                 "files": sum(1 for s in sources if s['source_type'] != 'URL'),
                 "sections": sum(int(s.get('indexed_chunks') or 0) for s in sources),
-                "needs_attention": sum(1 for s in sources if s.get('status') == 'ERROR' or s.get('warnings')),
+                "needs_attention": sum(1 for s in sources if s.get('status') == 'ERROR' or issues_of(s.get('warnings'))),
                 "upcoming_dates": upcoming,
             },
             "last_crawl": last and {

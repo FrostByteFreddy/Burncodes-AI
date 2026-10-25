@@ -73,7 +73,7 @@
         {{ $t('knowledge.overview.needsNone') }}
       </p>
 
-      <ul v-else class="ko-needs__list">
+      <ul v-else-if="data.ended?.length" class="ko-needs__list">
         <li v-for="s in data.ended" :key="`ended-${s.series}-${s.zone}`" class="ko-need">
           <font-awesome-icon :icon="['fas', 'calendar-xmark']" class="ko-need__icon" />
           <div>
@@ -81,16 +81,8 @@
             <p class="meta">{{ $t('knowledge.overview.endedHint') }}</p>
           </div>
         </li>
-        <li v-for="group in issueGroups" :key="group.source_id" class="ko-need">
-          <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="ko-need__icon" />
-          <div>
-            <a :href="group.url" target="_blank" rel="noopener noreferrer" class="ko-need__doc">{{ group.title }}</a>
-            <ul class="ko-need__messages">
-              <li v-for="(m, i) in group.messages" :key="i">{{ m }}</li>
-            </ul>
-          </div>
-        </li>
       </ul>
+      <IssueList v-if="issues.length" :issues="issues" class="ko-needs__issues" />
     </section>
   </div>
 </template>
@@ -101,6 +93,7 @@ import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';
 import { useTenantsStore } from '@/stores/tenants';
 import { useToast } from '@/composables/useToast';
+import IssueList from './IssueList.vue';
 
 const props = defineProps({
   tenantId: { type: String, required: true },
@@ -147,15 +140,9 @@ const days = computed(() => {
   });
 });
 
-const issueGroups = computed(() => {
-  const groups = new Map();
-  for (const it of data.value?.issues || []) {
-    if (!groups.has(it.source_id)) groups.set(it.source_id, { source_id: it.source_id, title: it.title, url: it.url, messages: [] });
-    groups.get(it.source_id).messages.push(it.message);
-  }
-  return [...groups.values()];
-});
-const needsCount = computed(() => (data.value?.ended?.length || 0) + issueGroups.value.length);
+// only structured issues; free-text warnings from before 2026-10-25 are filtered out server-side
+const issues = computed(() => (data.value?.issues || []).filter((i) => i.kind));
+const needsCount = computed(() => (data.value?.ended?.length || 0) + issues.value.length);
 
 // ── Calendar feeds ──────────────────────────────────────────────────
 const tenantsStore = useTenantsStore();
@@ -279,6 +266,7 @@ defineExpose({ reload: load });
 }
 .ko-needs__none { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--surface-text); }
 .ko-needs__ok { color: var(--status-success); }
+.ko-needs__issues { margin-top: 18px; }
 .ko-needs__list { list-style: none; padding: 0; display: flex; flex-direction: column; }
 .ko-need {
   display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 12px;
@@ -287,10 +275,6 @@ defineExpose({ reload: load });
 .ko-need:first-child { border-top: none; padding-top: 0; }
 .ko-need__icon { margin-top: 3px; color: var(--status-warning); }
 .ko-need__text { font-size: 15px; color: var(--surface-heading); font-weight: 600; max-width: var(--measure); }
-.ko-need__doc { font-size: 15px; font-weight: 700; color: var(--surface-heading); text-decoration: none; }
-.ko-need__doc:hover { color: var(--interactive); text-decoration: underline; }
-.ko-need__messages { margin-top: 6px; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; max-width: var(--measure); }
-.ko-need__messages li { font-size: var(--text-sm); color: var(--surface-text); line-height: var(--leading-body); }
 
 /* Phones: one day per row, empty days collapse to a single line */
 @media (max-width: 760px) {

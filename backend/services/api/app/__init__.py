@@ -3,6 +3,7 @@ services/api/app/__init__.py
 Lean Flask factory — only registers HTTP blueprints.
 No task imports, no crawl4ai, no langchain at module level.
 """
+import hashlib
 import os
 import json
 import time
@@ -20,10 +21,24 @@ from uuid import UUID
 load_dotenv()
 
 celery = Celery(__name__)
+
+
+def _rate_limit_key() -> str:
+    """
+    Signed-in dashboard users are counted per login, everyone else per IP: the
+    dashboard polls while a crawl runs, and a team behind one office IP would
+    otherwise share a single bucket.
+    """
+    auth = request.headers.get('Authorization', '')
+    if auth.startswith('Bearer ') and len(auth) > 20:
+        return 'user:' + hashlib.sha256(auth.encode()).hexdigest()[:24]
+    return get_remote_address()
+
+
 limiter = Limiter(
-    key_func=get_remote_address,
+    key_func=_rate_limit_key,
     storage_uri=os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0'),
-    default_limits=["200 per hour"],
+    default_limits=["3000 per hour", "300 per minute"],
 )
 
 class CustomJSONEncoder(json.JSONEncoder):
@@ -92,6 +107,9 @@ def create_app():
 
     @app.after_request
     def _after(response):
+        # a request the rate limiter turned away never reached _before
+        if 'req_id' not in g:
+            g.req_id, g.req_start = str(uuid.uuid4())[:8], time.monotonic()
         elapsed_ms = int((time.monotonic() - g.req_start) * 1000)
         level = (
             error_logger.error   if response.status_code >= 500 else
