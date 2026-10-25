@@ -10,10 +10,13 @@ leaves the previously indexed knowledge intact.
 """
 import mimetypes
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from pathlib import Path
 from urllib.parse import urlparse
+
+from google.genai import errors as genai_errors
 
 from app.billing.services import BillingService
 from app.database.supabase_client import supabase
@@ -265,8 +268,15 @@ def _index(tenant_id: str, source: dict, result: dict) -> tuple[list[str], int]:
 
     def upload(doc: tuple[str, str]) -> str:
         name, text = doc
-        return GeminiStoreService.upload_text(store_name=store, text=text, display_name=name,
-                                              metadata=metadata, bill=False)
+        for attempt in range(3):
+            try:
+                return GeminiStoreService.upload_text(store_name=store, text=text, display_name=name,
+                                                      metadata=metadata, bill=False)
+            except genai_errors.ClientError as e:
+                # a store created moments ago can answer 404 for a few seconds
+                if e.code != 404 or attempt == 2:
+                    raise
+                time.sleep(5 * (attempt + 1))
 
     with ThreadPoolExecutor(max_workers=_UPLOAD_THREADS) as pool:
         names = list(pool.map(upload, docs))
