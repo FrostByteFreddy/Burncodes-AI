@@ -35,6 +35,8 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 ALTER TYPE public.source_status ADD VALUE IF NOT EXISTS 'QUEUED';
 ALTER TYPE public.source_status ADD VALUE IF NOT EXISTS 'UNSUPPORTED';
 ALTER TYPE public.source_type ADD VALUE IF NOT EXISTS 'FILE_URL';
+-- Sorted out before learning (archive, old versions …); can be taken back in
+ALTER TYPE public.source_status ADD VALUE IF NOT EXISTS 'SKIPPED';
 -- Crawl job phases: scan (IN_PROGRESS) → SCANNED (estimate, awaiting
 -- confirmation) → INDEXING (Gemini reads changed pages) → COMPLETED
 ALTER TYPE public.crawling_status ADD VALUE IF NOT EXISTS 'SCANNED';
@@ -131,6 +133,13 @@ ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS learn_started_at     
 ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS gemini_document_names TEXT[] NOT NULL DEFAULT '{}';
 -- Number of indexed chunks (= section documents) — shown in the dashboard
 ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS indexed_chunks        INTEGER;
+-- Why a source was sorted out before learning (a fixed category, see knowledge/triage.py)
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS skip_reason           TEXT;
+-- 'full' = read by Gemini; 'index_only' = long documents, text made searchable only
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS learn_mode            TEXT;
+-- Tokens of the last learning run, to calibrate the cost estimate on real numbers
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS last_learn_in_tokens  INTEGER;
+ALTER TABLE public.tenant_sources ADD COLUMN IF NOT EXISTS last_learn_out_tokens INTEGER;
 COMMENT ON COLUMN public.tenant_sources.gemini_document_name IS
     'Gemini File Search document resource name. Used to delete the document when the source is removed.';
 

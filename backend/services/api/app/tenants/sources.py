@@ -424,6 +424,60 @@ def confirm_crawling_job(current_user, tenant_id, job_id):
         return jsonify({"error": "Failed to confirm crawl job"}), 500
 
 
+@sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/skipped', methods=['GET'])
+@token_required
+def list_skipped_sources(current_user, tenant_id, job_id):
+    """What the sorting step set aside for this crawl, to review before learning."""
+    try:
+        tenant_id_str = str(tenant_id)
+        if not supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute().data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+        rows = fetch_all(lambda: (
+            supabase.table('tenant_sources')
+            .select("id, source_type, source_location, title, file_pages, skip_reason")
+            .eq('tenant_id', tenant_id_str).eq('last_job_id', job_id).eq('status', 'SKIPPED').order('id')
+        ))
+        return jsonify(rows), 200
+    except Exception as e:
+        error_logger.error(f"Error listing skipped sources for job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to list sources"}), 500
+
+
+@sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/selection', methods=['POST'])
+@token_required
+def change_selection(current_user, tenant_id, job_id):
+    """
+    Before learning: take sorted-out sources back in ({"include": [ids]}) or
+    set sources aside ({"exclude": [ids]}). Returns the recomputed estimate.
+    """
+    try:
+        from app.knowledge import jobs as knowledge_jobs
+        from app.knowledge.triage import MANUAL
+        tenant_id_str = str(tenant_id)
+        job = supabase.table('crawling_jobs').select("id, status").eq('id', job_id).eq('tenant_id', tenant_id_str) \
+            .limit(1).execute().data
+        owns = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute().data
+        if not job or not owns:
+            return jsonify({"error": "Job not found or access denied"}), 404
+        if job[0]['status'] != 'SCANNED':
+            return jsonify({"error": "The selection can only change before learning starts"}), 409
+        data = request.get_json(silent=True) or {}
+        include = [int(i) for i in data.get('include') or []]
+        exclude = [int(i) for i in data.get('exclude') or []]
+        for i in range(0, len(include), 200):
+            supabase.table('tenant_sources').update({"status": "QUEUED", "skip_reason": None}) \
+                .in_('id', include[i:i + 200]).eq('last_job_id', job_id).eq('status', 'SKIPPED').execute()
+        for i in range(0, len(exclude), 200):
+            supabase.table('tenant_sources').update({"status": "SKIPPED", "skip_reason": MANUAL}) \
+                .in_('id', exclude[i:i + 200]).eq('last_job_id', job_id).eq('status', 'QUEUED').execute()
+        return jsonify(knowledge_jobs.refresh_estimate(job_id)), 200
+    except (TypeError, ValueError):
+        return jsonify({"error": "include/exclude must be lists of source ids"}), 400
+    except Exception as e:
+        error_logger.error(f"Error changing selection for job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to change the selection"}), 500
+
+
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/cancel', methods=['POST'])
 @token_required
 def cancel_crawling_job(current_user, tenant_id, job_id):

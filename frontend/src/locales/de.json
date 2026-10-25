@@ -529,6 +529,15 @@
     }
   },
   "knowledge": {
+    "skipReasons": {
+      "archive_finance": "Alte Budgets und Rechnungen",
+      "old_minutes": "Alte Protokolle",
+      "outdated": "Veraltet",
+      "older_version": "Ältere Fassungen",
+      "internal": "Intern oder technisch",
+      "manual": "Von Ihnen aussortiert",
+      "other": "Sonstiges"
+    },
     "calendars": {
       "title": "Termine im eigenen Kalender",
       "sub": "Einwohnerinnen und Einwohner können diese Termine in ihrer Kalender-App abonnieren (z. B. Apple, Google oder Outlook). Der Chatbot bietet das bei Fragen zu Terminen an. Neue oder verschobene Termine erscheinen automatisch.",
@@ -602,7 +611,8 @@
         "QUEUED": "Wartet",
         "PROCESSING": "Wird gelernt",
         "ERROR": "Fehler",
-        "UNSUPPORTED": "Nicht unterstützt"
+        "UNSUPPORTED": "Nicht unterstützt",
+        "SKIPPED": "Aussortiert"
       }
     },
     "status": {
@@ -637,6 +647,13 @@
       "hideReport": "Bericht ausblenden"
     },
     "estimate": {
+      "indexOnly": "{n} lange Dokumente (über {pages} Seiten) werden nur durchsuchbar gemacht: ihr Text, ohne Termine und Fakten.",
+      "skipped": "{n} aussortiert",
+      "showList": "Liste ansehen",
+      "hideList": "Liste ausblenden",
+      "include": "Wieder aufnehmen",
+      "includeAll": "Alle wieder aufnehmen",
+      "pages": "{n} Seiten",
       "title": "Scan abgeschlossen",
       "body": "Gemini liest {n} neue oder geänderte Quellen, teilt sie in Abschnitte und notiert wichtige Fakten und Termine. Unveränderte Seiten werden kostenlos übersprungen.",
       "nothing": "Seit dem letzten Durchlauf hat sich nichts geändert – es gibt nichts Neues zu lernen.",

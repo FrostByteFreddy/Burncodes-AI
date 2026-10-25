@@ -7,6 +7,8 @@ restart the affected containers (env_file is read at container start).
   CHAT_GEMINI_MODEL       answers widget/chat messages (worker_chat)
   INDEXING_GEMINI_MODEL   reads documents during indexing: structured
                           extraction of schedules/tables (worker_fast/heavy)
+  TRIAGE_GEMINI_MODEL     sorts out pages and documents not worth learning
+                          (archives, old versions) before the estimate
   REVIEW_GEMINI_MODEL     reviews finished conversations for unanswered
                           questions and pushback (worker_fast)
   EMBEDDING_GEMINI_MODEL  embeddings for new File Search stores. A store keeps
@@ -34,6 +36,8 @@ CHAT_GEMINI_MODEL = _env("CHAT_GEMINI_MODEL", "gemini-3.1-flash-lite")
 INDEXING_GEMINI_MODEL = _env("INDEXING_GEMINI_MODEL", "gemini-4-argon")
 EMBEDDING_GEMINI_MODEL = _env("EMBEDDING_GEMINI_MODEL", "gemini-embedding-2")
 REVIEW_GEMINI_MODEL = _env("REVIEW_GEMINI_MODEL", CHAT_GEMINI_MODEL)
+# sorts the list of found pages before learning (one cheap call per ~300 entries)
+TRIAGE_GEMINI_MODEL = _env("TRIAGE_GEMINI_MODEL", CHAT_GEMINI_MODEL)
 
 # role -> {"input": CHF/1M tokens, "output": CHF/1M tokens}
 RATES = {

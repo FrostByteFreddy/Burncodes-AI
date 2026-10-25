@@ -33,12 +33,20 @@ MISSED_CRAWLS_BEFORE_REMOVAL = 2
 # Scheduled re-crawls start learning on their own only below this estimate
 AUTO_CONFIRM_MAX_CHF = float(os.getenv("RECRAWL_AUTO_CONFIRM_MAX_CHF", "5"))
 
-# Token model for the estimate, calibrated on real pages/PDFs with Gemini 4
-# (Zofingen homepage: 730 Markdown tokens → ~3.0k in / 1.0k out;
-#  2-page Abfallkalender PDF → ~7.7k in / 13k out).
+# Documents longer than this are not read by Gemini page by page: their text
+# is split into sections and made searchable only (no facts or dates).
+# Important documents for residents are rarely longer.
+MAX_LLM_PAGES = int(os.getenv("INDEXING_MAX_PAGES", "20"))
+# Gemini can't answer longer than this per document (understanding.py)
+_MAX_OUT = int(os.getenv("INDEXING_MAX_OUTPUT_TOKENS", "32000"))
+
+# Token model for the estimate. Defaults until enough real learning runs are
+# recorded (last_learn_*_tokens); then the median of those is used instead.
 _PROMPT_OVERHEAD = 2_000
 _PDF_IN_PER_PAGE = 2_900
-_PDF_OUT_PER_PAGE = 6_500
+_PDF_OUT_PER_PAGE = 900          # text PDFs answer with line ranges, not re-typed text
+_INDEX_TOKENS_PER_PAGE = 600     # text of a page, for "searchable only" documents
+_CALIBRATION_MIN_SAMPLES = 10
 
 
 def now_iso() -> str:
@@ -105,12 +113,15 @@ def record_scan(
         }).execute().data[0]
         return row, "new"
 
-    unchanged = existing.get("content_hash") == content_hash and existing.get("status") == "COMPLETED"
+    same = existing.get("content_hash") == content_hash or existing.get("pending_hash") == content_hash
+    unchanged = same and existing.get("status") in ("COMPLETED", "SKIPPED")
     if unchanged:
-        # Keep the stored Markdown; nothing to re-learn.
-        base.pop("content_markdown", None)
+        # Learned, or sorted out before: nothing to do while it doesn't change.
+        if existing.get("status") == "COMPLETED":
+            base.pop("content_markdown", None)
     else:
         base["status"] = "QUEUED"
+        base["skip_reason"] = None
     row = supabase.table("tenant_sources").update(base).eq("id", existing["id"]).execute().data[0]
     return row, "unchanged" if unchanged else "changed"
 
@@ -151,17 +162,51 @@ def _pending_sources(job_id: int) -> list[dict]:
     ))
 
 
-def estimate_source(src: dict) -> tuple[int, int, int]:
+def is_index_only(src: dict) -> bool:
+    return (src.get("file_pages") or 0) > MAX_LLM_PAGES
+
+
+def _median(values: list[float]) -> float | None:
+    values = sorted(v for v in values if v and v > 0)
+    return values[len(values) // 2] if values else None
+
+
+def calibration() -> dict:
+    """Typical tokens per PDF page / per page token, from recent real learning runs."""
+    rows = (
+        supabase.table("tenant_sources")
+        .select("file_pages, content_tokens, last_learn_in_tokens, last_learn_out_tokens")
+        .eq("learn_mode", "full").not_.is_("last_learn_out_tokens", "null")
+        .order("id", desc=True).limit(500).execute()
+    ).data or []
+    pdfs = [r for r in rows if r.get("file_pages")]
+    pages = [r for r in rows if not r.get("file_pages") and r.get("content_tokens")]
+    cal = {"pdf_in": _PDF_IN_PER_PAGE, "pdf_out": _PDF_OUT_PER_PAGE, "page_out": 0.6, "samples": len(rows)}
+    if len(pdfs) >= _CALIBRATION_MIN_SAMPLES:
+        cal["pdf_in"] = _median([r["last_learn_in_tokens"] / r["file_pages"] for r in pdfs]) or cal["pdf_in"]
+        cal["pdf_out"] = _median([r["last_learn_out_tokens"] / r["file_pages"] for r in pdfs]) or cal["pdf_out"]
+    if len(pages) >= _CALIBRATION_MIN_SAMPLES:
+        cal["page_out"] = _median([r["last_learn_out_tokens"] / r["content_tokens"] for r in pages]) or cal["page_out"]
+    return cal
+
+
+def estimate_source(src: dict, cal: dict | None = None) -> tuple[int, int, int]:
     """(extraction_in, extraction_out, embedding_tokens) expected for learning one source."""
+    cal = cal or {"pdf_in": _PDF_IN_PER_PAGE, "pdf_out": _PDF_OUT_PER_PAGE, "page_out": 0.6}
     pages = src.get("file_pages") or 0
+    if pages and pages > MAX_LLM_PAGES:
+        return (0, 0, _INDEX_TOKENS_PER_PAGE * pages)   # searchable only: embedding, no Gemini reading
     if pages:
-        return (_PROMPT_OVERHEAD + _PDF_IN_PER_PAGE * pages, _PDF_OUT_PER_PAGE * pages, _PDF_OUT_PER_PAGE * pages)
+        out = min(_MAX_OUT, int(cal["pdf_out"] * pages))
+        return (_PROMPT_OVERHEAD + int(cal["pdf_in"] * pages), out, out)
     tokens = src.get("content_tokens") or 0
-    return (_PROMPT_OVERHEAD + int(tokens * 1.3), 500 + int(tokens * 0.6), int(tokens * 1.2))
+    out = min(_MAX_OUT, 500 + int(tokens * cal["page_out"]))
+    return (_PROMPT_OVERHEAD + int(tokens * 1.3), out, int(tokens * 1.2))
 
 
 def compute_estimate(job_id: int) -> dict:
     pending = _pending_sources(job_id)
+    cal = calibration()
     tasks = fetch_all(lambda: supabase.table("crawling_tasks").select("outcome").eq("job_id", job_id).order("id"))
     outcomes: dict[str, int] = {}
     for t in tasks:
@@ -169,9 +214,21 @@ def compute_estimate(job_id: int) -> dict:
         outcomes[key] = outcomes.get(key, 0) + 1
 
     ext_in = ext_out = embed = 0
+    index_only = 0
     for src in pending:
-        i, o, e = estimate_source(src)
+        i, o, e = estimate_source(src, cal)
         ext_in, ext_out, embed = ext_in + i, ext_out + o, embed + e
+        index_only += is_index_only(src)
+
+    # what the sorting step set aside, by reason (shown so it can be taken back in)
+    skipped = fetch_all(lambda: (
+        supabase.table("tenant_sources").select("skip_reason")
+        .eq("last_job_id", job_id).eq("status", "SKIPPED").order("id")
+    ))
+    skipped_by_reason: dict[str, int] = {}
+    for s in skipped:
+        key = s.get("skip_reason") or "other"
+        skipped_by_reason[key] = skipped_by_reason.get(key, 0) + 1
     cost = (
         ext_in / 1e6 * RATES["extraction"]["input"]
         + ext_out / 1e6 * RATES["extraction"]["output"]
@@ -181,6 +238,11 @@ def compute_estimate(job_id: int) -> dict:
         "to_learn": len(pending),
         "pages": sum(1 for s in pending if not s.get("file_pages")),
         "files": sum(1 for s in pending if s.get("file_pages")),
+        "index_only": index_only,
+        "max_pages": MAX_LLM_PAGES,
+        "skipped": len(skipped),
+        "skipped_by_reason": skipped_by_reason,
+        "calibration_samples": cal.get("samples", 0),
         "outcomes": outcomes,
         "tokens_in": ext_in,
         "tokens_out": ext_out,
@@ -234,6 +296,10 @@ def complete_scan_if_done(job_id: int) -> None:
         return  # another worker did it, or the job was cancelled
     job = moved[0]
     removed = _mark_missed_sources(job)
+    from app.knowledge.triage import triage_job
+    sorted_out = triage_job(job)
+    if sorted_out:
+        log_event(job_id, job["tenant_id"], "triage", skipped=sorted_out)
     estimate = compute_estimate(job_id)
     estimate["removed"] = removed
     supabase.table("crawling_jobs").update({"estimate": estimate}).eq("id", job_id).execute()
@@ -246,6 +312,15 @@ def complete_scan_if_done(job_id: int) -> None:
     auto = job.get("auto_confirm") and estimate["cost_chf"] <= AUTO_CONFIRM_MAX_CHF
     if auto or estimate["to_learn"] == 0:
         start_learning(job_id)
+
+
+def refresh_estimate(job_id: int) -> dict:
+    """Recomputes the estimate after the user took sources back in or set them aside."""
+    job = supabase.table("crawling_jobs").select("estimate").eq("id", job_id).limit(1).execute().data
+    estimate = compute_estimate(job_id)
+    estimate["removed"] = ((job[0].get("estimate") or {}) if job else {}).get("removed", 0)
+    supabase.table("crawling_jobs").update({"estimate": estimate}).eq("id", job_id).execute()
+    return estimate
 
 
 def start_learning(job_id: int) -> bool:

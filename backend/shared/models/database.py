@@ -20,6 +20,7 @@ class SourceStatus(str, Enum):
     COMPLETED = "COMPLETED"
     ERROR = "ERROR"
     UNSUPPORTED = "UNSUPPORTED"  # file type not accepted by File Search
+    SKIPPED = "SKIPPED"          # sorted out before learning (archive, old version …)
 
 
 class CrawlMode(str, Enum):

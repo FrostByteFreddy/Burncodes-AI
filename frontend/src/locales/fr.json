@@ -529,6 +529,15 @@
     }
   },
   "knowledge": {
+    "skipReasons": {
+      "archive_finance": "Anciens budgets et comptes",
+      "old_minutes": "Anciens procès-verbaux",
+      "outdated": "Obsolète",
+      "older_version": "Anciennes versions",
+      "internal": "Interne ou technique",
+      "manual": "Écarté par vous",
+      "other": "Autre"
+    },
     "calendars": {
       "title": "Dates dans son propre calendrier",
       "sub": "Les habitantes et habitants peuvent s'abonner à ces dates dans leur application de calendrier (p. ex. Apple, Google ou Outlook). Le chatbot le propose lors de questions sur des dates. Les nouvelles dates et les changements apparaissent automatiquement.",
@@ -602,7 +611,8 @@
         "QUEUED": "En attente",
         "PROCESSING": "Apprentissage",
         "ERROR": "Erreur",
-        "UNSUPPORTED": "Non pris en charge"
+        "UNSUPPORTED": "Non pris en charge",
+        "SKIPPED": "Écarté"
       }
     },
     "status": {
@@ -637,6 +647,13 @@
       "hideReport": "Masquer le rapport"
     },
     "estimate": {
+      "indexOnly": "{n} longs documents (plus de {pages} pages) sont seulement rendus consultables : leur texte, sans dates ni faits.",
+      "skipped": "{n} écartés",
+      "showList": "Voir la liste",
+      "hideList": "Masquer la liste",
+      "include": "Réintégrer",
+      "includeAll": "Tout réintégrer",
+      "pages": "{n} pages",
       "title": "Analyse terminée",
       "body": "Gemini va lire {n} sources nouvelles ou modifiées, les découper en sections et noter les faits et dates importants. Les pages inchangées sont ignorées gratuitement.",
       "nothing": "Rien n'a changé depuis le dernier crawl — rien à apprendre.",

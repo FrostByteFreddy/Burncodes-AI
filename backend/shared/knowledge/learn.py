@@ -64,6 +64,33 @@ def load_file(source: dict) -> bytes:
     return resp.content
 
 
+_INDEX_SECTION_PAGES = 2   # pages per section for documents made searchable only
+
+
+def index_only_result(source: dict, data: bytes) -> dict:
+    """
+    Long documents: the PDF's own text, split into sections of a few pages,
+    without Gemini reading it. Searchable in the chat, but no facts or dates.
+    """
+    text = pdf_text(data)
+    if not text:
+        raise UnderstandingFailed(f"scanned document over {jobs.MAX_LLM_PAGES} pages without a text layer")
+    pages = [p for p in text.split("--- Seite ") if p.strip()]
+    title = (source.get("title") or Path(urlparse(source["source_location"]).path).stem).replace("_", " ")
+    sections = []
+    for i in range(0, len(pages), _INDEX_SECTION_PAGES):
+        chunk = pages[i:i + _INDEX_SECTION_PAGES]
+        first = chunk[0].split(" ---", 1)[0].strip()
+        last = chunk[-1].split(" ---", 1)[0].strip()
+        body = "\n\n".join("Seite " + p.strip() for p in chunk)
+        sections.append({"heading": f"Seiten {first}–{last}" if first != last else f"Seite {first}", "text": body})
+    return {
+        "title": title, "summary": "", "page_type": "document", "importance": 20,
+        "importance_reason": f"Langes Dokument (über {jobs.MAX_LLM_PAGES} Seiten): nur durchsuchbar.",
+        "sections": sections, "facts": [], "schedules": [], "single_events": [], "warnings": [],
+    }
+
+
 def understand_source(source: dict) -> tuple[dict, int, int]:
     """Runs Gemini on a source. Returns (result, input_tokens, output_tokens)."""
     location = source["source_location"]
@@ -74,6 +101,8 @@ def understand_source(source: dict) -> tuple[dict, int, int]:
     data = load_file(source)
     if len(data) > MAX_FILE_BYTES:
         raise ValueError(f"file larger than {MAX_FILE_BYTES // (1024 * 1024)} MB")
+    if ext == ".pdf" and jobs.is_index_only(source):
+        return index_only_result(source, data), 0, 0
     if ext in _VISUAL_MIME:
         text_layer = pdf_text(data) if ext == ".pdf" else None
         result, i, o = understand_file(data, _VISUAL_MIME[ext], location, text_layer=text_layer)
@@ -302,6 +331,10 @@ def learn_source(source_id: int, job_id: int | None = None) -> None:
             "cost_chf": round(float(source.get("cost_chf") or 0) + cost, 6),
             "input_tokens": (source.get("input_tokens") or 0) + in_tok + embed_tokens,
             "output_tokens": (source.get("output_tokens") or 0) + out_tok,
+            # for the estimate: what learning this source really took
+            "learn_mode": "index_only" if jobs.is_index_only(source) else "full",
+            "last_learn_in_tokens": in_tok,
+            "last_learn_out_tokens": out_tok,
         }).eq("id", source_id).execute()
         jobs.log_event(
             job_id, tenant_id, "learned", url=source["source_location"], title=result.get("title") or "",

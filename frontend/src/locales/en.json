@@ -529,6 +529,15 @@
     }
   },
   "knowledge": {
+    "skipReasons": {
+      "archive_finance": "Old budgets and accounts",
+      "old_minutes": "Old minutes",
+      "outdated": "Outdated",
+      "older_version": "Older versions",
+      "internal": "Internal or technical",
+      "manual": "Set aside by you",
+      "other": "Other"
+    },
     "calendars": {
       "title": "Calendars for residents",
       "sub": "These dates can be subscribed to in any calendar app. The chatbot offers it when it answers with dates, and calendars update by themselves.",
@@ -602,7 +611,8 @@
         "QUEUED": "Waiting",
         "PROCESSING": "Learning",
         "ERROR": "Error",
-        "UNSUPPORTED": "Not supported"
+        "UNSUPPORTED": "Not supported",
+        "SKIPPED": "Set aside"
       }
     },
     "status": {
@@ -637,6 +647,13 @@
       "hideReport": "Hide report"
     },
     "estimate": {
+      "indexOnly": "{n} long documents (over {pages} pages) are only made searchable: their text, without dates or facts.",
+      "skipped": "{n} set aside",
+      "showList": "Show list",
+      "hideList": "Hide list",
+      "include": "Take back in",
+      "includeAll": "Take all back in",
+      "pages": "{n} pages",
       "title": "Scan complete",
       "body": "Gemini will read {n} new or changed sources, split them into sections and note important facts and dates. Unchanged pages are skipped for free.",
       "nothing": "Nothing changed since the last crawl — nothing to learn.",

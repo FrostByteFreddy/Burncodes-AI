@@ -183,8 +183,67 @@ class TestEstimate:
         page_in, page_out, _ = jobs.estimate_source({"content_tokens": 1000, "file_pages": None})
         assert page_in == 2000 + 1300 and page_out == 500 + 600
         pdf_in, pdf_out, _ = jobs.estimate_source({"file_pages": 2})
-        # calibrated on the real 2-page Abfallkalender: ~7.7k in / ~13k out
-        assert 7000 <= pdf_in <= 8500 and 12000 <= pdf_out <= 14000
+        assert pdf_in == 2000 + 2 * 2900 and pdf_out == 2 * 900
+
+    def test_long_documents_are_searchable_only_and_output_is_capped(self):
+        # over the page limit: no Gemini reading, only embedding the text
+        assert jobs.estimate_source({"file_pages": jobs.MAX_LLM_PAGES + 1})[:2] == (0, 0)
+        assert jobs.is_index_only({"file_pages": 21}) and not jobs.is_index_only({"file_pages": 20})
+        # a dense document can't make Gemini answer longer than its output limit
+        dense = {"pdf_in": 3000, "pdf_out": 6500, "page_out": 0.6}
+        assert jobs.estimate_source({"file_pages": 20}, dense)[1] == jobs._MAX_OUT
+
+    def test_calibration_uses_real_runs_once_there_are_enough(self, monkeypatch):
+        rows = [{"file_pages": 4, "content_tokens": None, "last_learn_in_tokens": 8000, "last_learn_out_tokens": 1200}] * 12
+        class Q:
+            def __getattr__(self, name):
+                return lambda *a, **k: self
+            @property
+            def not_(self):
+                return self
+            def execute(self):
+                return type("R", (), {"data": rows})()
+        monkeypatch.setattr(jobs, "supabase", type("S", (), {"table": lambda self, n: Q()})())
+        cal = jobs.calibration()
+        assert cal["pdf_in"] == 2000 and cal["pdf_out"] == 300 and cal["samples"] == 12
+
+
+class TestTriage:
+    def test_only_valid_ids_and_reasons_are_set_aside(self, monkeypatch):
+        from app.knowledge import triage
+        queued = [{"id": i, "source_type": "FILE_URL", "source_location": f"https://x.ch/{i}.pdf",
+                   "title": f"Doc {i}", "file_pages": 3, "content_markdown": ""} for i in range(1, 13)]
+        updates = []
+
+        class Q:
+            def __init__(self):
+                self.payload = None
+            def update(self, payload):
+                self.payload = payload
+                return self
+            def in_(self, col, ids):
+                updates.append((self.payload, list(ids)))
+                return self
+            def __getattr__(self, name):
+                return lambda *a, **k: self
+            def execute(self):
+                return type("R", (), {"data": []})()
+
+        monkeypatch.setattr(triage, "fetch_all", lambda make: queued)
+        monkeypatch.setattr(triage, "supabase", type("S", (), {"table": lambda self, n: Q()})())
+        monkeypatch.setattr(triage, "_ask", lambda lines, site: [
+            {"id": 2, "reason": "archive_finance"}, {"id": 3, "reason": "archive_finance"},
+            {"id": 99, "reason": "outdated"},          # not in this crawl
+            {"id": 4, "reason": "because I said so"},  # unknown reason
+        ])
+        assert triage.triage_job({"id": 7, "start_url": "https://x.ch"}) == 2
+        assert updates == [({"status": "SKIPPED", "skip_reason": "archive_finance"}, [2, 3])]
+
+    def test_small_crawls_are_not_sorted(self, monkeypatch):
+        from app.knowledge import triage
+        monkeypatch.setattr(triage, "fetch_all", lambda make: [{"id": 1}] * 5)
+        monkeypatch.setattr(triage, "_ask", lambda *a: (_ for _ in ()).throw(AssertionError("no call expected")))
+        assert triage.triage_job({"id": 1}) == 0
 
 
 class TestChatDates:

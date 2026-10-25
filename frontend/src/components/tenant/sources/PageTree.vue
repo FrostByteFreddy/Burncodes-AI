@@ -85,7 +85,7 @@ const FILE_ICONS = {
   ppt: 'file-powerpoint', pptx: 'file-powerpoint', txt: 'file-lines', md: 'file-lines', csv: 'file-csv',
   png: 'file-image', jpg: 'file-image', jpeg: 'file-image', gif: 'file-image', webp: 'file-image', zip: 'file-zipper',
 };
-const STATUS_RANK = { COMPLETED: 3, PROCESSING: 2, QUEUED: 2, ERROR: 1, UNSUPPORTED: 1 };
+const STATUS_RANK = { COMPLETED: 3, PROCESSING: 2, QUEUED: 2, SKIPPED: 2, ERROR: 1, UNSUPPORTED: 1 };
 
 // Older crawls stored the same URL several times; show each URL once,
 // preferring the indexed (then newest) row.
