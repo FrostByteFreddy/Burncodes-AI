@@ -418,3 +418,21 @@ def test_calendar_feed_is_cached_and_empty_when_not_offered(client, monkeypatch)
 
     tenant["test_password_hash"] = "set"   # password-protected: subscribers see an empty calendar
     assert "BEGIN:VEVENT" not in client.get(url).get_data(as_text=True)
+
+
+def test_rate_limited_request_is_a_429_not_a_500(app):
+    """
+    The default limit is checked before the request logging starts; the
+    response logging must cope instead of turning the 429 into a bare 500.
+    """
+    from app import limiter
+    limiter.enabled = True
+    limiter.reset()
+    client = app.test_client()
+    get = lambda: client.get("/api/tenants", environ_base={"REMOTE_ADDR": "10.7.7.7"})
+    codes = [get().status_code for _ in range(300)]
+    assert set(codes) == {401}
+    response = get()
+    assert response.status_code == 429
+    assert response.get_json()["code"] == "rate_limited"
+    assert response.headers.get("X-Request-ID")
