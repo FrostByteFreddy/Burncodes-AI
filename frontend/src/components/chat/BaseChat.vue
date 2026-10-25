@@ -437,6 +437,9 @@ const widgetCssVariables = computed(() => {
   height: 100dvh;
 }
 
+/* the dashboard's global heading colour (App.vue) must not reach the widget */
+.chat-header h1 { color: inherit; }
+
 .chat-header {
   background-color: var(--chat-header-background-color);
   color: var(--chat-header-text-color);
