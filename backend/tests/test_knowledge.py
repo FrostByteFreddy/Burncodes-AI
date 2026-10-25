@@ -346,13 +346,14 @@ class TestValidate:
         result = self._run([self._zone2()], {0: ["2026-01-09"]})
         s = result["schedules"][0]
         assert "_problems" not in s and "2026-01-09" not in [d["date"] for d in s["dates"]]
-        assert "09.01.2026" in result["warnings"][0] and "printed" not in result["warnings"][0]
+        assert result["warnings"] == [{"kind": "dates_dropped", "subject": "Hauskehricht Zone 2",
+                                       "n": 1, "dates": ["09.01.2026"]}]
 
     def test_many_missing_dates_reject_the_series(self):
         missing = [d["date"] for d in self._zone2()["dates"][:5]]
         result = self._run([self._zone2()], {0: missing})
         assert result["schedules"][0]["_problems"]
-        assert "nicht zuverlässig gelesen" in result["warnings"][0]
+        assert result["warnings"] == [{"kind": "dates_rejected", "subject": "Hauskehricht Zone 2"}]
 
     def test_series_outside_grid_uses_weekday_rule(self):
         bottenstein = {"name": "Hauskehricht", "zone": "Bottenstein", "regular_weekday": "", "notes": "",
@@ -481,3 +482,67 @@ class TestContactLinks:
         _, md = html_to_markdown(html)
         assert "Kulturabteilung (kultur@zofingen.ch)" in md
         assert md.count("info@zofingen.ch") == 1   # already visible: not doubled
+
+
+class TestExclusionRules:
+    def _sel(self):
+        from app.knowledge import selection
+        return selection
+
+    def test_files_sit_in_the_folder_of_their_page(self):
+        s = self._sel()
+        assert s.folder_of("https://www.zofingen.ch/politik/einwohnerrat/", "zofingen.ch") == "/politik/einwohnerrat"
+        assert s.folder_of("https://shop.zofingen.ch/a", "zofingen.ch") == "//shop.zofingen.ch/a"
+        assert s._ancestors("/a/b") == ["/a", "/a/b"]
+        assert s._ancestors("//shop.x.ch/a") == ["//shop.x.ch", "//shop.x.ch/a"]
+        assert s._ancestors("/") == []
+
+    def test_url_wins_then_the_longest_folder(self):
+        s = self._sel()
+        rules = [
+            {"path": "/politik", "exclude": True},
+            {"path": "/politik/aktuell", "exclude": False},
+            {"url": "https://x.ch/politik/aktuell/old.pdf", "exclude": True},
+        ]
+        assert s.is_excluded(rules, "https://x.ch/politik/wahlen", "/politik/wahlen")
+        assert not s.is_excluded(rules, "https://x.ch/politik/aktuell/a", "/politik/aktuell/a")
+        assert s.is_excluded(rules, "https://x.ch/politik/aktuell/old.pdf", "/politik/aktuell")
+        assert not s.is_excluded(rules, "https://x.ch/politikum", "/politikum")   # prefix, not a subfolder
+
+    def test_rules_stay_minimal(self):
+        s = self._sel()
+        folders = {"https://x.ch/politik/a.pdf": "/politik"}
+        rules = s._set_rule([], folders, url="https://x.ch/politik/a.pdf", exclude=True)
+        rules = s._set_rule(rules, folders, path="/politik/aktuell", exclude=False)
+        assert rules == [{"url": "https://x.ch/politik/a.pdf", "exclude": True, "title": None}]  # nothing to keep
+        # excluding the whole folder replaces everything below it
+        rules = s._set_rule(rules, folders, path="/politik", exclude=True)
+        assert rules == [{"path": "/politik", "exclude": True, "title": None}]
+        # ticking a subfolder back in is a "keep" inside the excluded folder
+        rules = s._set_rule(rules, folders, path="/politik/aktuell", exclude=False)
+        assert {"path": "/politik/aktuell", "exclude": False, "title": None} in rules
+        # and ticking the folder back in removes both
+        assert s._set_rule(rules, folders, path="/politik", exclude=False) == []
+
+
+class TestWarnings:
+    def test_only_allowed_kinds_at_most_two_none_on_minor_pages(self):
+        from app.knowledge.understanding import clean_warnings
+        noisy = {"importance": 80, "warnings": [
+            {"kind": "typo", "subject": "hätlst"},                       # not a kind we report
+            "Zeile 53: Telefonnummer fehlt",                              # old free text
+            {"kind": "expired", "subject": "Online-Schnuppertag 23. Januar 2026"},
+            {"kind": "not_readable", "subject": "  "},                   # nothing to show
+            {"kind": "contradiction", "subject": "Öffnungszeiten Werkhof"},
+            {"kind": "expired", "subject": "Anmeldeschluss 2025"},
+        ]}
+        assert clean_warnings(noisy) == [
+            {"kind": "expired", "subject": "Online-Schnuppertag 23. Januar 2026"},
+            {"kind": "contradiction", "subject": "Öffnungszeiten Werkhof"},
+        ]
+        assert clean_warnings({**noisy, "importance": 20}) == []
+
+    def test_old_free_text_warnings_are_not_shown(self):
+        assert jobs.issues_of(["Tippfehler in Zeile 5", {"kind": "expired", "subject": "x"}, None]) == \
+            [{"kind": "expired", "subject": "x"}]
+        assert jobs.issues_of(None) == []

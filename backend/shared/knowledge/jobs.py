@@ -204,6 +204,15 @@ def estimate_source(src: dict, cal: dict | None = None) -> tuple[int, int, int]:
     return (_PROMPT_OVERHEAD + int(tokens * 1.3), out, int(tokens * 1.2))
 
 
+def tokens_cost(ext_in: int, ext_out: int, embed: int) -> float:
+    """What learning costs the customer for these token counts, in CHF."""
+    return (
+        ext_in / 1e6 * RATES["extraction"]["input"]
+        + ext_out / 1e6 * RATES["extraction"]["output"]
+        + embed / 1e6 * RATES["indexing"]["input"]
+    )
+
+
 def compute_estimate(job_id: int) -> dict:
     pending = _pending_sources(job_id)
     cal = calibration()
@@ -229,11 +238,7 @@ def compute_estimate(job_id: int) -> dict:
     for s in skipped:
         key = s.get("skip_reason") or "other"
         skipped_by_reason[key] = skipped_by_reason.get(key, 0) + 1
-    cost = (
-        ext_in / 1e6 * RATES["extraction"]["input"]
-        + ext_out / 1e6 * RATES["extraction"]["output"]
-        + embed / 1e6 * RATES["indexing"]["input"]
-    )
+    cost = tokens_cost(ext_in, ext_out, embed)
     return {
         "to_learn": len(pending),
         "pages": sum(1 for s in pending if not s.get("file_pages")),
@@ -296,13 +301,17 @@ def complete_scan_if_done(job_id: int) -> None:
         return  # another worker did it, or the job was cancelled
     job = moved[0]
     removed = _mark_missed_sources(job)
+    from app.knowledge.selection import apply_rules
     from app.knowledge.triage import triage_job
+    apply_rules(job)  # what the customer left out before stays out
     # the sorting step takes a minute on big sites; the dashboard shows it as running
     log_event(job_id, job["tenant_id"], "triage_start")
     sorted_out = triage_job(job)
     log_event(job_id, job["tenant_id"], "triage", skipped=sorted_out)
+    from app.knowledge.selection import recommend
     estimate = compute_estimate(job_id)
     estimate["removed"] = removed
+    estimate["recommendations"] = recommend(job)
     supabase.table("crawling_jobs").update({"estimate": estimate}).eq("id", job_id).execute()
     error_logger.info("Crawl job %s scanned: %s", job_id, estimate)
     log_event(job_id, job["tenant_id"], "scan_done", to_learn=estimate["to_learn"],
@@ -319,7 +328,9 @@ def refresh_estimate(job_id: int) -> dict:
     """Recomputes the estimate after the user took sources back in or set them aside."""
     job = supabase.table("crawling_jobs").select("estimate").eq("id", job_id).limit(1).execute().data
     estimate = compute_estimate(job_id)
-    estimate["removed"] = ((job[0].get("estimate") or {}) if job else {}).get("removed", 0)
+    previous = (job[0].get("estimate") or {}) if job else {}
+    estimate["removed"] = previous.get("removed", 0)
+    estimate["recommendations"] = previous.get("recommendations") or []
     supabase.table("crawling_jobs").update({"estimate": estimate}).eq("id", job_id).execute()
     return estimate
 
@@ -386,6 +397,15 @@ def finish_job_if_learned(job_id: int) -> None:
         error_logger.error("Report for crawl job %s failed: %s", job_id, e, exc_info=True)
 
 
+def issues_of(warnings) -> list[dict]:
+    """
+    A source's warnings as {kind, subject, …}. Free-text warnings from before
+    2026-10-25 (typos, layout, line numbers …) are left out: mostly noise, and
+    a re-learn replaces them.
+    """
+    return [w for w in warnings or [] if isinstance(w, dict) and w.get("kind")]
+
+
 def build_report(job: dict) -> dict:
     """Aggregates what the crawl found. Deterministic — no LLM call."""
     job_id = job["id"]
@@ -432,8 +452,8 @@ def build_report(job: dict) -> dict:
 
     attention = []
     for s in sources:
-        for w in s.get("warnings") or []:
-            attention.append({**ref(s), "message": w})
+        for w in issues_of(s.get("warnings")):
+            attention.append({**ref(s), **w})
     errors: dict[str, int] = {}
     for s in sources:
         if s.get("status") in ("ERROR", "UNSUPPORTED"):

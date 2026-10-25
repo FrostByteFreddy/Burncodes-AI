@@ -346,11 +346,12 @@ def get_knowledge_overview(current_user, tenant_id):
             .or_("status.eq.ERROR,warnings.neq.[]")
             .limit(500).execute()
         ).data or []
+        from app.knowledge.jobs import issues_of
         issues = []
         for s in sources:
-            for w in s.get('warnings') or []:
+            for w in issues_of(s.get('warnings')):
                 issues.append({"source_id": s['id'], "title": s.get('title') or s['source_location'],
-                               "url": s['source_location'], "kind": "warning", "message": w})
+                               "url": s['source_location'], **w})
 
         return jsonify({
             "today": today.isoformat(),
@@ -443,34 +444,58 @@ def list_skipped_sources(current_user, tenant_id, job_id):
         return jsonify({"error": "Failed to list sources"}), 500
 
 
+@sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/selection', methods=['GET'])
+@token_required
+def get_selection(current_user, tenant_id, job_id):
+    """Before learning: every source with its cost and folder, plus Gemini's savings suggestions."""
+    try:
+        from app.knowledge.selection import selection
+        tenant_id_str = str(tenant_id)
+        job = supabase.table('crawling_jobs').select("id, start_url, estimate").eq('id', job_id) \
+            .eq('tenant_id', tenant_id_str).limit(1).execute().data
+        owns = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute().data
+        if not job or not owns:
+            return jsonify({"error": "Job not found or access denied"}), 404
+        return jsonify({
+            "items": selection(job[0]),
+            "recommendations": (job[0].get('estimate') or {}).get('recommendations') or [],
+        }), 200
+    except Exception as e:
+        error_logger.error(f"Error listing the selection for job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to list sources"}), 500
+
+
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/selection', methods=['POST'])
 @token_required
 def change_selection(current_user, tenant_id, job_id):
     """
-    Before learning: take sorted-out sources back in ({"include": [ids]}) or
-    set sources aside ({"exclude": [ids]}). Returns the recomputed estimate.
+    Before learning: tick or untick sources ({"include"/"exclude": [ids]}) or
+    whole folders ({"include_folders"/"exclude_folders": ["/politik/…"]}).
+    The choice is saved as rules on the tenant, so later crawls keep it.
+    Returns the recomputed estimate and the rules.
     """
     try:
         from app.knowledge import jobs as knowledge_jobs
-        from app.knowledge.triage import MANUAL
+        from app.knowledge.selection import change_selection as apply_change
         tenant_id_str = str(tenant_id)
-        job = supabase.table('crawling_jobs').select("id, status").eq('id', job_id).eq('tenant_id', tenant_id_str) \
-            .limit(1).execute().data
+        job = supabase.table('crawling_jobs').select("id, status, tenant_id, start_url").eq('id', job_id) \
+            .eq('tenant_id', tenant_id_str).limit(1).execute().data
         owns = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute().data
         if not job or not owns:
             return jsonify({"error": "Job not found or access denied"}), 404
         if job[0]['status'] != 'SCANNED':
             return jsonify({"error": "The selection can only change before learning starts"}), 409
         data = request.get_json(silent=True) or {}
-        include = [int(i) for i in data.get('include') or []]
-        exclude = [int(i) for i in data.get('exclude') or []]
-        for i in range(0, len(include), 200):
-            supabase.table('tenant_sources').update({"status": "QUEUED", "skip_reason": None}) \
-                .in_('id', include[i:i + 200]).eq('last_job_id', job_id).eq('status', 'SKIPPED').execute()
-        for i in range(0, len(exclude), 200):
-            supabase.table('tenant_sources').update({"status": "SKIPPED", "skip_reason": MANUAL}) \
-                .in_('id', exclude[i:i + 200]).eq('last_job_id', job_id).eq('status', 'QUEUED').execute()
-        return jsonify(knowledge_jobs.refresh_estimate(job_id)), 200
+        folders = lambda key: [str(p) for p in data.get(key) or [] if str(p).startswith('/')]
+        rules = apply_change(
+            job[0],
+            include=[int(i) for i in data.get('include') or []],
+            exclude=[int(i) for i in data.get('exclude') or []],
+            include_folders=folders('include_folders'),
+            exclude_folders=folders('exclude_folders'),
+            restore_folders=folders('restore_folders'),
+        )
+        return jsonify({"estimate": knowledge_jobs.refresh_estimate(job_id), "rules": rules}), 200
     except (TypeError, ValueError):
         return jsonify({"error": "include/exclude must be lists of source ids"}), 400
     except Exception as e:

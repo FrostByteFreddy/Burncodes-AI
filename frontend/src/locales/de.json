@@ -666,7 +666,8 @@
       "started": "Lernen gestartet — jede Quelle erscheint hier, sobald sie fertig ist.",
       "preparing": "Scan abgeschlossen. Wir sortieren aus, was sich nicht zu lernen lohnt, und berechnen die Kosten – bei grossen Websites dauert das etwa eine Minute.",
       "duplicate": "Duplikat",
-      "rate_limited": "Website ausgelastet"
+      "rate_limited": "Website ausgelastet",
+      "noneSelected": "Es ist nichts zum Lernen ausgewählt. Setzen Sie unten bei mindestens einer Seite oder Datei einen Haken."
     },
     "report": {
       "overview": "Übersicht",
@@ -716,6 +717,50 @@
       "title": "Eigene Antworten",
       "sub": "Feste Antworten für bestimmte Fragen, z. B. wer für Baugesuche zuständig ist.",
       "add": "Antwort hinzufügen"
+    },
+    "selection": {
+      "suggestionsTitle": "Sparvorschläge",
+      "suggestionsLede": "Gemini hat Bereiche gefunden, die Ihr Chatbot kaum brauchen wird. Ausgelassen wird erst etwas, wenn Sie es wählen.",
+      "saves": "{n} Quellen, spart CHF {cost}",
+      "excludedSaves": "Ausgelassen, spart CHF {cost}",
+      "exclude": "Auslassen",
+      "undo": "Rückgängig",
+      "skippedLede": "die der Chatbot sehr wahrscheinlich nie braucht:",
+      "adjust": "Auswählen, was gelernt wird",
+      "adjustLede": "Entfernen Sie den Haken bei einem Ordner, einer Seite oder einer Datei, um sie auszulassen. Dateien stehen unter der Seite, die sie verlinkt. Was Sie auslassen, bleibt auch bei künftigen Durchläufen draussen; ändern können Sie das in den Einstellungen.",
+      "search": "Seiten und Dateien durchsuchen",
+      "start": "Startseite",
+      "indexOnly": "nur durchsuchbar",
+      "saveFailed": "Ihre Auswahl konnte nicht gespeichert werden. Bitte versuchen Sie es nochmals."
+    },
+    "issues": {
+      "contradiction": {
+        "title": "Widersprüchliche Angaben",
+        "hint": "Die Seite nennt zwei verschiedene Angaben. Ihr Chatbot kann beide wiedergeben; korrigieren Sie eine davon."
+      },
+      "expired": {
+        "title": "Nicht mehr aktuell",
+        "hint": "Wird als aktuell dargestellt, ist aber schon vorbei. Ihr Chatbot erwähnt es womöglich noch; aktualisieren oder entfernen Sie es auf der Website."
+      },
+      "dates_rejected": {
+        "title": "Termine nicht lesbar",
+        "hint": "Ihr Chatbot verwendet diese Termine nicht. Prüfen Sie das Dokument oder laden Sie eine klarere Fassung hoch."
+      },
+      "dates_dropped": {
+        "title": "Einzelne Termine nicht übernommen",
+        "hint": "Diese Daten wurden im Dokument nicht gefunden und werden nicht verwendet. Die übrigen Termine sind geprüft.",
+        "detail": "{subject}: {n} nicht übernommen ({dates})"
+      },
+      "not_readable": {
+        "title": "Nur als Bild, Karte oder Video",
+        "hint": "Ihr Chatbot kann das nicht lesen. Ergänzen Sie die wichtigsten Angaben als Text auf der Seite."
+      },
+      "unreadable": {
+        "title": "Dokument nicht lesbar",
+        "hint": "Der Inhalt steht Ihrem Chatbot nicht zur Verfügung."
+      },
+      "showAll": "Alle {n} anzeigen",
+      "showLess": "Weniger anzeigen"
     }
   },
   "pages": {
@@ -1070,7 +1115,10 @@
       "reviews": "Gespräche prüfen",
       "off": "Aus",
       "switchedOff": "ausgeschaltet",
-      "reviewNote": "Jedes abgeschlossene Gespräch wird einmal geprüft und pro Gespräch verrechnet. Ergebnisse erscheinen in der Auswertung."
+      "reviewNote": "Jedes abgeschlossene Gespräch wird einmal geprüft und pro Gespräch verrechnet. Ergebnisse erscheinen in der Auswertung.",
+      "excludedTitle": "Beim Lernen ausgelassen für {name}",
+      "excludedRemove": "Wieder lernen",
+      "excludedNote": "Ausgelassene Ordner und Dateien werden bei jedem Durchlauf übersprungen, auch bei automatischen. Nach «Wieder lernen» werden sie beim nächsten Durchlauf gelernt."
     },
     "danger": {
       "title": "Konto löschen",

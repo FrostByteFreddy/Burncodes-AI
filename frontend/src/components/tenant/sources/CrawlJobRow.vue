@@ -62,7 +62,7 @@ const { confirm } = useCrawlActions(() => props.tenantId);
 
 const busy = ref(false);
 const detailRoute = computed(() => ({ name: 'TenantCrawl', params: { tenantId: props.tenantId, jobId: props.job.id } }));
-const reviewCount = computed(() => (props.job.status === 'COMPLETED' ? props.job.report?.attention?.length || 0 : 0));
+const reviewCount = computed(() => (props.job.status === 'COMPLETED' ? (props.job.report?.attention || []).filter((a) => a.kind).length : 0));
 
 // Learning only: learned / to learn (known from the estimate)
 const progress = computed(() => {

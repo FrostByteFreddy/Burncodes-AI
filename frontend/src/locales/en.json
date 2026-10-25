@@ -666,7 +666,8 @@
       "started": "Learning started — you’ll see each source here as it’s done.",
       "preparing": "Scan complete. Sorting out what isn't worth learning and calculating the cost — this takes about a minute on large websites.",
       "duplicate": "duplicate",
-      "rate_limited": "website busy"
+      "rate_limited": "website busy",
+      "noneSelected": "Nothing is selected to learn. Tick at least one page or file below."
     },
     "report": {
       "overview": "Overview",
@@ -716,6 +717,50 @@
       "title": "Custom answers",
       "sub": "Fixed answers for particular questions, e.g. who to contact about building permits.",
       "add": "Add answer"
+    },
+    "selection": {
+      "suggestionsTitle": "Ways to save",
+      "suggestionsLede": "Gemini found areas your chatbot will rarely need. Nothing here is left out until you choose to.",
+      "saves": "{n} sources, saves CHF {cost}",
+      "excludedSaves": "Left out, saves CHF {cost}",
+      "exclude": "Leave out",
+      "undo": "Undo",
+      "skippedLede": "that the chatbot will very likely never need:",
+      "adjust": "Choose what to learn",
+      "adjustLede": "Untick a folder or a single page or file to leave it out. Files are listed under the page that links them. What you leave out stays out in future crawls; you can change that in the settings.",
+      "search": "Search pages and files",
+      "start": "Home page",
+      "indexOnly": "search only",
+      "saveFailed": "Your selection could not be saved. Please try again."
+    },
+    "issues": {
+      "contradiction": {
+        "title": "Contradicting information",
+        "hint": "The page states two different things. Your chatbot may give either answer; correct one of them."
+      },
+      "expired": {
+        "title": "Out of date",
+        "hint": "Shown as current, but already past. Your chatbot may still mention it; update or remove it on the website."
+      },
+      "dates_rejected": {
+        "title": "Dates could not be read",
+        "hint": "Your chatbot does not use these dates. Check the document, or upload a clearer version."
+      },
+      "dates_dropped": {
+        "title": "Some dates left out",
+        "hint": "These dates were not found in the document and are not used. The other dates are verified.",
+        "detail": "{subject}: {n} left out ({dates})"
+      },
+      "not_readable": {
+        "title": "Only in an image, map or video",
+        "hint": "Your chatbot cannot read it. Add the key information as text on the page."
+      },
+      "unreadable": {
+        "title": "Document could not be read",
+        "hint": "Its content is not available to your chatbot."
+      },
+      "showAll": "Show all {n}",
+      "showLess": "Show fewer"
     }
   },
   "pages": {
@@ -1070,7 +1115,10 @@
       "reviews": "Review conversations",
       "off": "Off",
       "switchedOff": "switched off",
-      "reviewNote": "Reviews read each finished conversation once and are billed per conversation. Findings appear in Insights."
+      "reviewNote": "Reviews read each finished conversation once and are billed per conversation. Findings appear in Insights.",
+      "excludedTitle": "Left out of learning for {name}",
+      "excludedRemove": "Learn again",
+      "excludedNote": "Left-out folders and files are skipped in every crawl, including automatic ones. After \"Learn again\" they are learned in the next crawl."
     },
     "danger": {
       "title": "Delete account",

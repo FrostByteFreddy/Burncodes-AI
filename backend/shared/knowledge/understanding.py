@@ -134,15 +134,29 @@ def _schema(sections_by_lines: bool) -> dict:
             "single_events": _EVENTS,
             "warnings": {
                 "type": "array",
-                "items": {"type": "string"},
-                "description": "Problems a site owner should know: outdated validity, information only in images/maps, "
-                               "unreadable parts, contradictions. In the content's language. Empty if none.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "kind": {"type": "string", "enum": list(WARNING_KINDS)},
+                        "subject": {"type": "string", "description": "What it is about, at most 8 words, "
+                                    "in the content's language, e.g. \"Online-Schnuppertag 23. Januar 2026\""},
+                    },
+                    "required": ["kind", "subject"],
+                },
+                "description": "At most 2. Only problems that make the chatbot answer visitors wrongly or not at all. "
+                               "Usually empty.",
             },
         },
         "required": ["title", "language", "page_type", "summary", "importance", "importance_reason",
                      "sections", "facts", "schedules", "single_events", "warnings"],
     }
 
+
+# what a warning may be about; the dashboard shows each kind in the user's language
+WARNING_KINDS = ("expired", "not_readable", "contradiction")
+MAX_WARNINGS = 2
+# pages visitors rarely need: their problems aren't worth anyone's time
+MIN_IMPORTANCE_FOR_WARNINGS = 40
 
 _INSTRUCTIONS = """You index content for a customer-service chatbot of an organisation (often a municipality).
 Today is {today}. Source: {source}.
@@ -155,7 +169,13 @@ Tasks:
    0 = no useful information). Overview pages that only list links score low.
 3. Extract facts and dates exactly as printed. Never invent or infer dates.
    For calendars read row by row: a date belongs to the row (series/zone) and column (month) it is printed in.
-4. Add warnings for anything a site owner should fix or know (e.g. validity has ended before today).
+4. Warnings: only when a visitor would plausibly ask about it AND the chatbot would answer wrongly
+   or not at all. Usually there are none. Allowed kinds:
+   - expired: a date, deadline, offer or validity presented as current has passed before today
+   - not_readable: information visitors need exists only in an image, map, video or embedded form
+   - contradiction: the content states two different values for the same thing
+   Never warn about typos, grammar, style, layout, repeated lists or carousels, line numbers,
+   missing forms, legal or privacy wording, translations, SEO or how complete the page is.
 Answer in the content's language."""
 
 
@@ -317,6 +337,17 @@ def section_documents(result: dict, url: str) -> list[tuple[str, str]]:
     if lines:
         docs.append((f"{title} — Fakten und Termine"[:500], f"# {title}\n## Fakten und Termine\nQuelle: {url}\n\n" + "\n".join(lines)))
     return docs
+
+
+def clean_warnings(result: dict) -> list[dict]:
+    """The model's warnings, only the allowed kinds, at most MAX_WARNINGS, none on minor pages."""
+    if (result.get("importance") or 0) < MIN_IMPORTANCE_FOR_WARNINGS:
+        return []
+    out = []
+    for w in result.get("warnings") or []:
+        if isinstance(w, dict) and w.get("kind") in WARNING_KINDS and (w.get("subject") or "").strip():
+            out.append({"kind": w["kind"], "subject": w["subject"].strip()[:120]})
+    return out[:MAX_WARNINGS]
 
 
 def log_summary(source: str, result: dict) -> None:

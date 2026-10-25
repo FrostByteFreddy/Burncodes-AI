@@ -666,7 +666,8 @@
       "started": "Apprentissage lancé — chaque source apparaît ici une fois terminée.",
       "preparing": "Analyse terminée. Nous écartons ce qui ne vaut pas la peine d'être appris et calculons le coût – cela prend environ une minute pour les grands sites.",
       "duplicate": "doublon",
-      "rate_limited": "site surchargé"
+      "rate_limited": "site surchargé",
+      "noneSelected": "Rien n'est sélectionné. Cochez au moins une page ou un fichier ci-dessous."
     },
     "report": {
       "overview": "Aperçu",
@@ -716,6 +717,50 @@
       "title": "Réponses personnalisées",
       "sub": "Des réponses fixes pour certaines questions, p. ex. qui contacter pour un permis de construire.",
       "add": "Ajouter une réponse"
+    },
+    "selection": {
+      "suggestionsTitle": "Pistes d'économie",
+      "suggestionsLede": "Gemini a trouvé des rubriques dont votre chatbot n'aura guère besoin. Rien n'est écarté tant que vous ne le choisissez pas.",
+      "saves": "{n} sources, économise CHF {cost}",
+      "excludedSaves": "Écarté, économise CHF {cost}",
+      "exclude": "Écarter",
+      "undo": "Annuler",
+      "skippedLede": "dont le chatbot n'aura très probablement jamais besoin :",
+      "adjust": "Choisir ce qui est appris",
+      "adjustLede": "Décochez un dossier, une page ou un fichier pour l'écarter. Les fichiers figurent sous la page qui les cite. Ce que vous écartez le reste lors des prochaines analyses ; vous pouvez le modifier dans les paramètres.",
+      "search": "Rechercher des pages et fichiers",
+      "start": "Page d'accueil",
+      "indexOnly": "recherche seule",
+      "saveFailed": "Votre sélection n'a pas pu être enregistrée. Veuillez réessayer."
+    },
+    "issues": {
+      "contradiction": {
+        "title": "Informations contradictoires",
+        "hint": "La page indique deux choses différentes. Votre chatbot peut donner l'une ou l'autre ; corrigez l'une d'elles."
+      },
+      "expired": {
+        "title": "Plus à jour",
+        "hint": "Présenté comme actuel, mais déjà passé. Votre chatbot peut encore le mentionner ; mettez-le à jour ou retirez-le du site."
+      },
+      "dates_rejected": {
+        "title": "Dates illisibles",
+        "hint": "Votre chatbot n'utilise pas ces dates. Vérifiez le document ou téléversez une version plus nette."
+      },
+      "dates_dropped": {
+        "title": "Certaines dates non reprises",
+        "hint": "Ces dates sont introuvables dans le document et ne sont pas utilisées. Les autres dates sont vérifiées.",
+        "detail": "{subject} : {n} non reprises ({dates})"
+      },
+      "not_readable": {
+        "title": "Seulement en image, carte ou vidéo",
+        "hint": "Votre chatbot ne peut pas le lire. Ajoutez les informations essentielles sous forme de texte sur la page."
+      },
+      "unreadable": {
+        "title": "Document illisible",
+        "hint": "Son contenu n'est pas disponible pour votre chatbot."
+      },
+      "showAll": "Afficher les {n}",
+      "showLess": "Afficher moins"
     }
   },
   "pages": {
@@ -1070,7 +1115,10 @@
       "reviews": "Relire les conversations",
       "off": "Désactivé",
       "switchedOff": "désactivé",
-      "reviewNote": "Chaque conversation terminée est relue une fois et facturée à l'unité. Les résultats apparaissent dans les statistiques."
+      "reviewNote": "Chaque conversation terminée est relue une fois et facturée à l'unité. Les résultats apparaissent dans les statistiques.",
+      "excludedTitle": "Écarté de l'apprentissage pour {name}",
+      "excludedRemove": "Réapprendre",
+      "excludedNote": "Les dossiers et fichiers écartés sont ignorés à chaque analyse, y compris automatique. Après « Réapprendre », ils sont appris lors de la prochaine analyse."
     },
     "danger": {
       "title": "Supprimer le compte",
