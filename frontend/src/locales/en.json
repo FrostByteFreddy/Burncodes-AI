@@ -3,7 +3,8 @@
     "close": "Close",
     "loading": "Loading...",
     "error": "Error",
-    "success": "Success"
+    "success": "Success",
+    "menu": "Menu"
   },
   "auth": {
     "signup": {
@@ -27,7 +28,12 @@
       "submitting": "Logging in...",
       "noAccount": "Don't have an account?",
       "signupLink": "Sign up"
-    }
+    },
+    "taglineLogin": "The chatbot that knows your website and your documents.",
+    "taglineSignup": "Your own chatbot in minutes, not months.",
+    "poweredBy": "Powered by Burncodes AI",
+    "unknownError": "Something went wrong. Please try again.",
+    "sessionExpired": "Your session has expired. Please sign in again."
   },
   "manageTenants": {
     "title": "My Chatbots",
@@ -107,7 +113,8 @@
       "processingFailed": "Error: Processing failed.",
       "taskStatus": "Error: Could not get task status.",
       "sendMessage": "Error: Could not send message."
-    }
+    },
+    "openChat": "Open chat"
   },
   "subscription": {
     "title": "Billing & Subscription",
@@ -364,13 +371,28 @@
         "uploadFile": "Upload File",
         "infoTitle": "How does this work?",
         "infoWebsite": "We read the website you enter and the documents it links to. Before anything is learned, you see what was found and what it costs.",
-        "infoDocument": "Upload a PDF, TXT or CSV and we extract and index the text content automatically."
+        "infoDocument": "Upload a PDF, TXT or CSV and we extract and index the text content automatically.",
+        "scope": {
+          "question": "How much of this website should be read?",
+          "fullTitle": "Whole website",
+          "fullDesc": "Follows the links on the website and reads every page it can reach, with the documents linked there.",
+          "singleDesc": "Only this one address, plus the documents linked on it."
+        },
+        "exclude": {
+          "title": "Leave parts out",
+          "desc": "These paths or subdomains are skipped completely, e.g. login pages, an online shop or a test site.",
+          "placeholder": "e.g. login or shop.example.com",
+          "add": "Add",
+          "cancel": "Cancel",
+          "addRow": "Add a path or subdomain",
+          "none": "Nothing left out. You can skip this step."
+        }
       }
     },
     "fineTune": {
-      "title": "Fine-Tuning Rules",
-      "noRules": "No fine-tuning rules defined yet.",
-      "addRule": "Add New Rule",
+      "title": "Custom answers",
+      "noRules": "No custom answers yet.",
+      "addRule": "Add answer",
       "trigger": {
         "label": "Trigger",
         "placeholder": "Trigger",
@@ -428,58 +450,6 @@
   "profile": {
     "title": "User Profile",
     "subtitle": "Manage your personal information and security settings.",
-    "tabs": {
-      "profile": "Profile Details",
-      "security": "Security"
-    },
-    "email": "Email Address",
-    "first_name": "First Name",
-    "last_name": "Last Name",
-    "phone_number": "Phone Number",
-    "language": "Language",
-    "save_changes": "Save Changes",
-    "saving": "Saving",
-    "success": "Profile updated successfully!",
-    "error": "Failed to update profile.",
-    "security": {
-      "currentPassword": "Current Password",
-      "newPassword": "New Password",
-      "confirmPassword": "Confirm New Password",
-      "updatePassword": "Update Password",
-      "updating": "Updating",
-      "passwordMismatch": "New passwords do not match.",
-      "success": "Password changed successfully!",
-      "error": "Failed to change password."
-    }
-  },
-  "sidebar": {
-    "settings": "Settings",
-    "configure": "Configure",
-    "insights": "Insights",
-    "overview": "Overview",
-    "selectTenant": "Select a Chatbot",
-    "install": "Install",
-    "sources": "Knowledge",
-    "configuration": "Configuration",
-    "fineTune": "Fine Tune",
-    "analytics": "Analytics",
-    "chatLogs": "Chat Logs",
-    "chatbot": "Public test page",
-    "chatbotHint": "A link anyone can open to try your chatbot",
-    "copyLink": "Copy link",
-    "linkCopied": "Link copied",
-    "noTenantSelected": "Select a chatbot to see management options.",
-    "settings": "Settings",
-    "profile": "Profile",
-    "manageTenants": "My Chatbots",
-    "subscription": "Billing",
-    "logout": "Logout",
-    "workspace": "Workspace",
-    "account": "Account"
-  },
-  "profile": {
-    "title": "User Profile",
-    "subtitle": "Manage your personal information and security settings.",
     "accountDetails": "Account Details",
     "changePassword": "Change Password",
     "dangerZone": "Danger Zone",
@@ -510,12 +480,37 @@
       "error": "Failed to change password."
     }
   },
+  "sidebar": {
+    "settings": "Settings",
+    "configure": "Configure",
+    "insights": "Insights",
+    "overview": "Overview",
+    "selectTenant": "Select a Chatbot",
+    "install": "Install",
+    "sources": "Knowledge",
+    "configuration": "Configuration",
+    "fineTune": "Fine Tune",
+    "analytics": "Analytics",
+    "chatLogs": "Chat Logs",
+    "chatbot": "Public test page",
+    "chatbotHint": "A link anyone can open to try your chatbot",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied",
+    "noTenantSelected": "Select a chatbot to see management options.",
+    "profile": "Profile",
+    "manageTenants": "My Chatbots",
+    "subscription": "Billing",
+    "logout": "Logout",
+    "workspace": "Workspace",
+    "account": "Account"
+  },
   "modals": {
     "createTenant": {
       "title": "New chatbot",
       "name": "Name",
       "cancel": "Cancel",
-      "create": "Create chatbot"
+      "create": "Create chatbot",
+      "failed": "The chatbot could not be created. Please try again."
     },
     "confirmation": {
       "cancel": "Cancel",
@@ -561,18 +556,18 @@
       "saved": "Saved"
     },
     "overview": {
-        "stripTitle": "Dates your chatbot knows",
-        "stripSub": "Verified dates from your documents for the next 14 days. Residents asking “when is the next…” get these answers.",
-        "noneUpcoming": "No dates in the next two weeks. When your documents contain calendars, they show up here.",
-        "noneUpcomingEnded": "No upcoming dates — the calendars your chatbot knows have ended. See below.",
-        "moved": "moved",
-        "needsTitle": "Needs you",
-        "needsNone": "Nothing needs your attention right now.",
-        "ended": "{series}: the published dates ended on {date}.",
-        "endedHint": "Your chatbot can’t say when the next one is. Publish the new calendar and re-crawl.",
-        "summary": "{sources} sources, {chunks} indexed sections. Last crawl {date}.",
-        "summaryNever": "Nothing learned yet."
-      },
+      "stripTitle": "Dates your chatbot knows",
+      "stripSub": "Verified dates from your documents for the next 14 days. Residents asking “when is the next…” get these answers.",
+      "noneUpcoming": "No dates in the next two weeks. When your documents contain calendars, they show up here.",
+      "noneUpcomingEnded": "No upcoming dates — the calendars your chatbot knows have ended. See below.",
+      "moved": "moved",
+      "needsTitle": "Needs you",
+      "needsNone": "Nothing needs your attention right now.",
+      "ended": "{series}: the published dates ended on {date}.",
+      "endedHint": "Your chatbot can’t say when the next one is. Publish the new calendar and re-crawl.",
+      "summary": "{sources} sources, {chunks} indexed sections. Last crawl {date}.",
+      "summaryNever": "Nothing learned yet."
+    },
     "stats": {
       "pages": "Pages",
       "files": "Files",
@@ -710,6 +705,11 @@
     "deleteJob": {
       "title": "Delete crawl",
       "message": "Delete the crawl of <strong>{url}</strong> and everything it indexed? This cannot be undone."
+    },
+    "rules": {
+      "title": "Custom answers",
+      "sub": "Fixed answers for particular questions, e.g. who to contact about building permits.",
+      "add": "Add answer"
     }
   },
   "pages": {

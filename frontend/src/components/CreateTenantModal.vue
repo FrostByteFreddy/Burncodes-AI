@@ -48,7 +48,7 @@ const submitting = ref(false);
 const error      = ref("");
 
 const name     = ref("");
-const { locale } = useI18n();
+const { t, locale } = useI18n();
 
 const handleSubmit = async () => {
   error.value = "";
@@ -61,7 +61,7 @@ const handleSubmit = async () => {
       router.push(`/tenant/${newTenant.id}`);
     }
   } catch (e) {
-    error.value = tenantsStore.error || "Failed to create chatbot.";
+    error.value = t("modals.createTenant.failed");
   } finally {
     submitting.value = false;
   }

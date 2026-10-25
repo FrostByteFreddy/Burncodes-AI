@@ -4,7 +4,7 @@
     <template v-if="layout === 'default'">
       <!-- Mobile top bar -->
       <header class="mobile-topbar">
-        <button class="mobile-topbar__menu" @click="mobileOpen = !mobileOpen" aria-label="Menu">
+        <button class="mobile-topbar__menu" @click="mobileOpen = !mobileOpen" :aria-label="$t('common.menu')">
           <font-awesome-icon :icon="mobileOpen ? ['fas', 'xmark'] : ['fas', 'bars']" />
         </button>
         <router-link to="/manage-tenants" class="mobile-topbar__logo">

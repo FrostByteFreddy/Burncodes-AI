@@ -29,7 +29,7 @@
       v-if="resolvedConfig.launcher_icon"
       :src="resolvedConfig.launcher_icon"
       class="chat-launcher__icon"
-      alt="Open chat"
+      :alt="$t('chat.openChat')"
     />
     <svg
       v-else
@@ -239,7 +239,7 @@ const fetchIntroMessage = async () => {
     saveSession(chatHistory.value, conversationId.value);
   } catch (err) {
     if (isPasswordError(err)) { askForPassword(); return; }
-    const { text, html } = processBotMessage(`Error: ${err.response?.data?.error || t('chat.errors.initialMessage')}`);
+    const { text, html } = processBotMessage(t('chat.errors.initialMessage'));
     chatHistory.value.push({ text, html, isUser: false });
     saveSession(chatHistory.value, conversationId.value);
   } finally {
@@ -348,7 +348,7 @@ const sendMessage = async () => {
       ? t('chat.switchedOff')
       : err.response?.status === 429
       ? t('chat.errors.rateLimited')
-      : `Error: ${err.response?.data?.error || t('chat.errors.sendMessage')}`);
+      : t('chat.errors.sendMessage'));
     chatHistory.value.push({ text, html, isUser: false });
     saveSession(chatHistory.value, conversationId.value);
     isThinking.value = false;

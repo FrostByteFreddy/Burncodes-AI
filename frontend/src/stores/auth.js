@@ -145,7 +145,7 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   async function handleSessionExpired() {
-    addToast("Your session has expired. Please log in again.", "error");
+    addToast(i18n.global.t("auth.sessionExpired"), "error");
     await logout();
   }
 

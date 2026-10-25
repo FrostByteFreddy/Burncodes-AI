@@ -13,11 +13,11 @@
 
       <div class="relative">
         <p class="text-white/90 text-2xl font-light leading-relaxed mb-6">
-          "The AI assistant that knows<br/>your business inside out."
+          {{ $t('auth.taglineLogin') }}
         </p>
         <div class="flex items-center gap-3">
           <div class="w-8 h-px bg-white/40"></div>
-          <span class="text-white/50 text-sm">Powered by Burncodes AI</span>
+          <span class="text-white/50 text-sm">{{ $t('auth.poweredBy') }}</span>
         </div>
       </div>
     </div>
@@ -99,6 +99,9 @@
 <script setup>
 import { ref } from "vue";
 import { useAuthStore } from "../stores/auth";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 const email = ref("");
 const password = ref("");
@@ -112,7 +115,7 @@ const handleLogin = async () => {
   try {
     await authStore.login(email.value, password.value);
   } catch (error) {
-    errorMessage.value = error.message || "An unknown error occurred.";
+    errorMessage.value = error.message || t('auth.unknownError');
   } finally {
     loading.value = false;
   }

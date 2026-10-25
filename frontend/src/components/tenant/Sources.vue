@@ -109,13 +109,13 @@
       <div class="knowledge-panel__header">
         <div class="knowledge-panel__header-left">
           <div>
-            <h2 class="knowledge-panel__title">Custom Knowledge</h2>
-            <p class="knowledge-panel__sub">Fine-tuning rules that guide how the bot responds to specific triggers</p>
+            <h2 class="knowledge-panel__title">{{ $t('knowledge.rules.title') }}</h2>
+            <p class="knowledge-panel__sub">{{ $t('knowledge.rules.sub') }}</p>
           </div>
         </div>
         <button @click="rulesTabRef?.openModal()" class="btn-quiet">
           <font-awesome-icon :icon="['fas', 'plus']" />
-          Add rule
+          {{ $t('knowledge.rules.add') }}
         </button>
       </div>
       <RulesTab ref="rulesTabRef" />

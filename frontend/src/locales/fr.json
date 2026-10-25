@@ -3,7 +3,8 @@
     "close": "Fermer",
     "loading": "Chargement...",
     "error": "Erreur",
-    "success": "Succès"
+    "success": "Succès",
+    "menu": "Menu"
   },
   "auth": {
     "signup": {
@@ -27,7 +28,12 @@
       "submitting": "Connexion...",
       "noAccount": "Vous n'avez pas de compte ?",
       "signupLink": "S'inscrire"
-    }
+    },
+    "taglineLogin": "Le chatbot qui connaît votre site et vos documents.",
+    "taglineSignup": "Votre propre chatbot en quelques minutes, pas en quelques mois.",
+    "poweredBy": "Propulsé par Burncodes AI",
+    "unknownError": "Une erreur s'est produite. Veuillez réessayer.",
+    "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter."
   },
   "manageTenants": {
     "title": "Mes chatbots",
@@ -107,7 +113,8 @@
       "processingFailed": "Erreur : Échec du traitement.",
       "taskStatus": "Erreur : Impossible de récupérer le statut de la tâche.",
       "sendMessage": "Erreur : Impossible d'envoyer le message."
-    }
+    },
+    "openChat": "Ouvrir le chat"
   },
   "subscription": {
     "title": "Facturation et abonnement",
@@ -364,13 +371,28 @@
         "uploadFile": "Télécharger le fichier",
         "infoTitle": "Comment ça fonctionne ?",
         "infoWebsite": "Nous lisons le site indiqué et les documents qui y sont liés. Avant l'apprentissage, vous voyez ce qui a été trouvé et ce que cela coûte.",
-        "infoDocument": "Téléchargez un PDF, TXT ou CSV et nous extrayons et indexons automatiquement le contenu textuel."
+        "infoDocument": "Téléchargez un PDF, TXT ou CSV et nous extrayons et indexons automatiquement le contenu textuel.",
+        "scope": {
+          "question": "Quelle partie de ce site faut-il lire ?",
+          "fullTitle": "Site entier",
+          "fullDesc": "Suit les liens du site et lit toutes les pages accessibles, avec les documents qui y sont liés.",
+          "singleDesc": "Seulement cette adresse, plus les documents qui y sont liés."
+        },
+        "exclude": {
+          "title": "Exclure des parties",
+          "desc": "Ces chemins ou sous-domaines sont entièrement ignorés, p. ex. pages de connexion, boutique en ligne ou site de test.",
+          "placeholder": "p. ex. login ou shop.exemple.ch",
+          "add": "Ajouter",
+          "cancel": "Annuler",
+          "addRow": "Ajouter un chemin ou sous-domaine",
+          "none": "Rien n'est exclu. Vous pouvez passer cette étape."
+        }
       }
     },
     "fineTune": {
-      "title": "Règles d'ajustement",
-      "noRules": "Aucune règle d'ajustement définie pour le moment.",
-      "addRule": "Ajouter une nouvelle règle",
+      "title": "Réponses personnalisées",
+      "noRules": "Aucune réponse personnalisée pour l'instant.",
+      "addRule": "Ajouter une réponse",
       "trigger": {
         "label": "Déclencheur",
         "placeholder": "Déclencheur",
@@ -428,58 +450,6 @@
   "profile": {
     "title": "Profil utilisateur",
     "subtitle": "Gérez vos informations personnelles et vos paramètres de sécurité.",
-    "tabs": {
-      "profile": "Détails du profil",
-      "security": "Sécurité"
-    },
-    "email": "Adresse e-mail",
-    "first_name": "Prénom",
-    "last_name": "Nom",
-    "phone_number": "Numéro de téléphone",
-    "language": "Langue",
-    "save_changes": "Enregistrer les modifications",
-    "saving": "Enregistrement",
-    "success": "Profil mis à jour avec succès !",
-    "error": "Échec de la mise à jour du profil.",
-    "security": {
-      "currentPassword": "Mot de passe actuel",
-      "newPassword": "Nouveau mot de passe",
-      "confirmPassword": "Confirmer le nouveau mot de passe",
-      "updatePassword": "Mettre à jour le mot de passe",
-      "updating": "Mise à jour",
-      "passwordMismatch": "Les nouveaux mots de passe ne correspondent pas.",
-      "success": "Mot de passe modifié avec succès !",
-      "error": "Échec du changement de mot de passe."
-    }
-  },
-  "sidebar": {
-    "settings": "Paramètres",
-    "configure": "Configuration",
-    "insights": "Statistiques",
-    "overview": "Aperçu",
-    "selectTenant": "Sélectionner un chatbot",
-    "install": "Installer",
-    "sources": "Connaissances",
-    "configuration": "Configuration",
-    "fineTune": "Ajustement",
-    "analytics": "Analytique",
-    "chatLogs": "Journaux de chat",
-    "chatbot": "Page de test publique",
-    "chatbotHint": "Un lien que chacun peut ouvrir pour essayer votre chatbot",
-    "copyLink": "Copier le lien",
-    "linkCopied": "Lien copié",
-    "noTenantSelected": "Sélectionnez un chatbot pour voir les options.",
-    "settings": "Paramètres",
-    "profile": "Profil",
-    "manageTenants": "Mes chatbots",
-    "subscription": "Facturation",
-    "logout": "Se déconnecter",
-    "workspace": "Espace de travail",
-    "account": "Compte"
-  },
-  "profile": {
-    "title": "Profil utilisateur",
-    "subtitle": "Gérez vos informations personnelles et vos paramètres de sécurité.",
     "accountDetails": "Détails du compte",
     "changePassword": "Changer de mot de passe",
     "dangerZone": "Zone de danger",
@@ -510,12 +480,37 @@
       "error": "Échec du changement de mot de passe."
     }
   },
+  "sidebar": {
+    "settings": "Paramètres",
+    "configure": "Configuration",
+    "insights": "Statistiques",
+    "overview": "Aperçu",
+    "selectTenant": "Sélectionner un chatbot",
+    "install": "Installer",
+    "sources": "Connaissances",
+    "configuration": "Configuration",
+    "fineTune": "Ajustement",
+    "analytics": "Analytique",
+    "chatLogs": "Journaux de chat",
+    "chatbot": "Page de test publique",
+    "chatbotHint": "Un lien que chacun peut ouvrir pour essayer votre chatbot",
+    "copyLink": "Copier le lien",
+    "linkCopied": "Lien copié",
+    "noTenantSelected": "Sélectionnez un chatbot pour voir les options.",
+    "profile": "Profil",
+    "manageTenants": "Mes chatbots",
+    "subscription": "Facturation",
+    "logout": "Se déconnecter",
+    "workspace": "Espace de travail",
+    "account": "Compte"
+  },
   "modals": {
     "createTenant": {
       "title": "Nouveau chatbot",
       "name": "Nom",
       "cancel": "Annuler",
-      "create": "Créer le chatbot"
+      "create": "Créer le chatbot",
+      "failed": "Le chatbot n'a pas pu être créé. Veuillez réessayer."
     },
     "confirmation": {
       "cancel": "Annuler",
@@ -561,18 +556,18 @@
       "saved": "Enregistré"
     },
     "overview": {
-        "stripTitle": "Les dates que votre chatbot connaît",
-        "stripSub": "Dates vérifiées de vos documents pour les 14 prochains jours. Quand on demande « quand est le prochain… », voici les réponses.",
-        "noneUpcoming": "Aucune date dans les deux prochaines semaines. Les calendriers de vos documents apparaissent ici.",
-        "noneUpcomingEnded": "Aucune date à venir — les calendriers connus de votre chatbot sont terminés. Voir ci-dessous.",
-        "moved": "déplacé",
-        "needsTitle": "À traiter",
-        "needsNone": "Rien ne demande votre attention pour le moment.",
-        "ended": "{series} : les dates publiées se sont terminées le {date}.",
-        "endedHint": "Votre chatbot ne peut pas dire quand aura lieu le prochain. Publiez le nouveau calendrier et relancez le crawl.",
-        "summary": "{sources} sources, {chunks} sections indexées. Dernier crawl le {date}.",
-        "summaryNever": "Rien n’a encore été appris."
-      },
+      "stripTitle": "Les dates que votre chatbot connaît",
+      "stripSub": "Dates vérifiées de vos documents pour les 14 prochains jours. Quand on demande « quand est le prochain… », voici les réponses.",
+      "noneUpcoming": "Aucune date dans les deux prochaines semaines. Les calendriers de vos documents apparaissent ici.",
+      "noneUpcomingEnded": "Aucune date à venir — les calendriers connus de votre chatbot sont terminés. Voir ci-dessous.",
+      "moved": "déplacé",
+      "needsTitle": "À traiter",
+      "needsNone": "Rien ne demande votre attention pour le moment.",
+      "ended": "{series} : les dates publiées se sont terminées le {date}.",
+      "endedHint": "Votre chatbot ne peut pas dire quand aura lieu le prochain. Publiez le nouveau calendrier et relancez le crawl.",
+      "summary": "{sources} sources, {chunks} sections indexées. Dernier crawl le {date}.",
+      "summaryNever": "Rien n’a encore été appris."
+    },
     "stats": {
       "pages": "Pages",
       "files": "Fichiers",
@@ -710,6 +705,11 @@
     "deleteJob": {
       "title": "Supprimer le crawl",
       "message": "Supprimer le crawl de <strong>{url}</strong> et tout ce qu'il a indexé ? Cette action est irréversible."
+    },
+    "rules": {
+      "title": "Réponses personnalisées",
+      "sub": "Des réponses fixes pour certaines questions, p. ex. qui contacter pour un permis de construire.",
+      "add": "Ajouter une réponse"
     }
   },
   "pages": {

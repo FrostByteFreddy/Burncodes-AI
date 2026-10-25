@@ -3,7 +3,8 @@
     "close": "Schliessen",
     "loading": "Laden...",
     "error": "Fehler",
-    "success": "Erfolg"
+    "success": "Erfolg",
+    "menu": "Menü"
   },
   "auth": {
     "signup": {
@@ -27,7 +28,12 @@
       "submitting": "Anmelden...",
       "noAccount": "Haben Sie noch kein Konto?",
       "signupLink": "Registrieren"
-    }
+    },
+    "taglineLogin": "Der Chatbot, der Ihre Website und Ihre Dokumente kennt.",
+    "taglineSignup": "Ihr eigener Chatbot in Minuten, nicht Monaten.",
+    "poweredBy": "Bereitgestellt von Burncodes AI",
+    "unknownError": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "sessionExpired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an."
   },
   "manageTenants": {
     "title": "Meine Chatbots",
@@ -107,7 +113,8 @@
       "processingFailed": "Fehler: Verarbeitung fehlgeschlagen.",
       "taskStatus": "Fehler: Konnte Task-Status nicht abrufen.",
       "sendMessage": "Fehler: Konnte Nachricht nicht senden."
-    }
+    },
+    "openChat": "Chat öffnen"
   },
   "subscription": {
     "title": "Abrechnung & Abonnement",
@@ -364,13 +371,28 @@
         "uploadFile": "Datei hochladen",
         "infoTitle": "Wie funktioniert das?",
         "infoWebsite": "Wir lesen die angegebene Website und die darauf verlinkten Dokumente. Vor dem Lernen sehen Sie, was gefunden wurde und was es kostet.",
-        "infoDocument": "Laden Sie eine PDF-, TXT- oder CSV-Datei hoch. Der Chatbot lernt ihren Inhalt automatisch."
+        "infoDocument": "Laden Sie eine PDF-, TXT- oder CSV-Datei hoch. Der Chatbot lernt ihren Inhalt automatisch.",
+        "scope": {
+          "question": "Wie viel dieser Website soll gelesen werden?",
+          "fullTitle": "Ganze Website",
+          "fullDesc": "Folgt den Links der Website und liest alle erreichbaren Seiten samt den dort verlinkten Dokumenten.",
+          "singleDesc": "Nur diese eine Adresse, plus die darauf verlinkten Dokumente."
+        },
+        "exclude": {
+          "title": "Bereiche auslassen",
+          "desc": "Diese Pfade oder Subdomains werden komplett übersprungen, z. B. Login-Seiten, ein Online-Shop oder eine Testseite.",
+          "placeholder": "z. B. login oder shop.beispiel.ch",
+          "add": "Hinzufügen",
+          "cancel": "Abbrechen",
+          "addRow": "Pfad oder Subdomain hinzufügen",
+          "none": "Nichts ausgelassen. Sie können diesen Schritt überspringen."
+        }
       }
     },
     "fineTune": {
-      "title": "Feinabstimmungsregeln",
-      "noRules": "Noch keine Feinabstimmungsregeln definiert.",
-      "addRule": "Neue Regel hinzufügen",
+      "title": "Eigene Antworten",
+      "noRules": "Noch keine eigenen Antworten.",
+      "addRule": "Antwort hinzufügen",
       "trigger": {
         "label": "Auslöser",
         "placeholder": "Auslöser",
@@ -428,58 +450,6 @@
   "profile": {
     "title": "Benutzerprofil",
     "subtitle": "Verwalten Sie Ihre persönlichen Informationen und Sicherheitseinstellungen.",
-    "tabs": {
-      "profile": "Profildetails",
-      "security": "Sicherheit"
-    },
-    "email": "E-Mail-Adresse",
-    "first_name": "Vorname",
-    "last_name": "Nachname",
-    "phone_number": "Telefonnummer",
-    "language": "Sprache",
-    "save_changes": "Änderungen speichern",
-    "saving": "Speichern",
-    "success": "Profil erfolgreich aktualisiert!",
-    "error": "Fehler beim Aktualisieren des Profils.",
-    "security": {
-      "currentPassword": "Aktuelles Passwort",
-      "newPassword": "Neues Passwort",
-      "confirmPassword": "Neues Passwort bestätigen",
-      "updatePassword": "Passwort aktualisieren",
-      "updating": "Aktualisiere",
-      "passwordMismatch": "Die neuen Passwörter stimmen nicht überein.",
-      "success": "Passwort erfolgreich geändert!",
-      "error": "Fehler beim Ändern des Passworts."
-    }
-  },
-  "sidebar": {
-    "settings": "Einstellungen",
-    "configure": "Anpassen",
-    "insights": "Auswertung",
-    "overview": "Übersicht",
-    "selectTenant": "Chatbot auswählen",
-    "install": "Einbinden",
-    "sources": "Wissen",
-    "configuration": "Konfiguration",
-    "fineTune": "Feinabstimmung",
-    "analytics": "Analysen",
-    "chatLogs": "Chat-Protokolle",
-    "chatbot": "Öffentliche Testseite",
-    "chatbotHint": "Ein Link, über den jede Person Ihren Chatbot ausprobieren kann",
-    "copyLink": "Link kopieren",
-    "linkCopied": "Link kopiert",
-    "noTenantSelected": "Chatbot auswählen, um Optionen zu sehen.",
-    "settings": "Einstellungen",
-    "profile": "Profil",
-    "manageTenants": "Meine Chatbots",
-    "subscription": "Abrechnung",
-    "logout": "Abmelden",
-    "workspace": "Arbeitsbereich",
-    "account": "Konto"
-  },
-  "profile": {
-    "title": "Benutzerprofil",
-    "subtitle": "Verwalten Sie Ihre persönlichen Informationen und Sicherheitseinstellungen.",
     "accountDetails": "Kontodetails",
     "changePassword": "Passwort ändern",
     "dangerZone": "Gefahrenzone",
@@ -510,12 +480,37 @@
       "error": "Fehler beim Ändern des Passworts."
     }
   },
+  "sidebar": {
+    "settings": "Einstellungen",
+    "configure": "Anpassen",
+    "insights": "Auswertung",
+    "overview": "Übersicht",
+    "selectTenant": "Chatbot auswählen",
+    "install": "Einbinden",
+    "sources": "Wissen",
+    "configuration": "Konfiguration",
+    "fineTune": "Feinabstimmung",
+    "analytics": "Analysen",
+    "chatLogs": "Chat-Protokolle",
+    "chatbot": "Öffentliche Testseite",
+    "chatbotHint": "Ein Link, über den jede Person Ihren Chatbot ausprobieren kann",
+    "copyLink": "Link kopieren",
+    "linkCopied": "Link kopiert",
+    "noTenantSelected": "Chatbot auswählen, um Optionen zu sehen.",
+    "profile": "Profil",
+    "manageTenants": "Meine Chatbots",
+    "subscription": "Abrechnung",
+    "logout": "Abmelden",
+    "workspace": "Arbeitsbereich",
+    "account": "Konto"
+  },
   "modals": {
     "createTenant": {
       "title": "Neuer Chatbot",
       "name": "Name",
       "cancel": "Abbrechen",
-      "create": "Chatbot erstellen"
+      "create": "Chatbot erstellen",
+      "failed": "Der Chatbot konnte nicht erstellt werden. Bitte versuchen Sie es erneut."
     },
     "confirmation": {
       "cancel": "Abbrechen",
@@ -561,18 +556,18 @@
       "saved": "Gespeichert"
     },
     "overview": {
-        "stripTitle": "Termine, die Ihr Chatbot kennt",
-        "stripSub": "Geprüfte Termine aus Ihren Dokumenten für die nächsten 14 Tage. Auf Fragen wie «Wann ist die nächste …?» antwortet der Chatbot damit.",
-        "noneUpcoming": "Keine Termine in den nächsten zwei Wochen. Enthalten Ihre Dokumente Kalender, erscheinen sie hier.",
-        "noneUpcomingEnded": "Keine kommenden Termine — die Kalender, die Ihr Chatbot kennt, sind abgelaufen. Siehe unten.",
-        "moved": "verschoben",
-        "needsTitle": "Handlungsbedarf",
-        "needsNone": "Zurzeit gibt es nichts zu tun.",
-        "ended": "{series}: Die veröffentlichten Termine endeten am {date}.",
-        "endedHint": "Ihr Chatbot kann deshalb keine nächsten Termine nennen. Veröffentlichen Sie den neuen Kalender und lesen Sie die Website erneut ein.",
-        "summary": "{sources} Quellen, {chunks} gelernte Abschnitte. Zuletzt eingelesen am {date}.",
-        "summaryNever": "Noch nichts gelernt."
-      },
+      "stripTitle": "Termine, die Ihr Chatbot kennt",
+      "stripSub": "Geprüfte Termine aus Ihren Dokumenten für die nächsten 14 Tage. Auf Fragen wie «Wann ist die nächste …?» antwortet der Chatbot damit.",
+      "noneUpcoming": "Keine Termine in den nächsten zwei Wochen. Enthalten Ihre Dokumente Kalender, erscheinen sie hier.",
+      "noneUpcomingEnded": "Keine kommenden Termine — die Kalender, die Ihr Chatbot kennt, sind abgelaufen. Siehe unten.",
+      "moved": "verschoben",
+      "needsTitle": "Handlungsbedarf",
+      "needsNone": "Zurzeit gibt es nichts zu tun.",
+      "ended": "{series}: Die veröffentlichten Termine endeten am {date}.",
+      "endedHint": "Ihr Chatbot kann deshalb keine nächsten Termine nennen. Veröffentlichen Sie den neuen Kalender und lesen Sie die Website erneut ein.",
+      "summary": "{sources} Quellen, {chunks} gelernte Abschnitte. Zuletzt eingelesen am {date}.",
+      "summaryNever": "Noch nichts gelernt."
+    },
     "stats": {
       "pages": "Seiten",
       "files": "Dateien",
@@ -710,6 +705,11 @@
     "deleteJob": {
       "title": "Durchlauf löschen",
       "message": "Den Durchlauf für <strong>{url}</strong> und alles, was dabei gelernt wurde, löschen? Das kann nicht rückgängig gemacht werden."
+    },
+    "rules": {
+      "title": "Eigene Antworten",
+      "sub": "Feste Antworten für bestimmte Fragen, z. B. wer für Baugesuche zuständig ist.",
+      "add": "Antwort hinzufügen"
     }
   },
   "pages": {
