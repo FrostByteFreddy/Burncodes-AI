@@ -64,6 +64,23 @@
             class="prose prose-neutral max-w-none bot-message-prose"
             v-html="processBotMessage(message.html)"
           ></div>
+
+          <!-- Dates in this answer can go straight into the visitor's own calendar -->
+          <div v-if="!message.isUser && feedsFor(message).length" class="cal">
+            <div v-for="feed in feedsFor(message)" :key="feed.key" class="cal__item">
+              <button type="button" class="cal__btn" :aria-expanded="openFeed === `${index}-${feed.key}`" @click="toggleFeed(`${index}-${feed.key}`)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4" /></svg>
+                {{ $t('chat.calendar.add', { name: feedLabel(feed) }) }}
+              </button>
+              <div v-if="openFeed === `${index}-${feed.key}`" class="cal__menu">
+                <a :href="feed.webcal" class="cal__opt">{{ $t('chat.calendar.apple') }}</a>
+                <a :href="`https://calendar.google.com/calendar/render?cid=${encodeURIComponent(feed.webcal)}`" target="_blank" rel="noopener noreferrer" class="cal__opt">{{ $t('chat.calendar.google') }}</a>
+                <button type="button" class="cal__opt" @click="copyFeed(feed)">{{ copiedFeed === feed.key ? $t('chat.calendar.copied') : $t('chat.calendar.copy') }}</button>
+                <!-- a span: the bubble forces its text colour on every <p> -->
+                <span class="cal__hint">{{ $t('chat.calendar.hint') }}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -109,7 +126,7 @@
           @input="onInput"
           @keyup.enter.exact.prevent="$emit('sendMessage')"
           :placeholder="config.input_placeholder || $t('chat.inputPlaceholder')"
-          class="chat-input outline-none border px-4 py-3 focus:outline-none focus:ring-1 rounded-custom transition-all"
+          class="chat-input outline-none border px-4 py-3 rounded-custom"
           rows="1"
           style="resize: none; overflow-y: hidden"
         ></textarea>
@@ -156,7 +173,26 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  /** key → calendar feed the visitor can subscribe to (from /api/calendar/<tenant>) */
+  calendarFeeds: {
+    type: Object,
+    default: () => ({}),
+  },
 });
+
+// ── Calendar subscriptions ─────────────────────────────────────────────
+const openFeed = ref(null);
+const copiedFeed = ref(null);
+const feedsFor = (message) => (message.calendars || []).map((k) => props.calendarFeeds[k]).filter(Boolean);
+const feedLabel = (feed) => (feed.zone ? `${feed.series} (${feed.zone})` : feed.series);
+const toggleFeed = (id) => { openFeed.value = openFeed.value === id ? null : id; };
+const copyFeed = async (feed) => {
+  try {
+    await navigator.clipboard.writeText(feed.https);
+    copiedFeed.value = feed.key;
+    setTimeout(() => { copiedFeed.value = null; }, 2000);
+  } catch { /* the link is also in the Apple/Outlook option */ }
+};
 
 const emit = defineEmits(["update:userMessage", "sendMessage", "reset", "close", "share"]);
 
@@ -338,9 +374,10 @@ const widgetCssVariables = computed(() => {
       "#F9FAFB"
     ),
     "--chat-input-text-color": findColor(styles.input_text_color, "#1F2937"),
-    "--chat-input-focus-ring-color": findColor(
-      styles.input_focus_ring_color,
-      "#A855F7"
+    // Footer had no colour of its own before; it followed the header
+    "--chat-footer-background-color": findColor(
+      styles.footer_background_color || styles.header_background_color,
+      "#F3F4F6"
     ),
     "--chat-background-color": findColor(
       styles.chat_background_color,
@@ -469,12 +506,15 @@ const widgetCssVariables = computed(() => {
   color: var(--chat-bot-message-text-color) !important;
 }
 
-.bot-message-prose a {
+/* answer HTML comes in through v-html, so scoped styles need :deep */
+.bot-message-prose :deep(a) {
   color: var(--chat-bot-message-text-color);
   text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 600;
 }
 
-.bot-message-prose a:hover {
+.bot-message-prose :deep(a:hover) {
   opacity: 0.8;
 }
 
@@ -486,7 +526,7 @@ const widgetCssVariables = computed(() => {
 }
 
 .chat-footer {
-  background-color: var(--chat-header-background-color);
+  background-color: var(--chat-footer-background-color);
   padding: 0.75rem;
   /* Extend padding into the safe area so the home indicator / gesture bar
      never clips the input on iOS and Android. */
@@ -505,12 +545,21 @@ const widgetCssVariables = computed(() => {
 .chat-input {
   background-color: var(--chat-input-background-color);
   color: var(--chat-input-text-color);
-  border-color: var(--chat-header-background-color);
-  --tw-ring-color: var(--chat-input-focus-ring-color);
+  border-color: var(--chat-footer-background-color);
   /* Full-width — button overlays on top of the right edge */
   width: 100%;
   /* Offset text from the overlaid send button */
   padding-right: 3.5rem;
+}
+
+/* Looks the same while typing: no ring, no changed corners (the dashboard's
+   global :focus-visible style would otherwise apply here too) */
+.chat-input:focus,
+.chat-input:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-color: var(--chat-footer-background-color);
+  border-radius: var(--chat-custom-radius);
 }
 
 .chat-input::placeholder {
@@ -622,4 +671,24 @@ const widgetCssVariables = computed(() => {
     border-bottom-right-radius: 0 !important;
   }
 }
+/* ── Calendar subscription ─────────────────────────────────────────── */
+.cal { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.cal__btn {
+  display: inline-flex; align-items: center; gap: 8px; max-width: 100%;
+  padding: 7px 12px; border-radius: 999px; cursor: pointer; font: inherit; font-size: 14px; font-weight: 600;
+  background: transparent; color: var(--chat-bot-message-text-color);
+  border: 1.5px solid currentColor; opacity: 0.9;
+}
+.cal__btn:hover { opacity: 1; }
+.cal__menu {
+  margin-top: 6px; padding: 8px; border-radius: 12px; display: flex; flex-direction: column; gap: 2px;
+  background: #FFFFFF; color: #1F2937; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+.cal__opt {
+  display: block; text-align: left; padding: 8px 10px; border-radius: 8px; border: none; background: none;
+  font: inherit; font-size: 14px; font-weight: 600; color: #1F2937; text-decoration: none; cursor: pointer;
+}
+.cal__opt:hover { background: #F3F4F6; }
+/* inside a bot bubble, whose text colour would otherwise win */
+.cal__menu .cal__hint { display: block; margin: 4px 10px 2px; font-size: 12px; color: #4B5563; line-height: 1.4; }
 </style>

@@ -3,23 +3,51 @@ from app.database.supabase_client import supabase
 from app.logging_config import error_logger
 from app.chat.tasks import chat_task
 from app.billing.services import BillingService
+from app.auth.decorators import optional_user, token_required
 from app import limiter
 from celery.result import AsyncResult
 import uuid
+from app.chat import access
+from app.chat.guard import (
+    CHAT_LIMIT_PER_IP, CHAT_LIMIT_PER_TENANT, STATUS_LIMIT_PER_IP,
+    is_known_task, long_poll_slot, remember_task,
+)
 
 chat_bp = Blueprint('chat', __name__)
 
+# Public endpoint input limits. History is loaded server-side from chat_logs,
+# so the only client-controlled text that reaches the model is the query.
+MAX_QUERY_CHARS = 4000
+
+
+def _tenant_key():
+    return f"chat-tenant:{request.view_args.get('tenant_id')}"
+
+
+def _gate(tenant_id) -> dict:
+    """Whether the chatbot is switched on, and its test-page password hash (None = open)."""
+    resp = supabase.table('tenants').select('is_active, test_password_hash').eq('id', str(tenant_id)).limit(1).execute()
+    row = resp.data[0] if resp.data else {}
+    return {"active": bool(row) and row.get('is_active') is not False, "password_hash": row.get('test_password_hash')}
+
+
+def _owns_tenant(tenant_id, user_id):
+    resp = supabase.table('tenants').select('id').eq('id', str(tenant_id)).eq('user_id', user_id).limit(1).execute()
+    return bool(resp.data)
+
 @chat_bp.route('/<uuid:tenant_id>', methods=['POST'])
-@limiter.limit("30 per minute")
+@limiter.limit(CHAT_LIMIT_PER_IP)
+@limiter.limit(CHAT_LIMIT_PER_TENANT, key_func=_tenant_key)
 def handle_chat(tenant_id):
     try:
         data = request.get_json()
         query = data.get('query')
-        chat_history_json = data.get('chat_history', [])
         conversation_id_str = data.get('conversation_id')
 
-        if not query:
+        if not query or not isinstance(query, str):
             return jsonify({"error": "No query provided"}), 400
+        if len(query) > MAX_QUERY_CHARS:
+            return jsonify({"error": f"Query too long (max {MAX_QUERY_CHARS} characters)"}), 400
 
         if not conversation_id_str:
             return jsonify({"error": "No conversation_id provided"}), 400
@@ -29,51 +57,66 @@ def handle_chat(tenant_id):
         except ValueError:
             return jsonify({"error": "Invalid conversation_id format"}), 400
 
-        # Check tenant owner's balance — retry up to 2 times on transient Supabase timeouts
-        import time as _time
-        user_id = None
-        for attempt in range(3):
-            try:
-                tenant_response = supabase.table('tenants').select('user_id').eq('id', str(tenant_id)).single().execute()
-                if not tenant_response.data:
-                    return jsonify({"error": "Tenant not found"}), 404
-                user_id = tenant_response.data['user_id']
-                balance = BillingService.check_balance(user_id)
-                if balance <= 0:
-                    return jsonify({"error": "Insufficient balance. Please recharge."}), 402
-                break  # success
-            except Exception as e:
-                if attempt < 2:
-                    error_logger.warning(f"Billing check attempt {attempt+1} failed for tenant {tenant_id}: {e} — retrying")
-                    _time.sleep(0.5)
-                else:
-                    # All retries exhausted — log and allow through rather than blocking on a transient error
-                    error_logger.error(f"Billing check failed after 3 attempts for tenant {tenant_id}: {e}", exc_info=True)
+        # Check the tenant owner's balance. Both lookups retry transient
+        # Supabase errors internally; if they still fail we refuse the chat
+        # rather than serve it unbilled.
+        try:
+            user_id = BillingService.get_tenant_owner(tenant_id)
+            if not user_id:
+                return jsonify({"error": "Tenant not found"}), 404
+            # Switched off or password-protected: the owner's signed-in preview may still chat
+            gate = _gate(tenant_id)
+            if not gate["active"] or not access.token_ok(tenant_id, gate["password_hash"]):
+                viewer = optional_user()
+                if not viewer or str(viewer.id) != str(user_id):
+                    if not gate["active"]:
+                        return jsonify({"error": "This chatbot is switched off.", "code": "chatbot_off"}), 403
+                    return jsonify({"error": "This chatbot needs a password.", "code": "password_required"}), 401
+            if BillingService.check_balance(user_id) <= 0:
+                return jsonify({"error": "Insufficient balance. Please recharge."}), 402
+        except Exception as e:
+            error_logger.error(f"Billing check failed for tenant {tenant_id}: {e}", exc_info=True)
+            return jsonify({"error": "Service temporarily unavailable. Please try again."}), 503
 
-        task = chat_task.delay(str(tenant_id), query, chat_history_json, str(conversation_id), str(user_id))
+        # chat_history from the client is ignored; the worker loads the
+        # conversation from chat_logs. The positional slot stays for task
+        # signature compatibility.
+        task = chat_task.delay(str(tenant_id), query, [], str(conversation_id), str(user_id))
+        remember_task(task.id)
 
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
         error_logger.error(f"Error in chat handler for tenant {tenant_id}: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error occurred"}), 500
 
 @chat_bp.route('/task/<string:task_id>/status', methods=['GET'])
+@limiter.limit(STATUS_LIMIT_PER_IP)
 def get_task_status(task_id):
-    task = AsyncResult(task_id)
-    timeout = min(int(request.args.get('timeout', 25)), 30)  # cap at 30s
+    # Unknown ids would otherwise hold a thread for the full long poll
+    if not is_known_task(task_id):
+        return jsonify({"error": "Unknown task"}), 404
 
-    # Long poll: hold the connection until the task finishes or we time out
+    task = AsyncResult(task_id)
+    try:
+        timeout = max(0, min(int(request.args.get('timeout', 25)), 30))  # cap at 30s
+    except ValueError:
+        timeout = 25
+
+    # Long poll: hold the connection until the task finishes or we time out,
+    # but only for a few connections per IP; the rest get the current state now
     import time
-    deadline = time.time() + timeout
-    while not task.ready() and time.time() < deadline:
-        time.sleep(0.5)
+    with long_poll_slot(request.remote_addr or "unknown") as may_wait:
+        deadline = time.time() + (timeout if may_wait else 0)
+        while not task.ready() and time.time() < deadline:
+            time.sleep(0.5)
 
     response = {
         "task_id": task_id,
         "state": task.state,
     }
     if task.state == 'FAILURE':
-        response['result'] = str(task.info)
+        # Don't echo internal exception text to anonymous widget users.
+        response['result'] = "The request failed. Please try again."
     elif task.state == 'SUCCESS':
         response['result'] = task.result
     else:
@@ -83,8 +126,11 @@ def get_task_status(task_id):
 from datetime import datetime, timedelta, timezone
 
 @chat_bp.route('/<uuid:tenant_id>/analytics', methods=['GET'])
-def get_chat_analytics(tenant_id):
+@token_required
+def get_chat_analytics(current_user, tenant_id):
     try:
+        if not _owns_tenant(tenant_id, current_user.id):
+            return jsonify({"error": "Tenant not found or access denied"}), 404
         timeframe_hours = request.args.get('timeframe', 24, type=int)
         interval = request.args.get('interval', 'hour')  # 'minute', '5-minute', 'hour', or 'day'
         now = datetime.now(timezone.utc)
@@ -112,42 +158,28 @@ def get_chat_analytics(tenant_id):
         return jsonify({"error": "An internal error occurred"}), 500
 
 @chat_bp.route('/<uuid:tenant_id>/conversations', methods=['GET'])
-def get_conversations(tenant_id):
+@token_required
+def get_conversations(current_user, tenant_id):
     try:
-        response = supabase.table('chat_logs').select('conversation_id, created_at, user_message, cost_chf').eq('tenant_id', str(tenant_id)).order('created_at', desc=True).execute()
-
-        if not hasattr(response, 'data'):
-            error_logger.error(f"Supabase response for tenant {tenant_id} is missing 'data' attribute: {response}")
-            return jsonify({"error": "Invalid response from database"}), 500
-
-        # Aggregate conversation data
-        conversations = {}
-        for log in response.data:
-            c_id = log['conversation_id']
-            if c_id not in conversations:
-                conversations[c_id] = {
-                    'conversation_id': c_id,
-                    'last_active': log['created_at'],
-                    'message_count': 0,
-                    'total_cost': 0.0,
-                    'first_message': log['user_message']
-                }
-            
-            conversations[c_id]['message_count'] += 1
-            conversations[c_id]['total_cost'] += (log.get('cost_chf') or 0)
-            # Since we iterate in descending order, the last assignment will be the first message
-            if log['user_message']:
-                conversations[c_id]['first_message'] = log['user_message']
-
-        return jsonify(list(conversations.values()))
+        if not _owns_tenant(tenant_id, current_user.id):
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+        response = supabase.rpc('conversation_summaries', {'p_tenant_id': str(tenant_id)}).execute()
+        conversations = [
+            {**row, 'total_cost': float(row.get('total_cost') or 0)}
+            for row in (response.data or [])
+        ]
+        return jsonify(conversations)
 
     except Exception as e:
         error_logger.error(f"Error in get_conversations for tenant {tenant_id}: {e}", exc_info=True)
         return jsonify({"error": "An internal error occurred"}), 500
 
 @chat_bp.route('/<uuid:tenant_id>/conversation/<uuid:conversation_id>', methods=['GET'])
-def get_conversation_logs(tenant_id, conversation_id):
+@token_required
+def get_conversation_logs(current_user, tenant_id, conversation_id):
     try:
+        if not _owns_tenant(tenant_id, current_user.id):
+            return jsonify({"error": "Tenant not found or access denied"}), 404
         response = supabase.table('chat_logs').select('*').eq('tenant_id', str(tenant_id)).eq('conversation_id', str(conversation_id)).order('created_at').execute()
 
         if not hasattr(response, 'data'):
@@ -161,14 +193,39 @@ def get_conversation_logs(tenant_id, conversation_id):
         return jsonify({"error": "An internal error occurred"}), 500
 
 @chat_bp.route('/<uuid:tenant_id>/intro', methods=['GET'])
+@limiter.limit("60 per minute")
 def get_intro_message(tenant_id):
     try:
-        tenant = supabase.table('tenants').select("intro_message").eq('id', str(tenant_id)).single().execute()
+        tenant = supabase.table('tenants').select("intro_message, user_id, test_password_hash").eq('id', str(tenant_id)).single().execute()
         if not tenant.data:
             return jsonify({"error": f"Tenant '{tenant_id}' not found"}), 404
+        if not access.token_ok(tenant_id, tenant.data.get('test_password_hash')):
+            viewer = optional_user()
+            if not viewer or str(viewer.id) != str(tenant.data['user_id']):
+                return jsonify({"error": "This chatbot needs a password.", "code": "password_required"}), 401
         return jsonify({"intro_message": tenant.data['intro_message']})
     except Exception as e:
         error_logger.error(f"Error getting intro message for tenant {tenant_id}: {e}", exc_info=True)
+        return jsonify({"error": "An internal error occurred"}), 500
+
+
+@chat_bp.route('/<uuid:tenant_id>/unlock', methods=['POST'])
+@limiter.limit("10 per minute;30 per hour")
+def unlock_chat(tenant_id):
+    """Swaps the test-page password for an access token the browser keeps."""
+    try:
+        password = (request.get_json(silent=True) or {}).get('password') or ''
+        rows = supabase.table('tenants').select('test_password_hash').eq('id', str(tenant_id)).limit(1).execute().data
+        if not rows:
+            return jsonify({"error": "Tenant not found"}), 404
+        password_hash = rows[0].get('test_password_hash')
+        if not password_hash:
+            return jsonify({"token": None}), 200
+        if not access.check_password(password_hash, password):
+            return jsonify({"error": "Wrong password", "code": "wrong_password"}), 401
+        return jsonify({"token": access.make_token(tenant_id, password_hash)}), 200
+    except Exception as e:
+        error_logger.error(f"Error unlocking chat for tenant {tenant_id}: {e}", exc_info=True)
         return jsonify({"error": "An internal error occurred"}), 500
 
 

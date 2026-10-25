@@ -1,8 +1,10 @@
 {
   "common": {
+    "close": "Close",
     "loading": "Loading...",
     "error": "Error",
-    "success": "Success"
+    "success": "Success",
+    "menu": "Menu"
   },
   "auth": {
     "signup": {
@@ -26,7 +28,12 @@
       "submitting": "Logging in...",
       "noAccount": "Don't have an account?",
       "signupLink": "Sign up"
-    }
+    },
+    "taglineLogin": "The chatbot that knows your website and your documents.",
+    "taglineSignup": "Your own chatbot in minutes, not months.",
+    "poweredBy": "Powered by Burncodes AI",
+    "unknownError": "Something went wrong. Please try again.",
+    "sessionExpired": "Your session has expired. Please sign in again."
   },
   "manageTenants": {
     "title": "My Chatbots",
@@ -74,6 +81,22 @@
     "chartLabel": "Number of Messages"
   },
   "chat": {
+    "calendar": {
+      "add": "Add to my calendar: {name}",
+      "apple": "Apple Calendar or Outlook",
+      "google": "Google Calendar",
+      "copy": "Copy calendar link",
+      "copied": "Link copied",
+      "hint": "Your calendar updates by itself when dates change. To remove it, delete or unsubscribe the calendar in your calendar app."
+    },
+    "locked": {
+      "title": "This chatbot is still being tested",
+      "body": "Enter the password you were given to try it.",
+      "password": "Password",
+      "open": "Open chat",
+      "wrong": "That password isn't right. Check it and try again."
+    },
+    "switchedOff": "This chatbot is currently switched off.",
     "inputPlaceholder": "Ask me a question...",
     "thinking": "Thinking...",
     "reset": "Reset conversation",
@@ -85,11 +108,13 @@
     "sharedExpired": "This share link has expired",
     "sharedNotFound": "Share link not found",
     "errors": {
+      "rateLimited": "You're sending messages very quickly. Please wait a moment and try again.",
       "initialMessage": "Error: Could not get initial message.",
       "processingFailed": "Error: Processing failed.",
       "taskStatus": "Error: Could not get task status.",
       "sendMessage": "Error: Could not send message."
-    }
+    },
+    "openChat": "Open chat"
   },
   "subscription": {
     "title": "Billing & Subscription",
@@ -162,7 +187,12 @@
         "systemPersona": "System Persona",
         "ragPromptTemplate": "RAG Prompt Template",
         "docLanguage": "Document Language",
-        "translationTarget": "Translation Target"
+        "translationTarget": "Translation Target",
+        "recrawlTitle": "Automatic re-crawl",
+        "recrawlToggle": "Re-crawl my websites automatically",
+        "recrawlHelp": "Checks your crawled websites regularly. Only new or changed pages are learned (and billed); unchanged pages cost nothing. You get a report after each run.",
+        "recrawlInterval": "Interval",
+        "recrawlEveryDays": "Every {n} days"
       },
       "appearance": {
         "installation": {
@@ -295,6 +325,7 @@
         "deleteSuccess": "Source deleted successfully!",
         "deleteFailed": "Failed to delete source:",
         "crawlCompleted": "Crawl job completed! Refreshing sources...",
+        "scanCompleted": "Scan complete — review the estimate and start learning.",
         "fetchFailed": "Failed to fetch crawling activity."
       },
       "tabs": {
@@ -318,10 +349,12 @@
         "excludePlaceholder": "/login\n/dashboard",
         "crawlModeLabel": "Crawl Mode",
         "crawlModeHint": "Controls how pages are fetched and processed.",
-        "modeSoup": "Soup",
-        "modeSoupDesc": "Fast HTTP fetch — no browser. Best for static sites.",
-        "modePlaywright": "Playwright",
-        "modePlaywrightDesc": "Headless browser — handles JS-rendered sites. Gemini understands the content automatically.",
+        "modeSoupBadge": "Recommended",
+        "modePlaywrightBadge": "Slower",
+        "modeSoup": "Fast",
+        "modeSoupDesc": "For most websites. Reads pages directly and is the fastest.",
+        "modePlaywright": "Thorough",
+        "modePlaywrightDesc": "For websites whose content only appears in a browser. Slower, but finds everything.",
         "confirmTitle": "Confirm",
         "confirmType": "Type",
         "confirmUrl": "URL",
@@ -337,14 +370,29 @@
         "startCrawl": "Start Crawl",
         "uploadFile": "Upload File",
         "infoTitle": "How does this work?",
-        "infoWebsite": "We send a crawler to the URL you provide and index the text content into your chatbot's knowledge base. Choose Soup for fast static sites, Playwright for JS-heavy sites, or Playwright + LLM for the best chunk quality.",
-        "infoDocument": "Upload a PDF, TXT or CSV and we extract and index the text content automatically."
+        "infoWebsite": "We read the website you enter and the documents it links to. Before anything is learned, you see what was found and what it costs.",
+        "infoDocument": "Upload a PDF, TXT or CSV and we extract and index the text content automatically.",
+        "scope": {
+          "question": "How much of this website should be read?",
+          "fullTitle": "Whole website",
+          "fullDesc": "Follows the links on the website and reads every page it can reach, with the documents linked there.",
+          "singleDesc": "Only this one address, plus the documents linked on it."
+        },
+        "exclude": {
+          "title": "Leave parts out",
+          "desc": "These paths or subdomains are skipped completely, e.g. login pages, an online shop or a test site.",
+          "placeholder": "e.g. login or shop.example.com",
+          "add": "Add",
+          "cancel": "Cancel",
+          "addRow": "Add a path or subdomain",
+          "none": "Nothing left out. You can skip this step."
+        }
       }
     },
     "fineTune": {
-      "title": "Fine-Tuning Rules",
-      "noRules": "No fine-tuning rules defined yet.",
-      "addRule": "Add New Rule",
+      "title": "Custom answers",
+      "noRules": "No custom answers yet.",
+      "addRule": "Add answer",
       "trigger": {
         "label": "Trigger",
         "placeholder": "Trigger",
@@ -402,51 +450,6 @@
   "profile": {
     "title": "User Profile",
     "subtitle": "Manage your personal information and security settings.",
-    "tabs": {
-      "profile": "Profile Details",
-      "security": "Security"
-    },
-    "email": "Email Address",
-    "first_name": "First Name",
-    "last_name": "Last Name",
-    "phone_number": "Phone Number",
-    "language": "Language",
-    "save_changes": "Save Changes",
-    "saving": "Saving",
-    "success": "Profile updated successfully!",
-    "error": "Failed to update profile.",
-    "security": {
-      "currentPassword": "Current Password",
-      "newPassword": "New Password",
-      "confirmPassword": "Confirm New Password",
-      "updatePassword": "Update Password",
-      "updating": "Updating",
-      "passwordMismatch": "New passwords do not match.",
-      "success": "Password changed successfully!",
-      "error": "Failed to change password."
-    }
-  },
-  "sidebar": {
-    "selectTenant": "Select a Chatbot",
-    "install": "Install",
-    "sources": "Knowledge",
-    "configuration": "Configuration",
-    "fineTune": "Fine Tune",
-    "analytics": "Analytics",
-    "chatLogs": "Chat Logs",
-    "chatbot": "Open Chatbot",
-    "noTenantSelected": "Select a chatbot to see management options.",
-    "settings": "Settings",
-    "profile": "Profile",
-    "manageTenants": "My Chatbots",
-    "subscription": "Billing",
-    "logout": "Logout",
-    "workspace": "Workspace",
-    "account": "Account"
-  },
-  "profile": {
-    "title": "User Profile",
-    "subtitle": "Manage your personal information and security settings.",
     "accountDetails": "Account Details",
     "changePassword": "Change Password",
     "dangerZone": "Danger Zone",
@@ -477,17 +480,37 @@
       "error": "Failed to change password."
     }
   },
+  "sidebar": {
+    "settings": "Settings",
+    "configure": "Configure",
+    "insights": "Insights",
+    "overview": "Overview",
+    "selectTenant": "Select a Chatbot",
+    "install": "Install",
+    "sources": "Knowledge",
+    "configuration": "Configuration",
+    "fineTune": "Fine Tune",
+    "analytics": "Analytics",
+    "chatLogs": "Chat Logs",
+    "chatbot": "Public test page",
+    "chatbotHint": "A link anyone can open to try your chatbot",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied",
+    "noTenantSelected": "Select a chatbot to see management options.",
+    "profile": "Profile",
+    "manageTenants": "My Chatbots",
+    "subscription": "Billing",
+    "logout": "Logout",
+    "workspace": "Workspace",
+    "account": "Account"
+  },
   "modals": {
     "createTenant": {
-      "title": "Create New Tenant",
-      "name": "Tenant Name",
-      "introMessage": "Intro Message",
-      "systemPersona": "System Persona",
-      "ragPromptTemplate": "RAG Prompt Template",
-      "docLanguage": "Document Language",
-      "translationTarget": "Translation Target",
+      "title": "New chatbot",
+      "name": "Name",
       "cancel": "Cancel",
-      "create": "Create"
+      "create": "Create chatbot",
+      "failed": "The chatbot could not be created. Please try again."
     },
     "confirmation": {
       "cancel": "Cancel",
@@ -498,6 +521,649 @@
       "title": "Session Expired",
       "message": "Your session has expired. Please log in again.",
       "logout": "Log Out"
+    }
+  },
+  "knowledge": {
+    "skipReasons": {
+      "archive_finance": "Old budgets and accounts",
+      "old_minutes": "Old minutes",
+      "outdated": "Outdated",
+      "older_version": "Older versions",
+      "internal": "Internal or technical",
+      "manual": "Set aside by you",
+      "other": "Other"
+    },
+    "calendars": {
+      "title": "Calendars for residents",
+      "sub": "These dates can be subscribed to in any calendar app. The chatbot offers it when it answers with dates, and calendars update by themselves.",
+      "protected": "Calendars are paused while the chatbot needs a password.",
+      "dates": "{n} dates",
+      "copy": "Copy link",
+      "copied": "Copied",
+      "on": "Calendars switched on",
+      "off": "Calendars switched off. Subscribers' calendars empty out on their next update."
+    },
+    "recrawl": {
+      "onHint": "Checks for changes every {n} days.",
+      "offHint": "Doesn't check for changes automatically.",
+      "change": "Change",
+      "label": "Check for changes",
+      "off": "Never",
+      "every7": "Every week",
+      "every14": "Every 2 weeks",
+      "every30": "Every month",
+      "hint": "We re-read your websites and only learn what changed. Unchanged pages cost nothing.",
+      "saved": "Saved"
+    },
+    "overview": {
+      "stripTitle": "Dates your chatbot knows",
+      "stripSub": "Verified dates from your documents for the next 14 days. Residents asking “when is the next…” get these answers.",
+      "noneUpcoming": "No dates in the next two weeks. When your documents contain calendars, they show up here.",
+      "noneUpcomingEnded": "No upcoming dates — the calendars your chatbot knows have ended. See below.",
+      "moved": "moved",
+      "needsTitle": "Needs you",
+      "needsNone": "Nothing needs your attention right now.",
+      "ended": "{series}: the published dates ended on {date}.",
+      "endedHint": "Your chatbot can’t say when the next one is. Publish the new calendar and re-crawl.",
+      "summary": "{sources} sources, {chunks} indexed sections. Last crawl {date}.",
+      "summaryNever": "Nothing learned yet."
+    },
+    "stats": {
+      "pages": "Pages",
+      "files": "Files",
+      "chunks": "Indexed chunks",
+      "lastCrawl": "Last crawl",
+      "never": "Never"
+    },
+    "crawls": {
+      "title": "Crawls",
+      "sub": "Websites we read for your chatbot",
+      "empty": "No crawls yet — add a website to get started.",
+      "showAll": "Show all ({n})",
+      "showLess": "Show less"
+    },
+    "content": {
+      "title": "Website content",
+      "sub": "Everything learned from your websites, including files found on them",
+      "filter": "Filter pages…",
+      "empty": "Nothing crawled yet.",
+      "noMatch": "No page matches “{q}”."
+    },
+    "files": {
+      "title": "Uploaded files",
+      "sub": "Documents you uploaded yourself",
+      "empty": "No files uploaded.",
+      "upload": "Upload file"
+    },
+    "tree": {
+      "page": "Page",
+      "chunks": "Chunks",
+      "changed": "Last changed",
+      "crawled": "Last crawled",
+      "open": "Open on website",
+      "status": {
+        "COMPLETED": "Learned",
+        "QUEUED": "Waiting",
+        "PROCESSING": "Learning",
+        "ERROR": "Error",
+        "UNSUPPORTED": "Not supported",
+        "SKIPPED": "Set aside"
+      }
+    },
+    "status": {
+      "IN_PROGRESS": "Scanning",
+      "SCANNED": "Ready to learn",
+      "INDEXING": "Learning",
+      "COMPLETED": "Completed",
+      "FAILED": "Stopped"
+    },
+    "job": {
+      "reading": "Reading: {page}",
+      "starting": "Starting…",
+      "autoShort": "automatic re-crawl",
+      "summaryDone": "{learned} learned, {unchanged} unchanged, CHF {cost}",
+      "summaryScanned": "{n} to learn, about CHF {cost}",
+      "summaryStopped": "Stopped before learning finished.",
+      "actionFailed": "That didn’t work. Reload the page and try again.",
+      "details": "Details",
+      "back": "Knowledge",
+      "openSite": "Open website",
+      "activity": "Activity",
+      "toReview": "{n} to review",
+      "started": "Started {date}",
+      "scheduled": "Automatic re-crawl · {date}",
+      "singlePage": "This page only",
+      "stop": "Stop",
+      "discard": "Discard",
+      "delete": "Delete crawl",
+      "scanProgress": "{done} of {total} pages scanned",
+      "learnProgress": "{done} of {total} sources learned",
+      "report": "Report",
+      "hideReport": "Hide report"
+    },
+    "estimate": {
+      "indexOnly": "{n} long documents (over {pages} pages) are only made searchable: their text, without dates or facts.",
+      "skipped": "{n} set aside",
+      "showList": "Show list",
+      "hideList": "Hide list",
+      "include": "Take back in",
+      "includeAll": "Take all back in",
+      "pages": "{n} pages",
+      "title": "Scan complete",
+      "body": "Gemini will read {n} new or changed sources, split them into sections and note important facts and dates. Unchanged pages are skipped for free.",
+      "nothing": "Nothing changed since the last crawl — nothing to learn.",
+      "learn": "Learn now · approx. CHF {cost}",
+      "new": "new",
+      "changed": "changed",
+      "unchanged": "unchanged",
+      "removed": "removed",
+      "error": "errors",
+      "empty": "empty",
+      "refused": "refused",
+      "unsupported": "unsupported",
+      "balanceLow": "Balance too low: CHF {balance} available, about CHF {cost} needed.",
+      "started": "Learning started — you’ll see each source here as it’s done."
+    },
+    "report": {
+      "overview": "Overview",
+      "dates": "Dates",
+      "review": "To review",
+      "learned": "Learned",
+      "unchanged": "Unchanged",
+      "removed": "Removed",
+      "errors": "Errors",
+      "cost": "Cost",
+      "important": "Most important content",
+      "noImportant": "Nothing stood out as especially important.",
+      "high": "Very important",
+      "medium": "Important",
+      "series": "Series",
+      "zone": "Zone",
+      "next": "Next date",
+      "count": "Dates",
+      "range": "Range",
+      "expired": "Ended {date}",
+      "until": "Until {date}",
+      "noDates": "No dates were found in this crawl.",
+      "noReview": "Nothing to review — all good.",
+      "unreachable": "Not reachable: {list}"
+    },
+    "log": {
+      "title": "Activity",
+      "job_started": "Crawl started",
+      "scan": "Scanning {page}",
+      "scanned": "{page} — {outcome}",
+      "links_found": "{count} new links on {page}",
+      "scan_done": "Scan complete: {n} sources to learn · approx. CHF {cost}",
+      "learn_start": "Gemini is learning {n} sources",
+      "learn_source": "Gemini is reading {page}",
+      "learned": "Learned {page}: {sections} sections · {facts} facts · {dates} dates",
+      "learn_failed": "Could not learn {page}: {reason}",
+      "job_done": "Done: {n} learned · CHF {cost}",
+      "empty": "Waiting for activity…"
+    },
+    "deleteJob": {
+      "title": "Delete crawl",
+      "message": "Delete the crawl of <strong>{url}</strong> and everything it indexed? This cannot be undone."
+    },
+    "rules": {
+      "title": "Custom answers",
+      "sub": "Fixed answers for particular questions, e.g. who to contact about building permits.",
+      "add": "Add answer"
+    }
+  },
+  "pages": {
+    "overviewTitle": "Overview",
+    "overview": "Is your chatbot on, how much is it used, and is its knowledge current.",
+    "configureTitle": "Configure",
+    "chatbots": "Each chatbot answers questions from one organisation’s website and documents.",
+    "insights": "Where your chatbot couldn't help, and everything people asked.",
+    "subscription": "Your prepaid balance pays for chat answers and for learning new content.",
+    "profile": "Your name, password and account.",
+    "knowledgeTitle": "Knowledge",
+    "knowledge": "What your chatbot knows, which dates it can answer, and where it needs you.",
+    "configure": "How your chatbot talks and how it looks on your website.",
+    "installTitle": "Install",
+    "install": "Add the chatbot to your website with one line of code."
+  },
+  "configure": {
+    "tabs": {
+      "conversation": "Conversation",
+      "look": "Look"
+    },
+    "unsaved": "You have unsaved changes",
+    "discard": "Discard",
+    "save": "Save changes",
+    "saved": "Changes saved",
+    "preview": "Preview",
+    "remove": "Remove",
+    "basics": {
+      "title": "Basics",
+      "name": "Name",
+      "nameHint": "Only shown here in the dashboard."
+    },
+    "welcome": {
+      "title": "First impression",
+      "sub": "What people see when they open the chat.",
+      "intro": "Welcome message",
+      "starters": "Suggested questions",
+      "startersHint": "Buttons shown under the welcome message, so people can ask with one click.",
+      "starterPlaceholder": "e.g. When is the next paper collection?",
+      "addStarter": "Add question",
+      "placeholder": "Text in the empty input field"
+    },
+    "tone": {
+      "title": "How it talks",
+      "sub": "It always answers in the language people write in. Pick a starting point, then adjust the text in your own words.",
+      "presets": "Tone presets",
+      "formal": "Polite and formal",
+      "formalDesc": "Factual, addresses people formally.",
+      "friendly": "Friendly",
+      "friendlyDesc": "Warm and casual, explains simply.",
+      "brief": "Short and factual",
+      "briefDesc": "One sentence or a short list.",
+      "persona": "Personality and instructions",
+      "personaHint": "Plain words work best, e.g. “Refer to the town office for anything about building permits.”",
+      "thinking": "Messages while it thinks",
+      "thinkingHint": "One per line. One of them is shown while an answer is being written."
+    },
+    "advanced": {
+      "title": "Advanced",
+      "sub": "The full instruction text the chatbot receives.",
+      "warning": "Only change this if you know what it does. {persona} is replaced with the personality above, {fine_tune_instructions} with your custom rules.",
+      "template": "Instruction template",
+      "missingPersona": "{persona} is missing, so the personality above is ignored.",
+      "restore": "Restore default"
+    },
+    "colors": {
+      "title": "Colours",
+      "sub": "Your brand colours. Click a colour to change it.",
+      "name": "Colour name",
+      "add": "Add colour",
+      "newColor": "New colour",
+      "base": {
+        "c_primary": "Main colour",
+        "c_secondary": "Light background",
+        "c_black": "Text",
+        "c_white": "White"
+      },
+      "allReadable": "All text is easy to read.",
+      "hardToRead": "Some text may be hard to read. Pick colours with more contrast for:",
+      "pairs": {
+        "header": "Header",
+        "botMessage": "Chatbot messages",
+        "userMessage": "Visitor messages",
+        "input": "Input field",
+        "sendButton": "Send button",
+        "starters": "Suggested questions"
+      },
+      "usage": "Choose where each colour is used",
+      "groups": {
+        "header": "Header",
+        "messages": "Messages",
+        "input": "Input field",
+        "starters": "Suggested questions"
+      },
+      "labels": {
+        "launcher_background_color": "Button colour",
+        "footer_background_color": "Footer background",
+        "header_background_color": "Header background",
+        "header_text_color": "Header text",
+        "reset_button_color": "Restart button",
+        "reset_button_icon_color": "Restart icon",
+        "close_button_background_color": "Close button",
+        "close_button_icon_color": "Close icon",
+        "share_button_color": "Share button",
+        "share_button_icon_color": "Share icon",
+        "chat_background_color": "Chat background",
+        "bot_message_background_color": "Chatbot bubble",
+        "bot_message_text_color": "Chatbot text",
+        "user_message_background_color": "Visitor bubble",
+        "user_message_text_color": "Visitor text",
+        "input_background_color": "Input background",
+        "input_text_color": "Input text",
+        "input_focus_ring_color": "Input outline when typing",
+        "send_button_background_color": "Send button",
+        "send_button_text_color": "Send icon",
+        "starter_background_color": "Button background",
+        "starter_text_color": "Button text"
+      }
+    },
+    "header": {
+      "title": "Chat window",
+      "chatTitle": "Title",
+      "chatTitleHint": "Shown at the top of the chat. Leave empty to show only the logo.",
+      "logo": "Logo",
+      "logoHint": "PNG or SVG with a transparent background works best.",
+      "reset": "Show a button to start a new conversation",
+      "share": "Show a button to share the conversation"
+    },
+    "launcher": {
+      "title": "Chat button",
+      "sub": "The round button in the corner of your website that opens the chat.",
+      "enabled": "Show the chat button on my website",
+      "disabledHint": "The chat is hidden on your website. The installed code can stay in place.",
+      "color": "Colour",
+      "icon": "Icon",
+      "iconHint": "Optional. Without an icon, a speech bubble is shown."
+    },
+    "edit": {
+      "modeLabel": "Preview mode",
+      "stateLabel": "What to show",
+      "modes": {
+        "edit": "Edit look",
+        "try": "Try it out"
+      },
+      "states": {
+        "start": "Start",
+        "conversation": "Conversation",
+        "launcher": "Chat button"
+      },
+      "hint": "Hover over a part of the chat and click it to change it.",
+      "tryHint": "This is your real chatbot. It answers from what it has learned.",
+      "hardToRead": "Hard to read: {parts}. Pick colours with more contrast.",
+      "addQuestion": "Add question",
+      "question": "Question",
+      "removeQuestion": "Remove question",
+      "startersShared": "The colours apply to all suggested questions.",
+      "custom": "Custom colour",
+      "close": "Close",
+      "parts": {
+        "header": "Header",
+        "reset": "Restart button",
+        "share": "Share button",
+        "close": "Close button",
+        "background": "Chat background",
+        "bot": "Chatbot messages",
+        "user": "Visitor messages",
+        "starter": "Suggested question",
+        "footer": "Footer",
+        "input": "Input field",
+        "send": "Send button",
+        "launcher": "Chat button"
+      }
+    },
+    "image": {
+      "choose": "Choose image",
+      "replace": "Replace",
+      "remove": "Remove"
+    }
+  },
+  "overview": {
+    "auto": {
+      "title": "Runs automatically",
+      "sub": "Tasks that run on a schedule for this chatbot. Each costs only what it processes.",
+      "recrawl": "Check websites for changes",
+      "recrawlHow": "Reads your websites again and learns only what changed. Unchanged pages cost nothing.",
+      "review": "Review conversations",
+      "reviewHow": "Checks finished conversations for questions your chatbot couldn't answer, about CHF {cost} each. Results appear in Insights.",
+      "off": "Off",
+      "daily": "Every night",
+      "weekly": "Once a week",
+      "last": "Last run {date}",
+      "never": "Hasn't run yet",
+      "next": "next {date}",
+      "saved": "Schedule saved"
+    },
+    "period": "Period",
+    "days": "{n} days",
+    "loadFailed": "The overview could not be loaded. Reload the page to try again.",
+    "status": {
+      "onTitle": "Your chatbot is on",
+      "onBody": "It answers on your website and on the public test page.",
+      "onHidden": "It answers on the public test page. The chat button is hidden on your website.",
+      "offTitle": "Your chatbot is switched off",
+      "offBody": "It doesn't appear on any website and doesn't answer anyone. You can still try it in the preview under Configure.",
+      "switchOff": "Switch off",
+      "switchOn": "Switch on",
+      "switchedOff": "Chatbot switched off",
+      "switchedOn": "Chatbot switched on",
+      "confirmTitle": "Switch off the chatbot?",
+      "confirmBody": "It disappears from every website and the public test page right away, and stops answering questions. You can switch it back on at any time."
+    },
+    "usage": {
+      "title": "Last {n} days",
+      "more": "Open insights",
+      "conversations": "Conversations",
+      "questions": "Questions answered",
+      "spent": "Spent",
+      "spentSplit": "CHF {chat} answers, CHF {learning} learning",
+      "balance": "Balance",
+      "topUp": "Top up",
+      "chartLabel": "{n} questions in the last {days} days",
+      "today": "Today",
+      "new": "new",
+      "same": "no change",
+      "vsPrevious": "Compared with the previous period"
+    },
+    "knowledge": {
+      "title": "Knowledge",
+      "more": "Open knowledge",
+      "pages": "pages",
+      "files": "files",
+      "sections": "sections learned",
+      "upcoming": "dates in the next 2 weeks",
+      "attention": "{n} documents need your attention",
+      "lastCrawl": "Last crawl",
+      "noCrawl": "No website read yet.",
+      "crawlCounts": "{learned} learned, {unchanged} unchanged",
+      "recrawlOn": "Checks for changes every {n} days.",
+      "recrawlOff": "Doesn't check for changes automatically."
+    },
+    "latest": {
+      "findings": "{n} questions to look at",
+      "title": "Latest questions",
+      "more": "All conversations",
+      "none": "No questions in this period yet."
+    }
+  },
+  "insights": {
+    "title": "Insights",
+    "findings": {
+      "addAnswer": "Add answer",
+      "answerSaved": "Answer saved. Your chatbot uses it from now on.",
+      "title": "To look at",
+      "sub": "Questions your chatbot couldn't answer well, found by reviewing finished conversations.",
+      "filter": "Show",
+      "status": {
+        "open": "Open",
+        "resolved": "Done",
+        "dismissed": "Dismissed"
+      },
+      "noneOpen": "Nothing to look at. Every reviewed question was answered well.",
+      "noneOther": "Nothing here yet.",
+      "reviewOff": "Conversation review is switched off, so nothing is checked.",
+      "loadFailed": "Could not load the findings.",
+      "viewConversation": "View conversation",
+      "addKnowledge": "Add knowledge",
+      "done": "Done",
+      "dismiss": "Dismiss",
+      "reopen": "Reopen"
+    },
+    "kinds": {
+      "unanswered": "Not answered",
+      "wrong": "Possibly wrong",
+      "pushback": "Pushback",
+      "unclear": "Misunderstood"
+    },
+    "review": {
+      "howWeekly": "Finished conversations are checked once a week, about CHF {cost} each. Each conversation is checked once.",
+      "change": "Change schedule",
+      "toggle": "Review conversations",
+      "how": "Finished conversations are checked once a night, about CHF {cost} each. Each conversation is checked once.",
+      "stats": "Last 30 days: {n} conversations, CHF {cost}.",
+      "off": "Turn this on to find questions your chatbot couldn't answer.",
+      "now": "Review now",
+      "queued": "Reviewing…",
+      "started": "Review started. Results appear in a minute or two.",
+      "failed": "Could not start the review."
+    },
+    "conversations": {
+      "title": "Conversations",
+      "sub": "Everything people asked, newest first.",
+      "none": "No conversations yet.",
+      "questions": "{n} questions",
+      "flagged": "to look at",
+      "close": "Close conversation"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "lede": "Your account, billing, and what runs automatically.",
+    "save": "Save changes",
+    "saved": "Saved",
+    "sections": {
+      "profile": "Profile",
+      "security": "Security",
+      "billing": "Billing",
+      "schedules": "Schedules",
+      "danger": "Delete account"
+    },
+    "profile": {
+      "title": "Profile",
+      "sub": "How you appear in the dashboard.",
+      "emailHint": "Your sign-in address. Contact us to change it.",
+      "language": "Dashboard language",
+      "languageHint": "Also used for review findings and the texts of new chatbots."
+    },
+    "security": {
+      "passwordTitle": "Password",
+      "passwordHint": "At least 8 characters.",
+      "sessionsTitle": "Signed-in devices",
+      "sessionsSub": "Signs you out on every device and browser, this one included. Other devices can't stay signed in for more than an hour. Use it if you signed in somewhere you no longer trust.",
+      "signOutAll": "Sign out everywhere",
+      "signOutFailed": "Could not sign out everywhere. Try again."
+    },
+    "billing": {
+      "balance": "Balance",
+      "portal": "Payment methods and invoices",
+      "answers": "Answers",
+      "learning": "Learning",
+      "reviews": "Reviews",
+      "total": "Total",
+      "spentHint": "Everything spent since the account was opened.",
+      "topUpTitle": "Top up",
+      "topUpSub": "Your balance pays for answers, learning and reviews. It never expires.",
+      "once": "Once",
+      "monthly": "Every month",
+      "custom": "Other amount",
+      "onceHint": "Minimum CHF 5.",
+      "monthlyHint": "Charged every month until you cancel in the payment portal.",
+      "pay": "Pay CHF {amount}",
+      "payMonthly": "Pay CHF {amount} every month",
+      "historyTitle": "Payments",
+      "noHistory": "No payments yet.",
+      "invoice": "Invoice"
+    },
+    "schedules": {
+      "title": "Schedules",
+      "sub": "How often each chatbot checks its websites and reviews its conversations.",
+      "none": "No chatbots yet.",
+      "chatbot": "Chatbot",
+      "websites": "Check websites",
+      "reviews": "Review conversations",
+      "off": "Off",
+      "switchedOff": "switched off",
+      "reviewNote": "Reviews read each finished conversation once and are billed per conversation. Findings appear in Insights."
+    },
+    "danger": {
+      "title": "Delete account",
+      "sub": "This can't be undone. Deleting your account removes:",
+      "chatbots": "all chatbots, their knowledge and their conversations, from every website right away",
+      "balance": "your remaining balance, which isn't refunded",
+      "subscription": "any monthly top-up, which is cancelled",
+      "typeEmail": "Type {email} to confirm",
+      "delete": "Delete account for good",
+      "failed": "The account could not be deleted."
+    }
+  },
+  "testPage": {
+    "title": "Public test page",
+    "lede": "A page anyone with the link can use to try your chatbot, without installing it on a website.",
+    "link": {
+      "title": "Link",
+      "sub": "Send it to colleagues or testers. It always shows the current version of your chatbot.",
+      "copy": "Copy link",
+      "copied": "Copied",
+      "copyFailed": "Could not copy. Select the link and copy it by hand.",
+      "open": "Open page",
+      "off": "Your chatbot is switched off, so the page only says that it's off.",
+      "offLink": "Switch it on",
+      "protected": "Visitors need the password before they can chat."
+    },
+    "password": {
+      "title": "Ask for a password",
+      "sub": "For while the chatbot is still in development: only people with the password can chat.",
+      "label": "Password",
+      "new": "New password",
+      "hint": "At least 6 characters.",
+      "show": "Show",
+      "hide": "Hide",
+      "save": "Save password",
+      "cancel": "Cancel",
+      "change": "Change password",
+      "isSet": "A password is set.",
+      "saved": "Password saved. Anyone who opened the page before needs the new one.",
+      "removed": "Password removed. Anyone with the link can chat.",
+      "widgetNote": "The chat button on your website asks for the password too, so turn this off when you go live.",
+      "shareNote": "Send the link and the password separately, for example the password by phone.",
+      "previewNote": "You don't need the password in the preview under Configure."
+    }
+  },
+  "install": {
+    "example": "See it on an example website",
+    "copy": "Copy code",
+    "copied": "Copied",
+    "copyFailed": "Could not copy. Select the code and copy it by hand.",
+    "notes": {
+      "off": "Your chatbot is switched off, so it won't appear even after installing.",
+      "offLink": "Switch it on",
+      "hidden": "The chat button is hidden, so it won't appear on your website yet.",
+      "hiddenLink": "Show it",
+      "protected": "A password is set, so visitors on your website are asked for it too.",
+      "protectedLink": "Remove the password"
+    },
+    "step1": {
+      "title": "Copy this code",
+      "text": "It's the same for every page and never changes. Changes you make in the dashboard show up on your website automatically."
+    },
+    "step2": {
+      "title": "Add it to your website",
+      "text": "Paste the code once, so it's on every page: just before the closing </body> tag, or in your website builder's setting for code in the footer."
+    },
+    "builders": {
+      "wordpress": {
+        "name": "WordPress",
+        "how": "Install the free plugin “WPCode”. Go to Code Snippets → Header & Footer, paste the code into “Footer” and save."
+      },
+      "wix": {
+        "name": "Wix",
+        "how": "Go to Settings → Custom code → Add custom code. Paste the code, choose “All pages” and “Body – end”, then apply."
+      },
+      "squarespace": {
+        "name": "Squarespace",
+        "how": "Go to Settings → Advanced → Code injection, paste the code into “Footer” and save. Needs a Business plan or higher."
+      },
+      "webflow": {
+        "name": "Webflow",
+        "how": "Open Site settings → Custom code, paste the code into “Footer code”, save and publish the site."
+      },
+      "other": {
+        "name": "Another system or a web agency",
+        "how": "Most systems have a field for code in the footer, often under “Tracking”, “Scripts” or “Custom code”. If you can't find it, send the code to whoever maintains your website."
+      }
+    },
+    "delegate": {
+      "text": "Someone else looks after your website? Send them the code with these instructions.",
+      "button": "Email it to your web team",
+      "subject": "Please add our chatbot ({name}) to the website",
+      "body": "Hello,\n\nplease add the following code to every page of our website, just before the closing </body> tag (or in the footer code setting of the CMS):\n\n{code}\n\nIt loads our chatbot. Nothing else needs to be configured.\n\nThank you!"
+    },
+    "step3": {
+      "title": "Check that it shows up",
+      "text": "Open your website. A round chat button appears in the bottom-right corner. Click it and ask a question.",
+      "cache": "Don't see it? Reload the page with Ctrl+Shift+R (Cmd+Shift+R on a Mac); some websites cache pages for a few minutes.",
+      "consent": "Using a cookie banner that blocks scripts? Allow this script there; the chatbot itself sets no cookies."
     }
   }
 }

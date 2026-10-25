@@ -1,6 +1,6 @@
 """
 services/worker_fast/celery_worker.py
-Registers ONLY fast-queue tasks: file ingestion, URL processing, maintenance.
+Registers ONLY fast-queue tasks: learning (Gemini), uploads, maintenance.
 No crawl4ai, no Playwright.
 """
 import nest_asyncio
@@ -25,6 +25,6 @@ celery.conf.update(
 
 # Explicitly import to register @shared_task decorators
 import app.data_processing.tasks.maintenance_tasks  # noqa: F401, E402
-from app.data_processing.tasks import process_local_file, process_urls  # noqa: F401, E402
+import app.data_processing.tasks  # noqa: F401, E402  (learn, uploads, maintenance)
 
 error_logger.info("worker_fast: tasks registered — fast queue ready")

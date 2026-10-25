@@ -102,7 +102,7 @@
                 <label for="wiz-file-upload" class="file-drop" :class="{ 'file-drop--active': selectedFile }">
                   <input id="wiz-file-upload" type="file" @change="handleFileSelect" accept=".pdf,.txt,.csv" class="sr-only" />
                   <div class="file-drop__icon" :class="{ 'file-drop__icon--active': selectedFile }">
-                    <font-awesome-icon :icon="selectedFile ? ['fas', 'file-check'] : ['fas', 'file-arrow-up']" />
+                    <font-awesome-icon :icon="selectedFile ? ['fas', 'file-circle-check'] : ['fas', 'file-arrow-up']" />
                   </div>
                   <div class="text-center">
                     <p class="file-drop__name" :class="{ 'file-drop__name--active': selectedFile }">
@@ -116,14 +116,14 @@
 
             <!-- Step 2: Scope -->
             <div v-if="step === 2 && type === 'website'" class="space-y-3">
-              <p class="step-subtext mb-2">How much of this site should we index?</p>
+              <p class="step-subtext mb-2">{{ $t('tenant.sources.wizard.scope.question') }}</p>
               <button type="button" @click="singlePageOnly = false"
                 class="radio-card p-5"
                 :class="{ 'is-selected': !singlePageOnly }">
                 <div class="text-xl mt-0.5">🌐</div>
                 <div class="flex-1">
-                  <p class="step-heading">Full site crawl</p>
-                  <p class="step-subtext">Follow internal links and index all reachable pages</p>
+                  <p class="step-heading">{{ $t('tenant.sources.wizard.scope.fullTitle') }}</p>
+                  <p class="step-subtext">{{ $t('tenant.sources.wizard.scope.fullDesc') }}</p>
                 </div>
                 <div class="radio-card__dot"></div>
               </button>
@@ -133,7 +133,7 @@
                 <div class="text-xl mt-0.5">📄</div>
                 <div class="flex-1">
                   <p class="step-heading">{{ $t('tenant.sources.wizard.singlePageLabel') }}</p>
-                  <p class="step-subtext">Only index this exact URL — skip all internal links</p>
+                  <p class="step-subtext">{{ $t('tenant.sources.wizard.scope.singleDesc') }}</p>
                 </div>
                 <div class="radio-card__dot"></div>
               </button>
@@ -142,11 +142,8 @@
             <!-- Step 3: Exclusions -->
             <div v-if="step === 3 && type === 'website' && !singlePageOnly" class="space-y-5">
               <div>
-                <p class="step-heading">Exclude paths &amp; subdomains</p>
-                <p class="step-subtext">
-                  These paths or subdomains will be skipped entirely during crawling.
-                  Useful for login pages, dashboards, staging subdomains, or any section you don't want indexed.
-                </p>
+                <p class="step-heading">{{ $t('tenant.sources.wizard.exclude.title') }}</p>
+                <p class="step-subtext">{{ $t('tenant.sources.wizard.exclude.desc') }}</p>
               </div>
 
               <div v-if="excludedPaths.length > 0" class="flex flex-wrap gap-2">
@@ -164,19 +161,19 @@
                   <input ref="exclusionInput" v-model="exclusionDraft"
                     @keydown.enter.prevent="confirmExclusion"
                     @keydown.escape="addingExclusion = false; exclusionDraft = ''"
-                    placeholder="login  or  shop.example.com" />
+                    :placeholder="$t('tenant.sources.wizard.exclude.placeholder')" />
                 </div>
-                <button type="button" @click="confirmExclusion" class="btn btn-sm btn-primary rounded-xl px-4">Add</button>
-                <button type="button" @click="addingExclusion = false; exclusionDraft = ''" class="btn btn-sm btn-ghost rounded-xl">Cancel</button>
+                <button type="button" @click="confirmExclusion" class="btn btn-sm btn-primary rounded-xl px-4">{{ $t('tenant.sources.wizard.exclude.add') }}</button>
+                <button type="button" @click="addingExclusion = false; exclusionDraft = ''" class="btn btn-sm btn-ghost rounded-xl">{{ $t('tenant.sources.wizard.exclude.cancel') }}</button>
               </div>
 
               <button v-if="!addingExclusion" type="button" @click="addExclusion" class="add-row">
                 <span class="add-row__icon"><font-awesome-icon :icon="['fas', 'plus']" class="text-xs" /></span>
-                Add a path or subdomain
+                {{ $t('tenant.sources.wizard.exclude.addRow') }}
               </button>
 
               <p v-if="excludedPaths.length === 0 && !addingExclusion" class="step-subtext italic">
-                No exclusions added — you can skip this step.
+                {{ $t('tenant.sources.wizard.exclude.none') }}
               </p>
             </div>
 
@@ -205,7 +202,7 @@
                   <div class="confirm-item">
                     <span class="confirm-item__icon"><font-awesome-icon :icon="['fas', 'bolt']" /></span>
                     <span class="confirm-item__label">{{ $t('tenant.sources.wizard.confirmMode') }}</span>
-                    <span class="confirm-item__value">{{ crawlMode }}</span>
+                    <span class="confirm-item__value">{{ crawlModes.find((m) => m.value === crawlMode)?.label }}</span>
                   </div>
 
                   <!-- Scope -->
@@ -264,8 +261,8 @@ const lastStep = computed(() => {
 });
 
 const crawlModes = computed(() => [
-  { value: 'soup',       emoji: '⚡', label: t('tenant.sources.wizard.modeSoup'),       desc: t('tenant.sources.wizard.modeSoupDesc'),      badge: 'Fastest',  badgeClass: 'bg-success/15 text-success' },
-  { value: 'playwright', emoji: '🌐', label: t('tenant.sources.wizard.modePlaywright'), desc: t('tenant.sources.wizard.modePlaywrightDesc'), badge: 'JS sites', badgeClass: 'bg-warning/15 text-warning'  },
+  { value: 'soup',       emoji: '⚡', label: t('tenant.sources.wizard.modeSoup'),       desc: t('tenant.sources.wizard.modeSoupDesc'),      badge: t('tenant.sources.wizard.modeSoupBadge'),       badgeClass: 'bg-success/15 text-success' },
+  { value: 'playwright', emoji: '🌐', label: t('tenant.sources.wizard.modePlaywright'), desc: t('tenant.sources.wizard.modePlaywrightDesc'), badge: t('tenant.sources.wizard.modePlaywrightBadge'), badgeClass: 'bg-warning/15 text-warning'  },
 ]);
 const url = ref('');
 const crawlMode = ref('soup');

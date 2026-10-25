@@ -17,8 +17,12 @@ const marked = new Marked(
 /**
  * Processes a bot's message content, cleaning it and converting markdown to HTML.
  * @param {string} content - The raw string content from the bot.
- * @returns {{text: string, html: string}} - An object containing the cleaned text and the rendered HTML.
+ * Calendar markers ([[calendar:key]]) the chatbot adds after giving dates are
+ * taken out of the text and returned as `calendars` for the chat to show as buttons.
+ * @returns {{text: string, html: string, calendars: string[]}}
  */
+const CALENDAR_MARKER = /\[\[calendar:([a-z0-9-]+)\]\]/g;
+
 export const processBotMessage = (content) => {
   try {
     if (typeof content !== "string") {
@@ -27,8 +31,11 @@ export const processBotMessage = (content) => {
     }
     // This regex removes the specific Kramdown attribute list for target="_blank"
     const cleanedText = content.replace(/{:target="_blank"}/g, "");
-    const html = DOMPurify.sanitize(marked.parse(cleanedText));
-    return { text: cleanedText, html };
+    const calendars = [...cleanedText.matchAll(CALENDAR_MARKER)].map((m) => m[1]);
+    // while an answer streams in, hide a marker that isn't complete yet
+    const visible = cleanedText.replace(CALENDAR_MARKER, "").replace(/\[\[[a-z:\-0-9]*\]?$/, "").trimEnd();
+    const html = DOMPurify.sanitize(marked.parse(visible));
+    return { text: cleanedText, html, calendars: [...new Set(calendars)] };
   } catch (e) {
     console.error("Error parsing content with marked.js:", e);
     console.error("Original content:", content);

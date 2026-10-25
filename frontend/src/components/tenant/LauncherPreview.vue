@@ -17,7 +17,7 @@
           v-if="icon"
           :src="icon"
           class="w-[30px] h-[30px] object-contain"
-          alt="Launcher Icon"
+          :alt="$t('configure.launcher.icon')"
         />
         <svg
           v-else

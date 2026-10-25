@@ -6,6 +6,7 @@ Total image: ~180MB.
 """
 import os
 from celery import Celery
+from celery.schedules import crontab
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -21,6 +22,8 @@ celery.conf.update(
     task_routes={
         'app.data_processing.tasks.maintenance_tasks.job_scheduler_task': {'queue': 'fast'},
         'app.data_processing.tasks.maintenance_tasks.zombie_reaper_task': {'queue': 'fast'},
+        'app.data_processing.tasks.maintenance_tasks.weekly_recrawl_task': {'queue': 'fast'},
+        'app.data_processing.tasks.maintenance_tasks.review_conversations_task': {'queue': 'fast'},
     },
     beat_schedule={
         'job-scheduler-every-30-seconds': {
@@ -31,6 +34,17 @@ celery.conf.update(
         'zombie-reaper-every-30-minutes': {
             'task': 'app.data_processing.tasks.maintenance_tasks.zombie_reaper_task',
             'schedule': 1800.0,
+        },
+        # Checks every 6 h which opted-in tenants are due (default: weekly)
+        'recrawl-check-every-6-hours': {
+            'task': 'app.data_processing.tasks.maintenance_tasks.weekly_recrawl_task',
+            'schedule': 6 * 3600.0,
+        },
+        # Once a night: reviews conversations not reviewed before for unanswered
+        # questions and pushback (most chatbots see few conversations a day)
+        'review-conversations-daily': {
+            'task': 'app.data_processing.tasks.maintenance_tasks.review_conversations_task',
+            'schedule': crontab(hour=3, minute=0),
         },
     },
 )

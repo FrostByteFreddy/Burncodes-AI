@@ -1,0 +1,7 @@
+# Test-only dependencies on top of services/api/requirements.txt: the tests
+# also exercise shared knowledge-pipeline modules used by the workers.
+pytest
+beautifulsoup4==4.13.4
+lxml==5.4.0
+markdownify==1.2.0
+pdfplumber==0.11.7

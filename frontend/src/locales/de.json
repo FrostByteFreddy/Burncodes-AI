@@ -1,8 +1,10 @@
 {
   "common": {
+    "close": "Schliessen",
     "loading": "Laden...",
     "error": "Fehler",
-    "success": "Erfolg"
+    "success": "Erfolg",
+    "menu": "Menü"
   },
   "auth": {
     "signup": {
@@ -26,7 +28,12 @@
       "submitting": "Anmelden...",
       "noAccount": "Haben Sie noch kein Konto?",
       "signupLink": "Registrieren"
-    }
+    },
+    "taglineLogin": "Der Chatbot, der Ihre Website und Ihre Dokumente kennt.",
+    "taglineSignup": "Ihr eigener Chatbot in Minuten, nicht Monaten.",
+    "poweredBy": "Bereitgestellt von Burncodes AI",
+    "unknownError": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "sessionExpired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an."
   },
   "manageTenants": {
     "title": "Meine Chatbots",
@@ -74,6 +81,22 @@
     "chartLabel": "Anzahl der Nachrichten"
   },
   "chat": {
+    "calendar": {
+      "add": "{name} in meinen Kalender",
+      "apple": "Apple Kalender oder Outlook",
+      "google": "Google Kalender",
+      "copy": "Kalender-Link kopieren",
+      "copied": "Link kopiert",
+      "hint": "Der Kalender aktualisiert sich von selbst, wenn sich Termine ändern. Zum Entfernen löschen oder kündigen Sie das Abo in Ihrer Kalender-App."
+    },
+    "locked": {
+      "title": "Dieser Chatbot wird noch getestet",
+      "body": "Geben Sie das Passwort ein, das Sie erhalten haben, um ihn auszuprobieren.",
+      "password": "Passwort",
+      "open": "Chat öffnen",
+      "wrong": "Das Passwort stimmt nicht. Prüfen Sie es und versuchen Sie es erneut."
+    },
+    "switchedOff": "Dieser Chatbot ist zurzeit ausgeschaltet.",
     "inputPlaceholder": "Stell mir eine Frage...",
     "thinking": "Denke nach...",
     "reset": "Gespräch zurücksetzen",
@@ -85,11 +108,13 @@
     "sharedExpired": "Dieser Freigabe-Link ist abgelaufen",
     "sharedNotFound": "Freigabe-Link nicht gefunden",
     "errors": {
+      "rateLimited": "Sie senden sehr schnell Nachrichten. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
       "initialMessage": "Fehler: Konnte Anfangsnachricht nicht laden.",
       "processingFailed": "Fehler: Verarbeitung fehlgeschlagen.",
       "taskStatus": "Fehler: Konnte Task-Status nicht abrufen.",
       "sendMessage": "Fehler: Konnte Nachricht nicht senden."
-    }
+    },
+    "openChat": "Chat öffnen"
   },
   "subscription": {
     "title": "Abrechnung & Abonnement",
@@ -162,7 +187,12 @@
         "systemPersona": "System-Persona",
         "ragPromptTemplate": "RAG-Prompt-Vorlage",
         "docLanguage": "Dokumentsprache",
-        "translationTarget": "Übersetzungsziel"
+        "translationTarget": "Übersetzungsziel",
+        "recrawlTitle": "Automatisches Neu-Crawlen",
+        "recrawlToggle": "Meine Websites automatisch neu crawlen",
+        "recrawlHelp": "Prüft Ihre gecrawlten Websites regelmässig. Nur neue oder geänderte Seiten werden gelernt (und verrechnet); unveränderte Seiten kosten nichts. Nach jedem Lauf erhalten Sie einen Bericht.",
+        "recrawlInterval": "Intervall",
+        "recrawlEveryDays": "Alle {n} Tage"
       },
       "appearance": {
         "installation": {
@@ -261,24 +291,24 @@
       "addNew": "Neue Quelle hinzufügen",
       "uploadFile": "Datei hochladen",
       "uploading": "Wird hochgeladen...",
-      "crawlWebsite": "Website crawlen",
-      "crawling": "Crawling...",
+      "crawlWebsite": "Website einlesen",
+      "crawling": "Wird eingelesen …",
       "invalidUrl": "Bitte geben Sie eine gültige URL ein (z. B. https://example.com).",
-      "crawlSinglePage": "Nur diese Seite crawlen",
+      "crawlSinglePage": "Nur diese Seite einlesen",
       "excludeUrls": "URLs ausschließen (eine pro Zeile)",
       "excludePlaceholder": "z. B. https://example.com/fr/...",
       "activity": {
-        "title": "Crawling-Aktivität",
-        "noActivity": "Noch keine Crawling-Aktivität",
-        "instruction": "Verwenden Sie die Funktion \"Website crawlen\", um einen neuen Crawl zu starten.",
+        "title": "Aktivität",
+        "noActivity": "Noch keine Aktivität",
+        "instruction": "Wählen Sie «Website einlesen», um zu starten.",
         "status": "Status:"
       },
       "existing": {
         "title": "Vorhandene Quellen",
         "noSources": "Noch keine Quellen",
         "instruction": "Fügen Sie eine Quelle hinzu, um die Wissensbasis Ihres Chatbots aufzubauen.",
-        "crawledUrls": "Gecrawlte URLs",
-        "noCrawledUrls": "Es wurden noch keine URLs gecrawlt.",
+        "crawledUrls": "Gelesene Seiten",
+        "noCrawledUrls": "Es wurden noch keine Seiten gelesen.",
         "uploadedFiles": "Hochgeladene Dateien",
         "noUploadedFiles": "Es wurden noch keine Dateien hochgeladen."
       },
@@ -288,14 +318,15 @@
         "confirm": "Löschen"
       },
       "actions": {
-        "crawlStarted": "Crawling-Job erfolgreich gestartet!",
-        "crawlFailed": "Fehler beim Starten des Crawls:",
+        "crawlStarted": "Die Website wird eingelesen.",
+        "crawlFailed": "Das Einlesen konnte nicht gestartet werden:",
         "uploadSuccess": "Datei erfolgreich hochgeladen!",
         "uploadFailed": "Fehler beim Hochladen der Datei:",
         "deleteSuccess": "Quelle erfolgreich gelöscht!",
         "deleteFailed": "Fehler beim Löschen der Quelle:",
-        "crawlCompleted": "Crawl-Job abgeschlossen! Quellen werden aktualisiert...",
-        "fetchFailed": "Fehler beim Abrufen der Crawling-Aktivität."
+        "crawlCompleted": "Einlesen abgeschlossen. Die Quellen werden aktualisiert …",
+        "scanCompleted": "Scan abgeschlossen — Schätzung prüfen und Lernen starten.",
+        "fetchFailed": "Die Aktivität konnte nicht geladen werden."
       },
       "tabs": {
         "website": "Website-Indexierung",
@@ -308,7 +339,7 @@
         "stepConfigure": "Konfigurieren",
         "stepConfirm": "Bereit",
         "typeWebsite": "Website",
-        "typeWebsiteDesc": "Crawlen Sie eine öffentliche URL und indexieren Sie den Textinhalt.",
+        "typeWebsiteDesc": "Geben Sie die Adresse einer öffentlichen Website ein. Der Chatbot liest ihre Seiten und Dokumente.",
         "typeDocument": "Dokument",
         "typeDocumentDesc": "Laden Sie eine PDF-, TXT- oder CSV-Datei hoch.",
         "urlLabel": "Start-URL",
@@ -316,35 +347,52 @@
         "singlePageLabel": "Nur diese Seite (keine Unterseiten)",
         "excludeLabel": "Pfade ausschließen (einer pro Zeile)",
         "excludePlaceholder": "/login\n/dashboard",
-        "crawlModeLabel": "Crawl-Modus",
+        "crawlModeLabel": "Leseverfahren",
         "crawlModeHint": "Bestimmt, wie Seiten abgerufen und verarbeitet werden.",
-        "modeSoup": "Soup",
-        "modeSoupDesc": "Schneller HTTP-Abruf — kein Browser. Optimal für statische Seiten.",
-        "modePlaywright": "Playwright",
-        "modePlaywrightDesc": "Headless-Browser für JS-lastige Seiten. Gemini versteht den Inhalt automatisch.",
+        "modeSoupBadge": "Empfohlen",
+        "modePlaywrightBadge": "Langsamer",
+        "modeSoup": "Schnell",
+        "modeSoupDesc": "Für die meisten Websites. Liest Seiten direkt und ist am schnellsten.",
+        "modePlaywright": "Gründlich",
+        "modePlaywrightDesc": "Für Websites, deren Inhalt erst im Browser erscheint. Langsamer, findet dafür alles.",
         "confirmTitle": "Bestätigen",
         "confirmType": "Typ",
         "confirmUrl": "URL",
         "confirmFile": "Datei",
         "confirmMode": "Modus",
         "confirmSinglePage": "Nur diese Seite",
-        "confirmFullSite": "Vollständiger Crawl",
+        "confirmFullSite": "Ganze Website",
         "confirmScope": "Umfang",
         "confirmExcluded": "Ausgeschlossen",
         "chooseFile": "Datei auswählen",
         "back": "Zurück",
         "next": "Weiter",
-        "startCrawl": "Crawl starten",
+        "startCrawl": "Einlesen starten",
         "uploadFile": "Datei hochladen",
         "infoTitle": "Wie funktioniert das?",
-        "infoWebsite": "Wir senden einen Crawler zur angegebenen URL und indexieren den Textinhalt in die Wissensbasis Ihres Chatbots. Wählen Sie Soup für schnelle statische Seiten, Playwright für JS-lastige Seiten oder Playwright + LLM für beste Qualität.",
-        "infoDocument": "Laden Sie eine PDF-, TXT- oder CSV-Datei hoch und wir extrahieren und indexieren den Textinhalt automatisch."
+        "infoWebsite": "Wir lesen die angegebene Website und die darauf verlinkten Dokumente. Vor dem Lernen sehen Sie, was gefunden wurde und was es kostet.",
+        "infoDocument": "Laden Sie eine PDF-, TXT- oder CSV-Datei hoch. Der Chatbot lernt ihren Inhalt automatisch.",
+        "scope": {
+          "question": "Wie viel dieser Website soll gelesen werden?",
+          "fullTitle": "Ganze Website",
+          "fullDesc": "Folgt den Links der Website und liest alle erreichbaren Seiten samt den dort verlinkten Dokumenten.",
+          "singleDesc": "Nur diese eine Adresse, plus die darauf verlinkten Dokumente."
+        },
+        "exclude": {
+          "title": "Bereiche auslassen",
+          "desc": "Diese Pfade oder Subdomains werden komplett übersprungen, z. B. Login-Seiten, ein Online-Shop oder eine Testseite.",
+          "placeholder": "z. B. login oder shop.beispiel.ch",
+          "add": "Hinzufügen",
+          "cancel": "Abbrechen",
+          "addRow": "Pfad oder Subdomain hinzufügen",
+          "none": "Nichts ausgelassen. Sie können diesen Schritt überspringen."
+        }
       }
     },
     "fineTune": {
-      "title": "Feinabstimmungsregeln",
-      "noRules": "Noch keine Feinabstimmungsregeln definiert.",
-      "addRule": "Neue Regel hinzufügen",
+      "title": "Eigene Antworten",
+      "noRules": "Noch keine eigenen Antworten.",
+      "addRule": "Antwort hinzufügen",
       "trigger": {
         "label": "Auslöser",
         "placeholder": "Auslöser",
@@ -402,51 +450,6 @@
   "profile": {
     "title": "Benutzerprofil",
     "subtitle": "Verwalten Sie Ihre persönlichen Informationen und Sicherheitseinstellungen.",
-    "tabs": {
-      "profile": "Profildetails",
-      "security": "Sicherheit"
-    },
-    "email": "E-Mail-Adresse",
-    "first_name": "Vorname",
-    "last_name": "Nachname",
-    "phone_number": "Telefonnummer",
-    "language": "Sprache",
-    "save_changes": "Änderungen speichern",
-    "saving": "Speichern",
-    "success": "Profil erfolgreich aktualisiert!",
-    "error": "Fehler beim Aktualisieren des Profils.",
-    "security": {
-      "currentPassword": "Aktuelles Passwort",
-      "newPassword": "Neues Passwort",
-      "confirmPassword": "Neues Passwort bestätigen",
-      "updatePassword": "Passwort aktualisieren",
-      "updating": "Aktualisiere",
-      "passwordMismatch": "Die neuen Passwörter stimmen nicht überein.",
-      "success": "Passwort erfolgreich geändert!",
-      "error": "Fehler beim Ändern des Passworts."
-    }
-  },
-  "sidebar": {
-    "selectTenant": "Chatbot auswählen",
-    "install": "Einbinden",
-    "sources": "Wissen",
-    "configuration": "Konfiguration",
-    "fineTune": "Feinabstimmung",
-    "analytics": "Analysen",
-    "chatLogs": "Chat-Protokolle",
-    "chatbot": "Chatbot öffnen",
-    "noTenantSelected": "Chatbot auswählen, um Optionen zu sehen.",
-    "settings": "Einstellungen",
-    "profile": "Profil",
-    "manageTenants": "Meine Chatbots",
-    "subscription": "Abrechnung",
-    "logout": "Abmelden",
-    "workspace": "Arbeitsbereich",
-    "account": "Konto"
-  },
-  "profile": {
-    "title": "Benutzerprofil",
-    "subtitle": "Verwalten Sie Ihre persönlichen Informationen und Sicherheitseinstellungen.",
     "accountDetails": "Kontodetails",
     "changePassword": "Passwort ändern",
     "dangerZone": "Gefahrenzone",
@@ -477,17 +480,37 @@
       "error": "Fehler beim Ändern des Passworts."
     }
   },
+  "sidebar": {
+    "settings": "Einstellungen",
+    "configure": "Anpassen",
+    "insights": "Auswertung",
+    "overview": "Übersicht",
+    "selectTenant": "Chatbot auswählen",
+    "install": "Einbinden",
+    "sources": "Wissen",
+    "configuration": "Konfiguration",
+    "fineTune": "Feinabstimmung",
+    "analytics": "Analysen",
+    "chatLogs": "Chat-Protokolle",
+    "chatbot": "Öffentliche Testseite",
+    "chatbotHint": "Ein Link, über den jede Person Ihren Chatbot ausprobieren kann",
+    "copyLink": "Link kopieren",
+    "linkCopied": "Link kopiert",
+    "noTenantSelected": "Chatbot auswählen, um Optionen zu sehen.",
+    "profile": "Profil",
+    "manageTenants": "Meine Chatbots",
+    "subscription": "Abrechnung",
+    "logout": "Abmelden",
+    "workspace": "Arbeitsbereich",
+    "account": "Konto"
+  },
   "modals": {
     "createTenant": {
-      "title": "Neuen Mandanten erstellen",
-      "name": "Mandantenname",
-      "introMessage": "Begrüßungsnachricht",
-      "systemPersona": "System-Persona",
-      "ragPromptTemplate": "RAG-Prompt-Vorlage",
-      "docLanguage": "Dokumentsprache",
-      "translationTarget": "Übersetzungsziel",
+      "title": "Neuer Chatbot",
+      "name": "Name",
       "cancel": "Abbrechen",
-      "create": "Erstellen"
+      "create": "Chatbot erstellen",
+      "failed": "Der Chatbot konnte nicht erstellt werden. Bitte versuchen Sie es erneut."
     },
     "confirmation": {
       "cancel": "Abbrechen",
@@ -498,6 +521,649 @@
       "title": "Sitzung abgelaufen",
       "message": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
       "logout": "Abmelden"
+    }
+  },
+  "knowledge": {
+    "skipReasons": {
+      "archive_finance": "Alte Budgets und Rechnungen",
+      "old_minutes": "Alte Protokolle",
+      "outdated": "Veraltet",
+      "older_version": "Ältere Fassungen",
+      "internal": "Intern oder technisch",
+      "manual": "Von Ihnen aussortiert",
+      "other": "Sonstiges"
+    },
+    "calendars": {
+      "title": "Termine im eigenen Kalender",
+      "sub": "Einwohnerinnen und Einwohner können diese Termine in ihrer Kalender-App abonnieren (z. B. Apple, Google oder Outlook). Der Chatbot bietet das bei Fragen zu Terminen an. Neue oder verschobene Termine erscheinen automatisch.",
+      "protected": "Kalender-Abos sind pausiert, solange der Chatbot ein Passwort verlangt.",
+      "dates": "{n} Termine",
+      "copy": "Link kopieren",
+      "copied": "Kopiert",
+      "on": "Kalender-Abos eingeschaltet",
+      "off": "Kalender-Abos ausgeschaltet. Bereits abonnierte Kalender werden bei der nächsten Aktualisierung geleert."
+    },
+    "recrawl": {
+      "onHint": "Prüft alle {n} Tage auf Änderungen.",
+      "offHint": "Prüft nicht automatisch auf Änderungen.",
+      "change": "Ändern",
+      "label": "Auf Änderungen prüfen",
+      "off": "Nie",
+      "every7": "Jede Woche",
+      "every14": "Alle 2 Wochen",
+      "every30": "Jeden Monat",
+      "hint": "Wir lesen Ihre Websites erneut und lernen nur, was sich geändert hat. Unveränderte Seiten kosten nichts.",
+      "saved": "Gespeichert"
+    },
+    "overview": {
+      "stripTitle": "Termine, die Ihr Chatbot kennt",
+      "stripSub": "Geprüfte Termine aus Ihren Dokumenten für die nächsten 14 Tage. Auf Fragen wie «Wann ist die nächste …?» antwortet der Chatbot damit.",
+      "noneUpcoming": "Keine Termine in den nächsten zwei Wochen. Enthalten Ihre Dokumente Kalender, erscheinen sie hier.",
+      "noneUpcomingEnded": "Keine kommenden Termine — die Kalender, die Ihr Chatbot kennt, sind abgelaufen. Siehe unten.",
+      "moved": "verschoben",
+      "needsTitle": "Handlungsbedarf",
+      "needsNone": "Zurzeit gibt es nichts zu tun.",
+      "ended": "{series}: Die veröffentlichten Termine endeten am {date}.",
+      "endedHint": "Ihr Chatbot kann deshalb keine nächsten Termine nennen. Veröffentlichen Sie den neuen Kalender und lesen Sie die Website erneut ein.",
+      "summary": "{sources} Quellen, {chunks} gelernte Abschnitte. Zuletzt eingelesen am {date}.",
+      "summaryNever": "Noch nichts gelernt."
+    },
+    "stats": {
+      "pages": "Seiten",
+      "files": "Dateien",
+      "chunks": "Indexierte Abschnitte",
+      "lastCrawl": "Zuletzt eingelesen",
+      "never": "Noch nie"
+    },
+    "crawls": {
+      "title": "Durchläufe",
+      "sub": "Websites, die wir für Ihren Chatbot lesen",
+      "empty": "Noch keine Durchläufe – fügen Sie eine Website hinzu.",
+      "showAll": "Alle anzeigen ({n})",
+      "showLess": "Weniger anzeigen"
+    },
+    "content": {
+      "title": "Website-Inhalte",
+      "sub": "Alles, was von Ihren Websites gelernt wurde — inklusive dort gefundener Dateien",
+      "filter": "Seiten filtern…",
+      "empty": "Noch nichts eingelesen.",
+      "noMatch": "Keine Seite passt zu «{q}»."
+    },
+    "files": {
+      "title": "Hochgeladene Dateien",
+      "sub": "Dokumente, die Sie selbst hochgeladen haben",
+      "empty": "Keine Dateien hochgeladen.",
+      "upload": "Datei hochladen"
+    },
+    "tree": {
+      "page": "Seite",
+      "chunks": "Abschnitte",
+      "changed": "Zuletzt geändert",
+      "crawled": "Zuletzt gelesen",
+      "open": "Auf der Website öffnen",
+      "status": {
+        "COMPLETED": "Gelernt",
+        "QUEUED": "Wartet",
+        "PROCESSING": "Wird gelernt",
+        "ERROR": "Fehler",
+        "UNSUPPORTED": "Nicht unterstützt",
+        "SKIPPED": "Aussortiert"
+      }
+    },
+    "status": {
+      "IN_PROGRESS": "Scannt",
+      "SCANNED": "Bereit zum Lernen",
+      "INDEXING": "Lernt",
+      "COMPLETED": "Abgeschlossen",
+      "FAILED": "Gestoppt"
+    },
+    "job": {
+      "reading": "Wird gelesen: {page}",
+      "starting": "Wird gestartet …",
+      "autoShort": "automatischer Durchlauf",
+      "summaryDone": "{learned} gelernt, {unchanged} unverändert, CHF {cost}",
+      "summaryScanned": "{n} zu lernen, ca. CHF {cost}",
+      "summaryStopped": "Gestoppt, bevor das Lernen fertig war.",
+      "actionFailed": "Das hat nicht geklappt. Laden Sie die Seite neu und versuchen Sie es nochmals.",
+      "details": "Details",
+      "back": "Zurück zu Wissen",
+      "openSite": "Website öffnen",
+      "activity": "Aktivität",
+      "toReview": "{n} zu prüfen",
+      "started": "Gestartet am {date}",
+      "scheduled": "Automatischer Durchlauf vom {date}",
+      "singlePage": "Nur diese Seite",
+      "stop": "Stoppen",
+      "discard": "Verwerfen",
+      "delete": "Durchlauf löschen",
+      "scanProgress": "{done} von {total} Seiten gelesen",
+      "learnProgress": "{done} von {total} Quellen gelernt",
+      "report": "Bericht",
+      "hideReport": "Bericht ausblenden"
+    },
+    "estimate": {
+      "indexOnly": "{n} lange Dokumente (über {pages} Seiten) werden nur durchsuchbar gemacht: ihr Text, ohne Termine und Fakten.",
+      "skipped": "{n} aussortiert",
+      "showList": "Liste ansehen",
+      "hideList": "Liste ausblenden",
+      "include": "Wieder aufnehmen",
+      "includeAll": "Alle wieder aufnehmen",
+      "pages": "{n} Seiten",
+      "title": "Scan abgeschlossen",
+      "body": "Gemini liest {n} neue oder geänderte Quellen, teilt sie in Abschnitte und notiert wichtige Fakten und Termine. Unveränderte Seiten werden kostenlos übersprungen.",
+      "nothing": "Seit dem letzten Durchlauf hat sich nichts geändert – es gibt nichts Neues zu lernen.",
+      "learn": "Jetzt lernen · ca. CHF {cost}",
+      "new": "neu",
+      "changed": "geändert",
+      "unchanged": "unverändert",
+      "removed": "entfernt",
+      "error": "Fehler",
+      "empty": "leer",
+      "refused": "abgelehnt",
+      "unsupported": "nicht unterstützt",
+      "balanceLow": "Guthaben zu tief: CHF {balance} verfügbar, ca. CHF {cost} benötigt.",
+      "started": "Lernen gestartet — jede Quelle erscheint hier, sobald sie fertig ist."
+    },
+    "report": {
+      "overview": "Übersicht",
+      "dates": "Termine",
+      "review": "Zu prüfen",
+      "learned": "Gelernt",
+      "unchanged": "Unverändert",
+      "removed": "Entfernt",
+      "errors": "Fehler",
+      "cost": "Kosten",
+      "important": "Wichtigste Inhalte",
+      "noImportant": "Nichts fiel als besonders wichtig auf.",
+      "high": "Sehr wichtig",
+      "medium": "Wichtig",
+      "series": "Serie",
+      "zone": "Zone",
+      "next": "Nächster Termin",
+      "count": "Termine",
+      "range": "Zeitraum",
+      "expired": "Beendet {date}",
+      "until": "Bis {date}",
+      "noDates": "In diesem Durchlauf wurden keine Termine gefunden.",
+      "noReview": "Nichts zu prüfen — alles in Ordnung.",
+      "unreachable": "Nicht erreichbar: {list}"
+    },
+    "log": {
+      "title": "Aktivität",
+      "job_started": "Durchlauf gestartet",
+      "scan": "Scanne {page}",
+      "scanned": "{page} — {outcome}",
+      "links_found": "{count} neue Links auf {page}",
+      "scan_done": "Scan abgeschlossen: {n} Quellen zu lernen · ca. CHF {cost}",
+      "learn_start": "Gemini lernt {n} Quellen",
+      "learn_source": "Gemini liest {page}",
+      "learned": "{page} gelernt: {sections} Abschnitte · {facts} Fakten · {dates} Termine",
+      "learn_failed": "{page} konnte nicht gelernt werden: {reason}",
+      "job_done": "Fertig: {n} gelernt · CHF {cost}",
+      "empty": "Warte auf Aktivität…"
+    },
+    "deleteJob": {
+      "title": "Durchlauf löschen",
+      "message": "Den Durchlauf für <strong>{url}</strong> und alles, was dabei gelernt wurde, löschen? Das kann nicht rückgängig gemacht werden."
+    },
+    "rules": {
+      "title": "Eigene Antworten",
+      "sub": "Feste Antworten für bestimmte Fragen, z. B. wer für Baugesuche zuständig ist.",
+      "add": "Antwort hinzufügen"
+    }
+  },
+  "pages": {
+    "overviewTitle": "Übersicht",
+    "overview": "Status, Nutzung und Wissensstand Ihres Chatbots auf einen Blick.",
+    "configureTitle": "Anpassen",
+    "chatbots": "Jeder Chatbot beantwortet Fragen aus der Website und den Dokumenten einer Organisation.",
+    "insights": "Wo Ihr Chatbot nicht weiterhelfen konnte – und alle Gespräche im Überblick.",
+    "subscription": "Ihr Guthaben bezahlt Chat-Antworten und das Lernen neuer Inhalte.",
+    "profile": "Ihr Name, Ihr Passwort und Ihr Konto.",
+    "knowledgeTitle": "Wissen",
+    "knowledge": "Was Ihr Chatbot weiss, welche Termine er kennt und wo Handlungsbedarf besteht.",
+    "configure": "Wie Ihr Chatbot antwortet und wie er auf Ihrer Website aussieht.",
+    "installTitle": "Einbinden",
+    "install": "Binden Sie den Chatbot mit einer Zeile Code in Ihre Website ein."
+  },
+  "configure": {
+    "tabs": {
+      "conversation": "Gespräch",
+      "look": "Aussehen"
+    },
+    "unsaved": "Sie haben ungespeicherte Änderungen",
+    "discard": "Verwerfen",
+    "save": "Änderungen speichern",
+    "saved": "Änderungen gespeichert",
+    "preview": "Vorschau",
+    "remove": "Entfernen",
+    "basics": {
+      "title": "Grundlagen",
+      "name": "Name",
+      "nameHint": "Wird nur hier im Dashboard angezeigt."
+    },
+    "welcome": {
+      "title": "Erster Eindruck",
+      "sub": "Was die Leute sehen, wenn sie den Chat öffnen.",
+      "intro": "Begrüssung",
+      "starters": "Vorgeschlagene Fragen",
+      "startersHint": "Schaltflächen unter der Begrüssung, damit man mit einem Klick fragen kann.",
+      "starterPlaceholder": "z. B. Wann ist die nächste Papiersammlung?",
+      "addStarter": "Frage hinzufügen",
+      "placeholder": "Text im leeren Eingabefeld"
+    },
+    "tone": {
+      "title": "Tonalität",
+      "sub": "Er antwortet immer in der Sprache, in der man ihm schreibt. Wählen Sie einen Ausgangspunkt und passen Sie den Text mit eigenen Worten an.",
+      "presets": "Tonvorlagen",
+      "formal": "Höflich und formell",
+      "formalDesc": "Sachlich, spricht die Leute mit «Sie» an.",
+      "friendly": "Freundlich",
+      "friendlyDesc": "Herzlich und locker, erklärt einfach.",
+      "brief": "Kurz und sachlich",
+      "briefDesc": "Ein Satz oder eine kurze Liste.",
+      "persona": "Persönlichkeit und Anweisungen",
+      "personaHint": "Einfache Worte funktionieren am besten, z. B. «Verweise bei Baugesuchen an die Bauverwaltung.»",
+      "thinking": "Wartetexte",
+      "thinkingHint": "Ein Text pro Zeile. Einer davon wird angezeigt, während der Chatbot seine Antwort vorbereitet."
+    },
+    "advanced": {
+      "title": "Erweitert",
+      "sub": "Der vollständige Anweisungstext, den der Chatbot erhält.",
+      "warning": "Ändern Sie dies nur, wenn Sie wissen, was es bewirkt. {persona} wird durch die Persönlichkeit oben ersetzt, {fine_tune_instructions} durch Ihre eigenen Regeln.",
+      "template": "Anweisungsvorlage",
+      "missingPersona": "{persona} fehlt, daher wird die Persönlichkeit oben ignoriert.",
+      "restore": "Standard wiederherstellen"
+    },
+    "colors": {
+      "title": "Farben",
+      "sub": "Ihre Markenfarben. Klicken Sie auf eine Farbe, um sie zu ändern.",
+      "name": "Farbname",
+      "add": "Farbe hinzufügen",
+      "newColor": "Neue Farbe",
+      "base": {
+        "c_primary": "Hauptfarbe",
+        "c_secondary": "Heller Hintergrund",
+        "c_black": "Text",
+        "c_white": "Weiss"
+      },
+      "allReadable": "Alle Texte sind gut lesbar.",
+      "hardToRead": "Einige Texte sind womöglich schwer lesbar. Wählen Sie Farben mit mehr Kontrast für:",
+      "pairs": {
+        "header": "Kopfzeile",
+        "botMessage": "Chatbot-Nachrichten",
+        "userMessage": "Besucher-Nachrichten",
+        "input": "Eingabefeld",
+        "sendButton": "Senden-Knopf",
+        "starters": "Vorgeschlagene Fragen"
+      },
+      "usage": "Festlegen, wo welche Farbe verwendet wird",
+      "groups": {
+        "header": "Kopfzeile",
+        "messages": "Nachrichten",
+        "input": "Eingabefeld",
+        "starters": "Vorgeschlagene Fragen"
+      },
+      "labels": {
+        "launcher_background_color": "Farbe des Chat-Knopfs",
+        "footer_background_color": "Hintergrund Fusszeile",
+        "header_background_color": "Hintergrund Kopfzeile",
+        "header_text_color": "Text Kopfzeile",
+        "reset_button_color": "Neustart-Knopf",
+        "reset_button_icon_color": "Neustart-Symbol",
+        "close_button_background_color": "Schliessen-Knopf",
+        "close_button_icon_color": "Schliessen-Symbol",
+        "share_button_color": "Teilen-Knopf",
+        "share_button_icon_color": "Teilen-Symbol",
+        "chat_background_color": "Chat-Hintergrund",
+        "bot_message_background_color": "Sprechblase Chatbot",
+        "bot_message_text_color": "Text Chatbot",
+        "user_message_background_color": "Sprechblase Besucher",
+        "user_message_text_color": "Text Besucher",
+        "input_background_color": "Eingabe-Hintergrund",
+        "input_text_color": "Eingabe-Text",
+        "input_focus_ring_color": "Eingaberahmen beim Tippen",
+        "send_button_background_color": "Senden-Knopf",
+        "send_button_text_color": "Senden-Symbol",
+        "starter_background_color": "Hintergrund der Schaltfläche",
+        "starter_text_color": "Text der Schaltfläche"
+      }
+    },
+    "header": {
+      "title": "Chatfenster",
+      "chatTitle": "Titel",
+      "chatTitleHint": "Wird oben im Chat angezeigt. Leer lassen, um nur das Logo zu zeigen.",
+      "logo": "Logo",
+      "logoHint": "PNG oder SVG mit transparentem Hintergrund eignen sich am besten.",
+      "reset": "Knopf für ein neues Gespräch anzeigen",
+      "share": "Knopf zum Teilen des Gesprächs anzeigen"
+    },
+    "launcher": {
+      "title": "Chat-Knopf",
+      "sub": "Der runde Knopf in der Ecke Ihrer Website, der den Chat öffnet.",
+      "enabled": "Chat-Knopf auf meiner Website anzeigen",
+      "disabledHint": "Der Chat ist auf Ihrer Website ausgeblendet. Der eingebundene Code kann bleiben.",
+      "color": "Farbe",
+      "icon": "Symbol",
+      "iconHint": "Optional. Ohne Symbol wird eine Sprechblase angezeigt."
+    },
+    "edit": {
+      "modeLabel": "Vorschaumodus",
+      "stateLabel": "Was angezeigt wird",
+      "modes": {
+        "edit": "Aussehen bearbeiten",
+        "try": "Ausprobieren"
+      },
+      "states": {
+        "start": "Start",
+        "conversation": "Gespräch",
+        "launcher": "Chat-Knopf"
+      },
+      "hint": "Fahren Sie mit der Maus über einen Bereich des Chats und klicken Sie darauf, um ihn anzupassen.",
+      "tryHint": "Das ist Ihr echter Chatbot. Er antwortet mit seinem aktuellen Wissen.",
+      "hardToRead": "Schwer lesbar: {parts}. Wählen Sie Farben mit mehr Kontrast.",
+      "addQuestion": "Frage hinzufügen",
+      "question": "Frage",
+      "removeQuestion": "Frage entfernen",
+      "startersShared": "Die Farben gelten für alle vorgeschlagenen Fragen.",
+      "custom": "Eigene Farbe",
+      "close": "Schliessen",
+      "parts": {
+        "header": "Kopfzeile",
+        "reset": "Neustart-Knopf",
+        "share": "Teilen-Knopf",
+        "close": "Schliessen-Knopf",
+        "background": "Chat-Hintergrund",
+        "bot": "Chatbot-Nachrichten",
+        "user": "Besucher-Nachrichten",
+        "starter": "Vorgeschlagene Frage",
+        "footer": "Fusszeile",
+        "input": "Eingabefeld",
+        "send": "Senden-Knopf",
+        "launcher": "Chat-Knopf"
+      }
+    },
+    "image": {
+      "choose": "Bild wählen",
+      "replace": "Ersetzen",
+      "remove": "Entfernen"
+    }
+  },
+  "overview": {
+    "auto": {
+      "title": "Automatische Aufgaben",
+      "sub": "Diese Aufgaben laufen für diesen Chatbot nach Zeitplan. Kosten entstehen nur für das, was tatsächlich verarbeitet wird.",
+      "recrawl": "Websites auf Änderungen prüfen",
+      "recrawlHow": "Liest Ihre Websites erneut und lernt nur, was sich geändert hat. Unveränderte Seiten kosten nichts.",
+      "review": "Gespräche prüfen",
+      "reviewHow": "Prüft abgeschlossene Gespräche auf Fragen, die Ihr Chatbot nicht beantworten konnte, etwa CHF {cost} pro Gespräch. Ergebnisse erscheinen in der Auswertung.",
+      "off": "Aus",
+      "daily": "Jede Nacht",
+      "weekly": "Einmal pro Woche",
+      "last": "Zuletzt {date}",
+      "never": "Noch nie gelaufen",
+      "next": "nächstes Mal {date}",
+      "saved": "Zeitplan gespeichert"
+    },
+    "period": "Zeitraum",
+    "days": "{n} Tage",
+    "loadFailed": "Die Übersicht konnte nicht geladen werden. Laden Sie die Seite neu.",
+    "status": {
+      "onTitle": "Ihr Chatbot ist eingeschaltet",
+      "onBody": "Er antwortet auf Ihrer Website und auf der öffentlichen Testseite.",
+      "onHidden": "Er antwortet auf der öffentlichen Testseite. Der Chat-Knopf ist auf Ihrer Website ausgeblendet.",
+      "offTitle": "Ihr Chatbot ist ausgeschaltet",
+      "offBody": "Er erscheint auf keiner Website und beantwortet keine Fragen. In der Vorschau unter «Anpassen» können Sie ihn weiterhin testen.",
+      "switchOff": "Ausschalten",
+      "switchOn": "Einschalten",
+      "switchedOff": "Chatbot ausgeschaltet",
+      "switchedOn": "Chatbot eingeschaltet",
+      "confirmTitle": "Chatbot ausschalten?",
+      "confirmBody": "Er verschwindet sofort von allen Websites und der öffentlichen Testseite und beantwortet keine Fragen mehr. Sie können ihn jederzeit wieder einschalten."
+    },
+    "usage": {
+      "title": "Letzte {n} Tage",
+      "more": "Auswertung öffnen",
+      "conversations": "Gespräche",
+      "questions": "Beantwortete Fragen",
+      "spent": "Ausgegeben",
+      "spentSplit": "Antworten CHF {chat}, Lernen CHF {learning}",
+      "balance": "Guthaben",
+      "topUp": "Aufladen",
+      "chartLabel": "{n} Fragen in den letzten {days} Tagen",
+      "today": "Heute",
+      "new": "neu",
+      "same": "unverändert",
+      "vsPrevious": "Im Vergleich zum vorherigen Zeitraum"
+    },
+    "knowledge": {
+      "title": "Wissen",
+      "more": "Wissen öffnen",
+      "pages": "Seiten",
+      "files": "Dateien",
+      "sections": "gelernte Abschnitte",
+      "upcoming": "Termine in den nächsten 2 Wochen",
+      "attention": "{n} Dokumente brauchen Ihre Aufmerksamkeit",
+      "lastCrawl": "Zuletzt eingelesen",
+      "noCrawl": "Noch keine Website eingelesen.",
+      "crawlCounts": "{learned} gelernt, {unchanged} unverändert",
+      "recrawlOn": "Prüft alle {n} Tage auf Änderungen.",
+      "recrawlOff": "Prüft nicht automatisch auf Änderungen."
+    },
+    "latest": {
+      "findings": "{n} Fragen zu prüfen",
+      "title": "Neueste Fragen",
+      "more": "Alle Gespräche",
+      "none": "In diesem Zeitraum noch keine Fragen."
+    }
+  },
+  "insights": {
+    "title": "Auswertung",
+    "findings": {
+      "addAnswer": "Antwort hinzufügen",
+      "answerSaved": "Antwort gespeichert. Ihr Chatbot verwendet sie ab sofort.",
+      "title": "Zu prüfen",
+      "sub": "Fragen, die Ihr Chatbot nicht gut beantworten konnte – gefunden durch die Prüfung abgeschlossener Gespräche.",
+      "filter": "Anzeigen",
+      "status": {
+        "open": "Offen",
+        "resolved": "Erledigt",
+        "dismissed": "Verworfen"
+      },
+      "noneOpen": "Nichts zu prüfen. Alle geprüften Fragen wurden gut beantwortet.",
+      "noneOther": "Hier ist noch nichts.",
+      "reviewOff": "Die Gesprächsprüfung ist ausgeschaltet, daher wird nichts geprüft.",
+      "loadFailed": "Die Ergebnisse konnten nicht geladen werden.",
+      "viewConversation": "Gespräch ansehen",
+      "addKnowledge": "Wissen hinzufügen",
+      "done": "Erledigt",
+      "dismiss": "Verwerfen",
+      "reopen": "Wieder öffnen"
+    },
+    "kinds": {
+      "unanswered": "Nicht beantwortet",
+      "wrong": "Evtl. falsch",
+      "pushback": "Widerspruch",
+      "unclear": "Missverstanden"
+    },
+    "review": {
+      "howWeekly": "Abgeschlossene Gespräche werden einmal pro Woche geprüft, etwa CHF {cost} pro Gespräch. Jedes Gespräch wird nur einmal geprüft.",
+      "change": "Zeitplan ändern",
+      "toggle": "Gespräche prüfen",
+      "how": "Abgeschlossene Gespräche werden einmal pro Nacht geprüft, etwa CHF {cost} pro Gespräch. Jedes Gespräch wird nur einmal geprüft.",
+      "stats": "Letzte 30 Tage: {n} Gespräche, CHF {cost}.",
+      "off": "Schalten Sie dies ein, um Fragen zu finden, die Ihr Chatbot nicht beantworten konnte.",
+      "now": "Jetzt prüfen",
+      "queued": "Wird geprüft…",
+      "started": "Prüfung gestartet. Ergebnisse erscheinen in ein, zwei Minuten.",
+      "failed": "Die Prüfung konnte nicht gestartet werden."
+    },
+    "conversations": {
+      "title": "Gespräche",
+      "sub": "Alles, was gefragt wurde, das Neueste zuerst.",
+      "none": "Noch keine Gespräche.",
+      "questions": "{n} Fragen",
+      "flagged": "zu prüfen",
+      "close": "Gespräch schliessen"
+    }
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "lede": "Ihr Konto, die Abrechnung und was automatisch läuft.",
+    "save": "Änderungen speichern",
+    "saved": "Gespeichert",
+    "sections": {
+      "profile": "Profil",
+      "security": "Sicherheit",
+      "billing": "Abrechnung",
+      "schedules": "Zeitpläne",
+      "danger": "Konto löschen"
+    },
+    "profile": {
+      "title": "Profil",
+      "sub": "Wie Sie im Dashboard erscheinen.",
+      "emailHint": "Ihre Anmeldeadresse. Kontaktieren Sie uns, um sie zu ändern.",
+      "language": "Sprache des Dashboards",
+      "languageHint": "Gilt auch für Prüfergebnisse und die Texte neuer Chatbots."
+    },
+    "security": {
+      "passwordTitle": "Passwort",
+      "passwordHint": "Mindestens 8 Zeichen.",
+      "sessionsTitle": "Angemeldete Geräte",
+      "sessionsSub": "Meldet Sie auf allen Geräten und Browsern ab, auch auf diesem. Andere Geräte bleiben höchstens noch eine Stunde angemeldet. Nützlich, wenn Sie sich auf einem fremden Gerät angemeldet haben.",
+      "signOutAll": "Überall abmelden",
+      "signOutFailed": "Die Abmeldung auf allen Geräten hat nicht geklappt. Bitte versuchen Sie es erneut."
+    },
+    "billing": {
+      "balance": "Guthaben",
+      "portal": "Zahlungsmittel und Rechnungen",
+      "answers": "Antworten",
+      "learning": "Lernen",
+      "reviews": "Prüfungen",
+      "total": "Total",
+      "spentHint": "Alles, was seit der Kontoeröffnung ausgegeben wurde.",
+      "topUpTitle": "Aufladen",
+      "topUpSub": "Ihr Guthaben bezahlt Antworten, Lernen und Prüfungen. Es verfällt nie.",
+      "once": "Einmalig",
+      "monthly": "Jeden Monat",
+      "custom": "Anderer Betrag",
+      "onceHint": "Mindestens CHF 5.",
+      "monthlyHint": "Wird monatlich belastet, bis Sie im Zahlungsportal kündigen.",
+      "pay": "CHF {amount} bezahlen",
+      "payMonthly": "CHF {amount} pro Monat bezahlen",
+      "historyTitle": "Zahlungen",
+      "noHistory": "Noch keine Zahlungen.",
+      "invoice": "Rechnung"
+    },
+    "schedules": {
+      "title": "Zeitpläne",
+      "sub": "Wie oft jeder Chatbot seine Websites neu einliest und seine Gespräche prüft.",
+      "none": "Noch keine Chatbots.",
+      "chatbot": "Chatbot",
+      "websites": "Websites neu einlesen",
+      "reviews": "Gespräche prüfen",
+      "off": "Aus",
+      "switchedOff": "ausgeschaltet",
+      "reviewNote": "Jedes abgeschlossene Gespräch wird einmal geprüft und pro Gespräch verrechnet. Ergebnisse erscheinen in der Auswertung."
+    },
+    "danger": {
+      "title": "Konto löschen",
+      "sub": "Das kann nicht rückgängig gemacht werden. Beim Löschen Ihres Kontos werden entfernt:",
+      "chatbots": "alle Chatbots samt Wissen und Gesprächen – sie verschwinden sofort von allen Websites",
+      "balance": "Ihr restliches Guthaben (es wird nicht zurückerstattet)",
+      "subscription": "eine allfällige monatliche Aufladung (sie wird gekündigt)",
+      "typeEmail": "Geben Sie {email} zur Bestätigung ein",
+      "delete": "Konto endgültig löschen",
+      "failed": "Das Konto konnte nicht gelöscht werden."
+    }
+  },
+  "testPage": {
+    "title": "Öffentliche Testseite",
+    "lede": "Eine Seite, auf der alle mit dem Link Ihren Chatbot ausprobieren können, ohne ihn auf einer Website einzubinden.",
+    "link": {
+      "title": "Link",
+      "sub": "Senden Sie ihn an Kolleginnen, Kollegen oder Testpersonen. Er zeigt immer die aktuelle Version Ihres Chatbots.",
+      "copy": "Link kopieren",
+      "copied": "Kopiert",
+      "copyFailed": "Kopieren hat nicht geklappt. Markieren Sie den Link und kopieren Sie ihn von Hand.",
+      "open": "Seite öffnen",
+      "off": "Ihr Chatbot ist ausgeschaltet. Die Seite zeigt deshalb nur einen entsprechenden Hinweis.",
+      "offLink": "Einschalten",
+      "protected": "Besucher brauchen das Passwort, bevor sie chatten können."
+    },
+    "password": {
+      "title": "Passwort verlangen",
+      "sub": "Solange der Chatbot noch in Entwicklung ist: Nur wer das Passwort kennt, kann chatten.",
+      "label": "Passwort",
+      "new": "Neues Passwort",
+      "hint": "Mindestens 6 Zeichen.",
+      "show": "Anzeigen",
+      "hide": "Verbergen",
+      "save": "Passwort speichern",
+      "cancel": "Abbrechen",
+      "change": "Passwort ändern",
+      "isSet": "Ein Passwort ist gesetzt.",
+      "saved": "Passwort gespeichert. Wer die Seite bereits geöffnet hat, braucht nun das neue.",
+      "removed": "Passwort entfernt. Alle mit dem Link können chatten.",
+      "widgetNote": "Auch der Chat-Knopf auf Ihrer Website fragt dann nach dem Passwort. Entfernen Sie es deshalb, bevor Sie den Chatbot öffentlich machen.",
+      "shareNote": "Senden Sie Link und Passwort getrennt, zum Beispiel das Passwort per Telefon.",
+      "previewNote": "In der Vorschau unter «Anpassen» brauchen Sie kein Passwort."
+    }
+  },
+  "install": {
+    "example": "Auf einer Beispiel-Website ansehen",
+    "copy": "Code kopieren",
+    "copied": "Kopiert",
+    "copyFailed": "Kopieren hat nicht geklappt. Markieren Sie den Code und kopieren Sie ihn von Hand.",
+    "notes": {
+      "off": "Ihr Chatbot ist ausgeschaltet und erscheint deshalb auch nach dem Einbinden nicht.",
+      "offLink": "Einschalten",
+      "hidden": "Der Chat-Knopf ist ausgeblendet und erscheint deshalb noch nicht auf Ihrer Website.",
+      "hiddenLink": "Anzeigen",
+      "protected": "Ein Passwort ist gesetzt, daher werden auch Besucher Ihrer Website danach gefragt.",
+      "protectedLink": "Passwort entfernen"
+    },
+    "step1": {
+      "title": "Diesen Code kopieren",
+      "text": "Er ist für alle Seiten gleich und ändert sich nie. Änderungen im Dashboard erscheinen automatisch auf Ihrer Website."
+    },
+    "step2": {
+      "title": "In Ihre Website einfügen",
+      "text": "Fügen Sie den Code einmal ein, sodass er auf jeder Seite steht: direkt vor dem schliessenden </body>-Tag oder in der Einstellung Ihres Website-Baukastens für Code in der Fusszeile."
+    },
+    "builders": {
+      "wordpress": {
+        "name": "WordPress",
+        "how": "Installieren Sie das kostenlose Plugin «WPCode». Unter Code Snippets → Header & Footer den Code bei «Footer» einfügen und speichern."
+      },
+      "wix": {
+        "name": "Wix",
+        "how": "Unter Einstellungen → Benutzerdefinierter Code → Code hinzufügen. Code einfügen, «Alle Seiten» und «Body – Ende» wählen, dann übernehmen."
+      },
+      "squarespace": {
+        "name": "Squarespace",
+        "how": "Unter Einstellungen → Erweitert → Code-Injektion den Code bei «Fusszeile» einfügen und speichern. Benötigt mindestens den Business-Plan."
+      },
+      "webflow": {
+        "name": "Webflow",
+        "how": "Site Settings → Custom Code öffnen, den Code bei «Footer Code» einfügen, speichern und die Website veröffentlichen."
+      },
+      "other": {
+        "name": "Anderes System oder Webagentur",
+        "how": "Die meisten Systeme haben ein Feld für Code in der Fusszeile, oft unter «Tracking», «Scripts» oder «Eigener Code». Finden Sie es nicht, senden Sie den Code an die Person, die Ihre Website betreut."
+      }
+    },
+    "delegate": {
+      "text": "Jemand anderes betreut Ihre Website? Senden Sie den Code mit dieser Anleitung.",
+      "button": "Per E-Mail ans Web-Team senden",
+      "subject": "Bitte unseren Chatbot ({name}) auf der Website einbinden",
+      "body": "Guten Tag\n\nBitte fügen Sie den folgenden Code auf jeder Seite unserer Website ein, direkt vor dem schliessenden </body>-Tag (oder in der Einstellung für Footer-Code des CMS):\n\n{code}\n\nDamit wird unser Chatbot geladen. Sonst muss nichts eingerichtet werden.\n\nVielen Dank!"
+    },
+    "step3": {
+      "title": "Prüfen, ob er erscheint",
+      "text": "Öffnen Sie Ihre Website. Unten rechts erscheint ein runder Chat-Knopf. Klicken Sie darauf und stellen Sie eine Frage.",
+      "cache": "Nicht zu sehen? Laden Sie die Seite mit Ctrl+Shift+R neu (Cmd+Shift+R auf dem Mac); manche Websites speichern Seiten einige Minuten zwischen.",
+      "consent": "Blockiert ein Cookie-Banner Skripte? Erlauben Sie dort dieses Skript; der Chatbot selbst setzt keine Cookies."
     }
   }
 }

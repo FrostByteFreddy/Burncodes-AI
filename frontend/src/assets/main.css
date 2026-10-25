@@ -2,8 +2,6 @@
 /* NOTE: @import must come before @tailwind directives in PostCSS      */
 @import './components/tenant/Sources.css';
 @import './components/tenant/Settings.css';
-@import './components/tenant/CrawlingJobProgress.css';
-@import './components/tenant/sources/KnowledgeList.css';
 @import './components/tenant/sources/AddKnowledgeWizard.css';
 @import './components/tenant/settings/AppearanceTab.css';
 @import './components/tenant/settings/BehaviorTab.css';
@@ -54,9 +52,9 @@
   .btn-circle.btn-sm { @apply w-8 h-8; }
 
   /* Color variants */
-  .btn-primary   { @apply bg-gradient-to-br from-[#0A1FAB] to-[#000e78] text-white shadow-md hover:shadow-lg hover:brightness-110; }
+  .btn-primary   { background: var(--interactive-strong); @apply text-white hover:brightness-110; }
   .btn-secondary { @apply bg-secondary hover:brightness-95; color: oklch(var(--sc)); }
-  .btn-error     { @apply bg-[#ba1a1a] text-white hover:brightness-110; }
+  .btn-error     { background: var(--status-error); @apply text-[#11152D] hover:brightness-110; }
   .btn-success   { @apply bg-success hover:brightness-95; color: oklch(var(--suc)); }
   .btn-warning   { @apply bg-warning hover:brightness-95; color: oklch(var(--wc)); }
   .btn-ghost     { @apply bg-transparent text-base-content hover:bg-base-200; box-shadow: none !important; }
@@ -73,26 +71,6 @@ body {
   background-color: theme('colors.base-200');
 }
 
-#test-chat {
-  height: 100dvh;
-}
-
-#app-layout > main:not(:has(#test-chat)) {
-  max-height: 100dvh;
-  overflow-y: auto;
-  padding: 2rem;
-}
-
-@media screen and (max-width: 768px) {
-  #app-layout > main:not(:has(#test-chat)) {
-    padding: 5rem 20px 2rem;
-  }
-}
-
-main:has(#test-chat) {
-  max-height: 100vh;
-}
-
 .sidebar-logo svg {
   max-width: 70%;
   margin-bottom: 1.5rem;
@@ -107,3 +85,98 @@ main:has(#test-chat) {
 details[open] > summary .details-arrow {
   transform: rotate(180deg);
 }
+/* ── Page primitives ──────────────────────────────────────────────────
+   Every page opens with a title and one plain sentence about what the
+   page is for. No capitalised eyebrow labels above content.          */
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.page-title {
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: var(--surface-heading);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.01em;
+}
+.page-lede {
+  margin-top: 6px;
+  max-width: var(--measure);
+  font-size: 15px;
+  color: var(--surface-muted);
+}
+.page-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* Panel: one surface per topic */
+.panel {
+  background: var(--surface-1);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+}
+.panel-title { font-size: var(--text-lg); font-weight: 700; color: var(--surface-heading); line-height: var(--leading-tight); }
+.panel-sub { margin-top: 4px; font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); }
+
+/* Small text that qualifies something else (dates, counts, hints) */
+.meta { font-size: var(--text-sm); color: var(--surface-muted); }
+
+/* Primary action: solid interactive colour, no gradient */
+.btn-action {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  border: none; border-radius: var(--radius-md);
+  background: var(--interactive-strong); color: #fff;
+  font: inherit; font-size: var(--text-sm); font-weight: 700;
+  cursor: pointer; transition: background var(--t-fast);
+}
+.btn-action:hover:not(:disabled) { background: var(--interactive); }
+.btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-quiet {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 14px;
+  border: 1px solid var(--surface-3); border-radius: var(--radius-md);
+  background: transparent; color: var(--surface-text);
+  font: inherit; font-size: var(--text-sm); font-weight: 600;
+  cursor: pointer; transition: border-color var(--t-fast), color var(--t-fast);
+}
+.btn-quiet:hover:not(:disabled) { border-color: var(--surface-muted); color: var(--surface-heading); }
+.btn-quiet:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Forms (Configure and friends) ─────────────────────────────── */
+.cfg-stack { display: flex; flex-direction: column; gap: 20px; }
+.cfg-fields { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
+.cfg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; }
+.field-hint { margin-top: 6px; font-size: var(--text-sm); color: var(--surface-muted); line-height: 1.45; max-width: var(--measure); }
+.field-hint--above { margin: -2px 0 0; }
+.field-hint--warn { color: var(--status-warning); }
+.cfg-icon-btn {
+  width: 36px; height: 36px; flex-shrink: 0; border-radius: var(--radius-md);
+  border: 1px solid transparent; background: none; color: var(--surface-muted); cursor: pointer;
+}
+.cfg-icon-btn:hover { color: var(--status-error); border-color: var(--surface-3); }
+@media (max-width: 760px) {
+  .cfg-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ── Ghosts: the page's shape while its data loads ─────────────── */
+.ghost {
+  display: block;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  animation: ghost-pulse 1.2s ease-in-out infinite alternate;
+}
+.ghost--line   { height: 12px; }
+.ghost--title  { height: 20px; }
+.ghost--figure { height: 30px; width: 60%; }
+.ghost--pill   { height: 22px; width: 84px; border-radius: var(--radius-pill); }
+.ghost--btn    { height: 34px; width: 96px; border-radius: var(--radius-md); }
+.ghost--dot    { width: 14px; height: 14px; border-radius: 50%; }
+.ghost-stack   { display: flex; flex-direction: column; gap: 10px; }
+.ghost-row     { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-top: 1px solid var(--surface-3); }
+.ghost-row:first-child { border-top: none; padding-top: 0; }
+@keyframes ghost-pulse { from { opacity: 0.55; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ghost { animation: none; } }

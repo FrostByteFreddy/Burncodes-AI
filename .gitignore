@@ -33,3 +33,5 @@ yarn-error.log*
 frontend/.vscode/
 celerybeat-schedule*
 backend/crawled_markdown/
+__pycache__/
+.pytest_cache/

@@ -21,6 +21,8 @@ COPY shared/database/     app/database/
 COPY shared/models/       app/models/
 COPY shared/logging_config.py app/logging_config.py
 COPY shared/gemini_store/    app/gemini_store/
+COPY shared/billing/services.py app/billing/services.py
+COPY shared/ai_models.py      app/ai_models.py
 
 COPY services/worker_chat/celery_worker.py .
 RUN chown -R appuser:appgroup $APP_HOME

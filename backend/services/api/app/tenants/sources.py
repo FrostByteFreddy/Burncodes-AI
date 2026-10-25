@@ -1,15 +1,49 @@
 from flask import Blueprint, request, jsonify
-from app.database.supabase_client import supabase
+from app.database.supabase_client import fetch_all, supabase
 from app.auth.decorators import token_required
 from app.models.database import SourceType
-from app.data_processing.tasks import process_local_file, process_urls, crawl_links_task
+from app.data_processing.tasks import process_local_file, start_learning_task, crawl_links_task
 from app.logging_config import error_logger
+from app.billing.services import BillingService
+from app.security.url_guard import is_public_url
 from app import celery
+from uuid import uuid4
+from werkzeug.utils import secure_filename
 import os
 
 UPLOADS_DIR = os.environ.get("UPLOADS_DIR", "/app/data/uploads")
 
 sources_bp = Blueprint('sources', __name__)
+
+
+def _insufficient_balance(user_id):
+    """Returns a 402 response if the user can't pay for indexing, else None."""
+    if BillingService.check_balance(user_id) <= 0:
+        return jsonify({"error": "Insufficient balance. Please recharge."}), 402
+    return None
+
+
+def _document_names(source):
+    """Every File Search document of a source (legacy single doc + per-section docs)."""
+    names = list(source.get('gemini_document_names') or [])
+    if source.get('gemini_document_name'):
+        names.append(source['gemini_document_name'])
+    return list(dict.fromkeys(names))
+
+
+def _delete_documents(sources, context):
+    from app.gemini_store.service import GeminiStoreService
+    for src in sources:
+        for name in _document_names(src):
+            try:
+                GeminiStoreService.delete_document(name)
+            except Exception as err:
+                error_logger.warning("%s: could not delete Gemini document %s: %s", context, name, err)
+
+
+def _invalid_urls(urls):
+    """Returns the subset of urls that must not be fetched (non-http(s) or non-public hosts)."""
+    return [u for u in urls if not isinstance(u, str) or not is_public_url(u)]
 
 @sources_bp.route('/<uuid:tenant_id>/sources', methods=['GET'])
 @token_required
@@ -19,11 +53,12 @@ def get_sources(current_user, tenant_id):
         tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).single().execute()
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
-        sources = supabase.table('tenant_sources').select("*").eq('tenant_id', tenant_id_str).execute()
-        return jsonify(sources.data), 200
+        from app.tenants.routes import SOURCE_COLUMNS
+        sources = fetch_all(lambda: supabase.table('tenant_sources').select(SOURCE_COLUMNS).eq('tenant_id', tenant_id_str).order('id'))
+        return jsonify(sources), 200
     except Exception as e:
         error_logger.error(f"Error getting sources for tenant {tenant_id} for user {current_user.id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to retrieve sources", "details": str(e)}), 500
+        return jsonify({"error": "Failed to retrieve sources"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/sources/upload', methods=['POST'])
 @token_required
@@ -39,10 +74,20 @@ def upload_source(current_user, tenant_id):
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
-    # Save to local filesystem: /app/data/uploads/{tenant_id}/{filename}
+    if (resp := _insufficient_balance(current_user.id)):
+        return resp
+
+    # Save to local filesystem: /app/data/uploads/{tenant_id}/{uuid}_{filename}.
+    # The client-supplied filename is never used as a path: secure_filename
+    # strips separators and "..", the uuid prefix avoids collisions, and the
+    # realpath check is a final guard against escaping the tenant directory.
+    display_name = os.path.basename(file.filename.replace("\\", "/")) or "upload"
+    safe_name = f"{uuid4().hex}_{secure_filename(display_name) or 'upload'}"
     tenant_upload_dir = os.path.join(UPLOADS_DIR, tenant_id_str)
     os.makedirs(tenant_upload_dir, exist_ok=True)
-    local_path = os.path.join(tenant_upload_dir, file.filename)
+    local_path = os.path.join(tenant_upload_dir, safe_name)
+    if not os.path.realpath(local_path).startswith(os.path.realpath(tenant_upload_dir) + os.sep):
+        return jsonify({"error": "Invalid filename"}), 400
 
     try:
         file.save(local_path)
@@ -51,7 +96,7 @@ def upload_source(current_user, tenant_id):
         source_record = supabase.table('tenant_sources').insert(source_data).execute()
         source_id = source_record.data[0]['id']
 
-        task = process_local_file.delay(local_path, file.filename, source_id, tenant_id_str)
+        task = process_local_file.delay(local_path, display_name, source_id, tenant_id_str)
 
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
@@ -61,7 +106,7 @@ def upload_source(current_user, tenant_id):
                 os.remove(local_path)
         except Exception as cleanup_e:
             error_logger.error(f"Failed to clean up file {local_path} after an error: {cleanup_e}", extra={'user_id': current_user.id})
-        return jsonify({"error": f"Failed to process file: {str(e)}"}), 500
+        return jsonify({"error": "Failed to process file"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/sources/crawl', methods=['POST'])
 @token_required
@@ -77,16 +122,22 @@ def crawl_sources(current_user, tenant_id):
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
-        sources_to_insert = [{"tenant_id": tenant_id_str, "source_type": SourceType.URL, "source_location": url, "status": "QUEUED"} for url in urls]
-        source_records = supabase.table('tenant_sources').insert(sources_to_insert).execute()
-        urls_with_ids = [(rec['source_location'], rec['id']) for rec in source_records.data]
+        rejected = _invalid_urls(urls)
+        if rejected:
+            return jsonify({"error": "Only public http(s) URLs can be added", "rejected": rejected}), 400
+        if (resp := _insufficient_balance(current_user.id)):
+            return resp
 
-        task = process_urls.delay(urls_with_ids, tenant_id_str)
-
-        return jsonify({"task_id": task.id}), 202
+        # Each URL becomes a single-page crawl: scanned, estimated, then
+        # learned after confirmation like any other crawl.
+        task_ids = [
+            crawl_links_task.delay(tenant_id=tenant_id_str, start_url=url, single_page_only=True).id
+            for url in dict.fromkeys(urls)
+        ]
+        return jsonify({"task_ids": task_ids}), 202
     except Exception as e:
         error_logger.error(f"Error processing crawl for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": f"Failed to process URLs: {str(e)}"}), 500
+        return jsonify({"error": "Failed to process URLs"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/sources/discover', methods=['POST'])
 @token_required
@@ -106,6 +157,11 @@ def discover_links(current_user, tenant_id):
         if not tenant_check.data:
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
+        if _invalid_urls([start_url]):
+            return jsonify({"error": "Only public http(s) URLs can be crawled"}), 400
+        if (resp := _insufficient_balance(current_user.id)):
+            return resp
+
         # Persist the selected crawl_mode so all worker tasks pick it up from the DB
         valid_modes = {'soup', 'playwright', 'playwright_llm'}
         if crawl_mode not in valid_modes:
@@ -115,14 +171,15 @@ def discover_links(current_user, tenant_id):
         task = crawl_links_task.delay(
             tenant_id=tenant_id,
             start_url=start_url,
-            single_page_only=single_page_only,
-            excluded_urls=excluded_urls
+            single_page_only=bool(single_page_only),
+            excluded_urls=excluded_urls,
+            crawl_mode=crawl_mode,
         )
 
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
         error_logger.error(f"Error discovering links for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": f"Failed to discover links: {str(e)}"}), 500
+        return jsonify({"error": "Failed to discover links"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs', methods=['GET'])
 @token_required
@@ -144,10 +201,10 @@ def get_crawling_jobs(current_user, tenant_id):
         # Batch-fetch tasks — one query for all jobs
         # NOTE: Supabase default row limit is 1000 — raise it explicitly so large
         # crawls (3000+ pages) are not silently truncated in the job stats display.
-        tasks_resp = supabase.table('crawling_tasks').select("job_id,url,status").in_('job_id', job_ids).limit(10000).execute()
+        tasks = fetch_all(lambda: supabase.table('crawling_tasks').select("job_id,url,status").in_('job_id', job_ids).order('id'))
         tasks_by_job = defaultdict(list)
         all_crawled_urls = set()
-        for t in (tasks_resp.data or []):
+        for t in tasks:
             tasks_by_job[t['job_id']].append(t)
             all_crawled_urls.add(t['url'])
 
@@ -155,11 +212,10 @@ def get_crawling_jobs(current_user, tenant_id):
         # (avoids httpx "URL component 'query' too long" when crawl jobs contain hundreds of URLs)
         sources_by_url = {}
         if all_crawled_urls:
-            sources_resp = supabase.table('tenant_sources').select("*") \
-                .eq('tenant_id', tenant_id_str) \
-                .limit(10000) \
-                .execute()
-            for s in (sources_resp.data or []):
+            from app.tenants.routes import SOURCE_COLUMNS
+            tenant_sources = fetch_all(lambda: supabase.table('tenant_sources').select(SOURCE_COLUMNS)
+                                       .eq('tenant_id', tenant_id_str).order('id'))
+            for s in tenant_sources:
                 if s['source_location'] in all_crawled_urls:
                     sources_by_url[s['source_location']] = s
 
@@ -172,7 +228,25 @@ def get_crawling_jobs(current_user, tenant_id):
         return jsonify(jobs), 200
     except Exception as e:
         error_logger.error(f"Error getting crawling jobs for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to retrieve crawling jobs", "details": str(e)}), 500
+        return jsonify({"error": "Failed to retrieve crawling jobs"}), 500
+
+@sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>', methods=['GET'])
+@token_required
+def get_crawling_job(current_user, tenant_id, job_id):
+    """One crawl job with its estimate and report (crawl detail page)."""
+    try:
+        tenant_id_str = str(tenant_id)
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute()
+        if not tenant_check.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+        rows = supabase.table('crawling_jobs').select("*").eq('id', job_id).eq('tenant_id', tenant_id_str).limit(1).execute().data
+        if not rows:
+            return jsonify({"error": "Job not found or not part of this tenant"}), 404
+        return jsonify(rows[0]), 200
+    except Exception as e:
+        error_logger.error(f"Error getting crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to retrieve crawl job"}), 500
+
 
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/progress', methods=['GET'])
 @token_required
@@ -189,10 +263,10 @@ def get_crawling_job_progress(current_user, tenant_id, job_id):
         if not job_check.data:
             return jsonify({"error": "Job not found or not part of this tenant"}), 404
 
-        tasks_response = supabase.table('crawling_tasks').select('status').eq('job_id', job_id).limit(10000).execute()
+        task_rows = fetch_all(lambda: supabase.table('crawling_tasks').select('status').eq('job_id', job_id).order('id'))
 
         from collections import Counter
-        status_list = [task['status'] for task in tasks_response.data]
+        status_list = [task['status'] for task in task_rows]
         db_counts = Counter(status_list)
 
         counts = {status.value: 0 for status in CrawlingStatus}
@@ -211,7 +285,198 @@ def get_crawling_job_progress(current_user, tenant_id, job_id):
         return jsonify(progress), 200
     except Exception as e:
         error_logger.error(f"Error getting job progress for job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to retrieve job progress", "details": str(e)}), 500
+        return jsonify({"error": "Failed to retrieve job progress"}), 500
+
+@sources_bp.route('/<uuid:tenant_id>/knowledge/overview', methods=['GET'])
+@token_required
+def get_knowledge_overview(current_user, tenant_id):
+    """
+    What the bot can answer right now: verified dates in the coming days and
+    open issues across all sources (warnings from learning, failed sources).
+    """
+    try:
+        from datetime import date, timedelta
+        tenant_id_str = str(tenant_id)
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute()
+        if not tenant_check.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+        try:
+            days = max(1, min(int(request.args.get('days', 14)), 60))
+        except ValueError:
+            days = 14
+        today = date.today()
+        events = (
+            supabase.table('tenant_events')
+            .select("event_date, series, zone, is_exception, notes, source_id")
+            .eq('tenant_id', tenant_id_str)
+            .gte('event_date', today.isoformat())
+            .lte('event_date', (today + timedelta(days=days - 1)).isoformat())
+            .order('event_date').limit(500).execute()
+        ).data or []
+        # Series whose published dates ended — the bot can't answer "next" for them
+        past = fetch_all(lambda: (
+            supabase.table('tenant_events').select("series, zone, event_date")
+            .eq('tenant_id', tenant_id_str).lt('event_date', today.isoformat())
+            .order('event_date', desc=True).order('id')
+        ), max_rows=10_000)
+        future_keys = {
+            (r['series'], r['zone']) for r in fetch_all(lambda: (
+                supabase.table('tenant_events').select("series, zone")
+                .eq('tenant_id', tenant_id_str).gte('event_date', today.isoformat()).order('id')
+            ))
+        }
+        # Only recurring series count as "ended" (several dates spread over
+        # months, e.g. a collection calendar) — one-off events that already
+        # took place are expected, not something to fix.
+        spans: dict[tuple, list[str]] = {}
+        for r in past:
+            key = (r['series'], r['zone'])
+            if key not in future_keys:
+                spans.setdefault(key, []).append(r['event_date'])
+        ended = {}
+        for key, dates in spans.items():
+            first, last = min(dates), max(dates)
+            if len(dates) >= 4 and (date.fromisoformat(last) - date.fromisoformat(first)).days >= 60:
+                ended[key] = last
+
+        sources = (
+            supabase.table('tenant_sources')
+            .select("id, source_location, title, status, status_code, warnings")
+            .eq('tenant_id', tenant_id_str)
+            .or_("status.eq.ERROR,warnings.neq.[]")
+            .limit(500).execute()
+        ).data or []
+        issues = []
+        for s in sources:
+            for w in s.get('warnings') or []:
+                issues.append({"source_id": s['id'], "title": s.get('title') or s['source_location'],
+                               "url": s['source_location'], "kind": "warning", "message": w})
+
+        return jsonify({
+            "today": today.isoformat(),
+            "days": days,
+            "upcoming": events,
+            "ended": [{"series": k[0], "zone": k[1], "last": v} for k, v in sorted(ended.items())],
+            "issues": issues,
+            "failed": sum(1 for s in sources if s.get('status') == 'ERROR'),
+        }), 200
+    except Exception as e:
+        error_logger.error(f"Error building knowledge overview for {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to load overview"}), 500
+
+
+@sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/log', methods=['GET'])
+@token_required
+def get_crawling_job_log(current_user, tenant_id, job_id):
+    """Latest activity of a crawl job (oldest first). Live updates come via Realtime."""
+    try:
+        tenant_id_str = str(tenant_id)
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute()
+        if not tenant_check.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+        try:
+            limit = max(1, min(int(request.args.get('limit', 100)), 500))
+        except ValueError:
+            limit = 100
+        rows = (
+            supabase.table('crawl_job_log').select("id, event, data, created_at")
+            .eq('job_id', job_id).eq('tenant_id', tenant_id_str)
+            .order('id', desc=True).limit(limit).execute()
+        ).data or []
+        return jsonify(list(reversed(rows))), 200
+    except Exception as e:
+        error_logger.error(f"Error getting log for crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to retrieve crawl log"}), 500
+
+
+@sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/confirm', methods=['POST'])
+@token_required
+def confirm_crawling_job(current_user, tenant_id, job_id):
+    """
+    The user accepted the estimate of a scanned crawl: start learning.
+    Requires the balance to cover the estimate (prepaid).
+    """
+    try:
+        tenant_id_str = str(tenant_id)
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute()
+        if not tenant_check.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+
+        job_rows = supabase.table('crawling_jobs').select("id, status, estimate").eq('id', job_id).eq('tenant_id', tenant_id_str).limit(1).execute().data
+        if not job_rows:
+            return jsonify({"error": "Job not found or not part of this tenant"}), 404
+        job = job_rows[0]
+        if job['status'] != 'SCANNED':
+            return jsonify({"error": "This crawl is not waiting for confirmation", "status": job['status']}), 409
+
+        estimate_chf = float((job.get('estimate') or {}).get('cost_chf') or 0)
+        balance = BillingService.check_balance(current_user.id)
+        if balance < estimate_chf:
+            return jsonify({
+                "error": "Insufficient balance for this crawl. Please recharge.",
+                "balance_chf": balance, "estimate_chf": estimate_chf,
+            }), 402
+
+        start_learning_task.delay(job_id)
+        return jsonify({"message": "Learning started"}), 202
+    except Exception as e:
+        error_logger.error(f"Error confirming crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to confirm crawl job"}), 500
+
+
+@sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/skipped', methods=['GET'])
+@token_required
+def list_skipped_sources(current_user, tenant_id, job_id):
+    """What the sorting step set aside for this crawl, to review before learning."""
+    try:
+        tenant_id_str = str(tenant_id)
+        if not supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute().data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+        rows = fetch_all(lambda: (
+            supabase.table('tenant_sources')
+            .select("id, source_type, source_location, title, file_pages, skip_reason")
+            .eq('tenant_id', tenant_id_str).eq('last_job_id', job_id).eq('status', 'SKIPPED').order('id')
+        ))
+        return jsonify(rows), 200
+    except Exception as e:
+        error_logger.error(f"Error listing skipped sources for job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to list sources"}), 500
+
+
+@sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/selection', methods=['POST'])
+@token_required
+def change_selection(current_user, tenant_id, job_id):
+    """
+    Before learning: take sorted-out sources back in ({"include": [ids]}) or
+    set sources aside ({"exclude": [ids]}). Returns the recomputed estimate.
+    """
+    try:
+        from app.knowledge import jobs as knowledge_jobs
+        from app.knowledge.triage import MANUAL
+        tenant_id_str = str(tenant_id)
+        job = supabase.table('crawling_jobs').select("id, status").eq('id', job_id).eq('tenant_id', tenant_id_str) \
+            .limit(1).execute().data
+        owns = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute().data
+        if not job or not owns:
+            return jsonify({"error": "Job not found or access denied"}), 404
+        if job[0]['status'] != 'SCANNED':
+            return jsonify({"error": "The selection can only change before learning starts"}), 409
+        data = request.get_json(silent=True) or {}
+        include = [int(i) for i in data.get('include') or []]
+        exclude = [int(i) for i in data.get('exclude') or []]
+        for i in range(0, len(include), 200):
+            supabase.table('tenant_sources').update({"status": "QUEUED", "skip_reason": None}) \
+                .in_('id', include[i:i + 200]).eq('last_job_id', job_id).eq('status', 'SKIPPED').execute()
+        for i in range(0, len(exclude), 200):
+            supabase.table('tenant_sources').update({"status": "SKIPPED", "skip_reason": MANUAL}) \
+                .in_('id', exclude[i:i + 200]).eq('last_job_id', job_id).eq('status', 'QUEUED').execute()
+        return jsonify(knowledge_jobs.refresh_estimate(job_id)), 200
+    except (TypeError, ValueError):
+        return jsonify({"error": "include/exclude must be lists of source ids"}), 400
+    except Exception as e:
+        error_logger.error(f"Error changing selection for job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to change the selection"}), 500
+
 
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/cancel', methods=['POST'])
 @token_required
@@ -240,6 +505,8 @@ def cancel_crawling_job(current_user, tenant_id, job_id):
         job_status = job_check.data.get('status')
         if job_status in (CrawlingStatus.COMPLETED.value, CrawlingStatus.FAILED.value):
             return jsonify({"message": "Job is already finished.", "status": job_status}), 200
+        # Sources still waiting to be learned keep their previous index state;
+        # they're picked up again by the next crawl.
 
         # 1. Mark ALL pending/in-progress tasks as FAILED — this prevents the
         #    Celery scheduler from picking them up.
@@ -260,7 +527,7 @@ def cancel_crawling_job(current_user, tenant_id, job_id):
 
     except Exception as e:
         error_logger.error(f"Error cancelling crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to cancel crawl job", "details": str(e)}), 500
+        return jsonify({"error": "Failed to cancel crawl job"}), 500
 
 
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>', methods=['DELETE'])
@@ -289,7 +556,7 @@ def delete_crawling_job(current_user, tenant_id, job_id):
 
         # 1. Stop any in-flight tasks
         job_status = job_check.data.get('status')
-        if job_status == CrawlingStatus.IN_PROGRESS.value:
+        if job_status in (CrawlingStatus.IN_PROGRESS.value, CrawlingStatus.SCANNED.value, CrawlingStatus.INDEXING.value):
             supabase.table('crawling_tasks') \
                 .update({"status": CrawlingStatus.FAILED.value}) \
                 .eq('job_id', job_id) \
@@ -298,8 +565,8 @@ def delete_crawling_job(current_user, tenant_id, job_id):
             supabase.table('crawling_jobs').update({"status": CrawlingStatus.FAILED.value}).eq('id', job_id).execute()
 
         # 2. Collect all URLs that this job crawled
-        tasks_resp = supabase.table('crawling_tasks').select("url").eq('job_id', job_id).execute()
-        crawled_urls = [t['url'] for t in (tasks_resp.data or [])]
+        crawled_urls = [t['url'] for t in fetch_all(
+            lambda: supabase.table('crawling_tasks').select("url").eq('job_id', job_id).order('id'))]
 
         # 3. Find + delete matching tenant_sources rows in batches
         deleted_source_ids = []
@@ -312,7 +579,7 @@ def delete_crawling_job(current_user, tenant_id, job_id):
                 url_batch = crawled_urls[i:i + batch_size]
                 
                 sources_resp = supabase.table('tenant_sources') \
-                    .select("id, gemini_document_name") \
+                    .select("id, gemini_document_name, gemini_document_names") \
                     .eq('tenant_id', tenant_id_str) \
                     .in_('source_location', url_batch) \
                     .execute()
@@ -328,13 +595,7 @@ def delete_crawling_job(current_user, tenant_id, job_id):
                 supabase.table('tenant_sources').delete().in_('id', batch_ids).execute()
                 
                 # Delete from Gemini Store
-                for src in batch_sources:
-                    doc_name = src.get('gemini_document_name')
-                    if doc_name:
-                        try:
-                            GeminiStoreService.delete_document(doc_name)
-                        except Exception as vec_err:
-                            error_logger.warning("delete_job: Gemini store cleanup partial failure for job %s: %s", job_id, vec_err)
+                _delete_documents(batch_sources, f"delete_job {job_id}")
 
             error_logger.info("delete_job: purged %d Gemini document(s) for job %s", len(deleted_source_ids), job_id)
 
@@ -353,7 +614,7 @@ def delete_crawling_job(current_user, tenant_id, job_id):
 
     except Exception as e:
         error_logger.error(f"Error deleting crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to delete crawl job", "details": str(e)}), 500
+        return jsonify({"error": "Failed to delete crawl job"}), 500
 
 
 @sources_bp.route('/<uuid:tenant_id>/sources/<int:source_id>', methods=['DELETE'])
@@ -371,17 +632,8 @@ def delete_source(current_user, tenant_id, source_id):
 
         source = source_resp.data
 
-        # Delete the document from the Gemini File Search Store
-        gemini_doc_name = source.get('gemini_document_name')
-        if gemini_doc_name:
-            try:
-                from app.gemini_store.service import GeminiStoreService
-                GeminiStoreService.delete_document(gemini_doc_name)
-            except Exception as vec_err:
-                error_logger.error(
-                    "Soft failure: could not delete Gemini document %s for source %s: %s",
-                    gemini_doc_name, source_id, vec_err
-                )
+        # Delete its documents from the Gemini File Search Store
+        _delete_documents([source], f"delete_source {source_id}")
 
         # Delete the local file if this was a user upload
         if source.get('source_type') == 'FILE':
@@ -398,7 +650,7 @@ def delete_source(current_user, tenant_id, source_id):
 
     except Exception as e:
         error_logger.error(f"Error deleting source {source_id} for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to delete source", "details": str(e)}), 500
+        return jsonify({"error": "Failed to delete source"}), 500
 
 
 @sources_bp.route('/<uuid:tenant_id>/sources', methods=['DELETE'])
@@ -471,7 +723,7 @@ def delete_all_sources(current_user, tenant_id):
             f"Error deleting all sources for tenant {tenant_id}: {e}",
             extra={'user_id': current_user.id}, exc_info=True
         )
-        return jsonify({"error": "Failed to delete all knowledge", "details": str(e)}), 500
+        return jsonify({"error": "Failed to delete all knowledge"}), 500
 
 @sources_bp.route('/tasks/<string:task_id>', methods=['GET'])
 @token_required
@@ -499,7 +751,7 @@ def get_task_status(current_user, task_id):
         return jsonify(response)
     except Exception as e:
         error_logger.error(f"Error getting task status for task {task_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
-        return jsonify({"error": "Failed to get task status", "details": str(e)}), 500
+        return jsonify({"error": "Failed to get task status"}), 500
 
 
 @sources_bp.route('/<uuid:tenant_id>/store-stats', methods=['GET'])
@@ -560,4 +812,4 @@ def get_store_stats(current_user, tenant_id):
             f"Error fetching store stats for tenant {tenant_id}: {e}",
             extra={'user_id': current_user.id}, exc_info=True
         )
-        return jsonify({"error": "Failed to fetch store stats", "details": str(e)}), 500
+        return jsonify({"error": "Failed to fetch store stats"}), 500

@@ -1,7 +1,10 @@
 <template>
   <div class="page">
-    <div class="page-header">
-      <p class="page-label">{{ $t('manageTenants.title').toUpperCase() }}</p>
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">{{ $t('manageTenants.title') }}</h1>
+        <p class="page-lede">{{ $t('pages.chatbots') }}</p>
+      </div>
       <button v-if="tenantsStore.tenants.length > 0" @click="showCreateModal = true" class="btn-add">
         <font-awesome-icon :icon="['fas', 'plus']" />
         {{ $t('manageTenants.newChatbot') }}
@@ -10,7 +13,7 @@
 
     <!-- Loading skeletons -->
     <div v-if="tenantsStore.loading && tenantsStore.tenants.length === 0" class="tenant-list">
-      <div v-for="n in 3" :key="n" class="skeleton-card"></div>
+      <div v-for="n in 3" :key="n" class="skeleton-card ghost"></div>
     </div>
 
     <!-- Empty state -->
@@ -32,11 +35,11 @@
         @click="goToTenant(tenant)"
       >
         <div class="tenant-card__left">
-          <span class="status-dot" :class="tenant.sources?.length ? 'status-dot--active' : ''"></span>
+          <span class="status-dot" :class="tenant.source_count ? 'status-dot--active' : ''"></span>
           <div class="tenant-card__info">
             <h2 class="tenant-card__name">{{ tenant.name }}</h2>
             <p class="tenant-card__meta">
-              <span>{{ $t('manageTenants.sources', { n: tenant.sources?.length ?? 0 }) }}</span>
+              <span>{{ $t('manageTenants.sources', { n: tenant.source_count ?? 0 }) }}</span>
               <span class="meta-sep">·</span>
               <span class="tenant-card__url">/chat/{{ tenant.id.slice(0, 8) }}…</span>
             </p>
@@ -102,7 +105,7 @@ const tenantToDelete = ref(null)
 
 const goToTenant = (tenant) => {
   tenantsStore.selectTenant(tenant)
-  router.push({ name: 'TenantSources', params: { tenantId: tenant.id } })
+  router.push({ name: 'TenantOverview', params: { tenantId: tenant.id } })
 }
 
 const confirmDelete = (tenant) => { tenantToDelete.value = tenant }
@@ -120,20 +123,7 @@ const deleteTenant = async () => {
 </script>
 
 <style scoped>
-.page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 28px;
-}
 
-.page-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--brand-cyan);
-}
 
 .btn-add {
   display: inline-flex;

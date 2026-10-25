@@ -1,10 +1,13 @@
 from flask import request, jsonify, redirect
 from app.billing import billing_bp
-from app.billing.services import BillingService
+from app.billing.services import BillingService, BillingError
 from app.auth.decorators import token_required
 from app.logging_config import error_logger
+import math
 import stripe
 import os
+
+MAX_RECHARGE_CHF = 10_000
 
 @billing_bp.route('/create-checkout-session', methods=['POST'])
 @token_required
@@ -18,16 +21,18 @@ def create_checkout_session(current_user):
         
         try:
             amount = float(amount)
-            if amount < 5.0:
-                return jsonify({'error': 'Minimum recharge amount is 5 CHF'}), 400
-        except ValueError:
+        except (TypeError, ValueError):
             return jsonify({'error': 'Invalid amount'}), 400
-            
-        checkout_url = BillingService.create_checkout_session(user_id, email, amount, data.get('is_recurring', False))
+        if not math.isfinite(amount) or amount > MAX_RECHARGE_CHF:
+            return jsonify({'error': 'Invalid amount'}), 400
+        if amount < 5.0:
+            return jsonify({'error': 'Minimum recharge amount is 5 CHF'}), 400
+
+        checkout_url = BillingService.create_checkout_session(user_id, email, amount, bool(data.get('is_recurring', False)))
         return jsonify({'url': checkout_url})
     except Exception as e:
         error_logger.error(f"Error in create_checkout_session route: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'An internal error occurred'}), 500
 
 @billing_bp.route('/history', methods=['GET'])
 @token_required
@@ -37,7 +42,7 @@ def get_history(current_user):
         return jsonify({'history': history})
     except Exception as e:
         error_logger.error(f"Error getting history: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'An internal error occurred'}), 500
 
 @billing_bp.route('/portal', methods=['POST'])
 @token_required
@@ -56,7 +61,7 @@ def customer_portal(current_user):
         customer_id = response.data[0].get("stripe_customer_id")
         
         # This is the URL to which the user is redirected after they are done managing their billing in the portal.
-        return_url = os.environ.get("FRONTEND_URL", "http://localhost:3000") + "/billing"
+        return_url = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip("/") + "/settings/billing"
 
         portal_session = stripe.billing_portal.Session.create(
             customer=customer_id,
@@ -65,7 +70,7 @@ def customer_portal(current_user):
         return jsonify({'url': portal_session.url})
     except Exception as e:
         error_logger.error(f"Error in customer_portal route: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'An internal error occurred'}), 500
 
 @billing_bp.route('/balance', methods=['GET'])
 @token_required
@@ -75,58 +80,52 @@ def get_balance(current_user):
         return jsonify({'balance_chf': balance})
     except Exception as e:
         error_logger.error(f"Error getting balance: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'An internal error occurred'}), 500
 
 @billing_bp.route('/usage', methods=['GET'])
 @token_required
 def get_usage(current_user):
     try:
         from app.database.supabase_client import supabase
-        
-        # Get user's tenants
-        tenants_response = supabase.table("tenants").select("id").eq("user_id", current_user.id).execute()
-        if not tenants_response.data:
-            return jsonify({'total_cost': 0.0, 'input_tokens': 0, 'output_tokens': 0})
-            
-        tenant_ids = [t['id'] for t in tenants_response.data]
-        
-        # Query chat_logs for these tenants
-        # Note: For production, use an RPC or View for aggregation to avoid fetching all rows.
-        logs_response = supabase.table("chat_logs").select("cost_chf, input_tokens, output_tokens").in_("tenant_id", tenant_ids).execute()
-        
-        chat_cost = sum(float(item.get('cost_chf', 0) or 0) for item in logs_response.data)
-        chat_input = sum(int(item.get('input_tokens', 0) or 0) for item in logs_response.data)
-        chat_output = sum(int(item.get('output_tokens', 0) or 0) for item in logs_response.data)
 
-        # Query tenant_sources for these tenants
-        sources_response = supabase.table("tenant_sources").select("cost_chf, input_tokens, output_tokens").in_("tenant_id", tenant_ids).execute()
+        response = supabase.rpc('usage_totals', {'p_user_id': current_user.id}).execute()
+        row = (response.data or [{}])[0]
+        chat_cost = float(row.get('chat_cost') or 0)
+        sources_cost = float(row.get('sources_cost') or 0)
+        tenant_ids = [t['id'] for t in (supabase.table('tenants').select('id').eq('user_id', current_user.id).execute().data or [])]
+        from app.database.supabase_client import fetch_all
+        review_cost = sum(
+            float(r.get('cost_chf') or 0) for r in fetch_all(
+                lambda: supabase.table('chat_reviews').select('cost_chf').in_('tenant_id', tenant_ids).order('conversation_id'))
+        ) if tenant_ids else 0.0
 
-        sources_cost = sum(float(item.get('cost_chf', 0) or 0) for item in sources_response.data)
-        sources_input = sum(int(item.get('input_tokens', 0) or 0) for item in sources_response.data)
-        sources_output = sum(int(item.get('output_tokens', 0) or 0) for item in sources_response.data)
-        
         return jsonify({
-            'total_cost': chat_cost + sources_cost,
-            'input_tokens': chat_input + sources_input,
-            'output_tokens': chat_output + sources_output,
+            'total_cost': chat_cost + sources_cost + review_cost,
+            'input_tokens': int(row.get('chat_input') or 0) + int(row.get('sources_input') or 0),
+            'output_tokens': int(row.get('chat_output') or 0) + int(row.get('sources_output') or 0),
             'chat_cost': chat_cost,
-            'sources_cost': sources_cost
+            'sources_cost': sources_cost,
+            'review_cost': round(review_cost, 4)
         })
     except Exception as e:
         error_logger.error(f"Error getting usage: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'An internal error occurred'}), 500
 
 @billing_bp.route('/verify-session', methods=['POST'])
 @token_required
 def verify_session(current_user):
     try:
-        data = request.get_json()
+        data = request.get_json() or {}
         session_id = data.get('session_id')
-        if not session_id:
+        if not session_id or not isinstance(session_id, str):
             return jsonify({'error': 'Missing session_id'}), 400
-            
-        success = BillingService.verify_session(session_id)
+
+        success = BillingService.verify_session(session_id, current_user.id)
         return jsonify({'success': success})
+    except BillingError:
+        return jsonify({'error': 'Checkout session not found'}), 404
+    except stripe.error.InvalidRequestError:
+        return jsonify({'error': 'Checkout session not found'}), 404
     except Exception as e:
         error_logger.error(f"Error verifying session: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'An internal error occurred'}), 500

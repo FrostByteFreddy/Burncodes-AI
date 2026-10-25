@@ -15,35 +15,34 @@ const routes = [
   },
   {
     path: `/tenant/:tenantId(${uuidRegex})`,
-    name: "Tenant",
     component: () => import("../views/Tenant.vue"),
     meta: { requiresAuth: true },
     props: true,
     children: [
-      { path: "", redirect: { name: "TenantSources" } },
+      { path: "", redirect: { name: "TenantOverview" } },
+      { path: "overview",  name: "TenantOverview",  component: () => import("../views/Overview.vue") },
       { path: "sources",   name: "TenantSources",   component: () => import("../components/tenant/Sources.vue") },
+      { path: "sources/crawls/:jobId(\\d+)", name: "TenantCrawl", component: () => import("../components/tenant/CrawlDetail.vue"), props: true },
       { path: "configure", name: "TenantConfigure", component: () => import("../components/tenant/Settings.vue") },
       { path: "insights",  name: "TenantInsights",  component: () => import("../views/Insights.vue") },
       { path: "install",   name: "TenantInstall",   component: () => import("../views/Install.vue") },
+      { path: "test-page", name: "TenantTestPage",  component: () => import("../views/TestPage.vue") },
     ],
 
   },
   {
-    path: "/profile",
-    name: "Profile",
-    component: () => import("../views/Profile.vue"),
+    path: "/settings/:section?",
+    name: "AccountSettings",
+    component: () => import("../views/AccountSettings.vue"),
     meta: { requiresAuth: true },
   },
+  // Old addresses; Stripe sessions started before the move return to /subscription
+  { path: "/profile", redirect: { name: "AccountSettings", params: { section: "profile" } } },
+  { path: "/subscription", redirect: (to) => ({ name: "AccountSettings", params: { section: "billing" }, query: to.query }) },
   {
     path: "/manage-tenants",
     name: "ManageTenants",
     component: () => import("../views/ManageTenants.vue"),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: "/subscription",
-    name: "Subscription",
-    component: () => import("../views/Subscription.vue"),
     meta: { requiresAuth: true },
   },
   {

@@ -1,81 +1,81 @@
 <template>
-  <div class="appearance-grid">
-
-    <!-- Left column: tabs + content -->
-    <div>
-      <div class="settings-tabs">
-        <button type="button" @click="activeTab = 'behavior'"
-          class="settings-tabs__btn"
-          :class="{ 'settings-tabs__btn--active': activeTab === 'behavior' }">
-          <font-awesome-icon :icon="['fas', 'sliders']" />
-          {{ $t("tenant.settings.tabs.behavior") }}
-        </button>
-        <button type="button" @click="activeTab = 'appearance'"
-          class="settings-tabs__btn"
-          :class="{ 'settings-tabs__btn--active': activeTab === 'appearance' }">
-          <font-awesome-icon :icon="['fas', 'palette']" />
-          {{ $t("tenant.settings.tabs.appearance") }}
-        </button>
+  <div class="cfg-page">
+    <div v-if="!tenantsStore.currentTenant" class="cfg-layout" aria-busy="true">
+      <div class="cfg-stack">
+        <span class="ghost ghost--title" style="width: 160px; height: 28px"></span>
+        <section v-for="n in 3" :key="n" class="panel ghost-stack">
+          <span class="ghost ghost--title" style="width: 140px"></span>
+          <span class="ghost" style="height: 40px"></span>
+          <span class="ghost ghost--line" style="width: 60%"></span>
+        </section>
       </div>
+      <div class="cfg-preview"><span class="ghost" style="height: 100%; border-radius: 20px"></span></div>
+    </div>
 
-      <form @submit.prevent="handleUpdate" class="space-y-6 mt-6">
-        <div v-show="activeTab === 'behavior'">
-          <BehaviorTab v-model="formData" />
-        </div>
-        <div v-show="activeTab === 'appearance'" @change="handleUpdate">
-          <AppearanceTab v-model="formData" :tenant-id="tenantsStore.currentTenant?.id" />
+    <div v-else class="cfg-layout">
+      <form class="cfg-form" @submit.prevent="save">
+        <div class="page-head">
+          <div>
+            <h1 class="page-title">{{ $t('pages.configureTitle') }}</h1>
+            <p class="page-lede">{{ $t('pages.configure') }}</p>
+          </div>
         </div>
 
-        <div v-show="activeTab === 'behavior'" class="settings-footer">
-          <button type="submit" class="btn-save" :disabled="tenantsStore.loading">
-            <font-awesome-icon :icon="['fas', 'floppy-disk']" />
-            {{ $t("tenant.settings.actions.save") }}
-          </button>
-        </div>
+        <ConversationTab :model-value="formData" />
+
+        <!-- Appears once something changed; one save for both tabs -->
+        <Transition name="cfg-bar">
+          <div v-if="dirty" class="cfg-savebar" role="status">
+            <p>{{ $t('configure.unsaved') }}</p>
+            <div class="page-actions">
+              <button type="button" class="btn-quiet" :disabled="saving" @click="load">{{ $t('configure.discard') }}</button>
+              <button type="submit" class="btn-action" :disabled="saving">
+                <font-awesome-icon v-if="saving" :icon="['fas', 'spinner']" class="animate-spin" />
+                {{ $t('configure.save') }}
+              </button>
+            </div>
+          </div>
+        </Transition>
       </form>
-    </div>
 
-    <!-- Right column: sticky chat preview (shared by both tabs) -->
-    <div>
-      <div class="appearance-preview-col">
-        <ChatPreview
-          :config="formData.widget_config"
-          :tenant-id="tenantsStore.currentTenant?.id"
-        />
-      </div>
+      <aside class="cfg-preview" :aria-label="$t('configure.preview')">
+        <EditablePreview :form="formData" :tenant-id="tenantsStore.currentTenant?.id || ''" />
+      </aside>
     </div>
-
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useTenantsStore } from '../../stores/tenants';
 import { useToast } from '../../composables/useToast';
-import { useI18n } from 'vue-i18n';
-import BehaviorTab from './settings/BehaviorTab.vue';
-import AppearanceTab from './settings/AppearanceTab.vue';
-import ChatPreview from './ChatPreview.vue';
+import ConversationTab from './settings/ConversationTab.vue';
+import EditablePreview from './settings/EditablePreview.vue';
 
 const tenantsStore = useTenantsStore();
 const { addToast } = useToast();
 const { t } = useI18n();
 
-const activeTab = ref('behavior');
+const saving = ref(false);
 
 const defaultWidgetConfig = () => ({
   chatbot_title: '',
   logo: null,
   launcher_icon: null,
   show_reset_button: true,
-  input_placeholder: 'Send a message...',
-  thinking_messages: ['Thinking...', 'Just a moment...', 'Let me check that for you...'],
+  show_share_button: false,
+  widget_enabled: true,
+  input_placeholder: '',
+  thinking_messages: [],
   conversation_starters: [],
+  starter_background_color: 'c_primary',
+  starter_text_color: 'c_white',
   color_palette: [
-    { id: 'c_white',     name: t('tenant.settings.defaults.white'),     value: '#FFFFFF' },
-    { id: 'c_black',     name: t('tenant.settings.defaults.black'),     value: '#1F2937' },
-    { id: 'c_primary',   name: t('tenant.settings.defaults.primary'),   value: '#A855F7' },
-    { id: 'c_secondary', name: t('tenant.settings.defaults.secondary'), value: '#F3F4F6' },
+    { id: 'c_primary',   name: 'Primary',   value: '#5F6DFF' },
+    { id: 'c_secondary', name: 'Secondary', value: '#F3F4F6' },
+    { id: 'c_black',     name: 'Black',     value: '#1F2937' },
+    { id: 'c_white',     name: 'White',     value: '#FFFFFF' },
   ],
   component_styles: {
     header_background_color: 'c_secondary', header_text_color: 'c_black',
@@ -83,99 +83,96 @@ const defaultWidgetConfig = () => ({
     bot_message_background_color: 'c_secondary', bot_message_text_color: 'c_black',
     send_button_background_color: 'c_primary', send_button_text_color: 'c_white',
     input_background_color: 'c_secondary', input_text_color: 'c_black',
-    input_focus_ring_color: 'c_primary', chat_background_color: 'c_white',
+    footer_background_color: 'c_secondary', chat_background_color: 'c_white',
     reset_button_color: 'c_primary', reset_button_icon_color: 'c_white',
     close_button_background_color: 'c_primary', close_button_icon_color: 'c_white',
+    share_button_color: 'c_primary', share_button_icon_color: 'c_white',
     launcher_background_color: 'c_primary',
   },
 });
 
-const formData = ref({
-  name: '', intro_message: '', system_persona: '', rag_prompt_template: '',
-  doc_language: 'en', translation_target: 'en', crawl_mode: 'playwright',
-  widget_config: defaultWidgetConfig(),
-});
+const FIELDS = ['name', 'intro_message', 'system_persona', 'rag_prompt_template'];
 
-watch(() => tenantsStore.currentTenant?.id, () => {
+// Plain deep copy; store objects are reactive proxies, which structuredClone rejects
+const clone = (v) => JSON.parse(JSON.stringify(v));
+
+const fromTenant = (tenant) => {
+  const saved = tenant.widget_config || {};
+  const base = defaultWidgetConfig();
+  return {
+    ...Object.fromEntries(FIELDS.map((f) => [f, tenant[f] ?? ''])),
+    widget_config: {
+      ...base,
+      ...clone(saved),
+      color_palette: clone(saved.color_palette || base.color_palette),
+      component_styles: {
+        ...base.component_styles,
+        // the footer used to follow the header colour; keep that look until changed
+        footer_background_color: saved.component_styles?.header_background_color || base.component_styles.footer_background_color,
+        ...(saved.component_styles || {}),
+      },
+    },
+  };
+};
+
+const formData = ref(fromTenant({}));
+const snapshot = ref('');
+const dirty = computed(() => snapshot.value !== '' && JSON.stringify(formData.value) !== snapshot.value);
+
+const load = () => {
   const tenant = tenantsStore.currentTenant;
   if (!tenant) return;
-  const cfg = { ...defaultWidgetConfig(), ...(tenant.widget_config || {}) };
-  cfg.color_palette = tenant.widget_config?.color_palette || defaultWidgetConfig().color_palette;
-  cfg.component_styles = { ...defaultWidgetConfig().component_styles, ...(tenant.widget_config?.component_styles || {}) };
-  cfg.conversation_starters = tenant.widget_config?.conversation_starters || [];
-  formData.value = {
-    name: tenant.name, intro_message: tenant.intro_message, system_persona: tenant.system_persona,
-    rag_prompt_template: tenant.rag_prompt_template, doc_language: tenant.doc_language,
-    translation_target: tenant.translation_target, crawl_mode: tenant.crawl_mode || 'playwright_llm',
-    widget_config: cfg,
-  };
-}, { immediate: true });
+  formData.value = fromTenant(tenant);
+  snapshot.value = JSON.stringify(formData.value);
+};
+watch(() => tenantsStore.currentTenant?.id, load, { immediate: true });
 
-const handleUpdate = async () => {
-  if (!tenantsStore.currentTenant || tenantsStore.loading) return;
+const save = async () => {
+  if (!tenantsStore.currentTenant || saving.value) return;
+  saving.value = true;
   try {
     await tenantsStore.updateTenant(tenantsStore.currentTenant.id, formData.value);
-    addToast(t('tenant.settings.actions.savedSuccess'), 'success');
+    snapshot.value = JSON.stringify(formData.value);
+    addToast(t('configure.saved'), 'success');
   } catch {
     addToast(t('tenant.settings.actions.saveFailed'), 'error');
+  } finally {
+    saving.value = false;
   }
 };
+
+// Closing the tab with unsaved changes asks the browser to confirm
+const onBeforeUnload = (e) => { if (dirty.value) { e.preventDefault(); e.returnValue = ''; } };
+onMounted(() => window.addEventListener('beforeunload', onBeforeUnload));
+onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload));
 </script>
 
 <style scoped>
-.settings-tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--surface-3);
-  margin-bottom: 24px;
+/* Settings and preview share the width evenly */
+.cfg-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; align-items: start; }
+.cfg-form { min-width: 0; }
+
+.cfg-savebar {
+  position: sticky; bottom: 32px; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  margin-top: 20px; padding: 14px 16px 14px 20px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2); border: 1px solid var(--interactive-strong);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+.cfg-savebar p { font-size: 15px; font-weight: 600; color: var(--surface-heading); }
+.cfg-bar-enter-active, .cfg-bar-leave-active { transition: opacity var(--t-fast), transform var(--t-fast); }
+.cfg-bar-enter-from, .cfg-bar-leave-to { opacity: 0; transform: translateY(8px); }
+
+/* Full viewport height minus the shell's top and bottom padding */
+.cfg-preview {
+  position: sticky; top: 40px;
+  height: calc(100dvh - 80px);
+  display: flex; flex-direction: column;
 }
 
-.settings-tabs__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 16px;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--surface-muted);
-  cursor: pointer;
-  transition: color var(--t-fast), border-color var(--t-fast);
+@media (max-width: 1100px) {
+  .cfg-layout { grid-template-columns: minmax(0, 1fr); }
+  .cfg-preview { position: static; order: -1; height: 70dvh; }
 }
-
-.settings-tabs__btn:hover {
-  color: var(--surface-text);
-}
-
-.settings-tabs__btn--active {
-  color: var(--surface-heading);
-  border-bottom-color: var(--brand-indigo);
-}
-
-.settings-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 8px;
-}
-
-.btn-save {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 20px;
-  background: var(--gradient-brand);
-  color: white;
-  font-size: 13px;
-  font-weight: 600;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: opacity var(--t-fast);
-}
-
-.btn-save:hover:not(:disabled) { opacity: 0.9; }
-.btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>

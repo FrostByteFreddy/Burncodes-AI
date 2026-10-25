@@ -4,11 +4,11 @@
 
 set -e
 
-# Production server details
-SERVER="root@142.132.206.182"
-APP_DIR="/var/www/burncodes-ai"
-DOMAIN="ai.burn.codes"
-HEAVY_WORKERS=5   # number of worker_heavy containers (each runs 1 Chromium)
+# Production server details (overridable, e.g. from the release workflow)
+SERVER="${DEPLOY_SERVER:-root@142.132.206.182}"
+APP_DIR="${DEPLOY_APP_DIR:-/var/www/burncodes-ai}"
+DOMAIN="${DEPLOY_DOMAIN:-ai.burn.codes}"
+HEAVY_WORKERS="${DEPLOY_HEAVY_WORKERS:-5}"   # number of worker_heavy containers (each runs 1 Chromium)
 
 
 echo "=========================================================="

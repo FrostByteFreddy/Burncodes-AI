@@ -4,7 +4,7 @@
     <template v-if="layout === 'default'">
       <!-- Mobile top bar -->
       <header class="mobile-topbar">
-        <button class="mobile-topbar__menu" @click="mobileOpen = !mobileOpen" aria-label="Menu">
+        <button class="mobile-topbar__menu" @click="mobileOpen = !mobileOpen" :aria-label="$t('common.menu')">
           <font-awesome-icon :icon="mobileOpen ? ['fas', 'xmark'] : ['fas', 'bars']" />
         </button>
         <router-link to="/manage-tenants" class="mobile-topbar__logo">
@@ -29,7 +29,7 @@
       <router-view />
     </template>
 
-    <ToastContainer />
+    <ToastContainer :with-sidebar="layout === 'default'" />
     <SessionExpiredModal v-if="authStore.sessionExpired" />
     <CreateTenantModal v-if="showCreateModal" @close="showCreateModal = false" />
   </div>
@@ -59,32 +59,46 @@ const layout = computed(() => {
 
 <style>
 @import './assets/design-tokens.css';
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 14px;
-  line-height: 1.6;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: var(--leading-body);
   background: var(--surface-0);
   color: var(--surface-text);
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
+
+h1, h2, h3, h4 { color: var(--surface-heading); line-height: var(--leading-tight); font-weight: 700; }
+
+a { color: var(--interactive); }
+
+/* One visible focus style everywhere (keyboard only) */
+:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+
+::selection { background: var(--interactive-soft); color: var(--surface-heading); }
+
+/* Sidebar and content form one centered column, so wide screens get
+   even margins on both sides instead of everything hugging the left edge */
+.app-main > :not(.full-bleed) { max-width: var(--content-max); }
 
 .app-root { min-height: 100vh; }
 
 .app-shell {
   display: flex;
   min-height: 100vh;
+  max-width: var(--shell-max);
+  margin: 0 auto;
 }
 
 .app-main {
   flex: 1;
-  margin-left: var(--sidebar-width);
+  min-width: 0;
   min-height: 100vh;
-  overflow-y: auto;
-  padding: 32px 40px;
+  padding: 40px 48px 64px;
 }
 
 .app-main.has-chat {
@@ -119,7 +133,6 @@ body {
 @media (max-width: 768px) {
   .mobile-topbar { display: flex; }
   .app-main {
-    margin-left: 0;
     padding: 80px 20px 24px;
   }
 }

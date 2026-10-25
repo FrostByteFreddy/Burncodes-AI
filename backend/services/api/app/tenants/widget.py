@@ -56,6 +56,11 @@ def get_widget_script():
                 return;
             }}
 
+            // Switched off in the dashboard: render nothing at all
+            if (data.is_active === false) {{
+                return;
+            }}
+
             const config = data.widget_config || {{}};
 
             // Respect the hide/show toggle set in the dashboard

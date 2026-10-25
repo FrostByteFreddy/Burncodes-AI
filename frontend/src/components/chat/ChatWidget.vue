@@ -1,7 +1,25 @@
 <template>
+  <!-- Switched off by the owner: no chat at all -->
+  <div v-if="switchedOff" class="chat-off" role="status">
+    <p>{{ $t('chat.switchedOff') }}</p>
+  </div>
+
+  <!-- Still in development: ask for the password first -->
+  <form v-else-if="needsPassword" class="chat-lock" @submit.prevent="unlock">
+    <div class="chat-lock__card">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+      <h1>{{ $t('chat.locked.title') }}</h1>
+      <p>{{ $t('chat.locked.body') }}</p>
+      <label for="chat-lock-pw" class="chat-lock__label">{{ $t('chat.locked.password') }}</label>
+      <input id="chat-lock-pw" v-model="password" type="password" autocomplete="current-password" class="chat-lock__input" autofocus />
+      <p v-if="unlockError" class="chat-lock__error" role="alert">{{ unlockError }}</p>
+      <button type="submit" class="chat-lock__btn" :disabled="!password || unlocking">{{ $t('chat.locked.open') }}</button>
+    </div>
+  </form>
+
   <!-- Collapsed state (non-widget mode only — in widget mode the parent hides the iframe) -->
   <div
-    v-if="!isChatOpen"
+    v-else-if="!isChatOpen"
     class="chat-launcher"
     :style="{ backgroundColor: launcherBgColor }"
     @click="isChatOpen = true"
@@ -11,7 +29,7 @@
       v-if="resolvedConfig.launcher_icon"
       :src="resolvedConfig.launcher_icon"
       class="chat-launcher__icon"
-      alt="Open chat"
+      :alt="$t('chat.openChat')"
     />
     <svg
       v-else
@@ -37,6 +55,7 @@
     :isThinking="isThinking"
     :isWidget="isWidget"
     :isSharedView="isSharedView"
+    :calendarFeeds="calendarFeeds"
     v-model:userMessage="userMessage"
     @sendMessage="sendMessage"
     @reset="resetChat"
@@ -52,6 +71,7 @@ import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import BaseChat from './BaseChat.vue';
+import { supabase } from '@/supabase';
 import { processBotMessage } from '@/utils/chatProcessor.js';
 import { useToast } from '@/composables/useToast';
 import { useAppHeight } from '@/composables/useAppHeight';
@@ -70,8 +90,63 @@ const props = defineProps({
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
+// The dashboard preview (config passed in) sends the owner's token, so it
+// keeps working while the chatbot is switched off for everyone else
+const previewAuthHeaders = async () => {
+  if (!props.config) return {};
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+};
+
+// ── Password (chatbot still in development) ───────────────────────────────────
+// The token from /unlock is kept per chatbot; the server checks it on every message
+const accessKey = computed(() => `burncodes-chat-access:${props.tenantId}`);
+const readAccess = () => { try { return localStorage.getItem(accessKey.value) || ''; } catch { return ''; } };
+const writeAccess = (token) => {
+  try { token ? localStorage.setItem(accessKey.value, token) : localStorage.removeItem(accessKey.value); } catch { /* private mode */ }
+};
+const needsPassword = ref(false);
+const password = ref('');
+const unlocking = ref(false);
+const unlockError = ref('');
+
+const chatHeaders = async () => {
+  const access = readAccess();
+  return { ...(await previewAuthHeaders()), ...(access ? { 'X-Chat-Access': access } : {}) };
+};
+
+// The server says the password is missing or no longer valid: ask again
+const isPasswordError = (err) => err.response?.status === 401 && err.response?.data?.code === 'password_required';
+const askForPassword = () => { writeAccess(''); needsPassword.value = true; isThinking.value = false; };
+
+const unlock = async () => {
+  if (!password.value || unlocking.value) return;
+  unlocking.value = true;
+  unlockError.value = '';
+  try {
+    const { data } = await axios.post(`${API_BASE_URL}/chat/${props.tenantId}/unlock`, { password: password.value });
+    writeAccess(data.token || '');
+    needsPassword.value = false;
+    password.value = '';
+    await startConversation();
+  } catch (err) {
+    unlockError.value = err.response?.status === 429 ? t('chat.errors.rateLimited') : t('chat.locked.wrong');
+  } finally { unlocking.value = false; }
+};
+
+// ── Calendars residents can subscribe to (key → feed) ─────────────────────────
+const calendarFeeds = ref({});
+const fetchCalendars = async () => {
+  if (!props.tenantId) return;
+  try {
+    const { data } = await axios.get(`${API_BASE_URL}/calendar/${props.tenantId}`);
+    calendarFeeds.value = Object.fromEntries((data.feeds || []).map((f) => [f.key, f]));
+  } catch { /* no calendar buttons then */ }
+};
+
 // ── Config resolution ──────────────────────────────────────────────────────────
 const fetchedConfig  = ref(null);
+const switchedOff    = ref(false);
 const isSharedView   = ref(false);
 const resolvedConfig = computed(() => props.config ?? fetchedConfig.value ?? {});
 
@@ -145,7 +220,9 @@ const fetchConfig = async () => {
   if (!props.tenantId || props.config) return;
   try {
     const { data } = await axios.get(`${API_BASE_URL}/tenants/${props.tenantId}/public`);
+    if (data.is_active === false) { switchedOff.value = true; return; }
     fetchedConfig.value = data.widget_config || {};
+    if (data.protected && !readAccess()) needsPassword.value = true;
   } catch (err) {
     console.error('[ChatWidget] Failed to fetch tenant config', err);
   }
@@ -156,12 +233,13 @@ const fetchIntroMessage = async () => {
   if (!props.tenantId) return;
   isThinking.value = true;
   try {
-    const { data } = await axios.get(`${API_BASE_URL}/chat/${props.tenantId}/intro`);
+    const { data } = await axios.get(`${API_BASE_URL}/chat/${props.tenantId}/intro`, { headers: await chatHeaders() });
     const { text, html } = processBotMessage(data.intro_message);
     chatHistory.value.push({ text, html, isUser: false });
     saveSession(chatHistory.value, conversationId.value);
   } catch (err) {
-    const { text, html } = processBotMessage(`Error: ${err.response?.data?.error || t('chat.errors.initialMessage')}`);
+    if (isPasswordError(err)) { askForPassword(); return; }
+    const { text, html } = processBotMessage(t('chat.errors.initialMessage'));
     chatHistory.value.push({ text, html, isUser: false });
     saveSession(chatHistory.value, conversationId.value);
   } finally {
@@ -171,18 +249,19 @@ const fetchIntroMessage = async () => {
 
 // ── Task polling ──────────────────────────────────────────────────────────────
 const pollTaskStatus = (taskId) => {
-  let retries = 0;
-  const MAX_RETRIES = 4;
+  // Give up after two minutes; the server may answer immediately instead of
+  // holding the request when it is busy, so pace those polls ourselves
+  const giveUpAt = Date.now() + 120000;
 
   const longPoll = async () => {
-    if (retries >= MAX_RETRIES) {
+    if (Date.now() > giveUpAt) {
       isThinking.value = false;
       const { text, html } = processBotMessage(t('chat.errors.taskStatus'));
       chatHistory.value.push({ text, html, isUser: false });
       saveSession(chatHistory.value, conversationId.value);
       return;
     }
-    retries++;
+    const startedAt = Date.now();
     const controller = new AbortController();
     activeAbortController.value = controller;
 
@@ -197,30 +276,18 @@ const pollTaskStatus = (taskId) => {
         activeAbortController.value = null;
         isThinking.value = false;
 
-        const fullHistory = task_result.chat_history;
-        const last = fullHistory[fullHistory.length - 1];
+        // The backend keeps the conversation server-side; we only append the
+        // new answer to the local transcript (which already has the user turn).
+        const answer = task_result.answer || '';
+        chatHistory.value.push({ text: '', html: '', isUser: false });
 
-        if (last?.type === 'ai') {
-          chatHistory.value = fullHistory.slice(0, -1).map(msg =>
-            msg.type === 'ai'
-              ? { ...processBotMessage(msg.content), isUser: false }
-              : { text: msg.content, html: null, isUser: true }
-          );
-          chatHistory.value.push({ text: '', html: '', isUser: false });
-
-          const current = chatHistory.value[chatHistory.value.length - 1];
-          for (const part of last.content.split(/(\s+)/)) {
-            current.text += part;
-            current.html = processBotMessage(current.text).html;
-            await new Promise(r => setTimeout(r, Math.random() * 5));
-          }
-        } else {
-          chatHistory.value = fullHistory.map(msg =>
-            msg.type === 'ai'
-              ? { ...processBotMessage(msg.content), isUser: false }
-              : { text: msg.content, html: null, isUser: true }
-          );
+        const current = chatHistory.value[chatHistory.value.length - 1];
+        for (const part of answer.split(/(\s+)/)) {
+          current.text += part;
+          current.html = processBotMessage(current.text).html;
+          await new Promise(r => setTimeout(r, Math.random() * 5));
         }
+        current.calendars = processBotMessage(current.text).calendars;
         saveSession(chatHistory.value, conversationId.value);
         return;
       }
@@ -234,11 +301,12 @@ const pollTaskStatus = (taskId) => {
         return;
       }
 
+      if (Date.now() - startedAt < 1500) await new Promise((r) => setTimeout(r, 1500));
       await longPoll();
     } catch (err) {
       if (axios.isCancel(err)) return;
       activeAbortController.value = null;
-      const { text, html } = processBotMessage(t('chat.errors.taskStatus'));
+      const { text, html } = processBotMessage(t(err.response?.status === 429 ? 'chat.errors.rateLimited' : 'chat.errors.taskStatus'));
       chatHistory.value.push({ text, html, isUser: false });
       saveSession(chatHistory.value, conversationId.value);
       isThinking.value = false;
@@ -253,11 +321,6 @@ const sendMessage = async () => {
   if (!userMessage.value.trim() || !props.tenantId || isThinking.value) return;
 
   const current = userMessage.value;
-  const historyForBackend = chatHistory.value.map(m => ({
-    type: m.isUser ? 'human' : 'ai',
-    content: m.text,
-  }));
-
   chatHistory.value.push({ text: current, html: null, isUser: true });
   saveSession(chatHistory.value, conversationId.value);
   userMessage.value = '';
@@ -266,16 +329,26 @@ const sendMessage = async () => {
   try {
     const { data } = await axios.post(`${API_BASE_URL}/chat/${props.tenantId}`, {
       query: current,
-      chat_history: historyForBackend,
       conversation_id: conversationId.value,
-    });
+    }, { headers: await chatHeaders() });
     if (data.task_id) {
       pollTaskStatus(data.task_id);
     } else {
       throw new Error('No task_id received');
     }
   } catch (err) {
-    const { text, html } = processBotMessage(`Error: ${err.response?.data?.error || t('chat.errors.sendMessage')}`);
+    if (isPasswordError(err)) {
+      chatHistory.value.pop();
+      userMessage.value = current;
+      askForPassword();
+      return;
+    }
+    const code = err.response?.data?.code;
+    const { text, html } = processBotMessage(code === 'chatbot_off'
+      ? t('chat.switchedOff')
+      : err.response?.status === 429
+      ? t('chat.errors.rateLimited')
+      : t('chat.errors.sendMessage'));
     chatHistory.value.push({ text, html, isUser: false });
     saveSession(chatHistory.value, conversationId.value);
     isThinking.value = false;
@@ -298,7 +371,7 @@ const buildSharedHistory = (messages) =>
     if (m.user_message) entries.push({ text: m.user_message, isUser: true });
     if (m.ai_message) {
       const { text, html } = processBotMessage(m.ai_message);
-      entries.push({ text, html, isUser: false });
+      entries.push({ text, html, isUser: false });  // shared snapshots show no calendar buttons
     }
     return entries;
   });
@@ -332,18 +405,22 @@ onMounted(async () => {
   }
 
   await fetchConfig();
-
-  if (props.tenantId) {
-    const session = loadSession();
-    if (session?.history?.length) {
-      chatHistory.value = session.history;
-      conversationId.value = session.conversationId || uuidv4();
-    } else {
-      conversationId.value = uuidv4();
-      await fetchIntroMessage();
-    }
-  }
+  fetchCalendars();
+  if (!needsPassword.value) await startConversation();
 });
+
+// Restores this tab's conversation, or starts a new one with the welcome message
+async function startConversation() {
+  if (!props.tenantId) return;
+  const session = loadSession();
+  if (session?.history?.length) {
+    chatHistory.value = session.history;
+    conversationId.value = session.conversationId || uuidv4();
+  } else {
+    conversationId.value = uuidv4();
+    await fetchIntroMessage();
+  }
+}
 
 onUnmounted(() => {
   if (activeAbortController.value) {
@@ -382,4 +459,24 @@ onUnmounted(() => {
   height: 30px;
   object-fit: contain;
 }
+.chat-off {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; min-height: 200px; padding: 24px; text-align: center;
+  font-family: var(--font-sans, system-ui, sans-serif); color: #4B5563; background: #F9FAFB;
+}
+.chat-lock {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; min-height: 320px; padding: 24px;
+  font-family: var(--font-sans, system-ui, sans-serif); background: #F9FAFB; color: #1F2937;
+}
+.chat-lock__card { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 10px; text-align: left; }
+.chat-lock__card svg { color: #6B7280; }
+.chat-lock__card h1 { font-size: 18px; font-weight: 700; margin: 0; color: #111827; }
+.chat-lock__card p { font-size: 14px; color: #4B5563; margin: 0; line-height: 1.45; }
+.chat-lock__label { font-size: 14px; font-weight: 600; margin-top: 6px; }
+.chat-lock__input { padding: 10px 12px; border: 1px solid #D1D5DB; border-radius: 8px; font-size: 16px; background: #fff; color: #111827; }
+.chat-lock__input:focus { outline: 2px solid #5F6DFF; outline-offset: 1px; }
+.chat-lock__error { color: #B91C1C !important; }
+.chat-lock__btn { padding: 10px 14px; border: none; border-radius: 8px; background: #1F2937; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
+.chat-lock__btn:disabled { opacity: 0.45; cursor: not-allowed; }
 </style>

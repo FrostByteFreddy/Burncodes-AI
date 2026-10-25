@@ -7,7 +7,7 @@ import os
 import json
 import time
 import uuid
-from flask import Flask, g, request
+from flask import Flask, g, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
 from celery import Celery
@@ -115,7 +115,15 @@ def create_app():
     app.register_blueprint(tenants_bp,  url_prefix='/api/tenants')
     app.register_blueprint(sources_bp,  url_prefix='/api/tenants')
     app.register_blueprint(widget_bp,   url_prefix='/api/tenants')
+    from app.tenants.calendar_feed import calendar_bp
+    app.register_blueprint(calendar_bp, url_prefix='/api/calendar')
     app.register_blueprint(chat_bp,     url_prefix='/api/chat')
+
+    # Rate-limited callers get JSON the widget can show, not an HTML error page
+    @app.errorhandler(429)
+    def too_many_requests(e):
+        return jsonify({"error": "Too many requests. Please wait a moment and try again.",
+                        "code": "rate_limited"}), 429
     app.register_blueprint(billing_bp,  url_prefix='/api/billing')
 
     @app.route('/api/health')

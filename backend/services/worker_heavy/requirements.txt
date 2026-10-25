@@ -17,3 +17,9 @@ trafilatura==2.0.0
 crawl4ai==0.7.6
 # Vector DB (for storing crawled content)
 google-genai>=1.13.0
+
+# Retry helpers used by shared billing/database code
+tenacity
+
+# Knowledge pipeline (HTML → Markdown)
+markdownify==1.2.0

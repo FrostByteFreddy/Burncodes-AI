@@ -1,53 +1,105 @@
 /* ============================================================
-   SwiftAnswer Design Tokens — sourced from login screen brand
+   SwiftAnswer design tokens
+
+   Dark, calm, legible. The product is used by municipal and
+   organisation staff checking what their residents' chatbot knows,
+   so the interface favours plain status language and readable type
+   over decoration.
+
+   Colour roles
+     navy surfaces  — the brand's navy, slightly bluer than black
+     --interactive  — brand indigo, lightened for dark backgrounds:
+                      links, buttons, focus, selection
+     --ai           — brand magenta: only for things the AI does
+                      (learning, answering). Nothing else is magenta.
+     status         — current (green) / check this (amber) / broken (red)
+   The indigo→magenta gradient belongs to the logo only.
    ============================================================ */
 
 :root {
-  /* Brand */
+  color-scheme: dark;
+
+  /* Brand (logo, identity) */
   --brand-indigo:   #0A1FAB;
   --brand-violet:   #3B1FA8;
   --brand-magenta:  #FF2095;
-  --brand-cyan:     #50D3FC;
+  --brand-cyan:     #7FD8F5;
 
-  /* Surfaces (dark navy scale) */
-  --surface-0:      #0D0F1A;   /* app bg */
-  --surface-1:      #13162B;   /* cards, panels */
-  --surface-2:      #1C2040;   /* inputs, hover rows */
-  --surface-3:      #252A52;   /* borders, dividers */
-  --surface-muted:  #4A4F7A;   /* captions, placeholders */
-  --surface-text:   #E8EAF6;   /* body text */
-  --surface-heading:#FFFFFF;   /* headings */
+  /* Roles */
+  --interactive:        #7C88FF;
+  --interactive-strong: #5F6DFF;
+  --interactive-soft:   rgba(124, 136, 255, 0.14);
+  --ai:                 #FF2095;
+  --ai-soft:            rgba(255, 32, 149, 0.12);
+
+  /* Surfaces */
+  --surface-0:      #11152D;   /* app background */
+  --surface-1:      #181D3A;   /* panels */
+  --surface-2:      #20264A;   /* inputs, hover rows, nested blocks */
+  --surface-3:      #2C335E;   /* lines, dividers, borders */
+  --surface-muted:  #9097C0;   /* secondary text — 5.6:1 on surface-1 */
+  --surface-text:   #E6E9F7;   /* body text */
+  --surface-heading:#FFFFFF;   /* headings, key numbers */
 
   /* Status */
-  --status-success: #00C9A7;
-  --status-warning: #F59E0B;
-  --status-error:   #FF4444;
-  --status-pending: #4A4F7A;
+  --status-success: #3CCB9A;
+  --status-warning: #F2B24C;
+  --status-error:   #FF6B6B;
+  --status-pending: #9097C0;
+  --status-success-soft: rgba(60, 203, 154, 0.12);
+  --status-warning-soft: rgba(242, 178, 76, 0.12);
+  --status-error-soft:   rgba(255, 107, 107, 0.12);
 
-  /* Gradients */
-  --gradient-brand:      linear-gradient(135deg, #0A1FAB 0%, #FF2095 100%);
-  --gradient-brand-soft: linear-gradient(135deg, rgba(10,31,171,0.12) 0%, rgba(255,32,149,0.08) 100%);
-  --gradient-brand-deep: linear-gradient(135deg, #0A1FAB 0%, #3B1FA8 40%, #FF2095 100%);
-  --gradient-surface:    linear-gradient(180deg, #13162B 0%, #0D0F1A 100%);
+  /* Logo only. Kept as variables because older components still
+     reference them; those now resolve to the plain interactive colour. */
+  --gradient-logo:       linear-gradient(135deg, #0A1FAB 0%, #FF2095 100%);
+  --gradient-brand:      var(--interactive-strong);
+  --gradient-brand-soft: var(--interactive-soft);
+  --gradient-brand-deep: var(--interactive-strong);
+  --gradient-surface:    var(--surface-1);
 
-  /* Shadows */
-  --shadow-card:  0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3);
-  --shadow-glow:  0 0 0 1px rgba(10,31,171,0.25), 0 8px 32px rgba(10,31,171,0.15);
-  --shadow-glow-active: 0 0 0 1px rgba(10,31,171,0.5), 0 8px 32px rgba(10,31,171,0.25);
+  /* Shadows: flat UI; only floating layers (menus, modals) cast one */
+  --shadow-card:   none;
+  --shadow-float:  0 12px 40px rgba(4, 6, 20, 0.55);
+  --shadow-glow:   none;
+  --shadow-glow-active: 0 0 0 1px var(--interactive);
 
-  /* Sidebar */
-  --sidebar-width: 240px;
-  --sidebar-bg:    #10132200;
+  /* Type — Atkinson Hyperlegible Next, one family.
+     Scale on a 16 px body (ratio ≈ 1.2, rounded to whole pixels). */
+  --font-sans: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --text-xs:   12px;   /* table meta, timestamps */
+  --text-sm:   14px;   /* secondary text, labels */
+  --text-base: 16px;   /* body */
+  --text-lg:   19px;   /* panel titles */
+  --text-xl:   23px;   /* page titles */
+  --text-2xl:  33px;   /* the one big figure per page */
+  --leading-tight: 1.25;
+  --leading-body:  1.55;
 
-  /* Radii */
+  /* Layout */
+  --sidebar-width: 248px;
+  --sidebar-bg:    var(--surface-0);
+  --content-max:   1560px;
+  --shell-max:     calc(var(--sidebar-width) + var(--content-max) + 96px);
+  --measure:       68ch;      /* readable line length */
+
+  /* Radii: small for controls, larger only for panels */
   --radius-sm:  6px;
-  --radius-md:  10px;
-  --radius-lg:  14px;
-  --radius-xl:  18px;
+  --radius-md:  8px;
+  --radius-lg:  10px;
+  --radius-xl:  14px;
   --radius-pill: 999px;
 
+  /* Focus */
+  --focus-ring: 0 0 0 2px var(--surface-0), 0 0 0 4px var(--interactive);
+
   /* Transitions */
-  --t-fast:   0.15s ease;
-  --t-normal: 0.2s ease;
-  --t-slow:   0.35s ease;
+  --t-fast:   0.12s ease;
+  --t-normal: 0.18s ease;
+  --t-slow:   0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-fast: 0s; --t-normal: 0s; --t-slow: 0s; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
 }

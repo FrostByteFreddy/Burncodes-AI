@@ -66,8 +66,8 @@
   border-radius: var(--radius-md);
 }
 .rule-card__trigger.is-editing:focus {
-  border-color: var(--brand-indigo);
-  box-shadow: 0 0 0 3px rgba(10, 31, 171, 0.15);
+  border-color: var(--interactive);
+  box-shadow: var(--focus-ring);
 }
 
 .rule-card__instruction {
@@ -92,8 +92,8 @@
   color: var(--surface-text);
 }
 .rule-card__instruction.is-editing:focus {
-  border-color: var(--brand-indigo);
-  box-shadow: 0 0 0 3px rgba(10, 31, 171, 0.15);
+  border-color: var(--interactive);
+  box-shadow: var(--focus-ring);
 }
 
 .rule-card__actions {
@@ -165,10 +165,10 @@
 /* ── Shared modal form classes (used by rule-modal) ───── */
 .form-field {
   display: block;
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--surface-muted);
-  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--surface-heading);
+  margin-bottom: 6px;
 }
 
 .form-input {
@@ -185,6 +185,6 @@
 }
 
 .form-input:focus {
-  border-color: var(--brand-indigo);
-  box-shadow: 0 0 0 3px rgba(10, 31, 171, 0.15);
+  border-color: var(--interactive);
+  box-shadow: var(--focus-ring);
 }

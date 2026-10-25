@@ -70,8 +70,9 @@ export const useAuthStore = defineStore("auth", () => {
     sessionExpired.value = false; // Also reset on logout
 
     try {
-      // Attempt to sign out from Supabase
-      const { error } = await supabase.auth.signOut();
+      // This browser only. supabase-js defaults to scope "global", which would
+      // end every session of the account; Settings > Security does that on purpose.
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
       if (error) {
         // Ignore "session_not_found" and "Auth session missing!"
         if (
@@ -144,7 +145,7 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   async function handleSessionExpired() {
-    addToast("Your session has expired. Please log in again.", "error");
+    addToast(i18n.global.t("auth.sessionExpired"), "error");
     await logout();
   }
 
