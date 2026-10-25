@@ -22,6 +22,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 from uuid import UUID
 
+import httpx
 from celery import shared_task
 from crawl4ai import AsyncWebCrawler, CrawlerRunConfig
 
@@ -215,11 +216,12 @@ def _slow_down(url: str) -> None:
 
 
 class RateLimited(Exception):
-    """The website answered 429/503: try this page again later."""
+    """The website answered 429/503 or not at all: try this page again later."""
 
-    def __init__(self, retry_after: int | None = None):
-        super().__init__(f"rate limited (retry after {retry_after})")
+    def __init__(self, retry_after: int | None = None, status_code: int = 429):
+        super().__init__(f"try later (status {status_code}, retry after {retry_after})")
         self.retry_after = retry_after
+        self.status_code = status_code   # recorded if the last attempt fails too
 
 
 def _retry_after(headers) -> int | None:
@@ -260,7 +262,7 @@ def _fetch_playwright(url: str, parent_url: str | None) -> tuple[str | None, int
     try:
         asyncio.run(asyncio.wait_for(crawl(), timeout=70.0))
     except asyncio.TimeoutError:
-        return None, 408, []
+        raise RateLimited(status_code=408)
     if not result or not result.success:
         if getattr(result, "status_code", None) in (429, 503):
             raise RateLimited()
@@ -387,31 +389,45 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         status = CrawlingStatus.FAILED if outcome in ("error", "refused") else CrawlingStatus.COMPLETED
         _finish_task(task_id, status, outcome)
 
+    except (httpx.TimeoutException, httpx.NetworkError) as e:
+        # no answer at all: as with "too many requests", try again later
+        _retry_later(task, tenant_id, parent_url, RateLimited(status_code=408 if isinstance(e, httpx.TimeoutException) else 0))
     except RateLimited as e:
-        _slow_down(url)
-        attempts = (task.get("attempts") or 0) + 1
-        if attempts <= RATE_LIMIT_RETRIES:
-            delay = min(600, e.retry_after or 30 * 2 ** (attempts - 1))
-            supabase.table("crawling_tasks").update({
-                "status": CrawlingStatus.PENDING.value, "attempts": attempts, "enqueued_at": jobs.now_iso(),
-            }).eq("id", task_id).execute()
-            process_single_url_task.apply_async(
-                kwargs={"task_id": task_id, "tenant_id": tenant_id, "parent_url": parent_url},
-                countdown=delay, queue="heavy",
-            )
-            error_logger.info("Rate limited on %s, retry %d in %ds", url, attempts, delay)
-        else:
-            _record_error(tenant_id, url, SourceType.URL.value, job_id, 429)
-            _finish_task(task_id, CrawlingStatus.FAILED, "rate_limited")
+        _retry_later(task, tenant_id, parent_url, e)
     except UnsafeURLError as e:
         error_logger.warning("Refusing %s: %s", url, e)
         _record_error(tenant_id, url, SourceType.URL.value, job_id, 403)
         _finish_task(task_id, CrawlingStatus.FAILED, "refused")
+        jobs.log_event(job_id, tenant_id, "scanned", url=url, outcome="refused")
     except Exception as e:
         error_logger.error("Scanning %s failed: %s", url, e, exc_info=True)
+        _record_error(tenant_id, url, SourceType.URL.value, job_id, 500)
         _finish_task(task_id, CrawlingStatus.FAILED, "error")
+        jobs.log_event(job_id, tenant_id, "scanned", url=url, outcome="error")
     finally:
         jobs.complete_scan_if_done(job_id)
+
+
+def _retry_later(task: dict, tenant_id: str, parent_url: str | None, e: RateLimited) -> None:
+    """Re-queues the page with a growing pause; after RATE_LIMIT_RETRIES it counts as failed."""
+    task_id, job_id, url = task["id"], task["job_id"], task["url"]
+    _slow_down(url)
+    attempts = (task.get("attempts") or 0) + 1
+    if attempts <= RATE_LIMIT_RETRIES:
+        delay = min(600, e.retry_after or 30 * 2 ** (attempts - 1))
+        supabase.table("crawling_tasks").update({
+            "status": CrawlingStatus.PENDING.value, "attempts": attempts, "enqueued_at": jobs.now_iso(),
+        }).eq("id", task_id).execute()
+        process_single_url_task.apply_async(
+            kwargs={"task_id": task_id, "tenant_id": tenant_id, "parent_url": parent_url},
+            countdown=delay, queue="heavy",
+        )
+        error_logger.info("No answer from %s (%s), retry %d in %ds", url, e.status_code, attempts, delay)
+    else:
+        outcome = "rate_limited" if e.status_code in (429, 503) else "timeout"
+        _record_error(tenant_id, url, SourceType.URL.value, job_id, e.status_code)
+        _finish_task(task_id, CrawlingStatus.FAILED, outcome)
+        jobs.log_event(job_id, tenant_id, "scanned", url=url, outcome=outcome)
 
 
 def _seen_in_this_crawl(tenant_id: str, job_id: int, url: str, digest: str) -> bool:

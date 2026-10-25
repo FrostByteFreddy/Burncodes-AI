@@ -667,7 +667,8 @@
       "preparing": "Scan complete. Sorting out what isn't worth learning and calculating the cost — this takes about a minute on large websites.",
       "duplicate": "duplicate",
       "rate_limited": "website busy",
-      "noneSelected": "Nothing is selected to learn. Tick at least one page or file below."
+      "noneSelected": "Nothing is selected to learn. Tick at least one page or file below.",
+      "timeout": "no answer"
     },
     "report": {
       "overview": "Overview",

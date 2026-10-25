@@ -667,7 +667,8 @@
       "preparing": "Analyse terminée. Nous écartons ce qui ne vaut pas la peine d'être appris et calculons le coût – cela prend environ une minute pour les grands sites.",
       "duplicate": "doublon",
       "rate_limited": "site surchargé",
-      "noneSelected": "Rien n'est sélectionné. Cochez au moins une page ou un fichier ci-dessous."
+      "noneSelected": "Rien n'est sélectionné. Cochez au moins une page ou un fichier ci-dessous.",
+      "timeout": "pas de réponse"
     },
     "report": {
       "overview": "Aperçu",

@@ -667,7 +667,8 @@
       "preparing": "Scan abgeschlossen. Wir sortieren aus, was sich nicht zu lernen lohnt, und berechnen die Kosten – bei grossen Websites dauert das etwa eine Minute.",
       "duplicate": "Duplikat",
       "rate_limited": "Website ausgelastet",
-      "noneSelected": "Es ist nichts zum Lernen ausgewählt. Setzen Sie unten bei mindestens einer Seite oder Datei einen Haken."
+      "noneSelected": "Es ist nichts zum Lernen ausgewählt. Setzen Sie unten bei mindestens einer Seite oder Datei einen Haken.",
+      "timeout": "keine Antwort"
     },
     "report": {
       "overview": "Übersicht",

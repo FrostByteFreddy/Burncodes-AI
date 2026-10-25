@@ -75,7 +75,7 @@ export function useCrawlText() {
         const end = finished.get(`${e.event}:${e.data?.url}`);
         entry = end || e;
         state = !end ? 'running'
-          : end.event === 'learn_failed' || ['error', 'refused'].includes(end.data?.outcome) ? 'failed'
+          : end.event === 'learn_failed' || ['error', 'refused', 'timeout', 'rate_limited'].includes(end.data?.outcome) ? 'failed'
           : 'done';
       } else if (e.event === 'job_done' || e.event === 'scan_done') {
         state = 'done';
