@@ -438,7 +438,7 @@ class TestSourceLinks:
         url = "https://www.zofingen.ch/kontakt"
         out = chat._ensure_source("Die Nummer ist 062 745 71 00.\n[[calendar:papier--zone-1]]",
                                   [("Kontakt", url), ("Kontakt", url), ("Fremd", "https://x.example")], {url})
-        assert out == f"Die Nummer ist 062 745 71 00.\n\n↗ [Kontakt]({url})\n[[calendar:papier--zone-1]]"
+        assert out == f'Die Nummer ist 062 745 71 00.\n\n[Kontakt]({url} "source: Kontakt")\n[[calendar:papier--zone-1]]'
 
     def test_existing_source_link_is_left_alone(self):
         chat = TestSystemInstruction._chat()
@@ -455,9 +455,11 @@ class TestSourceLinks:
         text = "Konzert am 6. November.\n\nQuelle: [[sources]]\n[[calendar:konzert]]"
         out = chat._ensure_source(text, [("Startseite", home), ("Konzert", concert), ("Konzert", concert),
                                          ("Zieglerrunde", ziegler)], known)
-        assert out == f"Konzert am 6. November.\n\nQuelle: [Konzert]({concert}), [Zieglerrunde]({ziegler})\n[[calendar:konzert]]"
+        assert out == (f'Konzert am 6. November.\n\nQuelle: [Konzert]({concert} "source: Konzert") '
+                       f'[Zieglerrunde]({ziegler} "source: Zieglerrunde")\n[[calendar:konzert]]')
         # only the home page was used: it is linked after all
-        assert chat._ensure_source("x\nQuelle: [[sources]]", [("Startseite", home)], known) == f"x\nQuelle: [Startseite]({home})"
+        assert chat._ensure_source("x\nQuelle: [[sources]]", [("Startseite", home)], known) == \
+            f'x\nQuelle: [Startseite]({home} "source: Startseite")'
         # nothing known: the line disappears
         assert chat._ensure_source("x\n\nSource: [[sources]]", [], known) == "x"
 
@@ -472,6 +474,58 @@ class TestSourceLinks:
                     NS(segment=NS(start_index=10), grounding_chunk_indices=[1])]
         response = NS(candidates=[NS(grounding_metadata=NS(grounding_chunks=chunks, grounding_supports=supports))])
         assert chat._retrieved_sources(response) == [("Konzert", "https://x.ch/a/1"), ("Ziegler", "https://x.ch/a/2")]
+
+
+    def test_sources_go_inline_after_the_line_they_back(self):
+        from types import SimpleNamespace as NS
+        chat = TestSystemInstruction._chat()
+        home, a, b = "https://x.ch", "https://x.ch/_rte/anlass/1", "https://x.ch/_rte/anlass/2"
+        def chunk(title, url):
+            return NS(retrieved_context=NS(title=f"{title} — Info", text="",
+                                           custom_metadata=[NS(key="source_url", string_value=url)]))
+        chunks = [chunk("Startseite", home), chunk("Konzert «Akkordeon auf Reisen» in der Mehrzweckhalle", a),
+                  chunk("Zieglerrunde", b)]
+        answer = ("Demnächst:\n\n* **Konzert «Akkordeon»**: Fr, 6. November, Mehrzweckhalle.\n"
+                  "* **Zieglerrunde**: Sa, 14. November.\n* **Gemeindeversammlung**: Di, 17. November.\n"
+                  "| Tag | Anlass |\n[[calendar:konzert]]")
+        def seg(text):   # Gemini counts bytes
+            start = answer.encode().index(text.encode())
+            return NS(start_index=start, end_index=start + len(text.encode()), part_index=0)
+        supports = [NS(segment=seg("Fr, 6. November"), grounding_chunk_indices=[0, 1]),
+                    NS(segment=seg("Sa, 14. November"), grounding_chunk_indices=[2]),
+                    NS(segment=seg("Mehrzweckhalle"), grounding_chunk_indices=[1]),      # same page again: not repeated
+                    NS(segment=seg("Di, 17. November"), grounding_chunk_indices=[0]),    # only the home page backs it
+                    NS(segment=seg("Anlass"), grounding_chunk_indices=[2])]              # table row: left alone
+        response = NS(candidates=[NS(grounding_metadata=NS(grounding_chunks=chunks, grounding_supports=supports))])
+        out, linked = chat._inline_sources(answer, response, {home, a, b})
+        lines = out.split("\n")
+        assert lines[2].endswith(f'Mehrzweckhalle. [Konzert «Akkordeon auf Reisen»…]({a} '
+                                 f'"source: Konzert «Akkordeon auf Reisen» in der Mehrzweckhalle")')
+        assert lines[3].endswith(f'14. November. [Zieglerrunde]({b} "source: Zieglerrunde")')
+        assert lines[4].endswith(f'17. November. [Startseite]({home} "source: Startseite")')
+        assert lines[5] == "| Tag | Anlass |" and lines[6] == "[[calendar:konzert]]"
+        assert linked == {home, a, b}
+
+
+    def test_a_line_backed_by_the_home_page_links_the_page_it_names(self):
+        from types import SimpleNamespace as NS
+        chat = TestSystemInstruction._chat()
+        home, ziegler = "https://x.ch", "https://x.ch/_rte/anlass/7257347"
+        known = {home: "Startseite Gemeinde Brittnau", ziegler: 'Chetti - Daniel Ziegler mit "Zieglerrunde"',
+                 "https://x.ch/_rte/abfallart/1": "Glas"}
+        chunks = [NS(retrieved_context=NS(title="Startseite Gemeinde Brittnau — Anlässe", text="",
+                                          custom_metadata=[NS(key="source_url", string_value=home)]))]
+        answer = "* **Chetti - Daniel Ziegler mit „Zieglerrunde“**: Samstag, 14. November.\n* Glas: Sammelstelle."
+        def seg(text):
+            start = answer.encode().index(text.encode())
+            return NS(start_index=start, end_index=start + len(text.encode()), part_index=0)
+        supports = [NS(segment=seg("14. November"), grounding_chunk_indices=[0]),
+                    NS(segment=seg("Sammelstelle"), grounding_chunk_indices=[0])]
+        response = NS(candidates=[NS(grounding_metadata=NS(grounding_chunks=chunks, grounding_supports=supports))])
+        out, _ = chat._inline_sources(answer, response, known)
+        first, second = out.split("\n")
+        assert f"({ziegler} " in first and f"({home} " not in first
+        assert second.endswith(f'[Startseite Gemeinde Brittnau]({home} "source: Startseite Gemeinde Brittnau")')  # "Glas" too short
 
 
 class TestFetchAll:
