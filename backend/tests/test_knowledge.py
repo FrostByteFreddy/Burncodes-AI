@@ -496,6 +496,11 @@ class TestExclusionRules:
         assert s._ancestors("/a/b") == ["/a", "/a/b"]
         assert s._ancestors("//shop.x.ch/a") == ["//shop.x.ch", "//shop.x.ch/a"]
         assert s._ancestors("/") == []
+        # a section's overview page belongs to its folder
+        assert s.folder_of("https://www.zofingen.ch/politik.html", "zofingen.ch") == "/politik"
+        assert s.folder_of("https://www.zofingen.ch/index.html", "zofingen.ch") == "/"
+        assert s.folder_of("https://www.zofingen.ch/politik.html/2/print/html", "zofingen.ch") == "/politik/2/print/html"
+        assert s.folder_of("https://www.zofingen.ch/politik/aktuell.html/73", "zofingen.ch") == "/politik/aktuell/73"
 
     def test_url_wins_then_the_longest_folder(self):
         s = self._sel()

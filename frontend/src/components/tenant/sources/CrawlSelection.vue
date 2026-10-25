@@ -142,7 +142,8 @@ const parentOf = (path) => {
 };
 const segmentLabel = (path) => {
   const seg = decodeURIComponent(path.split('/').filter(Boolean).pop() || '');
-  return seg.replace(/\.(html?|php|aspx?)$/i, '').replace(/[-_]+/g, ' ').trim() || seg;
+  const words = seg.replace(/\.(html?|php|aspx?)$/i, '').replace(/[-_]+/g, ' ').trim() || seg;
+  return words.charAt(0).toUpperCase() + words.slice(1);
 };
 
 const tree = computed(() => {

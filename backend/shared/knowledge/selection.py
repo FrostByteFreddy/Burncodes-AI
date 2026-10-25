@@ -12,6 +12,7 @@ probably not worth their cost. Unlike the sorting step it decides nothing:
 the suggestions are shown with what they'd save and applied with one click.
 """
 import json
+import re
 from urllib.parse import unquote, urlparse
 
 from google.genai import types
@@ -38,6 +39,10 @@ def folder_of(url: str, start_host: str) -> str:
     """'/verwaltung/einwohnerrat' for a page; other hosts keep their name: '//shop.example.ch/a'."""
     u = urlparse(url)
     path = unquote(u.path or "/").rstrip("/") or "/"
+    # "/politik.html" is the page of the folder "/politik/…", not a sibling of it,
+    # and CMS routes like "/politik.html/2" belong there too
+    path = re.sub(r"/index\.html?(?=/|$)", "", path)
+    path = re.sub(r"\.html?(?=/|$)", "", path) or "/"
     host = _site(u.hostname)
     return path if host == start_host else f"//{host}{'' if path == '/' else path}"
 
@@ -115,13 +120,15 @@ _SCHEMA = {
                 "type": "object",
                 "properties": {
                     "folder": {"type": "string"},
+                    "name": {"type": "string", "description": "What a visitor would call this area, 2–5 words, "
+                             "in the website's language, e.g. \"Parlamentarische Vorstösse\""},
                     "reason": {
                         "type": "object",
                         "properties": {lang: {"type": "string"} for lang in LANGUAGES},
                         "required": list(LANGUAGES),
                     },
                 },
-                "required": ["folder", "reason"],
+                "required": ["folder", "name", "reason"],
             },
         },
     },
@@ -184,7 +191,8 @@ def recommend(job: dict) -> list[dict]:
             if path not in folders or path in seen or not isinstance(reason, dict):
                 continue
             seen.add(path)
-            out.append({"folder": path, "title": folders[path]["title"],
+            name = str(s.get("name") or "").strip()[:80] or None
+            out.append({"folder": path, "title": folders[path]["title"] or name,
                         "reason": {lang: str(reason.get(lang) or "")[:300] for lang in LANGUAGES}})
         error_logger.info("selection: job %s, %d savings suggestions", job["id"], len(out))
         return out[:MAX_SUGGESTIONS]
