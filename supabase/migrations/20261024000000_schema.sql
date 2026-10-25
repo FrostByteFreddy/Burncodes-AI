@@ -180,6 +180,8 @@ ALTER TABLE public.crawling_tasks ADD COLUMN IF NOT EXISTS parent_url TEXT;
 ALTER TABLE public.crawling_tasks ADD COLUMN IF NOT EXISTS enqueued_at TIMESTAMPTZ;
 -- Scan result per URL: new / changed / unchanged / error / excluded / refused
 ALTER TABLE public.crawling_tasks ADD COLUMN IF NOT EXISTS outcome TEXT;
+-- how often the page was retried because the website said "too many requests"
+ALTER TABLE public.crawling_tasks ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS public.chat_logs (
     id              BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,

@@ -14,6 +14,8 @@ Duplicate protection:
     rows actually inserted are queued — each URL is visited once per job
 """
 import re
+import os
+import time
 import asyncio
 import random
 from pathlib import Path
@@ -158,14 +160,88 @@ def _record_error(tenant_id: str, url: str, source_type: str, job_id: int, statu
 
 
 # ---------------------------------------------------------------------------
+# Politeness: one website, one request at a time, at a steady pace
+# ---------------------------------------------------------------------------
+# All scan workers share these slots through Redis, so 5 workers don't hit one
+# server five times at once. A website that answers "too many requests" gets a
+# slower pace for an hour and the page is retried instead of failing.
+
+HOST_INTERVAL_MS = int(os.getenv("CRAWL_HOST_INTERVAL_MS", "1000"))
+MAX_HOST_INTERVAL_MS = 10_000
+RATE_LIMIT_RETRIES = 4
+
+# reserve the next free slot for a host; returns how long to wait (ms)
+_RESERVE_SLOT = """
+local now = tonumber(ARGV[1])
+local interval = tonumber(redis.call('GET', KEYS[2]) or ARGV[2])
+local slot = math.max(now, tonumber(redis.call('GET', KEYS[1]) or 0))
+redis.call('SET', KEYS[1], slot + interval, 'PX', 600000)
+return slot - now
+"""
+
+_redis = None
+
+
+def _redis_client():
+    global _redis
+    if _redis is None:
+        import redis
+        _redis = redis.Redis.from_url(os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0"))
+    return _redis
+
+
+def _wait_for_host(url: str) -> None:
+    host = _site(urlparse(url).hostname)
+    try:
+        wait_ms = _redis_client().eval(_RESERVE_SLOT, 2, f"crawl:next:{host}", f"crawl:interval:{host}",
+                                       int(time.time() * 1000), HOST_INTERVAL_MS)
+    except Exception as e:
+        error_logger.debug("crawl throttle unavailable: %s", e)
+        return  # best effort: never block a crawl on Redis
+    if wait_ms and wait_ms > 0:
+        time.sleep(min(int(wait_ms), 120_000) / 1000)
+
+
+def _slow_down(url: str) -> None:
+    """The website pushed back: double the pause between requests to it (for an hour)."""
+    host = _site(urlparse(url).hostname)
+    key = f"crawl:interval:{host}"
+    try:
+        r = _redis_client()
+        current = int(r.get(key) or HOST_INTERVAL_MS)
+        r.set(key, min(MAX_HOST_INTERVAL_MS, current * 2), ex=3600)
+    except Exception:
+        pass
+
+
+class RateLimited(Exception):
+    """The website answered 429/503: try this page again later."""
+
+    def __init__(self, retry_after: int | None = None):
+        super().__init__(f"rate limited (retry after {retry_after})")
+        self.retry_after = retry_after
+
+
+def _retry_after(headers) -> int | None:
+    try:
+        value = int((headers or {}).get("retry-after", ""))
+        return value if 0 < value <= 3600 else None
+    except (TypeError, ValueError):
+        return None
+
+
+# ---------------------------------------------------------------------------
 # Fetching
 # ---------------------------------------------------------------------------
 
 def _fetch_playwright(url: str, parent_url: str | None) -> tuple[str | None, int, list[str]]:
     """Renders the page. Returns (html, status_code, internal links). Raises UnsafeURLError."""
     # Fast-fail before launching a browser; the guard also checks every redirect hop.
+    _wait_for_host(url)
     with safe_client(timeout=10.0, follow_redirects=True, headers=HEADERS) as client:
         check = client.get(url)
+    if check.status_code in (429, 503):
+        raise RateLimited(_retry_after(check.headers))
     if check.status_code == 404 or check.status_code >= 500:
         return None, check.status_code, []
 
@@ -186,6 +262,8 @@ def _fetch_playwright(url: str, parent_url: str | None) -> tuple[str | None, int
     except asyncio.TimeoutError:
         return None, 408, []
     if not result or not result.success:
+        if getattr(result, "status_code", None) in (429, 503):
+            raise RateLimited()
         return None, getattr(result, "status_code", None) or 500, []
     redirected = getattr(result, "redirected_url", None)
     if redirected and redirected != url and not is_public_url(redirected):
@@ -195,7 +273,10 @@ def _fetch_playwright(url: str, parent_url: str | None) -> tuple[str | None, int
 
 
 def _fetch_soup(url: str) -> tuple[str | None, int, list[str]]:
+    _wait_for_host(url)
     html, status = fetch_html(url)
+    if status in (429, 503):
+        raise RateLimited()
     if not html:
         return None, status, []
     return html, status, extract_internal_links(html, url)
@@ -209,8 +290,11 @@ def _fetch_file(url: str, previous: dict | None) -> tuple[bytes | None, int, dic
             headers["If-None-Match"] = previous["etag"]
         if previous.get("last_modified"):
             headers["If-Modified-Since"] = previous["last_modified"]
+    _wait_for_host(url)
     with safe_client(timeout=60.0, follow_redirects=True, headers=headers) as client:
         with client.stream("GET", url) as resp:
+            if resp.status_code in (429, 503):
+                raise RateLimited(_retry_after(resp.headers))
             meta = {"etag": resp.headers.get("etag"), "last_modified": resp.headers.get("last-modified")}
             if resp.status_code == 304 or resp.status_code >= 400:
                 return None, resp.status_code, meta
@@ -303,6 +387,22 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         status = CrawlingStatus.FAILED if outcome in ("error", "refused") else CrawlingStatus.COMPLETED
         _finish_task(task_id, status, outcome)
 
+    except RateLimited as e:
+        _slow_down(url)
+        attempts = (task.get("attempts") or 0) + 1
+        if attempts <= RATE_LIMIT_RETRIES:
+            delay = min(600, e.retry_after or 30 * 2 ** (attempts - 1))
+            supabase.table("crawling_tasks").update({
+                "status": CrawlingStatus.PENDING.value, "attempts": attempts, "enqueued_at": jobs.now_iso(),
+            }).eq("id", task_id).execute()
+            process_single_url_task.apply_async(
+                kwargs={"task_id": task_id, "tenant_id": tenant_id, "parent_url": parent_url},
+                countdown=delay, queue="heavy",
+            )
+            error_logger.info("Rate limited on %s, retry %d in %ds", url, attempts, delay)
+        else:
+            _record_error(tenant_id, url, SourceType.URL.value, job_id, 429)
+            _finish_task(task_id, CrawlingStatus.FAILED, "rate_limited")
     except UnsafeURLError as e:
         error_logger.warning("Refusing %s: %s", url, e)
         _record_error(tenant_id, url, SourceType.URL.value, job_id, 403)
@@ -312,6 +412,19 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
         _finish_task(task_id, CrawlingStatus.FAILED, "error")
     finally:
         jobs.complete_scan_if_done(job_id)
+
+
+def _seen_in_this_crawl(tenant_id: str, job_id: int, url: str, digest: str) -> bool:
+    """
+    Same content under another address in this crawl: www/non-www, page-ID
+    routes (/route/…/page/75), tracking parameters. Read once, not twice.
+    """
+    rows = (
+        supabase.table("tenant_sources").select("source_location")
+        .eq("tenant_id", tenant_id).eq("last_job_id", job_id).eq("pending_hash", digest)
+        .neq("source_location", url).limit(1).execute()
+    ).data
+    return bool(rows)
 
 
 def _scan_page(tenant_id: str, url: str, job: dict, depth: int, parent_url: str | None, info: dict | None = None) -> str:
@@ -335,8 +448,11 @@ def _scan_page(tenant_id: str, url: str, job: dict, depth: int, parent_url: str 
     if tokens < MIN_CONTENT_TOKENS:
         _record_error(tenant_id, url, SourceType.URL.value, job["id"], 204)
         return "empty"
+    digest = content_hash(markdown)
+    if _seen_in_this_crawl(tenant_id, job["id"], url, digest):
+        return "duplicate"
     _, outcome = jobs.record_scan(
-        tenant_id, url, SourceType.URL.value, job["id"], content_hash(markdown),
+        tenant_id, url, SourceType.URL.value, job["id"], digest,
         {"status_code": status_code, "content_markdown": markdown, "content_tokens": tokens, "title": title[:500]},
     )
     return outcome
@@ -359,8 +475,11 @@ def _scan_file(tenant_id: str, url: str, job_id: int, info: dict | None = None) 
         _record_error(tenant_id, url, SourceType.FILE_URL.value, job_id, status_code)
         return "error"
     pages = pdf_page_count(data) if ext == ".pdf" else 1
+    digest = content_hash(data)
+    if _seen_in_this_crawl(tenant_id, job_id, url, digest):
+        return "duplicate"
     _, outcome = jobs.record_scan(
-        tenant_id, url, SourceType.FILE_URL.value, job_id, content_hash(data),
+        tenant_id, url, SourceType.FILE_URL.value, job_id, digest,
         {"status_code": status_code, "file_pages": pages, "content_tokens": None,
          "etag": meta.get("etag"), "last_modified": meta.get("last_modified")},
     )

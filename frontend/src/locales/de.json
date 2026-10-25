@@ -615,7 +615,8 @@
       "SCANNED": "Bereit zum Lernen",
       "INDEXING": "Lernt",
       "COMPLETED": "Abgeschlossen",
-      "FAILED": "Gestoppt"
+      "FAILED": "Gestoppt",
+      "PREPARING": "Wird vorbereitet"
     },
     "job": {
       "reading": "Wird gelesen: {page}",
@@ -662,7 +663,10 @@
       "refused": "abgelehnt",
       "unsupported": "nicht unterstützt",
       "balanceLow": "Guthaben zu tief: CHF {balance} verfügbar, ca. CHF {cost} benötigt.",
-      "started": "Lernen gestartet — jede Quelle erscheint hier, sobald sie fertig ist."
+      "started": "Lernen gestartet — jede Quelle erscheint hier, sobald sie fertig ist.",
+      "preparing": "Scan abgeschlossen. Wir sortieren aus, was sich nicht zu lernen lohnt, und berechnen die Kosten – bei grossen Websites dauert das etwa eine Minute.",
+      "duplicate": "Duplikat",
+      "rate_limited": "Website ausgelastet"
     },
     "report": {
       "overview": "Übersicht",
@@ -700,7 +704,9 @@
       "learned": "{page} gelernt: {sections} Abschnitte · {facts} Fakten · {dates} Termine",
       "learn_failed": "{page} konnte nicht gelernt werden: {reason}",
       "job_done": "Fertig: {n} gelernt · CHF {cost}",
-      "empty": "Warte auf Aktivität…"
+      "empty": "Warte auf Aktivität…",
+      "triage_start": "Sortiert aus, was sich nicht zu lernen lohnt",
+      "triage": "{n} Quellen als nicht lernenswert aussortiert"
     },
     "deleteJob": {
       "title": "Durchlauf löschen",

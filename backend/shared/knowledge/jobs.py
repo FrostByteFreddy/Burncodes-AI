@@ -297,9 +297,10 @@ def complete_scan_if_done(job_id: int) -> None:
     job = moved[0]
     removed = _mark_missed_sources(job)
     from app.knowledge.triage import triage_job
+    # the sorting step takes a minute on big sites; the dashboard shows it as running
+    log_event(job_id, job["tenant_id"], "triage_start")
     sorted_out = triage_job(job)
-    if sorted_out:
-        log_event(job_id, job["tenant_id"], "triage", skipped=sorted_out)
+    log_event(job_id, job["tenant_id"], "triage", skipped=sorted_out)
     estimate = compute_estimate(job_id)
     estimate["removed"] = removed
     supabase.table("crawling_jobs").update({"estimate": estimate}).eq("id", job_id).execute()

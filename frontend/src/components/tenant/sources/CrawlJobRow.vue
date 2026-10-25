@@ -1,8 +1,8 @@
 <template>
   <li class="cjr" :class="`cjr--${job.status.toLowerCase()}`">
     <span class="cjr__status" :class="`cjr__status--${job.status.toLowerCase()}`">
-      <font-awesome-icon v-if="job.status === 'IN_PROGRESS' || job.status === 'INDEXING'" :icon="['fas', 'spinner']" class="animate-spin" />
-      {{ $t(`knowledge.status.${job.status}`) }}
+      <font-awesome-icon v-if="job.status === 'IN_PROGRESS' || job.status === 'INDEXING' || isPreparing(job)" :icon="['fas', 'spinner']" class="animate-spin" />
+      {{ statusLabel(job) }}
     </span>
 
     <div class="cjr__main">
@@ -25,6 +25,10 @@
           <span v-if="currentActivity(log)" class="cjr__page">{{ currentActivity(log) }}</span>
         </p>
       </div>
+      <p v-else-if="isPreparing(job)" class="cjr__reading">
+        <span class="cjr__pulse" aria-hidden="true"></span>
+        <span class="cjr__page">{{ $t('knowledge.estimate.preparing') }}</span>
+      </p>
       <p v-else class="cjr__summary">
         {{ jobSummary(job) }}
         <span v-if="reviewCount" class="cjr__review">{{ $t('knowledge.job.toReview', { n: reviewCount }) }}</span>
@@ -44,7 +48,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useCrawlActions, useCrawlText } from '@/composables/useCrawl';
+import { isPreparing, useCrawlActions, useCrawlText } from '@/composables/useCrawl';
 
 const props = defineProps({
   job:      { type: Object, required: true },
@@ -53,7 +57,7 @@ const props = defineProps({
 });
 const emit = defineEmits(['changed']);
 const { t } = useI18n();
-const { fmtChf, fmtDateTime, displayUrl, currentActivity, latestPage, jobSummary } = useCrawlText();
+const { statusLabel, fmtChf, fmtDateTime, displayUrl, currentActivity, latestPage, jobSummary } = useCrawlText();
 const { confirm } = useCrawlActions(() => props.tenantId);
 
 const busy = ref(false);

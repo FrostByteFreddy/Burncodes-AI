@@ -25,8 +25,8 @@
       <div class="page-head">
         <div class="crawl-head">
           <span class="crawl-status" :class="`crawl-status--${job.status.toLowerCase()}`">
-            <font-awesome-icon v-if="job.status === 'IN_PROGRESS' || job.status === 'INDEXING'" :icon="['fas', 'spinner']" class="animate-spin" />
-            {{ $t(`knowledge.status.${job.status}`) }}
+            <font-awesome-icon v-if="job.status === 'IN_PROGRESS' || job.status === 'INDEXING' || isPreparing(job)" :icon="['fas', 'spinner']" class="animate-spin" />
+            {{ statusLabel(job) }}
           </span>
           <h1 class="page-title crawl-title">{{ displayUrl(job.start_url) }}</h1>
           <p class="page-lede">
@@ -48,7 +48,11 @@
       </div>
 
       <!-- Scan finished: what learning will do and cost -->
-      <section v-if="job.status === 'SCANNED'" class="panel crawl-estimate">
+      <section v-if="isPreparing(job)" class="panel crawl-reading">
+        <span class="crawl-pulse" aria-hidden="true"></span>
+        <p>{{ $t('knowledge.estimate.preparing') }}</p>
+      </section>
+      <section v-else-if="job.status === 'SCANNED'" class="panel crawl-estimate">
         <h2 class="panel-title">{{ $t('knowledge.estimate.title') }}</h2>
         <ul class="crawl-outcomes">
           <li v-for="o in outcomes" :key="o.key"><strong>{{ o.n }}</strong> {{ $t(`knowledge.estimate.${o.key}`) }}</li>
@@ -138,7 +142,7 @@ import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';
 import { supabase } from '@/supabase';
 import { escapeHtml } from '@/utils/escapeHtml';
-import { ACTIVE_STATUSES, useCrawlActions, useCrawlText } from '@/composables/useCrawl';
+import { ACTIVE_STATUSES, isPreparing, useCrawlActions, useCrawlText } from '@/composables/useCrawl';
 import ActivityLog from './sources/ActivityLog.vue';
 import CrawlReport from './sources/CrawlReport.vue';
 import ConfirmationModal from '../ConfirmationModal.vue';
@@ -149,7 +153,7 @@ const props = defineProps({
 });
 const router = useRouter();
 const { t } = useI18n();
-const { fmtChf, fmtDateTime, displayUrl, latestPage, pageLabel } = useCrawlText();
+const { statusLabel, fmtChf, fmtDateTime, displayUrl, latestPage, pageLabel } = useCrawlText();
 const actions = useCrawlActions(() => props.tenantId);
 
 const job = ref(null);

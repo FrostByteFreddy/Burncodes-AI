@@ -615,7 +615,8 @@
       "SCANNED": "Ready to learn",
       "INDEXING": "Learning",
       "COMPLETED": "Completed",
-      "FAILED": "Stopped"
+      "FAILED": "Stopped",
+      "PREPARING": "Preparing"
     },
     "job": {
       "reading": "Reading: {page}",
@@ -662,7 +663,10 @@
       "refused": "refused",
       "unsupported": "unsupported",
       "balanceLow": "Balance too low: CHF {balance} available, about CHF {cost} needed.",
-      "started": "Learning started — you’ll see each source here as it’s done."
+      "started": "Learning started — you’ll see each source here as it’s done.",
+      "preparing": "Scan complete. Sorting out what isn't worth learning and calculating the cost — this takes about a minute on large websites.",
+      "duplicate": "duplicate",
+      "rate_limited": "website busy"
     },
     "report": {
       "overview": "Overview",
@@ -700,7 +704,9 @@
       "learned": "Learned {page}: {sections} sections · {facts} facts · {dates} dates",
       "learn_failed": "Could not learn {page}: {reason}",
       "job_done": "Done: {n} learned · CHF {cost}",
-      "empty": "Waiting for activity…"
+      "empty": "Waiting for activity…",
+      "triage_start": "Sorting out what isn't worth learning",
+      "triage": "{n} sources set aside as not worth learning"
     },
     "deleteJob": {
       "title": "Delete crawl",

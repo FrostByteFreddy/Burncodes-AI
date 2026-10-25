@@ -615,7 +615,8 @@
       "SCANNED": "Prêt à apprendre",
       "INDEXING": "Apprentissage",
       "COMPLETED": "Terminé",
-      "FAILED": "Arrêté"
+      "FAILED": "Arrêté",
+      "PREPARING": "En préparation"
     },
     "job": {
       "reading": "Lecture : {page}",
@@ -662,7 +663,10 @@
       "refused": "refusées",
       "unsupported": "non prises en charge",
       "balanceLow": "Solde insuffisant : CHF {balance} disponible, env. CHF {cost} nécessaire.",
-      "started": "Apprentissage lancé — chaque source apparaît ici une fois terminée."
+      "started": "Apprentissage lancé — chaque source apparaît ici une fois terminée.",
+      "preparing": "Analyse terminée. Nous écartons ce qui ne vaut pas la peine d'être appris et calculons le coût – cela prend environ une minute pour les grands sites.",
+      "duplicate": "doublon",
+      "rate_limited": "site surchargé"
     },
     "report": {
       "overview": "Aperçu",
@@ -700,7 +704,9 @@
       "learned": "{page} appris : {sections} sections · {facts} faits · {dates} dates",
       "learn_failed": "Impossible d'apprendre {page} : {reason}",
       "job_done": "Terminé : {n} apprises · CHF {cost}",
-      "empty": "En attente d'activité…"
+      "empty": "En attente d'activité…",
+      "triage_start": "Tri de ce qui ne vaut pas la peine d'être appris",
+      "triage": "{n} sources écartées comme inutiles"
     },
     "deleteJob": {
       "title": "Supprimer le crawl",
