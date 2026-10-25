@@ -447,6 +447,33 @@ class TestSourceLinks:
         assert chat._ensure_source(text, [("Andere", "https://www.zofingen.ch/a")], {url, "https://www.zofingen.ch/a"}) == text
 
 
+    def test_marker_is_filled_with_the_used_documents_home_page_last_resort(self):
+        chat = TestSystemInstruction._chat()
+        home, concert, ziegler = ("https://www.brittnau.ch", "https://www.brittnau.ch/_rte/anlass/7727767",
+                                  "https://www.brittnau.ch/_rte/anlass/7257347")
+        known = {home, concert, ziegler}
+        text = "Konzert am 6. November.\n\nQuelle: [[sources]]\n[[calendar:konzert]]"
+        out = chat._ensure_source(text, [("Startseite", home), ("Konzert", concert), ("Konzert", concert),
+                                         ("Zieglerrunde", ziegler)], known)
+        assert out == f"Konzert am 6. November.\n\nQuelle: [Konzert]({concert}), [Zieglerrunde]({ziegler})\n[[calendar:konzert]]"
+        # only the home page was used: it is linked after all
+        assert chat._ensure_source("x\nQuelle: [[sources]]", [("Startseite", home)], known) == f"x\nQuelle: [Startseite]({home})"
+        # nothing known: the line disappears
+        assert chat._ensure_source("x\n\nSource: [[sources]]", [], known) == "x"
+
+    def test_used_documents_come_from_metadata_in_the_order_of_the_answer(self):
+        from types import SimpleNamespace as NS
+        chat = TestSystemInstruction._chat()
+        def chunk(title, url):
+            meta = [NS(key="source_id", string_value="1"), NS(key="source_url", string_value=url)]
+            return NS(retrieved_context=NS(title=f"{title} — Abschnitt", text="no Quelle line here", custom_metadata=meta))
+        chunks = [chunk("Startseite", "https://x.ch"), chunk("Konzert", "https://x.ch/a/1"), chunk("Ziegler", "https://x.ch/a/2")]
+        supports = [NS(segment=NS(start_index=80), grounding_chunk_indices=[2]),
+                    NS(segment=NS(start_index=10), grounding_chunk_indices=[1])]
+        response = NS(candidates=[NS(grounding_metadata=NS(grounding_chunks=chunks, grounding_supports=supports))])
+        assert chat._retrieved_sources(response) == [("Konzert", "https://x.ch/a/1"), ("Ziegler", "https://x.ch/a/2")]
+
+
 class TestFetchAll:
     def test_pages_past_the_1000_row_cap(self):
         from app.database.supabase_client import fetch_all
@@ -551,3 +578,22 @@ class TestWarnings:
         assert jobs.issues_of(["Tippfehler in Zeile 5", {"kind": "expired", "subject": "x"}, None]) == \
             [{"kind": "expired", "subject": "x"}]
         assert jobs.issues_of(None) == []
+
+
+class TestLinkExtraction:
+    def test_links_inside_escaped_json_widgets_are_found(self):
+        """i-web "Wie, wann, wo": the table's links only exist as escaped HTML in a data attribute."""
+        from app.data_processing.soup_extractor import extract_internal_links
+        html = (
+            '<html><body><a href="/abfallarten">Abfallarten</a>'
+            '<div data-entities="[{&quot;name&quot;:&quot;&lt;a href=\\&quot;\\/_rte\\/regelmaessigeranlass\\/4885'
+            '\\&quot;&gt;Abfallkalender&lt;\\/a&gt;&quot;}]"></div>'
+            '<script>window.x = {"html": "<a href=\\"\\/_rte\\/anlass\\/7\\">Fest</a>"};</script>'
+            '<div data-x="&lt;a href=&quot;https://other.example/x&quot;&gt;"></div>'
+            '</body></html>'
+        )
+        links = extract_internal_links(html, "https://www.brittnau.ch/abfall")
+        assert "https://www.brittnau.ch/abfallarten" in links
+        assert "https://www.brittnau.ch/_rte/regelmaessigeranlass/4885" in links
+        assert "https://www.brittnau.ch/_rte/anlass/7" in links
+        assert not any("other.example" in l for l in links)

@@ -14,6 +14,7 @@ Key changes:
 import os
 import re
 import unicodedata
+from urllib.parse import urlparse
 from datetime import date, timedelta
 
 from celery import shared_task
@@ -192,11 +193,11 @@ def _build_system_instruction(tenant_config: dict, fine_tune_rules: list) -> str
 
 
 _SOURCES_RULE = (
-    "Sources: whenever your answer uses information from a document (dates, phone numbers, opening hours, "
-    "fees, anything), end with one short line naming it as a "
-    "markdown link, e.g. \"Quelle: [Abfallkalender 2026](https://…)\" (in the reply language). Take the address "
-    "only from the document's \"Quelle:\" line or from a {source: …} given with the dates; never make one up. "
-    "Link each document at most once, at most three documents."
+    "Sources: when your answer uses information from the documents or the dates above, end with exactly one "
+    "line: the word for \"Source\" in the reply language, a colon and the marker [[sources]], e.g. "
+    "\"Quelle: [[sources]]\". The links are filled in automatically from the documents you used; never write "
+    "source links yourself. A link inside the answer is fine only for a form or page the visitor should open; "
+    "take its address from that document's \"Quelle:\" line."
 )
 
 _MD_LINK = re.compile(r"\[([^\]]+)\]\((https?://[^)\s]+)\)")
@@ -216,31 +217,66 @@ def _keep_known_links(answer: str, known: set[str]) -> str:
 _QUELLE = re.compile(r"Quelle:\s*(https?://\S+)")
 
 
+def _chunk_source(chunk) -> tuple[str, str] | None:
+    """(title, url) of one File Search chunk: the url from the document's metadata, else its "Quelle:" line."""
+    ctx = getattr(chunk, "retrieved_context", None)
+    if not ctx:
+        return None
+    url = next((m.string_value for m in getattr(ctx, "custom_metadata", None) or []
+                if getattr(m, "key", None) == "source_url" and m.string_value), None)
+    if not url:
+        m = _QUELLE.search(getattr(ctx, "text", None) or "")
+        url = m.group(1) if m else None
+    if not url:
+        return None
+    title = (getattr(ctx, "title", None) or url).split(" — ")[0].strip()
+    return title, url
+
+
 def _retrieved_sources(response) -> list[tuple[str, str]]:
-    """(title, url) of the documents File Search handed the model, from their "Quelle:" line."""
-    found = []
+    """
+    (title, url) of the documents the answer actually rests on, in the order
+    the answer uses them (grounding supports). Without supports: everything
+    File Search handed the model.
+    """
     try:
-        for chunk in response.candidates[0].grounding_metadata.grounding_chunks or []:
-            ctx = getattr(chunk, "retrieved_context", None)
-            m = _QUELLE.search(getattr(ctx, "text", None) or "") if ctx else None
-            if m:
-                title = (getattr(ctx, "title", None) or m.group(1)).split(" — ")[0].strip()
-                found.append((title, m.group(1)))
+        meta = response.candidates[0].grounding_metadata
+        chunks = meta.grounding_chunks or []
+        supports = sorted(meta.grounding_supports or [],
+                          key=lambda s: getattr(getattr(s, "segment", None), "start_index", 0) or 0)
+        order = [i for s in supports for i in (s.grounding_chunk_indices or [])] or list(range(len(chunks)))
+        found = [_chunk_source(chunks[i]) for i in order if 0 <= i < len(chunks)]
+        return [f for f in found if f]
     except (AttributeError, IndexError, TypeError):
-        pass
-    return found
+        return []
 
 
-def _ensure_source(answer: str, candidates: list[tuple[str, str]], known: set[str]) -> str:
-    """Every answer drawn from documents ends with a link to one, even if the model forgot."""
-    if any(m.group(2) in known for m in _MD_LINK.finditer(answer)):
-        return answer
-    seen, links = set(), []
+def _source_links(candidates: list[tuple[str, str]], known: set[str], limit: int = 3) -> list[str]:
+    """Markdown links, each document once; the home page only when nothing more specific was used."""
+    seen, picked = set(), []
     for title, url in candidates:
         if url in known and url not in seen:
             seen.add(url)
-            links.append(f"[{title.replace(']', ')')}]({url})")
-    if not links:
+            picked.append((title, url))
+    specific = [p for p in picked if urlparse(p[1]).path not in ("", "/")]
+    return [f"[{t.replace(']', ')')}]({u})" for t, u in (specific or picked)[:limit]]
+
+
+_SOURCES_MARKER = "[[sources]]"
+
+
+def _ensure_source(answer: str, candidates: list[tuple[str, str]], known: set[str]) -> str:
+    """
+    Fills the model's "Quelle: [[sources]]" line with the documents the answer
+    used. If the model forgot the line, the links are appended anyway.
+    """
+    links = _source_links(candidates, known)
+    if _SOURCES_MARKER in answer:
+        if links:
+            return answer.replace(_SOURCES_MARKER, ", ".join(links), 1).replace(_SOURCES_MARKER, "")
+        # nothing to link: drop the whole "Quelle: [[sources]]" line
+        return re.sub(r"[^\n]*\[\[sources\]\][^\n]*\n?", "", answer).rstrip()
+    if any(m.group(2) in known for m in _MD_LINK.finditer(answer)) or not links:
         return answer
     # before any calendar markers, which have to stay last
     body, markers = re.match(r"(.*?)((?:\s*\[\[calendar:[a-z0-9-]+\]\])*)\s*$", answer, re.S).groups()
@@ -383,7 +419,8 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
             known = _known_source_urls(tenant_id)
             ai_message = _keep_known_links(ai_message, known)
             mentioned = [src for name, src in date_sources.items() if name.lower() in ai_message.lower()]
-            ai_message = _ensure_source(ai_message, _retrieved_sources(response) + mentioned, known)
+            # verified dates name their own document; they come first
+            ai_message = _ensure_source(ai_message, mentioned + _retrieved_sources(response), known)
         except Exception as e:
             error_logger.warning("chat_task: source links skipped for tenant %s: %s", tenant_id, e)
 

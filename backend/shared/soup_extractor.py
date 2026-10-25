@@ -11,6 +11,7 @@ After extraction, a heuristic filter removes low-quality chunks before
 they reach the vector store.
 """
 
+import html as html_lib
 import re
 import trafilatura
 from bs4 import BeautifulSoup
@@ -153,6 +154,15 @@ def filter_chunks(chunks: list[str]) -> list[str]:
 # Internal link discovery (for crawl graph, soup mode)
 # ---------------------------------------------------------------------------
 
+_EMBEDDED_HREF = re.compile(r"""href\s*=\s*["']([^"'\s<>]+)["']""")
+
+
+def _embedded_hrefs(text: str) -> list[str]:
+    """href="…" inside text that is itself HTML, possibly JSON-escaped (\\" and \\/)."""
+    text = html_lib.unescape(text).replace('\\"', '"').replace("\\/", "/")
+    return [m.group(1) for m in _EMBEDDED_HREF.finditer(text) if not m.group(1).startswith(("javascript:", "mailto:", "tel:"))]
+
+
 def extract_internal_links(html: str, base_url: str) -> list[str]:
     """
     Extracts all internal <a href> links from raw HTML.
@@ -162,8 +172,19 @@ def extract_internal_links(html: str, base_url: str) -> list[str]:
         base_domain = urlparse(base_url).netloc
         soup = BeautifulSoup(html, "lxml")
         links = []
-        for a in soup.find_all("a", href=True):
-            href = urljoin(base_url, a["href"])
+        hrefs = [a["href"] for a in soup.find_all("a", href=True)]
+        # Widgets that render their list with JavaScript (e.g. the "Wie, wann, wo"
+        # table on many municipal sites) carry their links as escaped HTML inside
+        # an attribute or a script. Without a browser these are the only way in.
+        for tag in soup.find_all(True):
+            for value in tag.attrs.values():
+                if isinstance(value, str) and "href" in value:
+                    hrefs += _embedded_hrefs(value)
+        for script in soup.find_all("script"):
+            if script.string and "href" in script.string:
+                hrefs += _embedded_hrefs(script.string)
+        for raw in hrefs:
+            href = urljoin(base_url, raw)
             parsed = urlparse(href)
             # Only same-domain, http/https, no fragments
             if parsed.netloc == base_domain and parsed.scheme in ("http", "https"):
