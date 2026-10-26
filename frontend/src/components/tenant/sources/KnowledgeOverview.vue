@@ -59,31 +59,6 @@
       </div>
     </section>
 
-    <!-- What needs a person -->
-    <section class="ko-needs panel" :aria-label="$t('knowledge.overview.needsTitle')">
-      <div class="ko-needs__head">
-        <h2 class="panel-title">
-          {{ $t('knowledge.overview.needsTitle') }}
-          <span v-if="needsCount" class="ko-needs__count">{{ needsCount }}</span>
-        </h2>
-      </div>
-
-      <p v-if="!needsCount" class="ko-needs__none">
-        <font-awesome-icon :icon="['fas', 'check']" class="ko-needs__ok" />
-        {{ $t('knowledge.overview.needsNone') }}
-      </p>
-
-      <ul v-else-if="data.ended?.length" class="ko-needs__list">
-        <li v-for="s in data.ended" :key="`ended-${s.series}-${s.zone}`" class="ko-need">
-          <font-awesome-icon :icon="['fas', 'calendar-xmark']" class="ko-need__icon" />
-          <div>
-            <p class="ko-need__text">{{ $t('knowledge.overview.ended', { series: s.zone ? `${s.series} (${s.zone})` : s.series, date: fmtDay(s.last) }) }}</p>
-            <p class="meta">{{ $t('knowledge.overview.endedHint') }}</p>
-          </div>
-        </li>
-      </ul>
-      <IssueList v-if="issues.length" :issues="issues" class="ko-needs__issues" />
-    </section>
   </div>
 </template>
 
@@ -93,7 +68,6 @@ import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';
 import { useTenantsStore } from '@/stores/tenants';
 import { useToast } from '@/composables/useToast';
-import IssueList from './IssueList.vue';
 
 const props = defineProps({
   tenantId: { type: String, required: true },
@@ -140,9 +114,6 @@ const days = computed(() => {
   });
 });
 
-// only structured issues; free-text warnings from before 2026-10-25 are filtered out server-side
-const issues = computed(() => (data.value?.issues || []).filter((i) => i.kind));
-const needsCount = computed(() => (data.value?.ended?.length || 0) + issues.value.length);
 
 // ── Calendar feeds ──────────────────────────────────────────────────
 const tenantsStore = useTenantsStore();
@@ -258,23 +229,6 @@ defineExpose({ reload: load });
 .ko-switch:disabled { opacity: 0.5; }
 
 /* ── Needs you ───────────────────────────────────────────────────── */
-.ko-needs__head { margin-bottom: 14px; }
-.ko-needs__head .panel-title { display: flex; align-items: center; gap: 10px; }
-.ko-needs__count {
-  font-size: 13px; font-weight: 800; min-width: 24px; padding: 1px 8px; text-align: center;
-  border-radius: var(--radius-pill); background: var(--status-warning); color: var(--surface-0);
-}
-.ko-needs__none { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--surface-text); }
-.ko-needs__ok { color: var(--status-success); }
-.ko-needs__issues { margin-top: 18px; }
-.ko-needs__list { list-style: none; padding: 0; display: flex; flex-direction: column; }
-.ko-need {
-  display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 12px;
-  padding: 14px 0; border-top: 1px solid var(--surface-3);
-}
-.ko-need:first-child { border-top: none; padding-top: 0; }
-.ko-need__icon { margin-top: 3px; color: var(--status-warning); }
-.ko-need__text { font-size: 15px; color: var(--surface-heading); font-weight: 600; max-width: var(--measure); }
 
 /* Phones: one day per row, empty days collapse to a single line */
 @media (max-width: 760px) {

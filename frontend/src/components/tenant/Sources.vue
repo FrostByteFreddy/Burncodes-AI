@@ -57,19 +57,6 @@
       <p v-else class="kempty">{{ $t('knowledge.crawls.empty') }}</p>
     </section>
 
-    <!-- ── Website content ──────────────────────────────────── -->
-    <section v-if="webSources.length" class="knowledge-panel">
-      <div class="knowledge-panel__header knowledge-panel__header--solo">
-        <div class="knowledge-panel__header-left">
-          <div>
-            <h2 class="knowledge-panel__title">{{ $t('knowledge.content.title') }}</h2>
-            <p class="knowledge-panel__sub">{{ $t('knowledge.content.sub') }}</p>
-          </div>
-        </div>
-      </div>
-      <PageTree :sources="webSources" />
-    </section>
-
     <!-- ── Uploaded files ───────────────────────────────────── -->
     <section class="knowledge-panel">
       <div class="knowledge-panel__header">
@@ -150,7 +137,6 @@ import { supabase } from '@/supabase';
 import { escapeHtml } from '@/utils/escapeHtml';
 import AddKnowledgeWizard from './sources/AddKnowledgeWizard.vue';
 import CrawlJobRow from './sources/CrawlJobRow.vue';
-import PageTree from './sources/PageTree.vue';
 import KnowledgeOverview from './sources/KnowledgeOverview.vue';
 import ConfirmationModal from '../ConfirmationModal.vue';
 import RulesTab from './sources/RulesTab.vue';
@@ -174,7 +160,6 @@ const rulesTabRef           = ref(null);
 
 const tenantId = computed(() => tenantsStore.currentTenant?.id || '');
 const allSources = computed(() => tenantsStore.currentTenant?.tenant_sources || []);
-const webSources = computed(() => allSources.value.filter((s) => s.source_type === 'URL' || s.source_type === 'FILE_URL'));
 const fileSources = computed(() => allSources.value.filter((s) => s.source_type === 'FILE'));
 const shownJobs = computed(() => (showAllJobs.value ? crawlingJobs.value : crawlingJobs.value.slice(0, JOBS_SHOWN)));
 const hasActiveJob = computed(() => crawlingJobs.value.some((j) => ACTIVE.includes(j.status)));

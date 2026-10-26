@@ -561,8 +561,6 @@
       "noneUpcoming": "Aucune date dans les deux prochaines semaines. Les calendriers de vos documents apparaissent ici.",
       "noneUpcomingEnded": "Aucune date à venir — les calendriers connus de votre chatbot sont terminés. Voir ci-dessous.",
       "moved": "déplacé",
-      "needsTitle": "À traiter",
-      "needsNone": "Rien ne demande votre attention pour le moment.",
       "ended": "{series} : les dates publiées se sont terminées le {date}.",
       "endedHint": "Votre chatbot ne peut pas dire quand aura lieu le prochain. Publiez le nouveau calendrier et relancez le crawl.",
       "summary": "{sources} sources, {chunks} sections indexées. Dernier crawl le {date}.",
@@ -584,7 +582,7 @@
     },
     "content": {
       "title": "Contenu des sites",
-      "sub": "Tout ce qui a été appris de vos sites, y compris les fichiers trouvés",
+      "sub": "Chaque page et fichier lus par cette analyse, et ce qu'il en est advenu. Pour la plus récente : le site tel que votre chatbot le connaît.",
       "filter": "Filtrer les pages…",
       "empty": "Rien n'a encore été crawlé.",
       "noMatch": "Aucune page ne correspond à «{q}»."
@@ -788,7 +786,7 @@
     "subscription": "Votre solde prépayé paie les réponses du chat et l’apprentissage de nouveaux contenus.",
     "profile": "Votre nom, votre mot de passe et votre compte.",
     "knowledgeTitle": "Connaissances",
-    "knowledge": "Ce que votre chatbot sait, les dates auxquelles il peut répondre et là où il a besoin de vous.",
+    "knowledge": "Ce que votre chatbot sait, les dates qu'il connaît et les sites qu'il lit.",
     "configure": "Comment votre chatbot parle et à quoi il ressemble sur votre site.",
     "installTitle": "Intégrer",
     "install": "Ajoutez le chatbot à votre site avec une seule ligne de code."

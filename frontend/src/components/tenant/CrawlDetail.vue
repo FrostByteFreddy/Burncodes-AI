@@ -94,6 +94,13 @@
         <CrawlReport :report="job.report" />
       </section>
 
+      <!-- What this crawl brought in, page by page (the latest crawl: the website as the bot knows it) -->
+      <section v-if="(job.status === 'COMPLETED' || job.status === 'FAILED') && crawlSources.length" class="panel">
+        <h2 class="panel-title">{{ $t('knowledge.content.title') }}</h2>
+        <p class="panel-sub">{{ $t('knowledge.content.sub') }}</p>
+        <PageTree :sources="crawlSources" class="crawl-tree" />
+      </section>
+
       <!-- Activity: live while running, history afterwards -->
       <section class="panel">
         <h2 class="panel-title crawl-section-title">{{ $t('knowledge.job.activity') }}</h2>
@@ -123,6 +130,8 @@ import { ACTIVE_STATUSES, isPreparing, learnProgress, useCrawlActions, useCrawlT
 import ActivityLog from './sources/ActivityLog.vue';
 import CrawlReport from './sources/CrawlReport.vue';
 import CrawlSelection from './sources/CrawlSelection.vue';
+import PageTree from './sources/PageTree.vue';
+import { useTenantsStore } from '@/stores/tenants';
 import ConfirmationModal from '../ConfirmationModal.vue';
 
 const props = defineProps({
@@ -140,6 +149,10 @@ const loading = ref(false);
 const busy = ref(false);
 const askDelete = ref(false);
 
+// pages and files of this crawl, from the chatbot's sources (reloaded when the crawl ends)
+const tenantsStore = useTenantsStore();
+const crawlSources = computed(() => (tenantsStore.currentTenant?.tenant_sources || []).filter(
+  (s) => s.last_job_id === Number(props.jobId) && (s.source_type === 'URL' || s.source_type === 'FILE_URL')));
 const isActive = computed(() => job.value && ACTIVE_STATUSES.includes(job.value.status));
 const estimate = computed(() => job.value?.estimate || {});
 
@@ -187,6 +200,9 @@ watch(() => [props.tenantId, props.jobId], async () => {
   subscribe();
 }, { immediate: true });
 
+watch(() => job.value?.status, (status) => {
+  if (status === 'COMPLETED' || status === 'FAILED') tenantsStore.refetch(props.tenantId);
+});
 watch(isActive, (active) => {
   clearInterval(poll);
   if (active) poll = setInterval(() => { fetchJob(); fetchLog(); }, 5000);
@@ -251,6 +267,7 @@ const onDelete = async () => {
 .crawl-outcomes strong { color: var(--surface-heading); font-size: var(--text-lg); margin-right: 2px; }
 .crawl-estimate__body { font-size: 15px; color: var(--surface-text); max-width: var(--measure); }
 
+.crawl-tree { margin-top: 14px; }
 .crawl-progress { display: flex; flex-direction: column; gap: 8px; }
 .crawl-reading { display: flex; align-items: center; gap: 12px; font-size: 15px; color: var(--surface-heading); }
 .crawl-reading p { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

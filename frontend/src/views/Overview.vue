@@ -102,10 +102,6 @@
             <li><strong>{{ fmtInt(data.knowledge.sections) }}</strong> {{ $t('overview.knowledge.sections') }}</li>
             <li><strong>{{ fmtInt(data.knowledge.upcoming_dates) }}</strong> {{ $t('overview.knowledge.upcoming') }}</li>
           </ul>
-          <p v-if="data.knowledge.needs_attention" class="ov-attention">
-            <font-awesome-icon :icon="['fas', 'triangle-exclamation']" />
-            <router-link :to="{ name: 'TenantSources', params: { tenantId } }">{{ $t('overview.knowledge.attention', { n: data.knowledge.needs_attention }) }}</router-link>
-          </p>
 
           <div class="ov-crawl">
             <h3>{{ $t('overview.knowledge.lastCrawl') }}</h3>

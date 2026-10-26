@@ -561,8 +561,6 @@
       "noneUpcoming": "No dates in the next two weeks. When your documents contain calendars, they show up here.",
       "noneUpcomingEnded": "No upcoming dates — the calendars your chatbot knows have ended. See below.",
       "moved": "moved",
-      "needsTitle": "Needs you",
-      "needsNone": "Nothing needs your attention right now.",
       "ended": "{series}: the published dates ended on {date}.",
       "endedHint": "Your chatbot can’t say when the next one is. Publish the new calendar and re-crawl.",
       "summary": "{sources} sources, {chunks} indexed sections. Last crawl {date}.",
@@ -584,7 +582,7 @@
     },
     "content": {
       "title": "Website content",
-      "sub": "Everything learned from your websites, including files found on them",
+      "sub": "Every page and file this crawl read, and what became of it. On the latest crawl: the website as your chatbot knows it.",
       "filter": "Filter pages…",
       "empty": "Nothing crawled yet.",
       "noMatch": "No page matches “{q}”."
@@ -788,7 +786,7 @@
     "subscription": "Your prepaid balance pays for chat answers and for learning new content.",
     "profile": "Your name, password and account.",
     "knowledgeTitle": "Knowledge",
-    "knowledge": "What your chatbot knows, which dates it can answer, and where it needs you.",
+    "knowledge": "What your chatbot knows, which dates it knows and which websites it reads.",
     "configure": "How your chatbot talks and how it looks on your website.",
     "installTitle": "Install",
     "install": "Add the chatbot to your website with one line of code."

@@ -561,8 +561,6 @@
       "noneUpcoming": "Keine Termine in den nächsten zwei Wochen. Enthalten Ihre Dokumente Kalender, erscheinen sie hier.",
       "noneUpcomingEnded": "Keine kommenden Termine — die Kalender, die Ihr Chatbot kennt, sind abgelaufen. Siehe unten.",
       "moved": "verschoben",
-      "needsTitle": "Handlungsbedarf",
-      "needsNone": "Zurzeit gibt es nichts zu tun.",
       "ended": "{series}: Die veröffentlichten Termine endeten am {date}.",
       "endedHint": "Ihr Chatbot kann deshalb keine nächsten Termine nennen. Veröffentlichen Sie den neuen Kalender und lesen Sie die Website erneut ein.",
       "summary": "{sources} Quellen, {chunks} gelernte Abschnitte. Zuletzt eingelesen am {date}.",
@@ -584,7 +582,7 @@
     },
     "content": {
       "title": "Website-Inhalte",
-      "sub": "Alles, was von Ihren Websites gelernt wurde — inklusive dort gefundener Dateien",
+      "sub": "Jede Seite und Datei, die dieser Durchlauf gelesen hat, und was daraus wurde. Beim neusten Durchlauf: die Website, wie Ihr Chatbot sie kennt.",
       "filter": "Seiten filtern…",
       "empty": "Noch nichts eingelesen.",
       "noMatch": "Keine Seite passt zu «{q}»."
@@ -788,7 +786,7 @@
     "subscription": "Ihr Guthaben bezahlt Chat-Antworten und das Lernen neuer Inhalte.",
     "profile": "Ihr Name, Ihr Passwort und Ihr Konto.",
     "knowledgeTitle": "Wissen",
-    "knowledge": "Was Ihr Chatbot weiss, welche Termine er kennt und wo Handlungsbedarf besteht.",
+    "knowledge": "Was Ihr Chatbot weiss, welche Termine er kennt und welche Websites er liest.",
     "configure": "Wie Ihr Chatbot antwortet und wie er auf Ihrer Website aussieht.",
     "installTitle": "Einbinden",
     "install": "Binden Sie den Chatbot mit einer Zeile Code in Ihre Website ein."
