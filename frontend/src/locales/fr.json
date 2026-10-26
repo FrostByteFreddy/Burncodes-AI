@@ -535,13 +535,16 @@
     },
     "calendars": {
       "title": "Dates dans son propre calendrier",
-      "sub": "Les habitantes et habitants peuvent s'abonner à ces dates dans leur application de calendrier (p. ex. Apple, Google ou Outlook). Le chatbot le propose lors de questions sur des dates. Les nouvelles dates et les changements apparaissent automatiquement.",
+      "sub": "Les habitants peuvent s'abonner aux dates dans leur agenda. Le chatbot le propose quand on lui demande des dates.",
       "protected": "Les calendriers sont en pause tant que le chatbot demande un mot de passe.",
-      "dates": "{n} dates",
+      "dates": "{n} date | {n} dates",
       "copy": "Copier le lien",
       "copied": "Copié",
       "on": "Calendriers activés",
-      "off": "Calendriers désactivés. Les calendriers abonnés se vident à la prochaine mise à jour."
+      "off": "Calendriers désactivés. Les calendriers abonnés se vident à la prochaine mise à jour.",
+      "count": "{n} agenda | {n} agendas",
+      "show": "Afficher",
+      "hide": "Masquer"
     },
     "recrawl": {
       "onHint": "Vérifie les changements tous les {n} jours.",

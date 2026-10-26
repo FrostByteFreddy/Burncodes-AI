@@ -47,15 +47,21 @@
           <input id="ko-cal" type="checkbox" role="switch" class="ko-switch" :checked="calendarsOn" :disabled="savingCal" @change="setCalendars($event.target.checked)" />
         </div>
         <p v-if="tenant?.test_protected && calendarsOn" class="meta ko-cal__warn">{{ $t('knowledge.calendars.protected') }}</p>
-        <ul v-else-if="calendarsOn && feeds.length" class="ko-cal__list">
-          <li v-for="f in feeds" :key="f.key" class="ko-cal__feed">
-            <span class="ko-cal__name">{{ f.zone ? `${f.series} (${f.zone})` : f.series }}</span>
-            <span class="meta">{{ $t('knowledge.calendars.dates', { n: f.count }) }}</span>
-            <button type="button" class="ko-cal__copy" @click="copyFeed(f)">
-              <font-awesome-icon :icon="['fas', copied === f.key ? 'check' : 'link']" /> {{ copied === f.key ? $t('knowledge.calendars.copied') : $t('knowledge.calendars.copy') }}
-            </button>
-          </li>
-        </ul>
+        <template v-else-if="calendarsOn && feeds.length">
+          <button type="button" class="ko-cal__more" :aria-expanded="showFeeds" @click="showFeeds = !showFeeds">
+            {{ $t('knowledge.calendars.count', { n: feeds.length }, feeds.length) }}
+            <span class="ko-cal__more-action">{{ showFeeds ? $t('knowledge.calendars.hide') : $t('knowledge.calendars.show') }}</span>
+          </button>
+          <ul v-if="showFeeds" class="ko-cal__list">
+            <li v-for="f in feeds" :key="f.key" class="ko-cal__feed">
+              <span class="ko-cal__name">{{ f.zone ? `${f.series} (${f.zone})` : f.series }}</span>
+              <span class="meta">{{ $t('knowledge.calendars.dates', { n: f.count }, f.count) }}</span>
+              <button type="button" class="ko-cal__copy" :title="$t('knowledge.calendars.copy')" :aria-label="`${$t('knowledge.calendars.copy')}: ${f.series}`" @click="copyFeed(f)">
+                <font-awesome-icon :icon="['fas', copied === f.key ? 'check' : 'link']" />
+              </button>
+            </li>
+          </ul>
+        </template>
       </div>
     </section>
 
@@ -123,6 +129,7 @@ const calendarsOn = computed(() => tenant.value?.calendar_feeds !== false);
 const feeds = ref([]);
 const savingCal = ref(false);
 const copied = ref(null);
+const showFeeds = ref(false);
 
 const loadFeeds = async () => {
   if (!props.tenantId) return;
@@ -213,11 +220,15 @@ defineExpose({ reload: load });
 .ko-cal__row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .ko-cal__title { font-size: 15px; font-weight: 700; color: var(--surface-heading); cursor: pointer; }
 .ko-cal__warn { margin-top: 8px; color: var(--status-warning); }
-.ko-cal__list { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
-.ko-cal__feed { display: inline-flex; align-items: center; gap: 10px; padding: 6px 6px 6px 12px; border-radius: var(--radius-md); background: var(--surface-2); }
+.ko-cal__list { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; max-width: 560px; }
+.ko-cal__feed { display: grid; grid-template-columns: minmax(0, 1fr) auto 32px; align-items: center; gap: 12px; padding: 6px 0; border-top: 1px solid var(--surface-3); font-size: var(--text-sm); }
+.ko-cal__feed:first-child { border-top: none; }
 .ko-cal__name { font-size: var(--text-sm); font-weight: 700; color: var(--surface-heading); }
-.ko-cal__copy { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-sm); border: 1px solid var(--surface-3); background: none; color: var(--surface-text); font: inherit; font-size: var(--text-xs); font-weight: 600; cursor: pointer; }
-.ko-cal__copy:hover { color: var(--surface-heading); border-color: var(--surface-muted); }
+.ko-cal__copy { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: var(--radius-md); background: none; color: var(--surface-muted); cursor: pointer; }
+.ko-cal__copy:hover { color: var(--interactive); background: var(--surface-3); }
+.ko-cal__more { margin-top: 10px; background: none; border: none; padding: 0; cursor: pointer; font-size: var(--text-sm); color: var(--surface-text); }
+.ko-cal__more-action { margin-left: 6px; font-weight: 600; color: var(--interactive); }
+.ko-cal__more:hover .ko-cal__more-action { text-decoration: underline; }
 .ko-switch {
   appearance: none; flex-shrink: 0; position: relative; cursor: pointer;
   width: 44px; height: 24px; border-radius: var(--radius-pill); background: var(--surface-3); transition: background var(--t-fast);

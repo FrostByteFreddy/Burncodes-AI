@@ -535,13 +535,16 @@
     },
     "calendars": {
       "title": "Calendars for residents",
-      "sub": "These dates can be subscribed to in any calendar app. The chatbot offers it when it answers with dates, and calendars update by themselves.",
+      "sub": "Residents can subscribe to the dates in their calendar app. The chatbot offers this when asked about dates.",
       "protected": "Calendars are paused while the chatbot needs a password.",
-      "dates": "{n} dates",
+      "dates": "{n} date | {n} dates",
       "copy": "Copy link",
       "copied": "Copied",
       "on": "Calendars switched on",
-      "off": "Calendars switched off. Subscribers' calendars empty out on their next update."
+      "off": "Calendars switched off. Subscribers' calendars empty out on their next update.",
+      "count": "{n} calendar | {n} calendars",
+      "show": "Show",
+      "hide": "Hide"
     },
     "recrawl": {
       "onHint": "Checks for changes every {n} days.",

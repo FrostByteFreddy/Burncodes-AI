@@ -535,13 +535,16 @@
     },
     "calendars": {
       "title": "Termine im eigenen Kalender",
-      "sub": "Einwohnerinnen und Einwohner können diese Termine in ihrer Kalender-App abonnieren (z. B. Apple, Google oder Outlook). Der Chatbot bietet das bei Fragen zu Terminen an. Neue oder verschobene Termine erscheinen automatisch.",
+      "sub": "Einwohnerinnen und Einwohner können die Termine in ihrer Kalender-App abonnieren. Der Chatbot bietet das bei Fragen zu Terminen an.",
       "protected": "Kalender-Abos sind pausiert, solange der Chatbot ein Passwort verlangt.",
-      "dates": "{n} Termine",
+      "dates": "{n} Termin | {n} Termine",
       "copy": "Link kopieren",
       "copied": "Kopiert",
       "on": "Kalender-Abos eingeschaltet",
-      "off": "Kalender-Abos ausgeschaltet. Bereits abonnierte Kalender werden bei der nächsten Aktualisierung geleert."
+      "off": "Kalender-Abos ausgeschaltet. Bereits abonnierte Kalender werden bei der nächsten Aktualisierung geleert.",
+      "count": "{n} Kalender | {n} Kalender",
+      "show": "Anzeigen",
+      "hide": "Ausblenden"
     },
     "recrawl": {
       "onHint": "Prüft alle {n} Tage auf Änderungen.",
