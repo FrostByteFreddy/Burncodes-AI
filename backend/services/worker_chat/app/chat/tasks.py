@@ -26,6 +26,7 @@ from app.logging_config import error_logger
 from app.prompts import FINE_TUNE_RULE_PROMPT
 from app.ai_models import CHAT_GEMINI_MODEL, billable_tokens
 from app.knowledge.calendar import dedupe_events, source_rank
+from app.knowledge.contact import contact_context
 
 
 # Number of previous exchanges (user + AI message pairs) sent as context.
@@ -202,6 +203,13 @@ _SOURCES_RULE = (
     "Sources: don't name or link the documents you used; links to them are added to your answer "
     "automatically. A link inside the answer is fine only for a form or page the visitor should open; "
     "take its address from that document's \"Quelle:\" line."
+)
+
+_UNKNOWN_RULE = (
+    "When you don't know something: say so in one short sentence, without mentioning documents, sources "
+    "or what you were given (never \"in den vorliegenden Dokumenten …\" or similar), then give the most "
+    "fitting contact straight away: the office, its phone, email and opening hours if you know them. "
+    "No apologies, no \"I recommend\"."
 )
 
 _MD_LINK = re.compile(r"\[([^\]]+)\]\((https?://[^)\s]+)\)")
@@ -457,7 +465,10 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
                 tenant_id, date.today(), offer_calendars=_calendars_offered(tenant_config), sources_out=date_sources)
         except Exception as e:
             error_logger.warning("chat_task: dates context unavailable for tenant %s: %s", tenant_id, e)
-        system_instruction += "\n\n" + _SOURCES_RULE + "\n\n" + _language_rule()
+        contact_card = tenant_config.get("contact_card") or None
+        if contact_card:
+            system_instruction += "\n\n" + contact_context(contact_card)
+        system_instruction += "\n\n" + _SOURCES_RULE + "\n\n" + _UNKNOWN_RULE + "\n\n" + _language_rule()
 
         # --- Build tool config ---
         # Only attach file_search if the tenant has an indexed store
@@ -495,6 +506,8 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         ai_message = response.text or ""
         try:
             known = _known_source_urls(tenant_id)
+            if contact_card and contact_card.get("maps_url"):
+                known[contact_card["maps_url"]] = ""   # the address's map link is ours, not invented
             ai_message = _keep_known_links(ai_message, known)
             mentioned = [src for name, src in date_sources.items() if name.lower() in ai_message.lower()]
             ai_message, linked = _inline_sources(ai_message, response, known)

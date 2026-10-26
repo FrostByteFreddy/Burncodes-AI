@@ -78,6 +78,9 @@ ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS last_review_at        TIMEST
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS test_password_hash    TEXT;
 -- Residents can subscribe to validated dates as calendar feeds (.ics)
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS calendar_feeds        BOOLEAN NOT NULL DEFAULT true;
+-- address, phone, email and opening hours read from the website footer (start page)
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS contact_card          JSONB;
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS contact_footer_hash   TEXT;
 -- what the customer left out of learning (folders/sources); every crawl applies it
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS crawl_exclusions      JSONB NOT NULL DEFAULT '[]'::jsonb;
 COMMENT ON COLUMN public.tenants.gemini_file_store_name IS
@@ -496,6 +499,85 @@ RETURNS TABLE(
         (SELECT COALESCE(SUM(input_tokens), 0)  FROM public.tenant_sources WHERE tenant_id IN (SELECT id FROM owned))::BIGINT,
         (SELECT COALESCE(SUM(output_tokens), 0) FROM public.tenant_sources WHERE tenant_id IN (SELECT id FROM owned))::BIGINT;
 $$ LANGUAGE sql STABLE;
+
+-- ----------------------------------------------------------------------------
+-- Dates: one row per event, however many pages name it
+-- ----------------------------------------------------------------------------
+-- An event on the home page, the event list and its own page is one row.
+-- source_ids are all pages that name it; source_id is the one to cite (the
+-- most specific, source_rank). A page that is re-learned or deleted only
+-- leaves the list; the row goes when no page names the event any more.
+
+-- name + zone, ignoring quote style, case and spacing (as the app's event_key)
+CREATE OR REPLACE FUNCTION public.event_key_of(p_series TEXT, p_zone TEXT)
+RETURNS TEXT AS $$
+    SELECT lower(regexp_replace(translate(normalize(coalesce(p_series, ''), NFKC), '„“”«»‹›‚‘’''', '"""""""""""'), '\s+', ' ', 'g'))
+        || '|' ||
+           lower(regexp_replace(translate(normalize(coalesce(p_zone, ''), NFKC), '„“”«»‹›‚‘’''', '"""""""""""'), '\s+', ' ', 'g'));
+$$ LANGUAGE sql IMMUTABLE;
+
+ALTER TABLE public.tenant_events ADD COLUMN IF NOT EXISTS source_ids  INTEGER[] NOT NULL DEFAULT '{}';
+ALTER TABLE public.tenant_events ADD COLUMN IF NOT EXISTS source_rank SMALLINT  NOT NULL DEFAULT 0;
+ALTER TABLE public.tenant_events ADD COLUMN IF NOT EXISTS event_key   TEXT
+    GENERATED ALWAYS AS (public.event_key_of(series, zone)) STORED;
+UPDATE public.tenant_events SET source_ids = ARRAY[source_id] WHERE source_ids = '{}';
+
+-- merge rows stored per page before (keep the oldest, collect all pages)
+UPDATE public.tenant_events t
+   SET source_ids = m.ids, is_exception = m.exc
+  FROM (SELECT tenant_id, event_key, event_date, min(id) AS keep_id,
+               array_agg(DISTINCT s) AS ids, bool_or(is_exception) AS exc
+          FROM public.tenant_events, unnest(source_ids) s
+         GROUP BY tenant_id, event_key, event_date
+        HAVING count(DISTINCT id) > 1) m
+ WHERE t.id = m.keep_id;
+DELETE FROM public.tenant_events a
+ USING public.tenant_events b
+ WHERE a.tenant_id = b.tenant_id AND a.event_key = b.event_key AND a.event_date = b.event_date AND a.id > b.id;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_tenant_events_key ON public.tenant_events (tenant_id, event_key, event_date);
+CREATE INDEX IF NOT EXISTS idx_tenant_events_source_ids ON public.tenant_events USING gin (source_ids);
+
+-- Stores a page's dates: new events are inserted, known ones gain the page.
+-- p_rows: [{tenant_id, source_id, source_rank, series, zone, event_date, is_exception, notes}]
+CREATE OR REPLACE FUNCTION public.upsert_events(p_rows JSONB)
+RETURNS VOID AS $$
+    INSERT INTO public.tenant_events AS t
+           (tenant_id, source_id, source_ids, source_rank, series, zone, event_date, is_exception, notes)
+    SELECT DISTINCT ON (r->>'tenant_id', public.event_key_of(r->>'series', r->>'zone'), (r->>'event_date')::date)
+           (r->>'tenant_id')::uuid, (r->>'source_id')::int, ARRAY[(r->>'source_id')::int],
+           coalesce((r->>'source_rank')::int, 0), coalesce(r->>'series', ''), coalesce(r->>'zone', ''),
+           (r->>'event_date')::date, coalesce((r->>'is_exception')::boolean, false), coalesce(r->>'notes', '')
+      FROM jsonb_array_elements(p_rows) r
+    ON CONFLICT (tenant_id, event_key, event_date) DO UPDATE SET
+        source_ids   = (SELECT array_agg(DISTINCT x) FROM unnest(t.source_ids || EXCLUDED.source_ids) x),
+        source_id    = CASE WHEN EXCLUDED.source_rank > t.source_rank THEN EXCLUDED.source_id ELSE t.source_id END,
+        source_rank  = GREATEST(t.source_rank, EXCLUDED.source_rank),
+        is_exception = t.is_exception OR EXCLUDED.is_exception,
+        notes        = CASE WHEN length(EXCLUDED.notes) > length(t.notes) THEN EXCLUDED.notes ELSE t.notes END;
+$$ LANGUAGE sql;
+
+-- A page no longer names its dates (re-learned or deleted): it leaves their
+-- page lists; dates no other page names go, the rest cite another page.
+CREATE OR REPLACE FUNCTION public.release_source_events(p_source INTEGER)
+RETURNS VOID AS $$
+BEGIN
+    UPDATE public.tenant_events SET source_ids = array_remove(source_ids, p_source) WHERE source_ids @> ARRAY[p_source];
+    DELETE FROM public.tenant_events WHERE source_id = p_source AND cardinality(source_ids) = 0;
+    UPDATE public.tenant_events SET source_id = source_ids[1], source_rank = 0 WHERE source_id = p_source;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION public.release_events_of_deleted_source()
+RETURNS TRIGGER AS $$
+BEGIN
+    PERFORM public.release_source_events(OLD.id);
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_release_source_events ON public.tenant_sources;
+CREATE TRIGGER trg_release_source_events BEFORE DELETE ON public.tenant_sources
+    FOR EACH ROW EXECUTE FUNCTION public.release_events_of_deleted_source();
 
 -- ----------------------------------------------------------------------------
 -- Row Level Security

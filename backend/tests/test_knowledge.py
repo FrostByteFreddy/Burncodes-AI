@@ -677,3 +677,30 @@ class TestLinkExtraction:
         assert "https://www.brittnau.ch/_rte/regelmaessigeranlass/4885" in links
         assert "https://www.brittnau.ch/_rte/anlass/7" in links
         assert not any("other.example" in l for l in links)
+
+
+class TestContactCard:
+    def test_card_formatting_map_link_and_fragment_filter(self, monkeypatch):
+        from types import SimpleNamespace as NS
+        import json as _json
+        from app.knowledge import contact
+        reply = {"found": True, "name": "Gemeinde Reichenbach", "street": "Bahnhofstrasse 30", "postal_code": "3713",
+                 "city": "Reichenbach im Kandertal", "phone": "+41 33 676 80 20", "email": "gmndrchnbchch",
+                 "hours_note": "", "opening_hours": [{"days": "Mittwoch", "hours": "geschlossen"}]}
+        fake = NS(models=NS(generate_content=lambda **kw: NS(text=_json.dumps(reply))))
+        import app.knowledge.triage as triage
+        monkeypatch.setattr(triage, "_get_client", lambda: fake)
+        card = contact.extract_contact("Gemeinde Reichenbach Bahnhofstrasse 30 …", "https://www.reichenbach.ch/")
+        assert card["email"] == "" and card["phone"] == "+41 33 676 80 20"
+        assert card["maps_url"] == ("https://www.google.com/maps/search/?api=1&query="
+                                    "Gemeinde+Reichenbach%2C+Bahnhofstrasse+30%2C+3713+Reichenbach+im+Kandertal")
+        text = contact.contact_context(card)
+        assert "Opening hours Mittwoch: geschlossen" in text and card["maps_url"] in text
+        assert contact.contact_context(None) == ""
+
+    def test_footer_text_is_found(self):
+        from app.knowledge.markdown import footer_markdown
+        html = ('<html><body><main>Inhalt</main><footer><p><strong>Gemeinde X</strong><br>Hauptstrasse 1</p>'
+                '<a href="tel:0621234567">062 123 45 67</a><p>Montag 08:00 - 12:00 Uhr</p></footer></body></html>')
+        text = footer_markdown(html)
+        assert "Hauptstrasse 1" in text and "Montag 08:00 - 12:00 Uhr" in text and "Inhalt" not in text

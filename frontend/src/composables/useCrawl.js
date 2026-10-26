@@ -58,6 +58,7 @@ export function useCrawlText() {
       case 'triage_start': return t('knowledge.log.triage_start');
       case 'triage':       return t('knowledge.log.triage', { n: d.skipped || 0 });
       case 'scan_done':    return t('knowledge.log.scan_done', { n: d.to_learn, cost: fmtChf(d.cost_chf) });
+      case 'contact_found': return t('knowledge.log.contact_found', { n: d.hours || 0 });
       case 'resumed':      return t(`knowledge.log.resumed.${d.phase}`, { n: d.count || 0 });
       case 'learn_start':  return t('knowledge.log.learn_start', { n: d.count });
       case 'learn_source': return t('knowledge.log.learn_source', { page });

@@ -65,6 +65,28 @@
       </div>
     </section>
 
+    <!-- What the chatbot knows about reaching the organisation, read from the website footer -->
+    <section v-if="contact" class="panel ko-contact" :aria-label="$t('knowledge.contact.title')">
+      <h2 class="panel-title">{{ $t('knowledge.contact.title') }}</h2>
+      <p class="panel-sub">{{ $t('knowledge.contact.sub') }}</p>
+      <div class="ko-contact__grid">
+        <div class="ko-contact__col">
+          <p v-if="contact.name" class="ko-contact__name">{{ contact.name }}</p>
+          <a v-if="contactAddress && contact.maps_url" :href="contact.maps_url" target="_blank" rel="noopener noreferrer" class="ko-contact__line">{{ contactAddress }}</a>
+          <p v-else-if="contactAddress" class="ko-contact__line">{{ contactAddress }}</p>
+          <p v-if="contact.phone" class="ko-contact__line">{{ contact.phone }}</p>
+          <p v-if="contact.email" class="ko-contact__line">{{ contact.email }}</p>
+        </div>
+        <dl v-if="contact.opening_hours?.length" class="ko-contact__hours">
+          <template v-for="(h, i) in contact.opening_hours" :key="i">
+            <dt>{{ h.days }}</dt>
+            <dd>{{ h.hours }}</dd>
+          </template>
+        </dl>
+      </div>
+      <p v-if="contact.hours_note" class="meta">{{ contact.hours_note }}</p>
+    </section>
+
   </div>
 </template>
 
@@ -130,6 +152,13 @@ const feeds = ref([]);
 const savingCal = ref(false);
 const copied = ref(null);
 const showFeeds = ref(false);
+
+// read from the website footer on each crawl
+const contact = computed(() => tenant.value?.contact_card || null);
+const contactAddress = computed(() => {
+  const c = contact.value || {};
+  return [c.street, [c.postal_code, c.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+});
 
 const loadFeeds = async () => {
   if (!props.tenantId) return;
@@ -254,4 +283,13 @@ defineExpose({ reload: load });
   .ko-day__num { font-size: var(--text-lg); }
   .ko-day--today::before { right: auto; bottom: 0; width: 3px; height: auto; left: -16px; }
 }
+.ko-contact { margin-top: 18px; }
+.ko-contact__grid { display: flex; flex-wrap: wrap; gap: 16px 48px; margin-top: 14px; }
+.ko-contact__col { display: flex; flex-direction: column; gap: 4px; font-size: var(--text-sm); color: var(--surface-text); }
+.ko-contact__name { font-weight: 700; color: var(--surface-heading); }
+a.ko-contact__line { color: var(--interactive); text-decoration: none; }
+a.ko-contact__line:hover { text-decoration: underline; }
+.ko-contact__hours { display: grid; grid-template-columns: auto auto; gap: 4px 20px; margin: 0; font-size: var(--text-sm); }
+.ko-contact__hours dt { color: var(--surface-muted); }
+.ko-contact__hours dd { margin: 0; color: var(--surface-heading); font-variant-numeric: tabular-nums; }
 </style>

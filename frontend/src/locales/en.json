@@ -724,7 +724,8 @@
         "learning": "Continued: learning the remaining {n} sources",
         "scanning": "Continued: reading the remaining {n} pages",
         "estimate": "Continued: back to the estimate"
-      }
+      },
+      "contact_found": "Contact details and opening hours taken from the footer"
     },
     "deleteJob": {
       "title": "Delete crawl",
@@ -778,6 +779,10 @@
       },
       "showAll": "Show all {n}",
       "showLess": "Show fewer"
+    },
+    "contact": {
+      "title": "Contact and opening hours",
+      "sub": "Taken from your website footer and updated on every crawl. Your chatbot uses these details for questions about how to reach you and when you are open."
     }
   },
   "pages": {

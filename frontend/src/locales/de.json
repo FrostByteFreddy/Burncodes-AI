@@ -724,7 +724,8 @@
         "learning": "Fortgesetzt: lernt die übrigen {n} Quellen",
         "scanning": "Fortgesetzt: liest die übrigen {n} Seiten",
         "estimate": "Fortgesetzt: zurück zur Kostenschätzung"
-      }
+      },
+      "contact_found": "Kontakt und Öffnungszeiten aus der Fusszeile übernommen"
     },
     "deleteJob": {
       "title": "Durchlauf löschen",
@@ -778,6 +779,10 @@
       },
       "showAll": "Alle {n} anzeigen",
       "showLess": "Weniger anzeigen"
+    },
+    "contact": {
+      "title": "Kontakt und Öffnungszeiten",
+      "sub": "Aus der Fusszeile Ihrer Website übernommen und bei jedem Durchlauf aktualisiert. Ihr Chatbot nennt diese Angaben bei Fragen zu Erreichbarkeit und Öffnungszeiten."
     }
   },
   "pages": {

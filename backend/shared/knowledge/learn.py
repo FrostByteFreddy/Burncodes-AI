@@ -23,7 +23,7 @@ from app.database.supabase_client import supabase
 from app.gemini_store.service import GeminiStoreService
 from app.knowledge import jobs
 from app.ai_models import count_tokens
-from app.knowledge.calendar import dedupe_events
+from app.knowledge.calendar import dedupe_events, source_rank
 from app.knowledge.markdown import estimate_tokens, normalize_markdown, pdf_text
 from app.knowledge.pdf_crosscheck import crosscheck_schedules
 from app.knowledge.understanding import (
@@ -205,9 +205,10 @@ def _parse_date(value: str) -> str | None:
         return None
 
 
-def _store_facts_and_events(tenant_id: str, source_id: int, result: dict) -> None:
+def _store_facts_and_events(tenant_id: str, source_id: int, result: dict, url: str = "") -> None:
     supabase.table("tenant_facts").delete().eq("source_id", source_id).execute()
-    supabase.table("tenant_events").delete().eq("source_id", source_id).execute()
+    # this page leaves its old dates; dates other pages also name stay theirs
+    supabase.rpc("release_source_events", {"p_source": source_id}).execute()
 
     facts = [
         {
@@ -241,11 +242,12 @@ def _store_facts_and_events(tenant_id: str, source_id: int, result: dict) -> Non
                     "tenant_id": tenant_id, "source_id": source_id, "series": e.get("name") or "",
                     "zone": "", "event_date": iso, "is_exception": False, "notes": e.get("notes") or "",
                 })
-    # a page that names the same event twice (teaser + details) stores it once;
-    # the same event on other pages stays theirs and is merged when read
-    events = dedupe_events(events)
-    for i in range(0, len(events), 500):
-        supabase.table("tenant_events").insert(events[i:i + 500]).execute()
+    # One row per event however many pages name it (unique in the database):
+    # a known event gains this page; the most specific page is the one cited.
+    page = {"title": result.get("title") or "", "source_location": url}
+    rows = [{**e, "source_rank": source_rank(e, page)} for e in dedupe_events(events)]
+    for i in range(0, len(rows), 500):
+        supabase.rpc("upsert_events", {"p_rows": rows[i:i + 500]}).execute()
 
 
 def _index(tenant_id: str, source: dict, result: dict) -> tuple[list[str], int]:
@@ -304,7 +306,7 @@ def learn_source(source_id: int, job_id: int | None = None) -> None:
 
         new_names, embed_tokens = _index(tenant_id, source, result)
         jobs.delete_source_documents(source)
-        _store_facts_and_events(tenant_id, source_id, result)
+        _store_facts_and_events(tenant_id, source_id, result, source["source_location"])
 
         owner = BillingService.get_tenant_owner(tenant_id)
         cost = 0.0

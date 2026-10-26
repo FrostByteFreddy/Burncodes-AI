@@ -443,6 +443,31 @@ def _seen_in_this_crawl(tenant_id: str, job_id: int, url: str, digest: str) -> b
     return bool(rows)
 
 
+def _update_contact_card(tenant_id: str, job: dict, url: str, html: str) -> None:
+    """
+    The start page's footer → the chatbot's contact card (address, phone,
+    opening hours). Gemini reads it only when the footer changed. Never fails
+    the scan.
+    """
+    try:
+        from app.knowledge.contact import extract_contact
+        from app.knowledge.markdown import footer_markdown
+        footer = footer_markdown(html)
+        digest = content_hash(footer) if footer else ""
+        row = supabase.table("tenants").select("contact_footer_hash").eq("id", tenant_id).limit(1).execute().data
+        if not footer or (row and row[0].get("contact_footer_hash") == digest):
+            return
+        card = extract_contact(footer, url)
+        fields = {"contact_footer_hash": digest}
+        if card:
+            fields["contact_card"] = {**card, "source_url": url, "updated_at": jobs.now_iso()}
+            jobs.log_event(job["id"], tenant_id, "contact_found", url=url,
+                           hours=len(card.get("opening_hours") or []))
+        supabase.table("tenants").update(fields).eq("id", tenant_id).execute()
+    except Exception as e:
+        error_logger.warning("contact card for %s skipped: %s", url, e)
+
+
 def _scan_page(tenant_id: str, url: str, job: dict, depth: int, parent_url: str | None, info: dict | None = None) -> str:
     mode = job.get("crawl_mode") or "playwright"
     html, status_code, links = _fetch_soup(url) if mode == "soup" else _fetch_playwright(url, parent_url)
@@ -457,6 +482,8 @@ def _scan_page(tenant_id: str, url: str, job: dict, depth: int, parent_url: str 
     title, markdown = html_to_markdown(html)
     if info is not None and title:
         info["title"] = title[:200]
+    if depth == 1:
+        _update_contact_card(tenant_id, job, url, html)
     tokens = estimate_tokens(markdown)
     if tokens >= MIN_CONTENT_TOKENS:
         # exact size for the cost estimate (free call); the guess only as fallback

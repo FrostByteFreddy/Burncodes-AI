@@ -112,6 +112,27 @@ def html_to_markdown(html: str) -> tuple[str, str]:
     return title, normalize_markdown(md)
 
 
+def footer_markdown(html: str) -> str:
+    """
+    The site footer as text. Page text leaves it out (it repeats on every
+    page), but municipal sites keep their address, phone and opening hours
+    there; it's read once, from the start page, for the contact card.
+    """
+    soup = BeautifulSoup(html or "", "lxml")
+    for tag in soup(["script", "style", "noscript", "svg", "template", "form", "button", "input", "select"]):
+        tag.decompose()
+    parts = soup.find_all("footer") or soup.find_all(attrs={"role": "contentinfo"})
+    if not parts:
+        parts = [el for el in soup.find_all(True)
+                 if any(t and re.match(r"^(site-?)?footer", t, re.I)
+                        for t in [str(el.get("id", ""))] + list(el.get("class", []) or []))][:1]
+    texts = []
+    for part in parts:
+        _spell_out_contacts(part)
+        texts.append(markdownify(str(part), heading_style="ATX", bullets="-", strip=["img", "a"]))
+    return normalize_markdown("\n\n".join(texts))
+
+
 def normalize_markdown(md: str) -> str:
     """Stable text form: trimmed lines, no runs of blank lines or spaces."""
     lines = [re.sub(r"[ \t ]+", " ", line).strip() for line in (md or "").splitlines()]

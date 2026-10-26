@@ -724,7 +724,8 @@
         "learning": "Repris : apprend les {n} sources restantes",
         "scanning": "Repris : lit les {n} pages restantes",
         "estimate": "Repris : retour à l'estimation"
-      }
+      },
+      "contact_found": "Coordonnées et horaires repris du pied de page"
     },
     "deleteJob": {
       "title": "Supprimer le crawl",
@@ -778,6 +779,10 @@
       },
       "showAll": "Afficher les {n}",
       "showLess": "Afficher moins"
+    },
+    "contact": {
+      "title": "Contact et horaires",
+      "sub": "Repris du pied de page de votre site et mis à jour à chaque analyse. Votre chatbot les utilise pour les questions sur vos coordonnées et horaires."
     }
   },
   "pages": {
