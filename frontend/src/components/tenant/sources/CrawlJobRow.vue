@@ -40,6 +40,10 @@
         <font-awesome-icon v-if="busy" :icon="['fas', 'spinner']" class="animate-spin" />
         {{ $t('knowledge.estimate.learn', { cost: fmtChf(job.estimate.cost_chf) }) }}
       </button>
+      <button v-if="job.status === 'FAILED'" class="btn-quiet" :disabled="busy" @click="onResume">
+        <font-awesome-icon :icon="['fas', busy ? 'spinner' : 'play']" :class="{ 'animate-spin': busy }" />
+        {{ $t('knowledge.job.resume') }}
+      </button>
       <router-link :to="detailRoute" class="btn-quiet">{{ $t('knowledge.job.details') }}</router-link>
     </div>
   </li>
@@ -58,7 +62,7 @@ const props = defineProps({
 const emit = defineEmits(['changed']);
 const { t } = useI18n();
 const { statusLabel, fmtChf, fmtDateTime, displayUrl, currentActivity, latestPage, jobSummary } = useCrawlText();
-const { confirm } = useCrawlActions(() => props.tenantId);
+const { confirm, resume } = useCrawlActions(() => props.tenantId);
 
 const busy = ref(false);
 const detailRoute = computed(() => ({ name: 'TenantCrawl', params: { tenantId: props.tenantId, jobId: props.job.id } }));
@@ -73,6 +77,11 @@ const progress = computed(() => {
 const onConfirm = async () => {
   busy.value = true;
   if (await confirm(props.job)) emit('changed');
+  busy.value = false;
+};
+const onResume = async () => {
+  busy.value = true;
+  if (await resume(props.job)) emit('changed');
   busy.value = false;
 };
 </script>

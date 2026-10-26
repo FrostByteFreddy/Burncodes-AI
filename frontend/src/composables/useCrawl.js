@@ -58,6 +58,7 @@ export function useCrawlText() {
       case 'triage_start': return t('knowledge.log.triage_start');
       case 'triage':       return t('knowledge.log.triage', { n: d.skipped || 0 });
       case 'scan_done':    return t('knowledge.log.scan_done', { n: d.to_learn, cost: fmtChf(d.cost_chf) });
+      case 'resumed':      return t(`knowledge.log.resumed.${d.phase}`, { n: d.count || 0 });
       case 'learn_start':  return t('knowledge.log.learn_start', { n: d.count });
       case 'learn_source': return t('knowledge.log.learn_source', { page });
       case 'learned':      return t('knowledge.log.learned', { page, sections: d.sections, facts: d.facts, dates: d.dates });
@@ -163,6 +164,19 @@ export function useCrawlActions(getTenantId) {
     }
   }
 
+  // Continues a stopped crawl where it stopped (learning, scanning or the estimate)
+  async function resume(job) {
+    try {
+      const { data } = await apiClient.post(`${base(job.id)}/resume`);
+      addToast(t(`knowledge.job.resumed.${data.phase}`), 'success');
+      return true;
+    } catch (e) {
+      const code = e.response?.data?.code;
+      addToast(code ? t(`knowledge.job.resumeError.${code}`) : t('knowledge.job.actionFailed'), 'error');
+      return false;
+    }
+  }
+
   async function remove(job) {
     try {
       await apiClient.delete(base(job.id));
@@ -173,5 +187,5 @@ export function useCrawlActions(getTenantId) {
     }
   }
 
-  return { confirm, stop, remove };
+  return { confirm, stop, resume, remove };
 }

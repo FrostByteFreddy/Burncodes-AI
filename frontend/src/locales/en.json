@@ -640,7 +640,17 @@
       "scanProgress": "{done} of {total} pages scanned",
       "learnProgress": "{done} of {total} sources learned",
       "report": "Report",
-      "hideReport": "Hide report"
+      "hideReport": "Hide report",
+      "resume": "Continue",
+      "resumed": {
+        "learning": "Learning continues with the sources not learned yet.",
+        "scanning": "The scan continues with the pages not read yet.",
+        "estimate": "Back to the estimate: choose what to learn."
+      },
+      "resumeError": {
+        "busy": "Another crawl of this chatbot is still running. Wait until it has finished.",
+        "nothing_to_resume": "There is nothing left to continue. Start a new crawl instead."
+      }
     },
     "estimate": {
       "indexOnly": "{n} long documents (over {pages} pages) are only made searchable: their text, without dates or facts.",
@@ -708,7 +718,12 @@
       "job_done": "Done: {n} learned · CHF {cost}",
       "empty": "Waiting for activity…",
       "triage_start": "Sorting out what isn't worth learning",
-      "triage": "{n} sources set aside as not worth learning"
+      "triage": "{n} sources set aside as not worth learning",
+      "resumed": {
+        "learning": "Continued: learning the remaining {n} sources",
+        "scanning": "Continued: reading the remaining {n} pages",
+        "estimate": "Continued: back to the estimate"
+      }
     },
     "deleteJob": {
       "title": "Delete crawl",

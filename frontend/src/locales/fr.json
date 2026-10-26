@@ -640,7 +640,17 @@
       "scanProgress": "{done} sur {total} pages analysées",
       "learnProgress": "{done} sur {total} sources apprises",
       "report": "Rapport",
-      "hideReport": "Masquer le rapport"
+      "hideReport": "Masquer le rapport",
+      "resume": "Reprendre",
+      "resumed": {
+        "learning": "L'apprentissage reprend avec les sources restantes.",
+        "scanning": "L'analyse reprend avec les pages pas encore lues.",
+        "estimate": "Retour à l'estimation : choisissez ce qui est appris."
+      },
+      "resumeError": {
+        "busy": "Une autre analyse de ce chatbot est encore en cours. Attendez la fin.",
+        "nothing_to_resume": "Il ne reste rien à reprendre. Lancez plutôt une nouvelle analyse."
+      }
     },
     "estimate": {
       "indexOnly": "{n} longs documents (plus de {pages} pages) sont seulement rendus consultables : leur texte, sans dates ni faits.",
@@ -708,7 +718,12 @@
       "job_done": "Terminé : {n} apprises · CHF {cost}",
       "empty": "En attente d'activité…",
       "triage_start": "Tri de ce qui ne vaut pas la peine d'être appris",
-      "triage": "{n} sources écartées comme inutiles"
+      "triage": "{n} sources écartées comme inutiles",
+      "resumed": {
+        "learning": "Repris : apprend les {n} sources restantes",
+        "scanning": "Repris : lit les {n} pages restantes",
+        "estimate": "Repris : retour à l'estimation"
+      }
     },
     "deleteJob": {
       "title": "Supprimer le crawl",

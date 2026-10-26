@@ -515,6 +515,30 @@ def change_selection(current_user, tenant_id, job_id):
         return jsonify({"error": "Failed to change the selection"}), 500
 
 
+@sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/resume', methods=['POST'])
+@token_required
+def resume_crawling_job(current_user, tenant_id, job_id):
+    """Continues a stopped crawl where it stopped (learning, scanning or the estimate)."""
+    try:
+        from app.knowledge import jobs as knowledge_jobs
+        tenant_id_str = str(tenant_id)
+        owns = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute().data
+        job = supabase.table('crawling_jobs').select("*").eq('id', job_id).eq('tenant_id', tenant_id_str).limit(1).execute().data
+        if not owns or not job:
+            return jsonify({"error": "Job not found or access denied"}), 404
+        running = supabase.table('crawling_jobs').select("id").eq('tenant_id', tenant_id_str) \
+            .in_('status', ['IN_PROGRESS', 'SCANNED', 'INDEXING']).neq('id', job_id).limit(1).execute().data
+        if running:
+            return jsonify({"error": "Another crawl of this chatbot is still running", "code": "busy"}), 409
+        phase = knowledge_jobs.resume_job(job[0])
+        if not phase:
+            return jsonify({"error": "Nothing left to continue", "code": "nothing_to_resume"}), 409
+        return jsonify({"phase": phase}), 202
+    except Exception as e:
+        error_logger.error(f"Error resuming crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to resume the crawl"}), 500
+
+
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/cancel', methods=['POST'])
 @token_required
 def cancel_crawling_job(current_user, tenant_id, job_id):

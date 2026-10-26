@@ -640,7 +640,17 @@
       "scanProgress": "{done} von {total} Seiten gelesen",
       "learnProgress": "{done} von {total} Quellen gelernt",
       "report": "Bericht",
-      "hideReport": "Bericht ausblenden"
+      "hideReport": "Bericht ausblenden",
+      "resume": "Fortsetzen",
+      "resumed": {
+        "learning": "Das Lernen geht mit den noch offenen Quellen weiter.",
+        "scanning": "Der Scan geht mit den noch nicht gelesenen Seiten weiter.",
+        "estimate": "Zurück zur Kostenschätzung: Wählen Sie, was gelernt wird."
+      },
+      "resumeError": {
+        "busy": "Ein anderer Durchlauf dieses Chatbots läuft noch. Warten Sie, bis er fertig ist.",
+        "nothing_to_resume": "Es gibt nichts mehr fortzusetzen. Starten Sie stattdessen einen neuen Durchlauf."
+      }
     },
     "estimate": {
       "indexOnly": "{n} lange Dokumente (über {pages} Seiten) werden nur durchsuchbar gemacht: ihr Text, ohne Termine und Fakten.",
@@ -708,7 +718,12 @@
       "job_done": "Fertig: {n} gelernt · CHF {cost}",
       "empty": "Warte auf Aktivität…",
       "triage_start": "Sortiert aus, was sich nicht zu lernen lohnt",
-      "triage": "{n} Quellen als nicht lernenswert aussortiert"
+      "triage": "{n} Quellen als nicht lernenswert aussortiert",
+      "resumed": {
+        "learning": "Fortgesetzt: lernt die übrigen {n} Quellen",
+        "scanning": "Fortgesetzt: liest die übrigen {n} Seiten",
+        "estimate": "Fortgesetzt: zurück zur Kostenschätzung"
+      }
     },
     "deleteJob": {
       "title": "Durchlauf löschen",

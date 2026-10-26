@@ -15,7 +15,7 @@ State transitions are conditional UPDATEs (… WHERE status = X), so when
 several workers finish at the same time exactly one performs the transition.
 """
 import os
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from urllib.parse import urlparse
 
 from celery import current_app as celery_app
@@ -26,6 +26,9 @@ from app.logging_config import error_logger
 from app.models.database import CrawlingStatus
 
 LEARN_TASK = "app.data_processing.tasks.learn_source_task"
+SCAN_TASK = "app.data_processing.tasks.crawl_tasks.process_single_url_task"
+# a learn task that says "processing" for this long has died with its worker
+STALE_LEARN_MINUTES = 20
 START_LEARNING_TASK = "app.data_processing.tasks.start_learning_task"
 
 # Removed pages are deleted after this many crawls without seeing them
@@ -354,6 +357,68 @@ def start_learning(job_id: int) -> bool:
     if not pending:
         finish_job_if_learned(job_id)
     return True
+
+
+def resume_job(job: dict) -> str | None:
+    """
+    Continues a stopped crawl where it stopped. Returns the phase it resumes
+    ("learning", "scanning", "estimate") or None if there's nothing to resume.
+
+    - Stopped while learning: sources not learned yet are queued again; what
+      was learned stays and isn't paid for twice.
+    - Stopped while scanning: pages found but not read yet are read.
+    - Discarded after the scan: back to the estimate.
+    """
+    job_id, tenant_id = job["id"], job["tenant_id"]
+    if job.get("status") != CrawlingStatus.FAILED.value:
+        return None
+
+    if job.get("confirmed_at"):
+        stale = (datetime.now(timezone.utc) - timedelta(minutes=STALE_LEARN_MINUTES)).isoformat()
+        supabase.table("tenant_sources").update({"status": "QUEUED"}) \
+            .eq("last_job_id", job_id).eq("status", "PROCESSING").lt("learn_started_at", stale).execute()
+        pending = _pending_sources(job_id)
+        if not pending:
+            return None
+        moved = supabase.table("crawling_jobs").update({"status": CrawlingStatus.INDEXING.value}) \
+            .eq("id", job_id).eq("status", CrawlingStatus.FAILED.value).execute().data
+        if not moved:
+            return None
+        for src in pending:
+            celery_app.send_task(LEARN_TASK, args=[src["id"], job_id], queue="fast")
+        log_event(job_id, tenant_id, "resumed", phase="learning", count=len(pending))
+        return "learning"
+
+    # stopped while scanning: "Stop" marks waiting pages FAILED without a result,
+    # pages picked up afterwards end as "cancelled"
+    stopped = fetch_all(lambda: (
+        supabase.table("crawling_tasks").select("id, parent_url, outcome")
+        .eq("job_id", job_id).eq("status", CrawlingStatus.FAILED.value).order("id")
+    ))
+    stopped = [t for t in stopped if t.get("outcome") in (None, "cancelled")]
+    if stopped:
+        moved = supabase.table("crawling_jobs").update({"status": CrawlingStatus.IN_PROGRESS.value}) \
+            .eq("id", job_id).eq("status", CrawlingStatus.FAILED.value).execute().data
+        if not moved:
+            return None
+        ids = [t["id"] for t in stopped]
+        for i in range(0, len(ids), 200):
+            supabase.table("crawling_tasks").update({
+                "status": CrawlingStatus.PENDING.value, "outcome": None, "attempts": 0, "enqueued_at": now_iso(),
+            }).in_("id", ids[i:i + 200]).execute()
+        for t in stopped:
+            celery_app.send_task(SCAN_TASK, kwargs={"task_id": t["id"], "tenant_id": tenant_id,
+                                                    "parent_url": t.get("parent_url")}, queue="heavy")
+        log_event(job_id, tenant_id, "resumed", phase="scanning", count=len(stopped))
+        return "scanning"
+
+    if job.get("estimate"):
+        moved = supabase.table("crawling_jobs").update({"status": CrawlingStatus.SCANNED.value}) \
+            .eq("id", job_id).eq("status", CrawlingStatus.FAILED.value).execute().data
+        if moved:
+            log_event(job_id, tenant_id, "resumed", phase="estimate")
+            return "estimate"
+    return None
 
 
 # ---------------------------------------------------------------------------

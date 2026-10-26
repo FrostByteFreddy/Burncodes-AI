@@ -41,6 +41,9 @@
           <button v-if="job.status === 'IN_PROGRESS' || job.status === 'INDEXING'" class="btn-quiet" :disabled="busy" @click="onStop">
             <font-awesome-icon :icon="['fas', 'stop']" /> {{ $t('knowledge.job.stop') }}
           </button>
+          <button v-if="job.status === 'FAILED'" class="btn-action" :disabled="busy" @click="onResume">
+            <font-awesome-icon :icon="['fas', busy ? 'spinner' : 'play']" :class="{ 'animate-spin': busy }" /> {{ $t('knowledge.job.resume') }}
+          </button>
           <button v-if="!isActive" class="btn-quiet btn-quiet--danger" @click="askDelete = true">
             <font-awesome-icon :icon="['fas', 'trash-alt']" /> {{ $t('knowledge.job.delete') }}
           </button>
@@ -205,6 +208,11 @@ const onConfirm = async () => {
 const onStop = async () => {
   busy.value = true;
   if (await actions.stop(job.value)) await fetchJob();
+  busy.value = false;
+};
+const onResume = async () => {
+  busy.value = true;
+  if (await actions.resume(job.value)) await Promise.all([fetchJob(), fetchLog()]);
   busy.value = false;
 };
 const onDelete = async () => {
