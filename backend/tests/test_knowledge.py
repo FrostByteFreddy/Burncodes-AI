@@ -473,6 +473,17 @@ class TestSourceLinks:
         assert chat._ensure_source(text, [("Andere", "https://www.zofingen.ch/a")], {url, "https://www.zofingen.ch/a"}) == text
 
 
+    def test_a_bare_address_of_a_known_page_becomes_a_chip(self):
+        chat = TestSystemInstruction._chat()
+        pdf = "https://www.reichenbach.ch/wAssets/docs/Budget-2027_GV-12.10.2026.pdf"
+        known = {pdf: "Budget 2027 GV 12.10.2026"}
+        out = chat._keep_known_links(f"Details im Dokument:\n\n{pdf}.\nUnd https://evil.example/x", known)
+        assert f'[Budget 2027 GV 12.10.2026]({pdf} "source: Budget 2027 GV 12.10.2026").' in out
+        assert "https://evil.example/x" in out          # unknown bare text is left as it is
+        # a markdown link to a known page is not touched twice
+        linked = f"[Budget]({pdf})"
+        assert chat._keep_known_links(linked, known) == linked
+
     def test_marker_is_filled_with_the_used_documents_home_page_last_resort(self):
         chat = TestSystemInstruction._chat()
         home, concert, ziegler = ("https://www.brittnau.ch", "https://www.brittnau.ch/_rte/anlass/7727767",

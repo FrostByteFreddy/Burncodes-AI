@@ -212,6 +212,14 @@ _UNKNOWN_RULE = (
     "No apologies, no \"I recommend\"."
 )
 
+_STYLE_RULE = (
+    "Style: this is a chat, not a letter. Start with the answer itself: no salutation (\"Sehr geehrte Damen "
+    "und Herren\", \"Guten Tag\"), no \"thank you for your question\", no closing formula or signature. "
+    "Short sentences, the most useful fact first. Address the person the way they address you: someone "
+    "who writes \"du\" gets \"du\", someone who writes \"Sie\" gets \"Sie\"; if it's unclear, follow the "
+    "instructions above."
+)
+
 _MD_LINK = re.compile(r"\[([^\]]+)\]\((https?://[^)\s]+)\)")
 
 
@@ -238,9 +246,25 @@ def _named_page(line: str, known: dict) -> tuple[str, str] | None:
     return best[1] if best else None
 
 
-def _keep_known_links(answer: str, known: set[str]) -> str:
-    """Links to anything but the organisation's own sources become plain text (no invented URLs)."""
-    return _MD_LINK.sub(lambda m: m.group(0) if m.group(2) in known else m.group(1), answer)
+_BARE_URL = re.compile(r"(?<![(<\[\"])\bhttps?://[^\s)\]>\"]+")
+
+
+def _keep_known_links(answer: str, known) -> str:
+    """
+    Links to anything but the organisation's own sources become plain text (no
+    invented URLs). A bare address of a known page becomes a source chip with
+    its title instead of a long raw URL.
+    """
+    answer = _MD_LINK.sub(lambda m: m.group(0) if m.group(2) in known else m.group(1), answer)
+
+    def bare(m):
+        url = m.group(0).rstrip(".,;:")
+        tail = m.group(0)[len(url):]
+        if url not in known:
+            return m.group(0)
+        title = (known.get(url) if isinstance(known, dict) else "") or url.rsplit("/", 1)[-1]
+        return _chip(title, url) + tail
+    return _BARE_URL.sub(bare, answer)
 
 
 _QUELLE = re.compile(r"Quelle:\s*(https?://\S+)")
@@ -468,7 +492,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         contact_card = tenant_config.get("contact_card") or None
         if contact_card:
             system_instruction += "\n\n" + contact_context(contact_card)
-        system_instruction += "\n\n" + _SOURCES_RULE + "\n\n" + _UNKNOWN_RULE + "\n\n" + _language_rule()
+        system_instruction += "\n\n" + _SOURCES_RULE + "\n\n" + _UNKNOWN_RULE + "\n\n" + _STYLE_RULE + "\n\n" + _language_rule()
 
         # --- Build tool config ---
         # Only attach file_search if the tenant has an indexed store
