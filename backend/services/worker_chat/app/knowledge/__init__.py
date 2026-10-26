@@ -1,0 +1,1 @@
+../../../../shared/knowledge/__init__.py

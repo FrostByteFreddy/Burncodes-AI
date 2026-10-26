@@ -48,7 +48,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { isPreparing, useCrawlActions, useCrawlText } from '@/composables/useCrawl';
+import { isPreparing, learnProgress, useCrawlActions, useCrawlText } from '@/composables/useCrawl';
 
 const props = defineProps({
   job:      { type: Object, required: true },
@@ -66,9 +66,8 @@ const reviewCount = computed(() => (props.job.status === 'COMPLETED' ? (props.jo
 
 // Learning only: learned / to learn (known from the estimate)
 const progress = computed(() => {
-  const total = props.job.estimate?.to_learn || 0;
-  const done = props.log.filter((e) => e.event === 'learned' || e.event === 'learn_failed').length;
-  return { percent: total ? Math.min(100, (done / total) * 100) : 0, label: t('knowledge.job.learnProgress', { done, total: total || '…' }) };
+  const { done, total, percent } = learnProgress(props.job, props.log);
+  return { percent, label: t('knowledge.job.learnProgress', { done, total: total || '…' }) };
 });
 
 const onConfirm = async () => {

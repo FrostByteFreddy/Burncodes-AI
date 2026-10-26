@@ -181,6 +181,12 @@ def discover_links(current_user, tenant_id):
         error_logger.error(f"Error discovering links for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to discover links"}), 500
 
+def _learn_done(job_id: int) -> int:
+    """Sources this job has finished learning (learned or failed), counted in the database."""
+    return supabase.table('crawl_job_log').select('id', count='exact') \
+        .eq('job_id', job_id).in_('event', ['learned', 'learn_failed']).limit(1).execute().count or 0
+
+
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs', methods=['GET'])
 @token_required
 def get_crawling_jobs(current_user, tenant_id):
@@ -224,6 +230,8 @@ def get_crawling_jobs(current_user, tenant_id):
             job_tasks = tasks_by_job.get(job['id'], [])
             job['sources'] = [sources_by_url[t['url']] for t in job_tasks if t['url'] in sources_by_url]
             job['task_count'] = len(job_tasks)
+            if job.get('status') == 'INDEXING':
+                job['learn_done'] = _learn_done(job['id'])
 
         return jsonify(jobs), 200
     except Exception as e:
@@ -242,6 +250,8 @@ def get_crawling_job(current_user, tenant_id, job_id):
         rows = supabase.table('crawling_jobs').select("*").eq('id', job_id).eq('tenant_id', tenant_id_str).limit(1).execute().data
         if not rows:
             return jsonify({"error": "Job not found or not part of this tenant"}), 404
+        if rows[0].get('status') == 'INDEXING':
+            rows[0]['learn_done'] = _learn_done(job_id)
         return jsonify(rows[0]), 200
     except Exception as e:
         error_logger.error(f"Error getting crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
@@ -313,6 +323,8 @@ def get_knowledge_overview(current_user, tenant_id):
             .lte('event_date', (today + timedelta(days=days - 1)).isoformat())
             .order('event_date').limit(500).execute()
         ).data or []
+        from app.knowledge.calendar import dedupe_events
+        events = dedupe_events(events)   # the same event read from several pages shows once
         # Series whose published dates ended — the bot can't answer "next" for them
         past = fetch_all(lambda: (
             supabase.table('tenant_events').select("series, zone, event_date")

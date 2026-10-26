@@ -27,6 +27,59 @@ def calendar_key(series: str, zone: str) -> str:
     return slug(series) + (f"--{slug(zone)}" if zone else "")
 
 
+_QUOTES = str.maketrans({c: '"' for c in "„“”«»‹›‚‘’'"})
+
+
+def _norm(text: str | None) -> str:
+    text = unicodedata.normalize("NFKC", text or "").translate(_QUOTES)
+    return " ".join(text.split()).casefold()
+
+
+def event_key(e: dict) -> tuple[str, str, str]:
+    """Same name, same zone, same day: one date, whichever page it was read from."""
+    return _norm(e.get("series")), _norm(e.get("zone")), str(e.get("event_date") or "")[:10]
+
+
+def dedupe_events(rows: list[dict], rank=None) -> list[dict]:
+    """
+    Dates are stored per page, so an event shown on the home page, the event
+    list and its own page is stored three times (and has to be: re-learning or
+    removing one page must not take the others' dates with it). Readers merge
+    them here. Keeps the order of `rows`; of each group the row whose source
+    ranks highest (rank(row) -> number) is kept; an exception on any copy marks
+    the date as exception, and the longest note wins.
+    """
+    best: dict[tuple, dict] = {}
+    order: list[tuple] = []
+    for r in rows:
+        key = event_key(r)
+        kept = best.get(key)
+        if kept is None:
+            best[key] = dict(r)
+            order.append(key)
+            continue
+        if rank is not None and rank(r) > rank(kept):
+            merged = dict(r)
+            merged["is_exception"] = bool(r.get("is_exception") or kept.get("is_exception"))
+            merged["notes"] = max((r.get("notes") or "", kept.get("notes") or ""), key=len)
+            best[key] = merged
+        else:
+            kept["is_exception"] = bool(kept.get("is_exception") or r.get("is_exception"))
+            if len(r.get("notes") or "") > len(kept.get("notes") or ""):
+                kept["notes"] = r["notes"]
+    return [best[k] for k in order]
+
+
+def source_rank(event: dict, source: dict | None) -> int:
+    """Which page to name for a date: its own page (title names it) > any specific page > the home page."""
+    if not source:
+        return 0
+    url = source.get("source_location") or source.get("url") or ""
+    path = url.split("://", 1)[-1].partition("/")[2].strip("/")
+    named = bool(event.get("series")) and _norm(event["series"]) in _norm(source.get("title"))
+    return 2 * named + bool(path)
+
+
 def _escape(text: str) -> str:
     return (text or "").replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
 

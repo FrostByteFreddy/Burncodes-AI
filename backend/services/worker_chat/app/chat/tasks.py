@@ -25,6 +25,7 @@ from app.billing.services import BillingService
 from app.logging_config import error_logger
 from app.prompts import FINE_TUNE_RULE_PROMPT
 from app.ai_models import CHAT_GEMINI_MODEL, billable_tokens
+from app.knowledge.calendar import dedupe_events, source_rank
 
 
 # Number of previous exchanges (user + AI message pairs) sent as context.
@@ -119,6 +120,16 @@ def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, s
     if not rows:
         return lines[0]
 
+    # the same event read from several pages counts once; its source is the most specific page
+    source_ids = list({r["source_id"] for r in rows if r.get("source_id")})
+    source_rows = {}
+    for i in range(0, len(source_ids), 200):
+        for s in supabase.table("tenant_sources").select("id, title, source_location") \
+                .in_("id", source_ids[i:i + 200]).execute().data or []:
+            source_rows[s["id"]] = s
+
+    rows = dedupe_events(rows, lambda r: source_rank(r, source_rows.get(r.get("source_id"))))
+
     series: dict[tuple[str, str], dict] = {}
     for r in rows:
         entry = series.setdefault((r["series"], r["zone"]), {"upcoming": [], "last": None, "notes": r.get("notes") or "",
@@ -130,11 +141,6 @@ def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, s
         else:
             entry["last"] = d
 
-    source_ids = list({e["source_id"] for e in series.values() if e["source_id"]})
-    source_rows = {
-        s["id"]: s for s in (supabase.table("tenant_sources").select("id, title, source_location")
-                             .in_("id", source_ids).execute().data or [])
-    } if source_ids else {}
     sources = {sid: f"{(s.get('title') or '').strip()} {s['source_location']}".strip() for sid, s in source_rows.items()}
     if sources_out is not None:
         # series name -> (title, url), for the source fallback after answering

@@ -116,7 +116,7 @@ import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';
 import { supabase } from '@/supabase';
 import { escapeHtml } from '@/utils/escapeHtml';
-import { ACTIVE_STATUSES, isPreparing, useCrawlActions, useCrawlText } from '@/composables/useCrawl';
+import { ACTIVE_STATUSES, isPreparing, learnProgress, useCrawlActions, useCrawlText } from '@/composables/useCrawl';
 import ActivityLog from './sources/ActivityLog.vue';
 import CrawlReport from './sources/CrawlReport.vue';
 import CrawlSelection from './sources/CrawlSelection.vue';
@@ -147,9 +147,8 @@ const outcomes = computed(() => {
 });
 
 const progress = computed(() => {
-  const total = estimate.value.to_learn || 0;
-  const done = log.value.filter((e) => e.event === 'learned' || e.event === 'learn_failed').length;
-  return { percent: total ? Math.min(100, (done / total) * 100) : 0, label: t('knowledge.job.learnProgress', { done, total: total || '…' }) };
+  const { done, total, percent } = learnProgress(job.value, log.value);
+  return { percent, label: t('knowledge.job.learnProgress', { done, total: total || '…' }) };
 });
 
 const base = computed(() => `/tenants/${props.tenantId}/crawling_jobs/${props.jobId}`);

@@ -303,13 +303,14 @@ def get_tenant_overview(current_user, tenant_id):
             .select("source_type, status, indexed_chunks, warnings")
             .eq('tenant_id', tenant_id_str).order('id')
         ))
-        upcoming = (
-            supabase.table('tenant_events').select("id", count="exact")
+        from app.knowledge.calendar import dedupe_events
+        upcoming = len(dedupe_events(
+            supabase.table('tenant_events').select("series, zone, event_date")
             .eq('tenant_id', tenant_id_str)
             .gte('event_date', date.today().isoformat())
             .lte('event_date', (date.today() + timedelta(days=13)).isoformat())
-            .limit(1).execute()
-        ).count or 0
+            .limit(1000).execute().data or []
+        ))
         open_findings = (
             supabase.table('chat_findings').select("id", count="exact")
             .eq('tenant_id', tenant_id_str).eq('status', 'open').limit(1).execute()

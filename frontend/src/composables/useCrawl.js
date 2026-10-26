@@ -6,6 +6,16 @@ import { useToast } from './useToast';
 
 export const ACTIVE_STATUSES = ['IN_PROGRESS', 'SCANNED', 'INDEXING'];
 
+// Learning progress: the server's count (exact, survives a reload) or what the
+// live log has shown since, whichever is further along. The log in the browser
+// is only the latest entries, so it can't be the count on its own.
+export function learnProgress(job, log = []) {
+  const total = job?.estimate?.to_learn || 0;
+  const live = log.filter((e) => e.event === 'learned' || e.event === 'learn_failed').length;
+  const done = Math.min(total || Infinity, Math.max(job?.learn_done || 0, live));
+  return { done, total, percent: total ? Math.min(100, (done / total) * 100) : 0 };
+}
+
 // Scan finished, but the sorting step and the cost estimate are still being prepared
 export const isPreparing = (job) => job?.status === 'SCANNED' && !job.estimate;
 

@@ -23,6 +23,7 @@ from app.database.supabase_client import supabase
 from app.gemini_store.service import GeminiStoreService
 from app.knowledge import jobs
 from app.ai_models import count_tokens
+from app.knowledge.calendar import dedupe_events
 from app.knowledge.markdown import estimate_tokens, normalize_markdown, pdf_text
 from app.knowledge.pdf_crosscheck import crosscheck_schedules
 from app.knowledge.understanding import (
@@ -240,6 +241,9 @@ def _store_facts_and_events(tenant_id: str, source_id: int, result: dict) -> Non
                     "tenant_id": tenant_id, "source_id": source_id, "series": e.get("name") or "",
                     "zone": "", "event_date": iso, "is_exception": False, "notes": e.get("notes") or "",
                 })
+    # a page that names the same event twice (teaser + details) stores it once;
+    # the same event on other pages stays theirs and is merged when read
+    events = dedupe_events(events)
     for i in range(0, len(events), 500):
         supabase.table("tenant_events").insert(events[i:i + 500]).execute()
 

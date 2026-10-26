@@ -424,6 +424,32 @@ class TestCalendar:
         assert all(len(line.encode()) <= 75 for line in a.split("\r\n"))
 
 
+class TestEventDedupe:
+    def test_the_same_event_from_several_pages_counts_once_named_after_its_own_page(self):
+        from app.knowledge.calendar import dedupe_events, source_rank
+        sources = {1: {"title": "Startseite Gemeinde Brittnau", "source_location": "https://www.brittnau.ch"},
+                   2: {"title": "Anlässe", "source_location": "https://www.brittnau.ch/anlaesse"},
+                   3: {"title": 'Konzert "Akkordeon auf Reisen"', "source_location": "https://www.brittnau.ch/_rte/anlass/1"}}
+        rows = [
+            {"series": "Konzert „Akkordeon auf Reisen“", "zone": "", "event_date": "2026-11-06", "source_id": 1, "notes": "", "is_exception": False},
+            {"series": 'Konzert "Akkordeon auf Reisen"', "zone": "", "event_date": "2026-11-06", "source_id": 2, "notes": "", "is_exception": False},
+            {"series": 'konzert  "akkordeon auf reisen"', "zone": None, "event_date": "2026-11-06", "source_id": 3, "notes": "Mehrzweckhalle", "is_exception": False},
+            {"series": "Kehricht", "zone": "Zone 1", "event_date": "2026-11-06", "source_id": 2, "notes": "", "is_exception": True},
+            {"series": "Kehricht", "zone": "Zone 2", "event_date": "2026-11-06", "source_id": 2, "notes": "", "is_exception": False},
+        ]
+        out = dedupe_events(rows, lambda e: source_rank(e, sources.get(e["source_id"])))
+        assert len(out) == 3                                        # zones stay apart
+        assert out[0]["source_id"] == 3 and out[0]["notes"] == "Mehrzweckhalle"
+        assert [e["zone"] for e in out[1:]] == ["Zone 1", "Zone 2"]
+        assert len(dedupe_events(rows)) == 3                        # without ranking: the first copy
+
+    def test_an_exception_on_any_copy_wins(self):
+        from app.knowledge.calendar import dedupe_events
+        rows = [{"series": "Papier", "zone": "", "event_date": "2026-12-24", "is_exception": False, "source_id": 1},
+                {"series": "Papier", "zone": "", "event_date": "2026-12-24", "is_exception": True, "source_id": 2}]
+        assert dedupe_events(rows)[0]["is_exception"] is True
+
+
 class TestSourceLinks:
     def test_unknown_links_become_plain_text(self):
         chat = TestSystemInstruction._chat()
