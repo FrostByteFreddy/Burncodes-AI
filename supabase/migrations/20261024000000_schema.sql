@@ -160,6 +160,12 @@ CREATE TABLE IF NOT EXISTS public.crawling_jobs (
 );
 ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS excluded_urls TEXT[] DEFAULT '{}'::text[];
 ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS single_page_only BOOLEAN NOT NULL DEFAULT false;
+-- skip other language versions of the site (/de/…, /fr/…) than the one the crawl started in
+ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS same_language    BOOLEAN NOT NULL DEFAULT false;
+-- also visit the pages the site's sitemap lists (landing pages no menu links to)
+ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS use_sitemap      BOOLEAN NOT NULL DEFAULT false;
+-- skip thank-you, confirmation, error, ad-copy, cart and account pages
+ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS skip_funnel      BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS crawl_mode       TEXT;
 -- 'manual' or 'scheduled'; scheduled re-crawls are pre-approved (auto_confirm)
 ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS trigger          TEXT NOT NULL DEFAULT 'manual';

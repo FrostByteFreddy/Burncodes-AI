@@ -147,6 +147,9 @@ def discover_links(current_user, tenant_id):
         start_url = data.get('url')
         single_page_only = data.get('single_page_only', False)
         excluded_urls = data.get('excluded_urls', [])
+        same_language = data.get('same_language', False)
+        use_sitemap = data.get('use_sitemap', False)
+        skip_funnel = data.get('skip_funnel', False)
         crawl_mode = data.get('crawl_mode', 'playwright_llm')
         tenant_id_str = str(tenant_id)
 
@@ -173,6 +176,9 @@ def discover_links(current_user, tenant_id):
             start_url=start_url,
             single_page_only=bool(single_page_only),
             excluded_urls=excluded_urls,
+            same_language=bool(same_language),
+            use_sitemap=bool(use_sitemap),
+            skip_funnel=bool(skip_funnel),
             crawl_mode=crawl_mode,
         )
 

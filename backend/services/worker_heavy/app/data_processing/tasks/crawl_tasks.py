@@ -35,6 +35,7 @@ from app.gemini_store.service import INDEXABLE_FILE_EXTENSIONS, UNSUPPORTED_EXTE
 from app.knowledge import jobs
 from app.ai_models import INDEXING_GEMINI_MODEL, count_tokens
 from app.knowledge.markdown import content_hash, estimate_tokens, html_to_markdown, pdf_page_count, contact_from_link
+from app.knowledge.url_scope import is_excluded, is_funnel_page, other_language, site as _site
 from app.logging_config import error_logger
 from app.models.database import CrawlingStatus, SourceType
 from app.security.url_guard import UnsafeURLError, is_public_url, safe_client
@@ -54,12 +55,6 @@ def _is_file_link(url: str) -> bool:
     return ext in INDEXABLE_FILE_EXTENSIONS or ext in UNSUPPORTED_EXTENSIONS
 
 
-def _site(host: str | None) -> str:
-    """Host without a leading "www." — zofingen.ch and www.zofingen.ch are one site."""
-    host = (host or "").lower()
-    return host[4:] if host.startswith("www.") else host
-
-
 def _canonical_link(href: str) -> str:
     """
     Normalised URL for de-duplication. File links drop their query string:
@@ -75,15 +70,6 @@ def _canonical_link(href: str) -> str:
 def _is_contact_link(url: str) -> bool:
     """Email/phone links (also ones hidden in the path) aren't pages; their address is kept in the page text."""
     return contact_from_link(url) is not None
-
-
-def _is_excluded(url: str, excluded: list[str]) -> bool:
-    stripped = url.replace("https://", "").replace("http://", "").strip("/")
-    for ex in excluded:
-        ex = ex.replace("https://", "").replace("http://", "").strip("/")
-        if ex and (stripped == ex or stripped.startswith(ex + "/")):
-            return True
-    return False
 
 
 def _finish_task(task_id: int, status: CrawlingStatus, outcome: str) -> None:
@@ -104,7 +90,7 @@ def _enqueue(task_rows: list[dict], tenant_id: str) -> None:
 def _add_links(job: dict, tenant_id: str, depth: int, parent_url: str, hrefs: list[str]) -> int:
     """Inserts unseen links as tasks of this job and queues them. Returns how many were new."""
     start_site = _site(urlparse(job["start_url"]).hostname)
-    excluded = [normalize_url(str(e).strip()) for e in job.get("excluded_urls") or []]
+    excluded = job.get("excluded_urls") or []
     max_depth = job["max_depth"]
     rows, seen = [], set()
     for href in hrefs:
@@ -119,7 +105,11 @@ def _add_links(job: dict, tenant_id: str, depth: int, parent_url: str, hrefs: li
             url = "https://" + url[len("http://"):]
             if url in seen:
                 continue
-        if _is_excluded(url, excluded) or _is_contact_link(url):
+        if is_excluded(url, excluded) or _is_contact_link(url):
+            continue
+        if job.get("same_language") and other_language(url, job["start_url"]):
+            continue  # the bot answers in any language: one language version is enough
+        if job.get("skip_funnel") and is_funnel_page(url):
             continue
         if _is_file_link(url):
             if max_depth <= 1 and Path(parsed.path).suffix.lower() not in _DOCUMENT_EXTENSIONS:
@@ -140,6 +130,25 @@ def _add_links(job: dict, tenant_id: str, depth: int, parent_url: str, hrefs: li
     if inserted:
         _enqueue(inserted, tenant_id)
     return len(inserted)
+
+
+def _add_sitemap_pages(job: dict, tenant_id: str, start_url: str) -> None:
+    """
+    Whole-site crawls also visit what the sitemap lists below the start
+    address: landing pages no menu links to. They're read at the deepest
+    level, so they don't lead further. Never fails the scan.
+    """
+    if not job.get("use_sitemap") or job["max_depth"] <= 1:
+        return
+    try:
+        from app.knowledge.sitemap import sitemap_urls
+        below = urlparse(job["start_url"]).path.rstrip("/")
+        urls = [u for u in sitemap_urls(job["start_url"])
+                if not below or urlparse(u).path.rstrip("/") == below or urlparse(u).path.startswith(below + "/")]
+        found = _add_links(job, tenant_id, job["max_depth"] - 1, start_url, urls)
+        jobs.log_event(job["id"], tenant_id, "sitemap_read", url=start_url, listed=len(urls), count=found)
+    except Exception as e:
+        error_logger.warning("sitemap of %s skipped: %s", job["start_url"], e)
 
 
 def _record_error(tenant_id: str, url: str, source_type: str, job_id: int, status_code: int) -> None:
@@ -319,6 +328,9 @@ def crawl_links_task(
     start_url: str,
     single_page_only: bool = False,
     excluded_urls: list[str] = None,
+    same_language: bool = False,
+    use_sitemap: bool = False,
+    skip_funnel: bool = False,
     max_depth: int = 3,
     trigger: str = "manual",
     auto_confirm: bool = False,
@@ -336,6 +348,9 @@ def crawl_links_task(
         "single_page_only": single_page_only,
         "status": CrawlingStatus.IN_PROGRESS.value,
         "excluded_urls": excluded_urls or [],
+        "same_language": bool(same_language),
+        "use_sitemap": bool(use_sitemap),
+        "skip_funnel": bool(skip_funnel),
         "crawl_mode": crawl_mode,
         "trigger": trigger,
         "auto_confirm": auto_confirm,
@@ -484,6 +499,7 @@ def _scan_page(tenant_id: str, url: str, job: dict, depth: int, parent_url: str 
         info["title"] = title[:200]
     if depth == 1:
         _update_contact_card(tenant_id, job, url, html)
+        _add_sitemap_pages(job, tenant_id, url)
     tokens = estimate_tokens(markdown)
     if tokens >= MIN_CONTENT_TOKENS:
         # exact size for the cost estimate (free call); the guess only as fallback

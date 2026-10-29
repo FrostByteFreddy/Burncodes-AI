@@ -741,3 +741,52 @@ class TestFacts:
         assert facts_context([], {}) == ""
         assert fact_mentioned(self.FACTS[0], "Reichenbach hat 3883 Einwohner.")
         assert not fact_mentioned(self.FACTS[1], "Die Hundetaxe beträgt 80 Franken.")
+
+
+class TestCrawlScope:
+    def test_left_out_paths_match_the_url_path(self):
+        from app.knowledge.url_scope import is_excluded
+        excluded = ["/de", "/hu/", "shop.younity.com", "https://www.younity.com/blog/old"]
+        assert is_excluded("https://www.younity.com/de", excluded)
+        assert is_excluded("https://younity.com/de/kontakt", excluded)
+        assert is_excluded("https://younity.com/HU/a", excluded)
+        assert not is_excluded("https://younity.com/design", excluded)       # prefix, not a subfolder
+        assert not is_excluded("https://younity.com/en/de", excluded)
+        assert is_excluded("https://shop.younity.com/cart", excluded)
+        assert is_excluded("https://younity.com/blog/old/post", excluded)
+        assert not is_excluded("https://younity.com/blog/new", excluded)
+        assert not is_excluded("https://younity.com/a", ["/", ""])
+
+    def test_one_language_version(self):
+        from app.knowledge.url_scope import language_of, other_language
+        assert language_of("https://x.com/de/kontakt") == "de"
+        assert language_of("https://x.com/en-us/") == "en"
+        assert language_of("https://x.com/fr_CH/a") == "fr"
+        assert language_of("https://x.com/page?lang=hu") == "hu"
+        assert language_of("https://x.com/kontakt") is None
+        assert language_of("https://x.com/xx/a") is None                    # not a language
+        # from the home page: language versions are skipped, everything else kept
+        assert other_language("https://x.com/de/a", "https://x.com/")
+        assert not other_language("https://x.com/about", "https://x.com/")
+        # from /de/: German and language-less pages are kept
+        assert not other_language("https://x.com/de-ch/a", "https://x.com/de/")
+        assert not other_language("https://x.com/impressum", "https://x.com/de/")
+        assert other_language("https://x.com/en/a", "https://x.com/de/")
+
+    def test_funnel_pages(self):
+        from app.knowledge.url_scope import is_funnel_page
+        for path in ("k1/offer/thanks", "k1/optin/thanks-start", "k1/optin/fehler", "k1/optin/confirmation",
+                     "k3/optin-ppc", "login", "opt-out-2", "warenkorb", "danke-fuer-deine-anmeldung"):
+            assert is_funnel_page("https://x.com/joe/" + path), path
+        for path in ("", "joe", "joe/k1/offer", "joe/k1/optin", "k3/tagesseiten/tag-1", "blog/thanksgiving-ritual",
+                     "blog/fehler-die-du-vermeiden-solltest", "dead-sea", "accountability-coaching"):
+            assert not is_funnel_page("https://x.com/" + path), path
+
+    def test_sitemaps(self):
+        from app.knowledge.sitemap import parse_sitemap, sitemaps_in_robots
+        index = """<sitemapindex><sitemap><loc>https://x.com/sitemap.xml?page=1&amp;sitemap=pages</loc></sitemap></sitemapindex>"""
+        assert parse_sitemap(index) == ([], ["https://x.com/sitemap.xml?page=1&sitemap=pages"])
+        pages = """<urlset><url><loc> https://x.com/a </loc></url><url><loc><![CDATA[https://x.com/b]]></loc></url></urlset>"""
+        assert parse_sitemap(pages) == (["https://x.com/a", "https://x.com/b"], [])
+        assert sitemaps_in_robots("User-agent: *\nSitemap: /map.xml\nsitemap: https://cdn.x.com/s.xml", "https://x.com/") \
+            == ["https://x.com/map.xml", "https://cdn.x.com/s.xml"]

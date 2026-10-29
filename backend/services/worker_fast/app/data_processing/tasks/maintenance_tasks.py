@@ -114,7 +114,7 @@ def weekly_recrawl_task(self):
         for tenant in tenants:
             tenant_jobs = (
                 supabase.table("crawling_jobs")
-                .select("start_url, status, created_at, max_depth, single_page_only, excluded_urls, crawl_mode")
+                .select("start_url, status, created_at, max_depth, single_page_only, excluded_urls, same_language, use_sitemap, skip_funnel, learning_model, crawl_mode")
                 .eq("tenant_id", tenant["id"]).order("created_at", desc=True).limit(500).execute()
             ).data or []
             active = {CrawlingStatus.IN_PROGRESS.value, CrawlingStatus.SCANNED.value, CrawlingStatus.INDEXING.value}
@@ -132,6 +132,9 @@ def weekly_recrawl_task(self):
                     "start_url": start_url,
                     "single_page_only": j.get("single_page_only") or False,
                     "excluded_urls": j.get("excluded_urls") or [],
+                    "same_language": j.get("same_language") or False,
+                    "use_sitemap": j.get("use_sitemap") or False,
+                    "skip_funnel": j.get("skip_funnel") or False,
                     "max_depth": j.get("max_depth") or 3,
                     "trigger": "scheduled",
                     "auto_confirm": True,
