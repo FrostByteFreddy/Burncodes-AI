@@ -1,93 +1,80 @@
 <template>
   <div class="crawl-page">
-    <router-link :to="{ name: 'TenantSources', params: { tenantId } }" class="crawl-back">
-      <font-awesome-icon :icon="['fas', 'chevron-left']" />
-      {{ $t('knowledge.job.back') }}
-    </router-link>
-
     <template v-if="!job && loading">
-      <div class="ghost-stack" aria-busy="true">
-        <span class="ghost ghost--pill"></span>
-        <span class="ghost ghost--title" style="width: 45%; height: 26px"></span>
-        <span class="ghost ghost--line" style="width: 30%"></span>
-      </div>
-      <section class="panel ghost-stack">
-        <span class="ghost ghost--title" style="width: 160px"></span>
-        <span v-for="n in 3" :key="n" class="ghost ghost--line" :style="{ width: `${85 - n * 15}%` }"></span>
-      </section>
-      <section class="panel">
-        <div v-for="n in 6" :key="n" class="ghost-row"><span class="ghost ghost--dot" style="width: 10px; height: 10px"></span><span class="ghost ghost--line" :style="{ width: `${60 - (n % 3) * 12}%` }"></span></div>
-      </section>
+      <BcSkeleton :lines="2" />
+      <BcPanel><BcSkeleton :lines="4" /></BcPanel>
     </template>
-    <p v-else-if="!job" class="meta">{{ $t('knowledge.job.actionFailed') }}</p>
+    <BcNotice v-else-if="!job" tone="error" :title="$t('knowledge.job.actionFailed')">
+      <template #actions><BcButton size="sm" variant="secondary" @click="fetchJob">{{ $t('common.retry') }}</BcButton></template>
+    </BcNotice>
 
     <template v-else>
-      <div class="page-head">
-        <div class="crawl-head">
-          <span class="crawl-status" :class="`crawl-status--${job.status.toLowerCase()}`">
-            <font-awesome-icon v-if="job.status === 'IN_PROGRESS' || job.status === 'INDEXING' || isPreparing(job)" :icon="['fas', 'spinner']" class="animate-spin" />
-            {{ statusLabel(job) }}
-          </span>
-          <h1 class="page-title crawl-title">{{ displayUrl(job.start_url) }}</h1>
-          <p class="page-lede">
-            {{ job.trigger === 'scheduled' ? $t('knowledge.job.scheduled', { date: fmtDateTime(job.created_at) }) : $t('knowledge.job.started', { date: fmtDateTime(job.created_at) }) }}<template v-if="job.single_page_only">. {{ $t('knowledge.job.singlePage') }}.</template>
-          </p>
-        </div>
-        <div class="page-actions">
-          <a :href="job.start_url" target="_blank" rel="noopener noreferrer" class="btn-quiet">
-            <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" />
-            {{ $t('knowledge.job.openSite') }}
+      <BcPageHeader :title="displayUrl(job.start_url)"
+        :lede="(job.trigger === 'scheduled' ? $t('knowledge.job.scheduled', { date: fmtDateTime(job.created_at) }) : $t('knowledge.job.started', { date: fmtDateTime(job.created_at) })) + (job.single_page_only ? ` · ${$t('knowledge.job.singlePage')}` : '')">
+        <template #eyebrow>
+          <router-link :to="{ name: 'TenantSources', params: { tenantId } }">{{ $t('pages.knowledgeTitle') }}</router-link> › {{ $t('knowledge.crawls.title') }}
+        </template>
+        <template #status><BcStatusBadge :status="badge" /></template>
+        <template #actions>
+          <a :href="job.start_url" target="_blank" rel="noopener noreferrer" class="bc-btn bc-btn--quiet bc-btn--md">
+            <BcIcon name="arrow-up-right-from-square" />{{ $t('knowledge.job.openSite') }}
           </a>
-          <button v-if="job.status === 'IN_PROGRESS' || job.status === 'INDEXING'" class="btn-quiet" :disabled="busy" @click="onStop">
-            <font-awesome-icon :icon="['fas', 'stop']" /> {{ $t('knowledge.job.stop') }}
-          </button>
-          <button v-if="job.status === 'FAILED'" class="btn-action" :disabled="busy" @click="onResume">
-            <font-awesome-icon :icon="['fas', busy ? 'spinner' : 'play']" :class="{ 'animate-spin': busy }" /> {{ $t('knowledge.job.resume') }}
-          </button>
-          <button v-if="!isActive" class="btn-quiet btn-quiet--danger" @click="askDelete = true">
-            <font-awesome-icon :icon="['fas', 'trash-alt']" /> {{ $t('knowledge.job.delete') }}
-          </button>
-        </div>
-      </div>
+          <BcButton v-if="job.status === 'IN_PROGRESS' || job.status === 'INDEXING'" variant="secondary" icon="stop" :disabled="busy" @click="onStop">{{ $t('knowledge.job.stop') }}</BcButton>
+          <BcButton v-if="job.status === 'FAILED'" variant="primary" icon="play" :loading="busy" @click="onResume">{{ $t('knowledge.job.resume') }}</BcButton>
+          <BcButton v-if="!isActive" variant="destructive-quiet" icon="trash" @click="askDelete = true">{{ $t('knowledge.job.delete') }}</BcButton>
+        </template>
+      </BcPageHeader>
 
       <!-- Scan finished: what learning will do and cost -->
-      <section v-if="isPreparing(job)" class="panel crawl-reading">
-        <span class="crawl-pulse" aria-hidden="true"></span>
-        <p>{{ $t('knowledge.estimate.preparing') }}</p>
-      </section>
-      <section v-else-if="job.status === 'SCANNED'" class="panel crawl-estimate">
-        <h2 class="panel-title">{{ $t('knowledge.estimate.title') }}</h2>
-        <ul class="crawl-outcomes">
-          <li v-for="o in outcomes" :key="o.key"><strong>{{ o.n }}</strong> {{ $t(`knowledge.estimate.${o.key}`) }}</li>
-        </ul>
-        <p class="crawl-estimate__body">
-          {{ estimate.to_learn ? $t('knowledge.estimate.body', { n: estimate.to_learn }) : $t(estimate.skipped ? 'knowledge.estimate.noneSelected' : 'knowledge.estimate.nothing') }}
-        </p>
-        <p v-if="estimate.index_only" class="meta">
-          {{ $t('knowledge.estimate.indexOnly', { n: estimate.index_only, pages: estimate.max_pages }) }}
-        </p>
+      <BcNotice v-if="isPreparing(job)" tone="info" icon="spinner" :title="$t('knowledge.estimate.preparing')" />
+      <section v-else-if="job.status === 'SCANNED'" class="crawl-estimate">
+        <BcPanel>
+          <div class="crawl-estimate__grid">
+            <div class="crawl-estimate__text">
+              <h2 class="crawl-estimate__title">
+                {{ estimate.to_learn ? $t('onboarding.learning.estimateTitle', { n: formatNumber(estimate.to_learn) }) : $t('knowledge.estimate.title') }}
+              </h2>
+              <p class="crawl-muted">
+                {{ estimate.to_learn ? $t('knowledge.estimate.body', { n: formatNumber(estimate.to_learn) }) : $t(estimate.skipped ? 'knowledge.estimate.noneSelected' : 'knowledge.estimate.nothing') }}
+              </p>
+              <div v-if="outcomes.length" class="crawl-outcomes">
+                <BcKeyFigure v-for="o in outcomes" :key="o.key" size="sm" :label="$t(`knowledge.estimate.${o.key}`)" :value="formatNumber(o.n)" />
+              </div>
+              <p v-if="estimate.index_only" class="crawl-muted">{{ $t('knowledge.estimate.indexOnly', { n: estimate.index_only, pages: estimate.max_pages }) }}</p>
+              <BcRadioCards v-if="estimate.to_learn && modelOptions.length > 1" v-model="model" :legend="$t('knowledge.models.legend')" :options="modelOptions" :columns="1" />
+            </div>
+            <div v-if="estimate.to_learn" class="crawl-cost">
+              <div class="bc-kf__label">{{ $t('onboarding.learning.cost') }}</div>
+              <BcMoney :amount="cost" estimate size="figure" />
+              <div class="crawl-cost__row"><span>{{ $t('onboarding.learning.yourBalance') }}</span><BcMoney :amount="balance" size="strong" /></div>
+              <div v-if="!balanceShort" class="crawl-cost__row"><span>{{ $t('onboarding.learning.after') }}</span><BcMoney :amount="balance - cost" /></div>
+              <BcButton v-if="!balanceShort" variant="primary" size="lg" block :loading="busy" @click="onConfirm">
+                {{ $t('knowledge.estimate.learn', { cost: fmtChf(cost) }) }}
+              </BcButton>
+              <BcButton variant="quiet" block :disabled="busy" @click="onStop">{{ $t('knowledge.job.discard') }}</BcButton>
+            </div>
+          </div>
+        </BcPanel>
+        <BcNotice v-if="estimate.to_learn && balanceShort" tone="warning" :title="$t('onboarding.learning.balanceShortTitle')">
+          {{ $t('onboarding.learning.balanceShort', { cost: formatCHF(cost), balance: formatCHF(balance) }) }}
+          <template #actions>
+            <router-link :to="{ name: 'AccountSettings', params: { section: 'billing' } }" class="bc-btn bc-btn--primary bc-btn--sm">{{ $t('onboarding.learning.topUp') }}</router-link>
+            <BcButton variant="quiet" size="sm" @click="billing.fetchBalance()">{{ $t('onboarding.learning.recheck') }}</BcButton>
+          </template>
+        </BcNotice>
 
         <!-- Gemini's savings suggestions, what was sorted out, and the folder tree -->
         <CrawlSelection :key="job.id" :base="base" :host="displayUrl(job.start_url)" @estimate="onEstimate" />
-        <div class="page-actions">
-          <button class="btn-action" :disabled="busy || !estimate.to_learn" @click="onConfirm">
-            <font-awesome-icon v-if="busy" :icon="['fas', 'spinner']" class="animate-spin" />
-            {{ $t('knowledge.estimate.learn', { cost: fmtChf(estimate.cost_chf) }) }}
-          </button>
-          <button class="btn-quiet" :disabled="busy" @click="onStop">{{ $t('knowledge.job.discard') }}</button>
-        </div>
       </section>
 
-      <!-- Scanning: what's being read (no total, it isn't known yet) -->
-      <section v-if="job.status === 'IN_PROGRESS'" class="panel crawl-reading">
-        <span class="crawl-pulse" aria-hidden="true"></span>
-        <p>{{ latestPage(log) ? $t('knowledge.job.reading', { page: latestPage(log) }) : $t('knowledge.job.starting') }}</p>
-      </section>
+      <!-- Reading: which page (no total, it isn't known yet) -->
+      <BcPanel v-if="job.status === 'IN_PROGRESS'">
+        <BcActivityLogRow state="running" :title="latestPage(log) ? $t('knowledge.job.reading', { page: latestPage(log) }) : $t('knowledge.job.starting')" />
+      </BcPanel>
       <!-- Learning: a real bar, the number of pages is known -->
-      <section v-if="job.status === 'INDEXING'" class="panel crawl-progress">
-        <div class="crawl-progress__bar"><div class="crawl-progress__fill" :style="{ width: progress.percent + '%' }"></div></div>
-        <p class="meta">{{ progress.label }}</p>
-      </section>
+      <BcPanel v-if="job.status === 'INDEXING'">
+        <BcProgressBar tone="ai" :value="progress.done" :max="progress.total || 1" :label="progress.label" />
+      </BcPanel>
 
       <!-- Done: the report -->
       <section v-if="job.status === 'COMPLETED' && job.report" class="panel">
@@ -133,6 +120,13 @@ import CrawlSelection from './sources/CrawlSelection.vue';
 import PageTree from './sources/PageTree.vue';
 import { useTenantsStore } from '@/stores/tenants';
 import ConfirmationModal from '../ConfirmationModal.vue';
+import { useBillingStore } from '@/stores/billing';
+import { useLearningModels } from '@/composables/useLearningModels';
+import {
+  BcActivityLogRow, BcButton, BcIcon, BcKeyFigure, BcMoney, BcNotice, BcPageHeader, BcPanel, BcProgressBar, BcRadioCards,
+  BcSkeleton, BcStatusBadge,
+} from '@/components/ui';
+import { formatCHF, formatNumber } from '@/utils/format';
 
 const props = defineProps({
   tenantId: { type: String, required: true },
@@ -140,10 +134,22 @@ const props = defineProps({
 });
 const router = useRouter();
 const { t } = useI18n();
-const { statusLabel, fmtChf, fmtDateTime, displayUrl, latestPage } = useCrawlText();
+const { fmtChf, fmtDateTime, displayUrl, latestPage } = useCrawlText();
+
+// a crawl's status in the design system's badge names
+const BADGE = { IN_PROGRESS: 'scanning', SCANNED: 'ready', INDEXING: 'learning', COMPLETED: 'done', FAILED: 'stopped' };
+const badge = computed(() => (isPreparing(job.value) ? 'preparing' : BADGE[job.value?.status] || 'stopped'));
+
+// learning is prepaid: the estimate shows what's left afterwards, or how much is missing
+const billing = useBillingStore();
+billing.fetchBalance();
+const balance = computed(() => Number(billing.balance || 0));
 const actions = useCrawlActions(() => props.tenantId);
 
 const job = ref(null);
+// the learning model the customer picks; reads the job, so it comes after it
+const { model, options: modelOptions, cost } = useLearningModels(() => job.value?.estimate, () => useTenantsStore().currentTenant?.learning_model);
+const balanceShort = computed(() => balance.value < cost.value);
 const log = ref([]);
 const loading = ref(false);
 const busy = ref(false);
@@ -163,8 +169,8 @@ const outcomes = computed(() => {
 });
 
 const progress = computed(() => {
-  const { done, total, percent } = learnProgress(job.value, log.value);
-  return { percent, label: t('knowledge.job.learnProgress', { done, total: total || '…' }) };
+  const { done, total } = learnProgress(job.value, log.value);
+  return { done, total, label: t('knowledge.job.learnProgress', { done: formatNumber(done), total: total ? formatNumber(total) : '…' }) };
 });
 
 const base = computed(() => `/tenants/${props.tenantId}/crawling_jobs/${props.jobId}`);
@@ -218,7 +224,7 @@ const onEstimate = (estimate) => { job.value = { ...job.value, estimate }; };
 
 const onConfirm = async () => {
   busy.value = true;
-  if (await actions.confirm(job.value)) await fetchJob();
+  if (await actions.confirm(job.value, model.value)) await fetchJob();
   busy.value = false;
 };
 const onStop = async () => {
@@ -238,44 +244,22 @@ const onDelete = async () => {
 </script>
 
 <style scoped>
-.crawl-page { display: flex; flex-direction: column; gap: 20px; }
-.crawl-back {
-  align-self: flex-start;
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: var(--text-sm); font-weight: 600; color: var(--surface-muted); text-decoration: none;
+.crawl-page { display: flex; flex-direction: column; gap: var(--space-6); }
+.crawl-page :deep(.bc-pagehead__title) { overflow-wrap: anywhere; }
+
+.crawl-estimate { display: flex; flex-direction: column; gap: var(--space-4); }
+.crawl-estimate__grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--space-8); align-items: start; }
+.crawl-estimate__text { display: flex; flex-direction: column; gap: var(--space-4); }
+.crawl-estimate__title { font-size: 22px; line-height: 30px; font-weight: 700; }
+.crawl-outcomes { display: flex; flex-wrap: wrap; gap: var(--space-4) var(--space-8); }
+.crawl-muted { color: var(--text-secondary); max-width: var(--reading-max); }
+.crawl-cost { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); background: var(--surface-2); border-radius: var(--radius-md); }
+.crawl-cost__row { display: flex; justify-content: space-between; color: var(--text-secondary); }
+
+.crawl-tree { margin-top: var(--space-4); }
+.crawl-section-title { margin-bottom: var(--space-2); }
+
+@media (max-width: 900px) {
+  .crawl-estimate__grid { grid-template-columns: minmax(0, 1fr); }
 }
-.crawl-back:hover { color: var(--interactive); }
-
-.crawl-head { min-width: 0; }
-.crawl-title { overflow-wrap: anywhere; margin-top: 10px; }
-.crawl-status {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 3px 10px; border-radius: var(--radius-pill);
-  font-size: var(--text-xs); font-weight: 700;
-  background: var(--surface-2); color: var(--surface-text);
-}
-.crawl-status--in_progress, .crawl-status--indexing { background: var(--ai-soft); color: var(--ai); }
-.crawl-status--scanned { background: var(--interactive-soft); color: var(--interactive); }
-.crawl-status--completed { background: var(--status-success-soft); color: var(--status-success); }
-.crawl-status--failed { background: var(--status-warning-soft); color: var(--status-warning); }
-
-.page-actions .btn-quiet { text-decoration: none; }
-.btn-quiet--danger:hover:not(:disabled) { border-color: var(--status-error); color: var(--status-error); }
-
-.crawl-estimate { display: flex; flex-direction: column; gap: 14px; border-color: var(--interactive-strong); }
-.crawl-outcomes { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 15px; color: var(--surface-muted); }
-.crawl-outcomes strong { color: var(--surface-heading); font-size: var(--text-lg); margin-right: 2px; }
-.crawl-estimate__body { font-size: 15px; color: var(--surface-text); max-width: var(--measure); }
-
-.crawl-tree { margin-top: 14px; }
-.crawl-progress { display: flex; flex-direction: column; gap: 8px; }
-.crawl-reading { display: flex; align-items: center; gap: 12px; font-size: 15px; color: var(--surface-heading); }
-.crawl-reading p { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.crawl-pulse { flex-shrink: 0; width: 10px; height: 10px; border-radius: 50%; background: var(--ai); animation: crawl-pulse 1.2s ease-in-out infinite; }
-@keyframes crawl-pulse { 0%, 100% { opacity: 0.35; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .crawl-pulse { animation: none; } }
-.crawl-progress__bar { height: 6px; border-radius: var(--radius-pill); background: var(--surface-3); overflow: hidden; }
-.crawl-progress__fill { height: 100%; width: 0; background: var(--ai); transition: width var(--t-slow); }
-
-.crawl-section-title { margin-bottom: 8px; }
 </style>

@@ -1,85 +1,50 @@
 <template>
-  <div class="page">
-    <div class="page-head">
-      <div>
-        <h1 class="page-title">{{ $t('manageTenants.title') }}</h1>
-        <p class="page-lede">{{ $t('pages.chatbots') }}</p>
-      </div>
-      <button v-if="tenantsStore.tenants.length > 0" @click="showCreateModal = true" class="btn-add">
-        <font-awesome-icon :icon="['fas', 'plus']" />
-        {{ $t('manageTenants.newChatbot') }}
-      </button>
-    </div>
+  <div class="mt-page">
+    <BcPageHeader :title="$t('manageTenants.title')" :lede="$t('pages.chatbots')">
+      <template v-if="tenantsStore.tenants.length" #actions>
+        <BcButton variant="primary" icon="plus" @click="showCreateModal = true">{{ $t('manageTenants.newChatbot') }}</BcButton>
+      </template>
+    </BcPageHeader>
 
-    <!-- Loading skeletons -->
-    <div v-if="tenantsStore.loading && tenantsStore.tenants.length === 0" class="tenant-list">
-      <div v-for="n in 3" :key="n" class="skeleton-card ghost"></div>
-    </div>
+    <BcPanel v-if="tenantsStore.loading && !tenantsStore.tenants.length" flush>
+      <div v-for="n in 3" :key="n" class="mt-row"><BcSkeleton :lines="2" /></div>
+    </BcPanel>
 
-    <!-- Empty state -->
-    <div v-else-if="!tenantsStore.loading && tenantsStore.tenants.length === 0" class="empty-state">
-      <p class="empty-state__title">{{ $t('manageTenants.noChatbots') }}</p>
-      <p class="empty-state__sub">{{ $t('manageTenants.noChatbotsSubtitle') }}</p>
-      <button @click="showCreateModal = true" class="btn-add">
-        <font-awesome-icon :icon="['fas', 'plus']" />
-        {{ $t('manageTenants.createChatbot') }}
-      </button>
-    </div>
+    <BcEmptyState v-else-if="!tenantsStore.tenants.length" icon="layer-group" :title="$t('manageTenants.noChatbots')" :description="$t('manageTenants.noChatbotsSubtitle')">
+      <template #action>
+        <router-link :to="{ path: '/onboarding', query: { onboarding: '' } }" class="bc-btn bc-btn--primary bc-btn--lg">{{ $t('manageTenants.guided') }}</router-link>
+        <BcButton variant="quiet" @click="showCreateModal = true">{{ $t('manageTenants.createChatbot') }}</BcButton>
+      </template>
+    </BcEmptyState>
 
-    <!-- Tenant list -->
-    <div v-else class="tenant-list">
-      <div
-        v-for="tenant in tenantsStore.tenants"
-        :key="tenant.id"
-        class="tenant-card"
-        @click="goToTenant(tenant)"
-      >
-        <div class="tenant-card__left">
-          <span class="status-dot" :class="tenant.source_count ? 'status-dot--active' : ''"></span>
-          <div class="tenant-card__info">
-            <h2 class="tenant-card__name">{{ tenant.name }}</h2>
-            <p class="tenant-card__meta">
-              <span>{{ $t('manageTenants.sources', { n: tenant.source_count ?? 0 }) }}</span>
-              <span class="meta-sep">·</span>
-              <span class="tenant-card__url">/chat/{{ tenant.id.slice(0, 8) }}…</span>
-            </p>
-          </div>
-        </div>
-
-        <div class="tenant-card__actions" @click.stop>
-          <a
-            :href="`/chat/${tenant.id}`"
-            target="_blank"
-            class="btn-ghost-sm"
-            :title="$t('manageTenants.openChatbot')"
-          >
-            <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" />
-          </a>
-          <router-link
-            :to="{ name: 'TenantConfigure', params: { tenantId: tenant.id } }"
-            class="btn-ghost-sm"
-            :title="$t('manageTenants.configure')"
-          >
-            <font-awesome-icon :icon="['fas', 'sliders']" />
+    <BcPanel v-else flush>
+      <ul class="mt-list">
+        <li v-for="tenant in tenantsStore.tenants" :key="tenant.id" class="mt-row">
+          <router-link :to="{ name: 'TenantOverview', params: { tenantId: tenant.id } }" class="mt-main" @click="tenantsStore.selectTenant(tenant)">
+            <span class="mt-name">{{ tenant.name }}</span>
+            <span class="mt-meta">
+              {{ $t('manageTenants.sources', { n: formatNumber(sourceCount(tenant)) }, sourceCount(tenant)) }}
+              · {{ $t(`configure.basics.audiences.${tenant.audience || 'municipality'}`) }}
+            </span>
           </router-link>
-          <button
-            @click="confirmDelete(tenant)"
-            class="btn-ghost-sm btn-ghost-sm--danger"
-            :title="$t('manageTenants.delete')"
-          >
-            <font-awesome-icon :icon="['fas', 'trash']" />
-          </button>
-        </div>
-      </div>
-    </div>
+          <BcStatusBadge :status="tenant.is_active === false ? 'off' : 'on'" size="sm" />
+          <div class="mt-actions">
+            <a :href="`/chat/${tenant.id}`" target="_blank" rel="noopener" class="bc-iconbtn bc-iconbtn--quiet bc-iconbtn--md"
+              :aria-label="$t('manageTenants.openChatbot')" :title="$t('manageTenants.openChatbot')"><BcIcon name="arrow-up-right-from-square" /></a>
+            <router-link :to="{ name: 'TenantConfigure', params: { tenantId: tenant.id } }" class="bc-iconbtn bc-iconbtn--quiet bc-iconbtn--md"
+              :aria-label="$t('manageTenants.configure')" :title="$t('manageTenants.configure')"><BcIcon name="sliders" /></router-link>
+            <BcIconButton icon="trash" variant="danger" :label="$t('manageTenants.delete')" @click="tenantToDelete = tenant" />
+          </div>
+        </li>
+      </ul>
+    </BcPanel>
 
     <CreateTenantModal v-if="showCreateModal" @close="showCreateModal = false" />
     <ConfirmationModal
-      v-if="tenantToDelete"
-      :show="true"
+      :show="Boolean(tenantToDelete)"
       :title="$t('manageTenants.deleteModal.title')"
-      :message="$t('manageTenants.deleteModal.message', { name: tenantToDelete.name })"
-      :confirmButtonText="$t('manageTenants.deleteModal.confirm')"
+      :message="$t('manageTenants.deleteModal.message', { name: escapeHtml(tenantToDelete?.name) })"
+      :confirm-button-text="$t('manageTenants.deleteModal.confirm')"
       @confirm="deleteTenant"
       @cancel="tenantToDelete = null"
     />
@@ -87,147 +52,51 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useTenantsStore } from '../stores/tenants'
-import { useToast } from '../composables/useToast'
-import { useI18n } from 'vue-i18n'
-import CreateTenantModal from '../components/CreateTenantModal.vue'
-import ConfirmationModal from '../components/ConfirmationModal.vue'
+import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useTenantsStore } from '../stores/tenants';
+import { useToast } from '../composables/useToast';
+import { formatNumber } from '../utils/format';
+import CreateTenantModal from '../components/CreateTenantModal.vue';
+import ConfirmationModal from '../components/ConfirmationModal.vue';
+import {
+  BcButton, BcEmptyState, BcIcon, BcIconButton, BcPageHeader, BcPanel, BcSkeleton, BcStatusBadge,
+} from '../components/ui';
 
-const { t } = useI18n()
-const tenantsStore = useTenantsStore()
-const router = useRouter()
-const { addToast } = useToast()
+const { t } = useI18n();
+const tenantsStore = useTenantsStore();
+const { addToast } = useToast();
 
-const showCreateModal = ref(false)
-const tenantToDelete = ref(null)
+const showCreateModal = ref(false);
+const tenantToDelete = ref(null);
 
-const goToTenant = (tenant) => {
-  tenantsStore.selectTenant(tenant)
-  router.push({ name: 'TenantOverview', params: { tenantId: tenant.id } })
-}
-
-const confirmDelete = (tenant) => { tenantToDelete.value = tenant }
+// the list endpoint returns the count as tenant_sources: [{ count }]
+const sourceCount = (tenant) => tenant.source_count ?? tenant.tenant_sources?.[0]?.count ?? 0;
+const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const deleteTenant = async () => {
   try {
-    await tenantsStore.deleteTenant(tenantToDelete.value.id)
-    addToast(t('manageTenants.toast.deleteSuccess'), 'success')
-  } catch {
-    addToast(t('manageTenants.toast.deleteError'), 'error')
+    await tenantsStore.deleteTenant(tenantToDelete.value.id);
+    addToast(t('manageTenants.toast.deleteSuccess'), 'success');
+  } catch (e) {
+    addToast(t(e.response?.data?.code === 'gemini_failed' ? 'common.geminiFailed' : 'manageTenants.toast.deleteError'), 'error');
   } finally {
-    tenantToDelete.value = null
+    tenantToDelete.value = null;
   }
-}
+};
 </script>
 
 <style scoped>
-
-
-.btn-add {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: var(--gradient-brand);
-  color: white;
-  font-size: 13px;
-  font-weight: 600;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: opacity var(--t-fast), transform var(--t-fast);
+.mt-page { display: flex; flex-direction: column; gap: var(--space-8); }
+.mt-list { list-style: none; margin: 0; padding: 0; }
+.mt-row {
+  display: flex; align-items: center; gap: var(--space-4);
+  padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle);
 }
-.btn-add:hover { opacity: 0.9; transform: translateY(-1px); }
-
-.btn-ghost-sm {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px; height: 32px;
-  border-radius: var(--radius-md);
-  background: none;
-  border: none;
-  color: var(--surface-muted);
-  cursor: pointer;
-  transition: color var(--t-fast), background var(--t-fast);
-  text-decoration: none;
-  font-size: 13px;
-}
-.btn-ghost-sm:hover { color: var(--surface-text); background: var(--surface-2); }
-.btn-ghost-sm--danger:hover { color: var(--status-error); background: rgba(255,68,68,0.08); }
-
-.tenant-list { display: flex; flex-direction: column; gap: 10px; }
-
-.tenant-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  background: var(--surface-1);
-  border: 1px solid var(--surface-3);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: border-color var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast);
-}
-.tenant-card:hover {
-  border-color: rgba(10,31,171,0.4);
-  box-shadow: var(--shadow-glow);
-  transform: translateY(-2px);
-}
-
-.tenant-card__left { display: flex; align-items: center; gap: 14px; }
-
-.status-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--surface-3);
-  flex-shrink: 0;
-}
-.status-dot--active {
-  background: var(--status-success);
-  box-shadow: 0 0 6px var(--status-success);
-}
-
-.tenant-card__name {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--surface-heading);
-  margin-bottom: 3px;
-}
-.tenant-card__meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--surface-muted);
-}
-.meta-sep { opacity: 0.4; }
-.tenant-card__url { font-family: monospace; font-size: 11px; }
-
-.tenant-card__actions { display: flex; align-items: center; gap: 4px; }
-
-.skeleton-card {
-  height: 70px;
-  background: var(--surface-1);
-  border: 1px solid var(--surface-3);
-  border-radius: var(--radius-lg);
-  animation: pulse 1.5s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.empty-state {
-  text-align: center;
-  padding: 64px 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-.empty-state__title { font-size: 18px; font-weight: 600; color: var(--surface-heading); }
-.empty-state__sub { font-size: 14px; color: var(--surface-muted); max-width: 380px; }
+.mt-row:first-child { border-top: none; }
+.mt-main { flex: 1; min-width: 0; display: flex; flex-direction: column; text-decoration: none; color: inherit; }
+.mt-main:hover .mt-name { color: var(--interactive); }
+.mt-name { font-size: 18px; line-height: 26px; font-weight: 700; color: var(--text-primary); }
+.mt-meta { font-size: 14px; line-height: 20px; color: var(--text-secondary); }
+.mt-actions { display: flex; gap: var(--space-1); }
 </style>

@@ -58,30 +58,8 @@
 
             <!-- Step 1: Configure -->
             <div v-if="step === 1">
-              <!-- Website -->
+              <!-- Website: address and how much of it -->
               <div v-if="type === 'website'" class="space-y-6">
-                <div>
-                  <label class="field-label">{{ $t('tenant.sources.wizard.crawlModeLabel') }}</label>
-                  <div class="space-y-2">
-                    <button v-for="mode in crawlModes" :key="mode.value" type="button"
-                      @click="crawlMode = mode.value"
-                      class="radio-card"
-                      :class="{ 'is-selected': crawlMode === mode.value }">
-                      <div class="text-xl leading-none mt-0.5 w-6 flex-shrink-0">{{ mode.emoji }}</div>
-                      <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2">
-                          <span class="text-sm font-bold text-white">{{ mode.label }}</span>
-                          <span v-if="mode.badge"
-                            class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                            :class="mode.badgeClass">{{ mode.badge }}</span>
-                        </div>
-                        <p class="step-subtext mt-0.5">{{ mode.desc }}</p>
-                      </div>
-                      <div class="radio-card__dot"></div>
-                    </button>
-                  </div>
-                </div>
-
                 <div>
                   <label class="field-label">{{ $t('tenant.sources.wizard.urlLabel') }}</label>
                   <div class="relative">
@@ -94,6 +72,19 @@
                   <p v-if="!isUrlValid && url" class="text-error text-xs px-1 mt-1.5 flex items-center gap-1">
                     <font-awesome-icon :icon="['fas', 'circle-exclamation']" /> {{ $t('tenant.sources.invalidUrl') }}
                   </p>
+                </div>
+
+                <div class="space-y-3">
+                  <label class="field-label">{{ $t('tenant.sources.wizard.scope.question') }}</label>
+                  <button v-for="scope in scopes" :key="scope.single" type="button" @click="singlePageOnly = scope.single"
+                    class="radio-card p-4" :class="{ 'is-selected': singlePageOnly === scope.single }">
+                    <div class="text-xl mt-0.5">{{ scope.emoji }}</div>
+                    <div class="flex-1">
+                      <p class="step-heading">{{ scope.title }}</p>
+                      <p class="step-subtext">{{ scope.desc }}</p>
+                    </div>
+                    <div class="radio-card__dot"></div>
+                  </button>
                 </div>
               </div>
 
@@ -114,67 +105,74 @@
               </div>
             </div>
 
-            <!-- Step 2: Scope -->
-            <div v-if="step === 2 && type === 'website'" class="space-y-3">
-              <p class="step-subtext mb-2">{{ $t('tenant.sources.wizard.scope.question') }}</p>
-              <button type="button" @click="singlePageOnly = false"
-                class="radio-card p-5"
-                :class="{ 'is-selected': !singlePageOnly }">
-                <div class="text-xl mt-0.5">🌐</div>
-                <div class="flex-1">
-                  <p class="step-heading">{{ $t('tenant.sources.wizard.scope.fullTitle') }}</p>
-                  <p class="step-subtext">{{ $t('tenant.sources.wizard.scope.fullDesc') }}</p>
-                </div>
-                <div class="radio-card__dot"></div>
-              </button>
-              <button type="button" @click="singlePageOnly = true"
-                class="radio-card p-5"
-                :class="{ 'is-selected': singlePageOnly }">
-                <div class="text-xl mt-0.5">📄</div>
-                <div class="flex-1">
-                  <p class="step-heading">{{ $t('tenant.sources.wizard.singlePageLabel') }}</p>
-                  <p class="step-subtext">{{ $t('tenant.sources.wizard.scope.singleDesc') }}</p>
-                </div>
-                <div class="radio-card__dot"></div>
-              </button>
-            </div>
+            <!-- Step 2: Options -->
+            <div v-if="step === 2 && type === 'website'" class="space-y-7">
+              <template v-if="!singlePageOnly">
+                <section class="space-y-3">
+                  <p class="step-heading">{{ $t('tenant.sources.wizard.options.title') }}</p>
+                  <label v-for="opt in crawlOptions" :key="opt.key" class="option-row">
+                    <input v-model="options[opt.key]" type="checkbox" class="checkbox checkbox-primary checkbox-sm mt-0.5" />
+                    <span>
+                      <span class="step-heading block">{{ $t(`tenant.sources.wizard.options.${opt.key}`) }}</span>
+                      <span class="step-subtext block">{{ $t(`tenant.sources.wizard.options.${opt.key}Desc`) }}</span>
+                    </span>
+                  </label>
+                </section>
 
-            <!-- Step 3: Exclusions -->
-            <div v-if="step === 3 && type === 'website' && !singlePageOnly" class="space-y-5">
-              <div>
-                <p class="step-heading">{{ $t('tenant.sources.wizard.exclude.title') }}</p>
-                <p class="step-subtext">{{ $t('tenant.sources.wizard.exclude.desc') }}</p>
-              </div>
+                <section class="space-y-3">
+                  <div>
+                    <p class="step-heading">{{ $t('tenant.sources.wizard.exclude.title') }}</p>
+                    <p class="step-subtext">{{ $t('tenant.sources.wizard.exclude.desc') }}</p>
+                  </div>
 
-              <div v-if="excludedPaths.length > 0" class="flex flex-wrap gap-2">
-                <div v-for="(path, i) in excludedPaths" :key="i" class="path-chip">
-                  <span>{{ path }}</span>
-                  <button type="button" @click="removeExclusion(i)" class="path-chip__remove">
-                    <font-awesome-icon :icon="['fas', 'xmark']" />
+                  <div v-if="excludedPaths.length > 0" class="flex flex-wrap gap-2">
+                    <div v-for="(path, i) in excludedPaths" :key="i" class="path-chip">
+                      <span>{{ path }}</span>
+                      <button type="button" @click="removeExclusion(i)" class="path-chip__remove">
+                        <font-awesome-icon :icon="['fas', 'xmark']" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div v-if="addingExclusion" class="path-input-row">
+                    <div class="relative flex-1">
+                      <div v-if="!isHostOrUrl(exclusionDraft)" class="absolute inset-y-0 left-3 flex items-center text-base-content/30 text-xs pointer-events-none">/</div>
+                      <input ref="exclusionInput" v-model="exclusionDraft"
+                        @keydown.enter.prevent="confirmExclusion"
+                        @keydown.escape="addingExclusion = false; exclusionDraft = ''"
+                        :placeholder="$t('tenant.sources.wizard.exclude.placeholder')" />
+                    </div>
+                    <button type="button" @click="confirmExclusion" class="btn btn-sm btn-primary rounded-xl px-4">{{ $t('tenant.sources.wizard.exclude.add') }}</button>
+                    <button type="button" @click="addingExclusion = false; exclusionDraft = ''" class="btn btn-sm btn-ghost rounded-xl">{{ $t('tenant.sources.wizard.exclude.cancel') }}</button>
+                  </div>
+
+                  <button v-if="!addingExclusion" type="button" @click="addExclusion" class="add-row">
+                    <span class="add-row__icon"><font-awesome-icon :icon="['fas', 'plus']" class="text-xs" /></span>
+                    {{ $t('tenant.sources.wizard.exclude.addRow') }}
                   </button>
-                </div>
-              </div>
+                </section>
+              </template>
 
-              <div v-if="addingExclusion" class="path-input-row">
-                <div class="relative flex-1">
-                  <div v-if="!exclusionDraft.startsWith('http')" class="absolute inset-y-0 left-3 flex items-center text-base-content/30 text-xs pointer-events-none">/</div>
-                  <input ref="exclusionInput" v-model="exclusionDraft"
-                    @keydown.enter.prevent="confirmExclusion"
-                    @keydown.escape="addingExclusion = false; exclusionDraft = ''"
-                    :placeholder="$t('tenant.sources.wizard.exclude.placeholder')" />
-                </div>
-                <button type="button" @click="confirmExclusion" class="btn btn-sm btn-primary rounded-xl px-4">{{ $t('tenant.sources.wizard.exclude.add') }}</button>
-                <button type="button" @click="addingExclusion = false; exclusionDraft = ''" class="btn btn-sm btn-ghost rounded-xl">{{ $t('tenant.sources.wizard.exclude.cancel') }}</button>
-              </div>
-
-              <button v-if="!addingExclusion" type="button" @click="addExclusion" class="add-row">
-                <span class="add-row__icon"><font-awesome-icon :icon="['fas', 'plus']" class="text-xs" /></span>
-                {{ $t('tenant.sources.wizard.exclude.addRow') }}
-              </button>
-
-              <p v-if="excludedPaths.length === 0 && !addingExclusion" class="step-subtext italic">
-                {{ $t('tenant.sources.wizard.exclude.none') }}
-              </p>
+              <section class="space-y-2">
+                <p class="step-heading">{{ $t('tenant.sources.wizard.crawlModeLabel') }}</p>
+                <p class="step-subtext">{{ $t('tenant.sources.wizard.crawlModeHint') }}</p>
+                <button v-for="mode in crawlModes" :key="mode.value" type="button"
+                  @click="crawlMode = mode.value"
+                  class="radio-card"
+                  :class="{ 'is-selected': crawlMode === mode.value }">
+                  <div class="text-xl leading-none mt-0.5 w-6 flex-shrink-0">{{ mode.emoji }}</div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm font-bold text-white">{{ mode.label }}</span>
+                      <span v-if="mode.badge"
+                        class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                        :class="mode.badgeClass">{{ mode.badge }}</span>
+                    </div>
+                    <p class="step-subtext mt-0.5">{{ mode.desc }}</p>
+                  </div>
+                  <div class="radio-card__dot"></div>
+                </button>
+              </section>
             </div>
 
             <!-- Confirm -->
@@ -212,6 +210,15 @@
                     <span class="confirm-item__value">{{ singlePageOnly ? $t('tenant.sources.wizard.confirmSinglePage') : $t('tenant.sources.wizard.confirmFullSite') }}</span>
                   </div>
 
+                  <!-- Options -->
+                  <div v-if="!singlePageOnly && enabledOptions.length > 0" class="confirm-item">
+                    <span class="confirm-item__icon"><font-awesome-icon :icon="['fas', 'sliders']" /></span>
+                    <span class="confirm-item__label">{{ $t('tenant.sources.wizard.confirmOptions') }}</span>
+                    <div class="confirm-exclusions">
+                      <span v-for="key in enabledOptions" :key="key" class="confirm-exclusion">{{ $t(`tenant.sources.wizard.options.${key}`) }}</span>
+                    </div>
+                  </div>
+
                   <!-- Exclusions -->
                   <div v-if="!singlePageOnly && excludedPaths.length > 0" class="confirm-item">
                     <span class="confirm-item__icon"><font-awesome-icon :icon="['fas', 'ban']" /></span>
@@ -237,7 +244,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue';
+import { ref, reactive, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import WizardPanel from '../../WizardPanel.vue';
 import { useToast } from '../../../composables/useToast';
@@ -254,11 +261,13 @@ const tenantsStore = useTenantsStore();
 const step = ref(0);
 const type = ref(null); // 'website' | 'document'
 
-// lastStep: 1 (document) | 3 (website single page) | 4 (website full site)
-const lastStep = computed(() => {
-  if (type.value !== 'website') return 2; // type → upload → confirm
-  return singlePageOnly.value ? 3 : 4;    // type → configure → scope → [exclusions] → confirm
-});
+// document: type → upload → confirm; website: type → address → options → confirm
+const lastStep = computed(() => (type.value === 'website' ? 3 : 2));
+
+const scopes = computed(() => [
+  { single: false, emoji: '🌐', title: t('tenant.sources.wizard.scope.fullTitle'), desc: t('tenant.sources.wizard.scope.fullDesc') },
+  { single: true,  emoji: '📄', title: t('tenant.sources.wizard.singlePageLabel'), desc: t('tenant.sources.wizard.scope.singleDesc') },
+]);
 
 const crawlModes = computed(() => [
   { value: 'soup',       emoji: '⚡', label: t('tenant.sources.wizard.modeSoup'),       desc: t('tenant.sources.wizard.modeSoupDesc'),      badge: t('tenant.sources.wizard.modeSoupBadge'),       badgeClass: 'bg-success/15 text-success' },
@@ -271,6 +280,11 @@ const addingExclusion = ref(false);
 const exclusionDraft = ref('');
 const exclusionInput = ref(null);
 const excludedPaths = ref([]);
+// What a whole-site crawl reads; all on by default
+const crawlOptions = [{ key: 'useSitemap' }, { key: 'sameLanguage' }, { key: 'skipFunnel' }];
+const defaultOptions = () => ({ useSitemap: true, sameLanguage: true, skipFunnel: true });
+const options = reactive(defaultOptions());
+const enabledOptions = computed(() => crawlOptions.map((o) => o.key).filter((k) => options[k]));
 const selectedFile = ref(null);
 const submitting = ref(false);
 
@@ -291,7 +305,7 @@ const canProceed = computed(() => {
   if (step.value === 0) return !!type.value;
   if (step.value === 1 && type.value === 'website') return !!url.value && isUrlValid.value;
   if (step.value === 1 && type.value === 'document') return !!selectedFile.value;
-  return true; // scope and exclusions steps are always skippable
+  return true; // options can always be left as they are
 });
 
 const nextStep = () => { if (canProceed.value) step.value++; };
@@ -303,8 +317,11 @@ const addExclusion = async () => {
   await nextTick();
   exclusionInput.value?.focus();
 };
+// "shop.example.com" or "https://…" stays as typed; anything else is a path
+const isHostOrUrl = (v) => /^https?:\/\//.test(v) || (!v.startsWith('/') && v.split('/')[0].includes('.'));
 const confirmExclusion = () => {
-  const val = ('/' + exclusionDraft.value.replace(/^\/+/, '')).trim();
+  const draft = exclusionDraft.value.trim();
+  const val = isHostOrUrl(draft) ? draft : '/' + draft.replace(/^\/+/, '');
   if (val && val !== '/' && !excludedPaths.value.includes(val)) excludedPaths.value.push(val);
   exclusionDraft.value = '';
   addingExclusion.value = false;
@@ -313,7 +330,7 @@ const removeExclusion = (i) => excludedPaths.value.splice(i, 1);
 
 const reset = () => {
   step.value = 0; type.value = null; url.value = ''; crawlMode.value = 'soup';
-  singlePageOnly.value = false; excludedPaths.value = []; selectedFile.value = null;
+  singlePageOnly.value = false; excludedPaths.value = []; Object.assign(options, defaultOptions()); selectedFile.value = null;
   addingExclusion.value = false; exclusionDraft.value = '';
 };
 
@@ -326,6 +343,9 @@ const submit = async () => {
         url: finalUrl.value,
         single_page_only: singlePageOnly.value,
         excluded_urls: singlePageOnly.value ? [] : excludedPaths.value,
+        same_language: !singlePageOnly.value && options.sameLanguage,
+        use_sitemap: !singlePageOnly.value && options.useSitemap,
+        skip_funnel: !singlePageOnly.value && options.skipFunnel,
         crawl_mode: crawlMode.value,
       });
       addToast(t('tenant.sources.actions.crawlStarted'), 'success');
@@ -352,6 +372,13 @@ const submit = async () => {
 .spin { animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 <style>
+
+/* ── Option rows ─────────────────────────────────────────────────── */
+.option-row {
+  display: flex; align-items: flex-start; gap: 12px; cursor: pointer;
+  padding: 12px 14px; border-radius: var(--radius-md);
+  background: var(--surface-2); border: 1px solid var(--surface-3);
+}
 
 /* ── Type icons ──────────────────────────────────────────────────── */
 .type-icon {

@@ -1,50 +1,34 @@
 <template>
-  <li class="cjr" :class="`cjr--${job.status.toLowerCase()}`">
-    <span class="cjr__status" :class="`cjr__status--${job.status.toLowerCase()}`">
-      <font-awesome-icon v-if="job.status === 'IN_PROGRESS' || job.status === 'INDEXING' || isPreparing(job)" :icon="['fas', 'spinner']" class="animate-spin" />
-      {{ statusLabel(job) }}
-    </span>
+  <li class="cjr">
+    <BcStatusBadge :status="badge" size="sm" class="cjr__status" />
 
     <div class="cjr__main">
       <router-link :to="detailRoute" class="cjr__title">{{ displayUrl(job.start_url) }}</router-link>
       <p class="cjr__meta">
-        {{ fmtDateTime(job.created_at) }}<template v-if="job.single_page_only">, {{ $t('knowledge.job.singlePage').toLowerCase() }}</template><template v-if="job.trigger === 'scheduled'">, {{ $t('knowledge.job.autoShort') }}</template>
+        {{ fmtDateTime(job.created_at) }}<template v-if="job.single_page_only"> · {{ $t('knowledge.job.singlePage') }}</template><template v-if="job.trigger === 'scheduled'"> · {{ $t('knowledge.job.autoShort') }}</template>
       </p>
 
-      <!-- Running: progress + what is happening right now -->
-      <!-- Scanning: which page, not how many (the total isn't known until the end) -->
-      <p v-if="job.status === 'IN_PROGRESS'" class="cjr__reading">
-        <span class="cjr__pulse" aria-hidden="true"></span>
-        <span class="cjr__page">{{ latestPage(log) ? $t('knowledge.job.reading', { page: latestPage(log) }) : $t('knowledge.job.starting') }}</span>
+      <!-- Reading: which page, not how many (the total isn't known until the end) -->
+      <p v-if="job.status === 'IN_PROGRESS'" class="cjr__now">
+        {{ latestPage(log) ? $t('knowledge.job.reading', { page: latestPage(log) }) : $t('knowledge.job.starting') }}
       </p>
       <!-- Learning: the number of pages is known, so a real bar -->
       <div v-else-if="job.status === 'INDEXING'" class="cjr__live">
-        <div class="cjr__bar"><div class="cjr__bar-fill" :style="{ width: progress.percent + '%' }"></div></div>
-        <p class="cjr__now">
-          <span class="cjr__count">{{ progress.label }}</span>
-          <span v-if="currentActivity(log)" class="cjr__page">{{ currentActivity(log) }}</span>
-        </p>
+        <BcProgressBar tone="ai" :value="progress.done" :max="progress.total || 1" :label="progress.label" :detail="currentActivity(log)" />
       </div>
-      <p v-else-if="isPreparing(job)" class="cjr__reading">
-        <span class="cjr__pulse" aria-hidden="true"></span>
-        <span class="cjr__page">{{ $t('knowledge.estimate.preparing') }}</span>
-      </p>
+      <p v-else-if="isPreparing(job)" class="cjr__now">{{ $t('knowledge.estimate.preparing') }}</p>
       <p v-else class="cjr__summary">
         {{ jobSummary(job) }}
-        <span v-if="reviewCount" class="cjr__review">{{ $t('knowledge.job.toReview', { n: reviewCount }) }}</span>
+        <BcStatusBadge v-if="reviewCount" status="warn" size="sm" :label="$t('knowledge.job.toReview', { n: reviewCount })" />
       </p>
     </div>
 
     <div class="cjr__actions">
-      <button v-if="job.status === 'SCANNED' && job.estimate?.to_learn" class="btn-action" :disabled="busy" @click="onConfirm">
-        <font-awesome-icon v-if="busy" :icon="['fas', 'spinner']" class="animate-spin" />
+      <BcButton v-if="job.status === 'SCANNED' && job.estimate?.to_learn" variant="primary" size="sm" :loading="busy" @click="onConfirm">
         {{ $t('knowledge.estimate.learn', { cost: fmtChf(job.estimate.cost_chf) }) }}
-      </button>
-      <button v-if="job.status === 'FAILED'" class="btn-quiet" :disabled="busy" @click="onResume">
-        <font-awesome-icon :icon="['fas', busy ? 'spinner' : 'play']" :class="{ 'animate-spin': busy }" />
-        {{ $t('knowledge.job.resume') }}
-      </button>
-      <router-link :to="detailRoute" class="btn-quiet">{{ $t('knowledge.job.details') }}</router-link>
+      </BcButton>
+      <BcButton v-if="job.status === 'FAILED'" variant="secondary" size="sm" icon="play" :loading="busy" @click="onResume">{{ $t('knowledge.job.resume') }}</BcButton>
+      <router-link :to="detailRoute" class="bc-btn bc-btn--quiet bc-btn--sm">{{ $t('knowledge.job.details') }}</router-link>
     </div>
   </li>
 </template>
@@ -53,6 +37,11 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { isPreparing, learnProgress, useCrawlActions, useCrawlText } from '@/composables/useCrawl';
+import { BcButton, BcProgressBar, BcStatusBadge } from '@/components/ui';
+import { formatNumber } from '@/utils/format';
+
+// a crawl's status in the design system's badge names
+const BADGE = { IN_PROGRESS: 'scanning', SCANNED: 'ready', INDEXING: 'learning', COMPLETED: 'done', FAILED: 'stopped' };
 
 const props = defineProps({
   job:      { type: Object, required: true },
@@ -61,17 +50,18 @@ const props = defineProps({
 });
 const emit = defineEmits(['changed']);
 const { t } = useI18n();
-const { statusLabel, fmtChf, fmtDateTime, displayUrl, currentActivity, latestPage, jobSummary } = useCrawlText();
+const { fmtChf, fmtDateTime, displayUrl, currentActivity, latestPage, jobSummary } = useCrawlText();
 const { confirm, resume } = useCrawlActions(() => props.tenantId);
 
 const busy = ref(false);
+const badge = computed(() => (isPreparing(props.job) ? 'preparing' : BADGE[props.job.status] || 'stopped'));
 const detailRoute = computed(() => ({ name: 'TenantCrawl', params: { tenantId: props.tenantId, jobId: props.job.id } }));
 const reviewCount = computed(() => (props.job.status === 'COMPLETED' ? (props.job.report?.attention || []).filter((a) => a.kind).length : 0));
 
 // Learning only: learned / to learn (known from the estimate)
 const progress = computed(() => {
-  const { done, total, percent } = learnProgress(props.job, props.log);
-  return { percent, label: t('knowledge.job.learnProgress', { done, total: total || '…' }) };
+  const { done, total } = learnProgress(props.job, props.log);
+  return { done, total, label: t('knowledge.job.learnProgress', { done: formatNumber(done), total: total ? formatNumber(total) : '…' }) };
 });
 
 const onConfirm = async () => {
@@ -88,59 +78,25 @@ const onResume = async () => {
 
 <style scoped>
 .cjr {
-  display: grid;
-  grid-template-columns: 132px minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 16px;
-  padding: 16px 0;
-  border-top: 1px solid var(--surface-3);
+  display: grid; grid-template-columns: 168px minmax(0, 1fr) auto; align-items: start; gap: var(--space-4);
+  padding: var(--space-4) 0; border-top: 1px solid var(--border-subtle);
 }
-.cjr:first-child { border-top: none; padding-top: 4px; }
-
-.cjr__status {
-  justify-self: start;
-  display: inline-flex; align-items: center; gap: 6px;
-  margin-top: 2px; padding: 3px 10px;
-  border-radius: var(--radius-pill);
-  font-size: var(--text-xs); font-weight: 700;
-  background: var(--surface-2); color: var(--surface-text);
-}
-.cjr__status--in_progress, .cjr__status--indexing { background: var(--ai-soft); color: var(--ai); }
-.cjr__status--scanned { background: var(--interactive-soft); color: var(--interactive); }
-.cjr__status--completed { background: var(--status-success-soft); color: var(--status-success); }
-.cjr__status--failed { background: var(--status-warning-soft); color: var(--status-warning); }
-
+.cjr:first-child { border-top: none; padding-top: var(--space-1); }
+.cjr__status { justify-self: start; margin-top: 2px; }
 .cjr__main { min-width: 0; }
 .cjr__title {
-  display: block; font-size: 15px; font-weight: 700; color: var(--surface-heading);
-  text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: block; font-weight: 700; color: var(--text-primary); text-decoration: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .cjr__title:hover { color: var(--interactive); text-decoration: underline; }
-.cjr__meta { margin-top: 2px; font-size: var(--text-sm); color: var(--surface-muted); }
-.cjr__summary { margin-top: 6px; font-size: var(--text-sm); color: var(--surface-text); }
-.cjr__review {
-  margin-left: 8px; padding: 1px 8px; border-radius: var(--radius-pill);
-  font-size: var(--text-xs); font-weight: 700;
-  background: var(--status-warning-soft); color: var(--status-warning);
-}
-
-.cjr__live { margin-top: 10px; max-width: 520px; }
-.cjr__bar { height: 4px; border-radius: var(--radius-pill); background: var(--surface-3); overflow: hidden; }
-.cjr__bar-fill { height: 100%; width: 0; background: var(--ai); transition: width var(--t-slow); }
-.cjr__now { margin-top: 6px; display: flex; gap: 12px; align-items: baseline; font-size: var(--text-sm); color: var(--surface-text); min-width: 0; }
-.cjr__reading { margin-top: 8px; display: flex; align-items: center; gap: 10px; font-size: var(--text-sm); color: var(--surface-text); min-width: 0; }
-.cjr__reading .cjr__page { color: var(--surface-text); }
-.cjr__pulse { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--ai); animation: cjr-pulse 1.2s ease-in-out infinite; }
-@keyframes cjr-pulse { 0%, 100% { opacity: 0.35; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .cjr__pulse { animation: none; } }
-.cjr__count { flex-shrink: 0; font-weight: 700; color: var(--surface-heading); }
-.cjr__page { min-width: 0; color: var(--surface-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.cjr__actions { display: flex; align-items: center; gap: 8px; }
-.cjr__actions .btn-quiet { text-decoration: none; }
+.cjr__meta { font-size: 14px; line-height: 20px; color: var(--text-secondary); }
+.cjr__summary { margin-top: var(--space-2); display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.cjr__now { margin-top: var(--space-2); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cjr__live { margin-top: var(--space-3); max-width: 520px; }
+.cjr__actions { display: flex; align-items: center; gap: var(--space-2); }
 
 @media (max-width: 760px) {
-  .cjr { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .cjr { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
   .cjr__actions { flex-wrap: wrap; }
 }
 </style>

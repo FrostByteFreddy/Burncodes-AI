@@ -24,8 +24,12 @@ export const defaultsFor = (locale) => ({
   rag_prompt_template: PROMPT_TEMPLATE,
 });
 
-// Sample exchange for designing the chat window, in the dashboard language
-export const SAMPLE_CONVERSATION = {
+// Who the chatbot answers; decides what the crawl considers worth learning
+export const AUDIENCES = ['municipality', 'general'];
+export const DEFAULT_AUDIENCE = 'municipality';
+
+// Sample exchange for designing the chat window, per audience, in the dashboard language
+const MUNICIPALITY_SAMPLE = {
   de: {
     question: 'Wann ist die nächste Papiersammlung?',
     answer: 'Die nächste Papiersammlung ist am **Dienstag, 3. November**. Bitte stellen Sie das gebündelte Papier bis 7 Uhr an den Strassenrand.',
@@ -42,3 +46,23 @@ export const SAMPLE_CONVERSATION = {
     newQuestion: 'Nouvelle question',
   },
 };
+
+const GENERAL_SAMPLE = {
+  de: {
+    question: 'Wann sind Sie telefonisch erreichbar?',
+    answer: 'Sie erreichen uns **Montag bis Freitag von 8 bis 17 Uhr** unter 044 123 45 67. Ausserhalb dieser Zeiten können Sie uns gerne eine E-Mail schreiben.',
+    newQuestion: 'Neue Frage',
+  },
+  en: {
+    question: 'When can I reach you by phone?',
+    answer: 'You can reach us **Monday to Friday, 8 am to 5 pm** on 044 123 45 67. Outside these hours, feel free to send us an email.',
+    newQuestion: 'New question',
+  },
+  fr: {
+    question: 'Quand puis-je vous joindre par téléphone ?',
+    answer: 'Vous pouvez nous joindre **du lundi au vendredi, de 8 h à 17 h** au 044 123 45 67. En dehors de ces horaires, écrivez-nous volontiers un e-mail.',
+    newQuestion: 'Nouvelle question',
+  },
+};
+
+export const SAMPLE_CONVERSATION = { municipality: MUNICIPALITY_SAMPLE, general: GENERAL_SAMPLE };

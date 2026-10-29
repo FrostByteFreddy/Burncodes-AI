@@ -3,6 +3,7 @@
 import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';
 import { useToast } from './useToast';
+import { formatNumber } from '@/utils/format';
 
 export const ACTIVE_STATUSES = ['IN_PROGRESS', 'SCANNED', 'INDEXING'];
 
@@ -26,7 +27,7 @@ const FINISH_EVENTS = Object.values(FINISHES).flat();
 export function useCrawlText() {
   const { t, locale } = useI18n();
 
-  const fmtChf = (v) => Number(v || 0).toFixed(2);
+  const fmtChf = (v) => formatNumber(v, 2);
   const fmtDateTime = (iso) => new Date(iso).toLocaleString(locale.value, {
     day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
@@ -55,6 +56,7 @@ export function useCrawlText() {
       case 'scan':         return t('knowledge.log.scan', { page });
       case 'scanned':      return t('knowledge.log.scanned', { page, outcome: t(`knowledge.estimate.${d.outcome}`, d.outcome || '') });
       case 'links_found':  return t('knowledge.log.links_found', { page, count: d.count });
+      case 'sitemap_read': return t('knowledge.log.sitemap_read', { count: d.count });
       case 'triage_start': return t('knowledge.log.triage_start');
       case 'triage':       return t('knowledge.log.triage', { n: d.skipped || 0 });
       case 'scan_done':    return t('knowledge.log.scan_done', { n: d.to_learn, cost: fmtChf(d.cost_chf) });
@@ -116,12 +118,12 @@ export function useCrawlText() {
     const r = job.report;
     if (job.status === 'COMPLETED' && r) {
       const c = r.counts || {};
-      return t('knowledge.job.summaryDone', { learned: c.learned || 0, unchanged: c.unchanged || 0, cost: fmtChf(r.cost_chf) });
+      return t('knowledge.job.summaryDone', { learned: formatNumber(c.learned || 0), unchanged: formatNumber(c.unchanged || 0), cost: fmtChf(r.cost_chf) });
     }
     if (isPreparing(job)) return t('knowledge.estimate.preparing');
     if (job.status === 'SCANNED') {
       return e.to_learn
-        ? t('knowledge.job.summaryScanned', { n: e.to_learn, cost: fmtChf(e.cost_chf) })
+        ? t('knowledge.job.summaryScanned', { n: formatNumber(e.to_learn), cost: fmtChf(e.cost_chf) })
         : t('knowledge.estimate.nothing');
     }
     if (job.status === 'FAILED') return t('knowledge.job.summaryStopped');
@@ -136,12 +138,13 @@ export function useCrawlText() {
 export function useCrawlActions(getTenantId) {
   const { t } = useI18n();
   const { addToast } = useToast();
-  const fmtChf = (v) => Number(v || 0).toFixed(2);
+  const fmtChf = (v) => formatNumber(v, 2);
   const base = (jobId) => `/tenants/${getTenantId()}/crawling_jobs/${jobId}`;
 
-  async function confirm(job) {
+  // model: the learning model the customer picked (see knowledge.models); default when omitted
+  async function confirm(job, model = null) {
     try {
-      await apiClient.post(`${base(job.id)}/confirm`);
+      await apiClient.post(`${base(job.id)}/confirm`, model ? { model } : {});
       addToast(t('knowledge.estimate.started'), 'success');
       return true;
     } catch (e) {
@@ -182,8 +185,9 @@ export function useCrawlActions(getTenantId) {
     try {
       await apiClient.delete(base(job.id));
       return true;
-    } catch {
-      addToast(t('tenant.sources.actions.deleteFailed'), 'error');
+    } catch (e) {
+      // Gemini kept some pages: nothing else was deleted, deleting again retries
+      addToast(t(e.response?.data?.code === 'gemini_failed' ? 'common.geminiFailed' : 'tenant.sources.actions.deleteFailed'), 'error');
       return false;
     }
   }

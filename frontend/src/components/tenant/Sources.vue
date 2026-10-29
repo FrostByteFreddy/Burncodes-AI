@@ -29,7 +29,7 @@
       </div>
       <p v-if="crawlingJobs.length" class="krecrawl__hint">
         {{ tenantsStore.currentTenant?.auto_recrawl ? $t('knowledge.recrawl.onHint', { n: tenantsStore.currentTenant.recrawl_interval_days || 7 }) : $t('knowledge.recrawl.offHint') }}
-        <router-link :to="{ name: 'AccountSettings', params: { section: 'schedules' } }">{{ $t('knowledge.recrawl.change') }}</router-link>
+        <router-link :to="{ name: 'TenantSettings', params: { tenantId } }">{{ $t('knowledge.recrawl.change') }}</router-link>
       </p>
 
       <div v-if="!jobsLoaded" aria-busy="true">
@@ -303,8 +303,8 @@ const handleDelete = async () => {
     await apiClient.delete(`/tenants/${tenantId.value}/sources/${id}`);
     addToast(t('tenant.sources.actions.deleteSuccess'), 'success');
     await refreshSources();
-  } catch {
-    addToast(t('tenant.sources.actions.deleteFailed'), 'error');
+  } catch (e) {
+    addToast(t(e.response?.data?.code === 'gemini_failed' ? 'common.geminiFailed' : 'tenant.sources.actions.deleteFailed'), 'error');
   } finally { cancelDelete(); }
 };
 </script>

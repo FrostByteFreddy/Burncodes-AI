@@ -1,67 +1,46 @@
 <template>
-  <div
-    class="fixed inset-0 z-50 flex justify-center items-center"
-    style="background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);"
-  >
-    <div class="modal-box">
-      <h2 class="modal-box__title">
-        <font-awesome-icon :icon="['fas', 'plus-square']" style="margin-right:12px; color:var(--brand-indigo);" />
-        {{ $t("modals.createTenant.title") }}
-      </h2>
-
-      <form @submit.prevent="handleSubmit" class="modal-form">
-        <div class="modal-field">
-          <label for="name" class="modal-field__label">{{ $t("modals.createTenant.name") }}</label>
-          <input v-model="name" type="text" id="name" required class="modal-field__input" />
-        </div>
-
-        <div class="modal-box__footer">
-          <p v-if="error" class="modal-error">{{ error }}</p>
-          <button type="button" @click="$emit('close')" class="modal-btn modal-btn--ghost" :disabled="submitting">
-            <font-awesome-icon :icon="['fas', 'times']" />
-            {{ $t("modals.createTenant.cancel") }}
-          </button>
-          <button type="submit" class="modal-btn modal-btn--primary" :disabled="submitting">
-            <font-awesome-icon :icon="['fas', submitting ? 'spinner' : 'check']" :spin="submitting" />
-            {{ $t("modals.createTenant.create") }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <BcDialog open :title="$t('modals.createTenant.title')" icon="layer-group" :confirm-label="$t('modals.createTenant.create')"
+    :confirm-disabled="!name.trim()" :loading="submitting" @confirm="handleSubmit" @cancel="$emit('close')">
+    <form class="ctm" @submit.prevent="handleSubmit">
+      <BcTextInput v-model="name" :label="$t('modals.createTenant.name')" :hint="$t('onboarding.basics.nameHint')" required />
+      <BcRadioCards v-model="audience" :legend="$t('configure.basics.audience')" :options="audienceOptions" :columns="1" />
+      <BcNotice v-if="error" tone="error" :title="error" />
+    </form>
+  </BcDialog>
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useTenantsStore } from "../stores/tenants";
-import { useRouter } from "vue-router";
-import { useI18n } from "vue-i18n";
-import { defaultsFor } from "../utils/chatbotDefaults";
+import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
+import { useTenantsStore } from '../stores/tenants';
+import { AUDIENCES, DEFAULT_AUDIENCE, defaultsFor } from '../utils/chatbotDefaults';
+import { BcDialog, BcNotice, BcRadioCards, BcTextInput } from './ui';
 
-defineProps({});
-const emit = defineEmits(["close"]);
-
+const emit = defineEmits(['close']);
 const tenantsStore = useTenantsStore();
 const router = useRouter();
-
-const submitting = ref(false);
-const error      = ref("");
-
-const name     = ref("");
 const { t, locale } = useI18n();
 
+const name = ref('');
+const audience = ref(DEFAULT_AUDIENCE);
+const submitting = ref(false);
+const error = ref('');
+const audienceOptions = computed(() => AUDIENCES.map((key) => ({
+  value: key, icon: key === 'municipality' ? 'landmark' : 'store',
+  title: t(`configure.basics.audiences.${key}`), description: t(`configure.basics.audiences.${key}Desc`),
+})));
+
 const handleSubmit = async () => {
-  error.value = "";
+  if (!name.value.trim() || submitting.value) return;
+  error.value = '';
   submitting.value = true;
   try {
-    const newTenant = await tenantsStore.createTenant({ name: name.value, ...defaultsFor(locale.value) });
-    emit("close");
-    // Navigate to the new tenant's dashboard
-    if (newTenant?.id) {
-      router.push(`/tenant/${newTenant.id}`);
-    }
-  } catch (e) {
-    error.value = t("modals.createTenant.failed");
+    const created = await tenantsStore.createTenant({ name: name.value.trim(), audience: audience.value, ...defaultsFor(locale.value) });
+    emit('close');
+    if (created?.id) router.push(`/tenant/${created.id}`);
+  } catch {
+    error.value = t('modals.createTenant.failed');
   } finally {
     submitting.value = false;
   }
@@ -69,61 +48,5 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
-.modal-box {
-  background: var(--surface-1);
-  border: 1px solid var(--surface-3);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-card);
-  padding: 32px;
-  width: 100%; max-width: 640px;
-  max-height: 90vh; overflow-y: auto;
-  margin: 16px;
-}
-.modal-box__title {
-  display: flex; align-items: center;
-  font-size: 20px; font-weight: 700;
-  color: var(--surface-heading);
-  margin-bottom: 28px;
-}
-.modal-form { display: flex; flex-direction: column; gap: 20px; }
-.modal-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.modal-field { display: flex; flex-direction: column; gap: 8px; }
-.modal-field__label { font-size: 15px; font-weight: 600; color: var(--surface-heading); }
-.modal-field__hint { font-size: var(--text-sm); color: var(--surface-muted); line-height: 1.45; }
-.modal-field__input {
-  width: 100%; padding: 10px 14px;
-  background: var(--surface-2);
-  border: 1px solid var(--surface-3);
-  border-radius: var(--radius-md);
-  color: var(--surface-text); font-size: 14px;
-  outline: none;
-  transition: border-color var(--t-fast), box-shadow var(--t-fast);
-  resize: vertical;
-}
-.modal-field__input:focus {
-  border-color: var(--brand-indigo);
-  box-shadow: 0 0 0 3px rgba(10,31,171,0.15);
-}
-.modal-field__select { appearance: none; cursor: pointer; }
-.modal-box__footer {
-  display: flex; justify-content: flex-end; gap: 12px;
-  padding-top: 24px; border-top: 1px solid var(--surface-3);
-}
-.modal-btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 9px 20px; font-size: 13px; font-weight: 600;
-  border: none; border-radius: var(--radius-md);
-  cursor: pointer; transition: opacity var(--t-fast);
-}
-.modal-btn--ghost { background: var(--surface-2); color: var(--surface-muted); }
-.modal-btn--ghost:hover { background: var(--surface-3); color: var(--surface-text); }
-.modal-btn--primary { background: var(--gradient-brand); color: white; }
-.modal-btn--primary:hover { opacity: 0.9; }
-.modal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.modal-error {
-  flex: 1;
-  font-size: 13px;
-  color: var(--color-error, #f87171);
-  margin: 0;
-}
+.ctm { display: flex; flex-direction: column; gap: var(--space-5); }
 </style>
