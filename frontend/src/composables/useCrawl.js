@@ -183,7 +183,8 @@ export function useCrawlActions(getTenantId) {
 
   async function remove(job) {
     try {
-      await apiClient.delete(base(job.id));
+      // A large run is removed in rounds: 202 means the server stopped to stay within its time limit
+      while ((await apiClient.delete(base(job.id))).status === 202);
       return true;
     } catch (e) {
       // Gemini kept some pages: nothing else was deleted, deleting again retries

@@ -9,6 +9,7 @@ from app.security.url_guard import is_public_url
 from app import celery
 from uuid import uuid4
 from werkzeug.utils import secure_filename
+import time
 import os
 
 UPLOADS_DIR = os.environ.get("UPLOADS_DIR", "/app/data/uploads")
@@ -33,23 +34,30 @@ def _document_names(source):
 
 def _delete_documents(sources, context):
     """
-    Deletes the sources' Gemini documents. Returns the ids of the sources whose
-    documents are all gone; only those rows may be deleted, the others keep the
-    document names so the deletion can be retried.
+    Deletes the sources' Gemini documents, several at a time. Returns the ids of
+    the sources whose documents are all gone; only those rows may be deleted,
+    the others keep the document names so the deletion can be retried.
     """
+    from concurrent.futures import ThreadPoolExecutor
     from app.gemini_store.service import GeminiStoreService
-    gone = []
-    for src in sources:
-        ok = True
-        for name in _document_names(src):
-            try:
-                ok = GeminiStoreService.delete_document(name) is not False and ok
-            except Exception as err:
-                error_logger.warning("%s: could not delete Gemini document %s: %s", context, name, err)
-                ok = False
-        if ok:
-            gone.append(src['id'])
-    return gone
+
+    def delete(name):
+        try:
+            return GeminiStoreService.delete_document(name) is not False
+        except Exception as err:
+            error_logger.warning("%s: could not delete Gemini document %s: %s", context, name, err)
+            return False
+
+    names = [(src['id'], name) for src in sources for name in _document_names(src)]
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        results = list(pool.map(lambda pair: delete(pair[1]), names))
+    kept = {sid for (sid, _), ok in zip(names, results) if not ok}
+    return [src['id'] for src in sources if src['id'] not in kept]
+
+
+# A large run takes longer to remove than one request may last (120 s): the
+# deletion stops after this long and answers 202, the client asks again.
+DELETE_BUDGET_SECONDS = 60
 
 
 def _gemini_failed(count):
@@ -664,35 +672,35 @@ def delete_crawling_job(current_user, tenant_id, job_id):
         # 3. Find + delete matching tenant_sources rows in batches
         deleted_source_ids = []
         failed = 0
-        if crawled_urls:
-            from app.gemini_store.service import GeminiStoreService
-            
-            # Batch size of 100 prevents "URL component 'query' too long" in Supabase
-            batch_size = 100
-            for i in range(0, len(crawled_urls), batch_size):
-                url_batch = crawled_urls[i:i + batch_size]
-                
-                sources_resp = supabase.table('tenant_sources') \
-                    .select("id, gemini_document_name, gemini_document_names") \
-                    .eq('tenant_id', tenant_id_str) \
-                    .in_('source_location', url_batch) \
-                    .execute()
-                    
-                batch_sources = sources_resp.data or []
-                if not batch_sources:
-                    continue
-                    
-                # Gemini first; a row goes only once its documents are gone
-                gone = _delete_documents(batch_sources, f"delete_job {job_id}")
-                if gone:
-                    supabase.table('tenant_sources').delete().in_('id', gone).execute()
-                deleted_source_ids.extend(gone)
-                failed += len(batch_sources) - len(gone)
+        remaining = False
+        started = time.monotonic()
+        # Batch size of 50 prevents "URL component 'query' too long" in Supabase
+        batch_size = 50
+        for i in range(0, len(crawled_urls), batch_size):
+            if time.monotonic() - started > DELETE_BUDGET_SECONDS:
+                remaining = True
+                break
+            sources_resp = supabase.table('tenant_sources') \
+                .select("id, gemini_document_name, gemini_document_names") \
+                .eq('tenant_id', tenant_id_str) \
+                .in_('source_location', crawled_urls[i:i + batch_size]) \
+                .execute()
+            batch_sources = sources_resp.data or []
+            if not batch_sources:
+                continue
+            # Gemini first; a row goes only once its documents are gone
+            gone = _delete_documents(batch_sources, f"delete_job {job_id}")
+            if gone:
+                supabase.table('tenant_sources').delete().in_('id', gone).execute()
+            deleted_source_ids.extend(gone)
+            failed += len(batch_sources) - len(gone)
 
-            error_logger.info("delete_job: purged %d source(s) for job %s, %d kept", len(deleted_source_ids), job_id, failed)
+        error_logger.info("delete_job: purged %d source(s) for job %s, %d kept", len(deleted_source_ids), job_id, failed)
         if failed:
             # keep the run so deleting it again retries what Gemini kept
             return _gemini_failed(failed)
+        if remaining:
+            return jsonify({"message": "Still deleting.", "deleted_sources": len(deleted_source_ids), "done": False}), 202
 
         # 5. Delete crawling_tasks + job row
         supabase.table('crawling_tasks').delete().eq('job_id', job_id).execute()
