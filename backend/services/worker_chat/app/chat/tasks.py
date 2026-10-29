@@ -194,7 +194,7 @@ def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, s
                          f"{entry['last'].isoformat()}; say so instead of guessing.")
     if offer_calendars:
         lines.append(
-            "Residents can subscribe to these dates in their own calendar. When your answer gives dates "
+            "Visitors can subscribe to these dates in their own calendar. When your answer gives dates "
             "of a series that has a {calendar: KEY}, add the line [[calendar:KEY]] at the very end of your "
             "answer, once per series you gave dates for (at most three). Never mention the key or this "
             "marker in your text; the chat turns it into a button."

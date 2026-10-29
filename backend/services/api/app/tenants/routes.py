@@ -4,6 +4,7 @@ from app.database.supabase_client import fetch_all, supabase
 from app.auth.decorators import token_required
 from app.models.database import Tenant, TenantFineTune
 from app.logging_config import error_logger
+from app.knowledge.audience import AUDIENCES
 from uuid import uuid4
 import os
 
@@ -31,6 +32,8 @@ def create_tenant(current_user):
             "translation_target": data.get('translation_target'),
             "crawl_mode": data.get('crawl_mode', 'playwright_llm'),
         }
+        if data.get('audience') in AUDIENCES:
+            tenant_data['audience'] = data['audience']
         supabase.table('tenants').insert(tenant_data).execute()
 
         # Fine-tune rules are stored in DB only — injected into the system
@@ -133,6 +136,10 @@ def update_tenant(current_user, tenant_id):
             tenant_update_data['test_password_hash'] = hash_password(password) if password else None
         if 'calendar_feeds' in data:
             tenant_update_data['calendar_feeds'] = bool(data['calendar_feeds'])
+        if 'audience' in data:
+            if data['audience'] not in AUDIENCES:
+                return jsonify({"error": f"audience must be one of {', '.join(AUDIENCES)}"}), 400
+            tenant_update_data['audience'] = data['audience']
         if 'crawl_exclusions' in data:
             # the settings only remove rules; new ones come from the crawl's selection
             current = supabase.table('tenants').select('crawl_exclusions').eq('id', tenant_id_str).limit(1).execute().data

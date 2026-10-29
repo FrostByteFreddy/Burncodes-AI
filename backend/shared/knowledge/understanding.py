@@ -158,14 +158,14 @@ MAX_WARNINGS = 2
 # pages visitors rarely need: their problems aren't worth anyone's time
 MIN_IMPORTANCE_FOR_WARNINGS = 40
 
-_INSTRUCTIONS = """You index content for a customer-service chatbot of an organisation (often a municipality).
+_INSTRUCTIONS = """You index content for a customer-service chatbot of an organisation (a municipality, company, school, club …).
 Today is {today}. Source: {source}.
 
 Tasks:
 1. Split the content into coherent sections a visitor might ask about. {section_rule}
    Skip pure navigation, link lists and repeated boilerplate.
 2. Summarise the content and rate its importance for answering visitors' questions
-   (100 = essential everyday information such as collection dates, opening hours, fees, deadlines;
+   (100 = essential everyday information such as opening hours, prices and fees, dates, deadlines, what is offered;
    0 = no useful information). Overview pages that only list links score low.
 3. Extract facts and dates exactly as printed. Never invent or infer dates.
    For calendars read row by row: a date belongs to the row (series/zone) and column (month) it is printed in.

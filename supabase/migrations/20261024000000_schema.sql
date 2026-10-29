@@ -83,6 +83,9 @@ ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS contact_card          JSONB;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS contact_footer_hash   TEXT;
 -- what the customer left out of learning (folders/sources); every crawl applies it
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS crawl_exclusions      JSONB NOT NULL DEFAULT '[]'::jsonb;
+-- who the chatbot answers: 'municipality' (residents) or 'general' (visitors of any other website)
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS audience              TEXT NOT NULL DEFAULT 'municipality'
+    CHECK (audience IN ('municipality', 'general'));
 COMMENT ON COLUMN public.tenants.gemini_file_store_name IS
     'Gemini File Search Store resource name (e.g. fileSearchStores/abc123). NULL until the tenant uploads their first source.';
 

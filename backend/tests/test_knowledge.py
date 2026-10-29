@@ -231,7 +231,7 @@ class TestTriage:
 
         monkeypatch.setattr(triage, "fetch_all", lambda make: queued)
         monkeypatch.setattr(triage, "supabase", type("S", (), {"table": lambda self, n: Q()})())
-        monkeypatch.setattr(triage, "_ask", lambda lines, site: [
+        monkeypatch.setattr(triage, "_ask", lambda lines, site, audience=None: [
             {"id": 2, "reason": "archive_finance"}, {"id": 3, "reason": "archive_finance"},
             {"id": 99, "reason": "outdated"},          # not in this crawl
             {"id": 4, "reason": "because I said so"},  # unknown reason

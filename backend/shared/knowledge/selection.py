@@ -20,6 +20,7 @@ from google.genai import types
 from app.ai_models import TRIAGE_GEMINI_MODEL
 from app.database.supabase_client import fetch_all, supabase
 from app.knowledge.jobs import calibration, estimate_source, is_index_only, tokens_cost
+from app.knowledge.audience import audience_of, wording
 from app.knowledge.triage import MANUAL, _get_client
 from app.logging_config import error_logger
 
@@ -136,18 +137,16 @@ _SCHEMA = {
 }
 
 _INSTRUCTIONS = """You help the owner of a chatbot on the website of {site} keep the cost of
-its knowledge base down. Residents ask it everyday questions: opening hours, contacts, fees,
-services, forms, rules, collection dates, events, current projects.
+its knowledge base down. Its {people} ask it everyday questions: {questions}.
 
 Obvious junk (old budgets, old minutes, expired announcements) was already sorted out. Below
 are the folders of the website that are still going to be learned, with how many pages and
 documents each contains, what learning them costs in CHF, and example titles.
 
-Suggest up to {max} folders the owner could leave out to save money, because residents will
+Suggest up to {max} folders the owner could leave out to save money, because {people} will
 rarely ask about them or because they cost a lot compared to their use: archives, detailed
 reports, historical material, press releases, long series of similar documents. Prefer
-folders that save a noticeable amount. Never suggest the core services of the administration,
-contacts, opening hours, waste collection, current events, current projects or forms. If nothing is worth
+folders that save a noticeable amount. Never suggest {core}. If nothing is worth
 leaving out, return an empty list.
 
 For each suggestion, give the folder exactly as listed and one short sentence (at most 20
@@ -173,7 +172,8 @@ def recommend(job: dict) -> list[dict]:
         response = _get_client().models.generate_content(
             model=TRIAGE_GEMINI_MODEL,
             contents=[
-                _INSTRUCTIONS.format(site=job.get("start_url") or "", max=MAX_SUGGESTIONS),
+                _INSTRUCTIONS.format(site=job.get("start_url") or "", max=MAX_SUGGESTIONS,
+                                    **wording(audience_of(job.get("tenant_id")))),
                 "FOLDERS (folder | sources | cost | folder page title | example titles):\n" + "\n".join(lines),
             ],
             config=types.GenerateContentConfig(
