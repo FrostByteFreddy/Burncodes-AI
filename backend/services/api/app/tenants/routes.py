@@ -4,6 +4,7 @@ from app.database.supabase_client import fetch_all, supabase
 from app.auth.decorators import token_required
 from app.models.database import Tenant, TenantFineTune
 from app.logging_config import error_logger
+from app import limiter
 from app.knowledge.audience import AUDIENCES
 from uuid import uuid4
 import os
@@ -459,3 +460,37 @@ def run_review_now(current_user, tenant_id):
     except Exception as e:
         error_logger.error(f"Error starting review for {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to start review"}), 500
+
+
+# ── Look of the widget, taken from the customer's website ────────────────────
+
+@tenants_bp.route('/<uuid:tenant_id>/branding', methods=['POST'])
+@limiter.limit("10 per minute")
+@token_required
+def suggest_branding(current_user, tenant_id):
+    """
+    Reads brand colours, logo and name from the start page of the chatbot's
+    latest website crawl (or the given url). Nothing is saved: the
+    configurator applies it for the customer to review.
+    """
+    from app.knowledge.branding import read_branding
+    from app.security.url_guard import is_public_url
+
+    if not _owned(tenant_id, current_user.id):
+        return jsonify({"error": "Tenant not found or access denied"}), 404
+    url = ((request.get_json(silent=True) or {}).get('url') or '').strip()
+    if not url:
+        jobs = supabase.table('crawling_jobs').select('start_url, single_page_only') \
+            .eq('tenant_id', str(tenant_id)).order('created_at', desc=True).limit(50).execute().data or []
+        # a whole-site crawl starts at the home page; a single page is only a fallback
+        job = next((j for j in jobs if not j.get('single_page_only')), jobs[0] if jobs else None)
+        url = job['start_url'] if job else ''
+    if not url:
+        return jsonify({"error": "no_website"}), 404
+    if not is_public_url(url):
+        return jsonify({"error": "Only public http(s) URLs can be read"}), 400
+    try:
+        return jsonify(read_branding(url)), 200
+    except Exception as e:
+        error_logger.warning(f"Reading the look of {url} for tenant {tenant_id} failed: {e}")
+        return jsonify({"error": "unreadable", "url": url}), 422

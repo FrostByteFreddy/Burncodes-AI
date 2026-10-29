@@ -790,3 +790,35 @@ class TestCrawlScope:
         assert parse_sitemap(pages) == (["https://x.com/a", "https://x.com/b"], [])
         assert sitemaps_in_robots("User-agent: *\nSitemap: /map.xml\nsitemap: https://cdn.x.com/s.xml", "https://x.com/") \
             == ["https://x.com/map.xml", "https://cdn.x.com/s.xml"]
+
+
+class TestBranding:
+    def test_theme_color_wins_and_framework_colours_are_ignored(self):
+        from app.knowledge.branding import brand_colors
+        css = """
+            .btn-primary { background-color: #0d6efd; }          /* Bootstrap's own */
+            .alert { color: #fff; border-color: #ddd; }           /* white, grey */
+            .nav a { color: #1a7f5a } .hero { background: rgb(26, 127, 90) }
+            :root { --brand-accent: #f39200; }
+        """
+        assert brand_colors(css) == ["#F39200", "#1A7F5A"]        # a brand variable counts most
+        assert brand_colors(css, "#E6007E")[0] == "#E6007E"
+        assert brand_colors(css, "#ffffff")[0] == "#F39200"        # a white theme-color is no brand colour
+        assert brand_colors("a { color: #1a7f5a } b { color: #1b805b }") == ["#1A7F5A"]  # one shade
+
+    def test_logo_is_the_image_marked_as_logo(self):
+        from app.knowledge.branding import parse_page
+        html = """<html><head>
+            <meta name="theme-color" content="#E6007E"><meta property="og:site_name" content="younity">
+            <link rel="icon" href="/favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="/touch.png">
+            <link href="/main.css" rel="stylesheet"><style>h1 { color: #123456 }</style>
+          </head><body>
+            <img src="/hero.jpg">
+            <header><a class="navbar-brand" href="/"><img src="/img/younity.gif" alt="younity"></a></header>
+          </body></html>"""
+        page = parse_page(html, "https://www.younity.com/de/")
+        assert page["logo_url"] == "https://www.younity.com/img/younity.gif"
+        assert page["icon_url"] == "https://www.younity.com/touch.png"
+        assert page["stylesheets"] == ["https://www.younity.com/main.css"]
+        assert page["theme_color"] == "#E6007E" and page["site_name"] == "younity"
+        assert "#123456" in page["css"]
