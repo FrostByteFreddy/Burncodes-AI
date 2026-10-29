@@ -305,7 +305,7 @@ class TestSystemInstruction:
         chat = self._chat()
         rule = chat._language_rule()
         assert "language of the user's most recent message" in rule
-        assert rule.endswith("reply in the language of your documents.")
+        assert rule.endswith("whatever language the question is in.")
 
     def test_persona_and_rules_survive_an_edited_template(self):
         chat = self._chat()
@@ -715,3 +715,29 @@ class TestContactCard:
                 '<a href="tel:0621234567">062 123 45 67</a><p>Montag 08:00 - 12:00 Uhr</p></footer></body></html>')
         text = footer_markdown(html)
         assert "Hauptstrasse 1" in text and "Montag 08:00 - 12:00 Uhr" in text and "Inhalt" not in text
+
+
+class TestFacts:
+    FACTS = [
+        {"label": "Einwohnerzahl (Stand 31. August 2025)", "value": "3'883 Einwohnerinnen und Einwohner", "source_id": 1},
+        {"label": "Hundetaxe", "value": "100 Franken pro Jahr und Tier", "source_id": 1},
+        {"label": "Gemeindesteueranlage", "value": "1.77", "source_id": 1},
+        {"label": "Öffnungszeiten Entsorgungsstation", "value": "Freitag 14.00 - 17.00 Uhr", "source_id": 2},
+    ] + [{"label": f"Telefon Reichenbach Amt {i}", "value": "033 676 80 20", "source_id": 3} for i in range(10)]
+
+    def test_stems_find_compounds_and_skip_common_words(self):
+        from app.knowledge.facts import relevant_facts
+        assert relevant_facts(self.FACTS, "Wie viele Einwohner hat Reichenbach?")[0]["value"].startswith("3'883")
+        assert relevant_facts(self.FACTS, "Was kostet der Hund?")[0]["label"] == "Hundetaxe"
+        assert relevant_facts(self.FACTS, "Wie hoch sind die Steuern?")[0]["label"] == "Gemeindesteueranlage"
+        # "Reichenbach" is in many labels and alone matches nothing
+        assert relevant_facts(self.FACTS, "Reichenbach") == []
+        assert relevant_facts(self.FACTS, "Was ist die Hauptstadt von Frankreich?") == []
+
+    def test_context_and_mention(self):
+        from app.knowledge.facts import fact_mentioned, facts_context
+        text = facts_context(self.FACTS[:2], {1: ("Zahlen und Fakten", "https://x.ch/zahlen")})
+        assert "- Hundetaxe: 100 Franken pro Jahr und Tier {source: Zahlen und Fakten https://x.ch/zahlen}" in text
+        assert facts_context([], {}) == ""
+        assert fact_mentioned(self.FACTS[0], "Reichenbach hat 3883 Einwohner.")
+        assert not fact_mentioned(self.FACTS[1], "Die Hundetaxe beträgt 80 Franken.")

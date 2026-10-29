@@ -13,9 +13,11 @@ Key changes:
 """
 import os
 import re
+import time
 import unicodedata
 from urllib.parse import urlparse
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from celery import shared_task
 from google import genai
@@ -27,12 +29,18 @@ from app.prompts import FINE_TUNE_RULE_PROMPT
 from app.ai_models import CHAT_GEMINI_MODEL, billable_tokens
 from app.knowledge.calendar import dedupe_events, source_rank
 from app.knowledge.contact import contact_context
+from app.knowledge.facts import fact_mentioned, facts_context, relevant_facts
 
 
 # Number of previous exchanges (user + AI message pairs) sent as context.
 HISTORY_TURNS = int(os.getenv("CHAT_HISTORY_TURNS", "10"))
 # Per-request timeout for the Gemini call, in milliseconds (google-genai unit).
 GEMINI_TIMEOUT_MS = int(os.getenv("CHAT_GEMINI_TIMEOUT_MS", "90000"))
+
+# "Today" for dates and events: the visitors' day, not the server's UTC one
+TIMEZONE = ZoneInfo(os.getenv("APP_TIMEZONE", "Europe/Zurich"))
+# Facts per tenant, re-read after this many seconds (they change only when the site is learned)
+FACTS_CACHE_SECONDS = 300
 
 _client: genai.Client | None = None
 
@@ -83,6 +91,26 @@ def _load_history(tenant_id: str, conversation_id: str) -> list:
     return history
 
 
+_facts_cache: dict[str, tuple[float, list[dict], dict]] = {}
+
+
+def _tenant_facts(tenant_id: str) -> tuple[list[dict], dict]:
+    """All facts of the tenant and source_id -> (title, url), cached for a few minutes."""
+    hit = _facts_cache.get(tenant_id)
+    if hit and time.monotonic() - hit[0] < FACTS_CACHE_SECONDS:
+        return hit[1], hit[2]
+    facts = fetch_all(lambda: supabase.table("tenant_facts").select("label, value, source_id")
+                      .eq("tenant_id", str(tenant_id)).order("id"), max_rows=20_000)
+    ids = list({f["source_id"] for f in facts if f.get("source_id")})
+    sources = {}
+    for i in range(0, len(ids), 200):
+        for s in supabase.table("tenant_sources").select("id, title, source_location") \
+                .in_("id", ids[i:i + 200]).execute().data or []:
+            sources[s["id"]] = ((s.get("title") or s["source_location"]).strip(), s["source_location"])
+    _facts_cache[tenant_id] = (time.monotonic(), facts, sources)
+    return facts, sources
+
+
 _WEEKDAY = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 # Upcoming dates per series given to the model; enough for "next" / "this week"
 _UPCOMING_PER_SERIES = 4
@@ -103,7 +131,8 @@ def _calendar_key(series: str, zone: str) -> str:
     return slug(series) + (f"--{slug(zone)}" if zone else "")
 
 
-def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, sources_out: dict | None = None) -> str:
+def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, sources_out: dict | None = None,
+                   calendars_out: dict | None = None) -> str:
     """
     Today's date plus verified dates extracted at indexing time (tenant_events):
     the next few per series, or — when a series has no future dates — when its
@@ -156,6 +185,8 @@ def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, s
         notes = f" [{entry['notes']}]" if entry["notes"] else ""
         if entry["upcoming"]:
             key = f" {{calendar: {_calendar_key(name, zone)}}}" if offer_calendars else ""
+            if calendars_out is not None:
+                calendars_out[_calendar_key(name, zone)] = (name, [u.split()[1] for u in entry["upcoming"]])
             source = f" {{source: {sources[entry['source_id']]}}}" if entry["source_id"] in sources else ""
             lines.append(f"- {label}{notes}{key}{source}: next {', '.join(entry['upcoming'])}")
         elif entry["last"]:
@@ -209,15 +240,20 @@ _UNKNOWN_RULE = (
     "When you don't know something: say so in one short sentence, without mentioning documents, sources "
     "or what you were given (never \"in den vorliegenden Dokumenten …\" or similar), then give the most "
     "fitting contact straight away: the office, its phone, email and opening hours if you know them. "
-    "No apologies, no \"I recommend\"."
+    "Never guess a figure, fee, date, opening hour, phone number or email address that isn't in your "
+    "documents or the facts above. "
+    "No apologies, no \"I recommend\". A question that has nothing to do with this organisation "
+    "(general knowledge, weather, other places) gets one friendly sentence saying what you can help "
+    "with instead, without contact details."
 )
 
 _STYLE_RULE = (
     "Style: this is a chat, not a letter. Start with the answer itself: no salutation (\"Sehr geehrte Damen "
     "und Herren\", \"Guten Tag\"), no \"thank you for your question\", no closing formula or signature. "
     "Short sentences, the most useful fact first. Address the person the way they address you: someone "
-    "who writes \"du\" gets \"du\", someone who writes \"Sie\" gets \"Sie\"; if it's unclear, follow the "
-    "instructions above."
+    "who writes \"du\" (\"kannst du\", \"hesch\", \"weisst du\") gets \"du\" for the whole answer, "
+    "someone who writes \"Sie\" gets \"Sie\"; this wins over the form of address named above, which "
+    "only applies when it's unclear."
 )
 
 _MD_LINK = re.compile(r"\[([^\]]+)\]\((https?://[^)\s]+)\)")
@@ -375,6 +411,34 @@ def _inline_sources(answer: str, response, known: set[str]) -> tuple[str, set[st
     return answer, linked
 
 
+_CALENDAR_MARKER = re.compile(r"\s*\[\[calendar:([a-z0-9-]+)\]\]")
+
+
+def _fold(text: str) -> str:
+    return unicodedata.normalize("NFKD", (text or "").lower()).encode("ascii", "ignore").decode()
+
+
+def _drop_stray_calendars(answer: str, calendars: dict[str, tuple[str, list[str]]]) -> str:
+    """
+    Calendar buttons only for series the answer is about: the model sometimes
+    adds one to an unrelated answer (a testament question got the council's
+    meeting calendar). Kept when the answer names the series or gives one of
+    its dates (day and year, for answers in another language).
+    """
+    folded = _fold(answer)
+    numbers = set(re.findall(r"\d+", answer))
+
+    def keep(m):
+        name, dates = calendars.get(m.group(1), ("", []))
+        word = next((w for w in re.findall(r"[a-z]{4,}", _fold(name))), None)
+        if word and word in folded:
+            return m.group(0)
+        if any(d[:4] in numbers and str(int(d[8:10])) in {n.lstrip("0") for n in numbers} for d in dates):
+            return m.group(0)
+        return ""
+    return _CALENDAR_MARKER.sub(keep, answer)
+
+
 def _ensure_source(answer: str, candidates: list[tuple[str, str]], known: set[str]) -> str:
     """
     Fills the model's "Quelle: [[sources]]" line with the documents the answer
@@ -401,10 +465,14 @@ def _language_rule() -> str:
     return (
         "Language: always reply in the language of the user's most recent message, "
         "even when your documents and these instructions are in another language "
-        "(e.g. a question in Ukrainian gets an answer in Ukrainian). Translate the content "
+        "(e.g. a question in English gets an answer in English, one in Ukrainian an answer in "
+        "Ukrainian). Translate the content "
         "you found; keep names of places, streets, offices and documents as written, and "
         "give dates in the reply language. If the language of the message is unclear "
-        "(only a name, number or single word), reply in the language of your documents."
+        "(only a name, number or single word), reply in the language of your documents. "
+        "This overrides any language named above: a rule like \"write German the Swiss way\" only "
+        "applies when you reply in German. Search your documents in their own language (translate "
+        "the question's key words first), whatever language the question is in."
     )
 
 
@@ -484,14 +552,28 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         # --- Build system instruction ---
         system_instruction = _build_system_instruction(tenant_config, fine_tune_rules)
         date_sources: dict[str, tuple[str, str]] = {}
+        calendars: dict[str, tuple[str, list[str]]] = {}
         try:
             system_instruction += "\n\n" + _dates_context(
-                tenant_id, date.today(), offer_calendars=_calendars_offered(tenant_config), sources_out=date_sources)
+                tenant_id, datetime.now(TIMEZONE).date(), offer_calendars=_calendars_offered(tenant_config), sources_out=date_sources,
+                calendars_out=calendars)
         except Exception as e:
             error_logger.warning("chat_task: dates context unavailable for tenant %s: %s", tenant_id, e)
         contact_card = tenant_config.get("contact_card") or None
         if contact_card:
             system_instruction += "\n\n" + contact_context(contact_card)
+
+        chat_history_json = _load_history(tenant_id, conversation_id)
+        facts, fact_sources = [], {}
+        try:
+            # the previous question too, so a follow-up ("und was kostet sie?") finds its facts
+            asked = " ".join([m["content"] for m in chat_history_json if m["type"] == "human"][-1:] + [query])
+            all_facts, fact_sources = _tenant_facts(tenant_id)
+            facts = relevant_facts(all_facts, asked)
+            if facts:
+                system_instruction += "\n\n" + facts_context(facts, fact_sources)
+        except Exception as e:
+            error_logger.warning("chat_task: facts unavailable for tenant %s: %s", tenant_id, e)
         system_instruction += "\n\n" + _SOURCES_RULE + "\n\n" + _UNKNOWN_RULE + "\n\n" + _STYLE_RULE + "\n\n" + _language_rule()
 
         # --- Build tool config ---
@@ -509,7 +591,6 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         # --- Build contents (conversation history + current query) ---
         # chat_history_json is ignored (kept in the signature for queued tasks
         # from older API versions); history comes from the database.
-        chat_history_json = _load_history(tenant_id, conversation_id)
         # Strip leading model messages — Gemini requires first message to be "user"
         history = list(chat_history_json)
         while history and history[0].get("type") != "human":
@@ -533,7 +614,10 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
             if contact_card and contact_card.get("maps_url"):
                 known[contact_card["maps_url"]] = ""   # the address's map link is ours, not invented
             ai_message = _keep_known_links(ai_message, known)
+            ai_message = _drop_stray_calendars(ai_message, calendars)
             mentioned = [src for name, src in date_sources.items() if name.lower() in ai_message.lower()]
+            mentioned += [fact_sources[f["source_id"]] for f in facts
+                          if f.get("source_id") in fact_sources and fact_mentioned(f, ai_message)]
             ai_message, linked = _inline_sources(ai_message, response, known)
             if linked:
                 ai_message = _ensure_source(ai_message, [], known)   # only drops a stray [[sources]] line
