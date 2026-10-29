@@ -179,9 +179,9 @@ Tasks:
 Answer in the content's language."""
 
 
-def _call(contents: list, schema: dict) -> tuple[dict, int, int]:
+def _call(contents: list, schema: dict, model: str | None = None) -> tuple[dict, int, int]:
     response = _get_client().models.generate_content(
-        model=INDEXING_GEMINI_MODEL,
+        model=model or INDEXING_GEMINI_MODEL,
         contents=contents,
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
@@ -203,7 +203,7 @@ def _call(contents: list, schema: dict) -> tuple[dict, int, int]:
     return result, in_tok, out_tok
 
 
-def understand_markdown(markdown: str, source: str, today: date | None = None) -> tuple[dict, int, int]:
+def understand_markdown(markdown: str, source: str, today: date | None = None, model: str | None = None) -> tuple[dict, int, int]:
     """Analyse page Markdown. Returns (result, input_tokens, output_tokens); sections carry 'text'."""
     today = today or date.today()
     prompt = _INSTRUCTIONS.format(
@@ -212,7 +212,7 @@ def understand_markdown(markdown: str, source: str, today: date | None = None) -
         section_rule="Return each section as a heading plus the line range (start_line/end_line, inclusive) "
                      "of the numbered content below. Ranges must not overlap.",
     )
-    result, in_tok, out_tok = _call([prompt, "CONTENT:\n" + number_lines(markdown)], _schema(sections_by_lines=True))
+    result, in_tok, out_tok = _call([prompt, "CONTENT:\n" + number_lines(markdown)], _schema(sections_by_lines=True), model)
     sections = []
     for s in result.get("sections") or []:
         text = slice_lines(markdown, s.get("start_line", 0), s.get("end_line", 0))
@@ -224,6 +224,7 @@ def understand_markdown(markdown: str, source: str, today: date | None = None) -
 
 def understand_file(
     data: bytes, mime_type: str, source: str, today: date | None = None, text_layer: str | None = None,
+    model: str | None = None,
 ) -> tuple[dict, int, int]:
     """
     Analyse a PDF/image visually. Returns (result, input_tokens, output_tokens).
@@ -241,7 +242,7 @@ def understand_file(
                          "(start_line/end_line, inclusive) of the numbered TEXT LAYER below. Ranges must not overlap.",
         )
         result, in_tok, out_tok = _call(
-            [part, prompt, "TEXT LAYER:\n" + number_lines(text_layer)], _schema(sections_by_lines=True))
+            [part, prompt, "TEXT LAYER:\n" + number_lines(text_layer)], _schema(sections_by_lines=True), model)
         result["sections"] = [
             {"heading": s.get("heading", ""), "text": text}
             for s in result.get("sections") or []
@@ -253,7 +254,7 @@ def understand_file(
         source=source,
         section_rule="Return each section with its full content as Markdown (tables as Markdown tables).",
     )
-    return _call([part, prompt], _schema(sections_by_lines=False))
+    return _call([part, prompt], _schema(sections_by_lines=False), model)
 
 
 # ---------------------------------------------------------------------------

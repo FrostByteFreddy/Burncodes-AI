@@ -17,7 +17,7 @@ sources_bp = Blueprint('sources', __name__)
 
 
 def _insufficient_balance(user_id):
-    """Returns a 402 response if the user can't pay for indexing, else None."""
+    """Returns a 402 response if the user can't pay for learning an upload, else None."""
     if BillingService.check_balance(user_id) <= 0:
         return jsonify({"error": "Insufficient balance. Please recharge."}), 402
     return None
@@ -125,8 +125,7 @@ def crawl_sources(current_user, tenant_id):
         rejected = _invalid_urls(urls)
         if rejected:
             return jsonify({"error": "Only public http(s) URLs can be added", "rejected": rejected}), 400
-        if (resp := _insufficient_balance(current_user.id)):
-            return resp
+        # Reading is free; learning waits for a confirmed estimate the balance covers
 
         # Each URL becomes a single-page crawl: scanned, estimated, then
         # learned after confirmation like any other crawl.
@@ -162,8 +161,8 @@ def discover_links(current_user, tenant_id):
 
         if _invalid_urls([start_url]):
             return jsonify({"error": "Only public http(s) URLs can be crawled"}), 400
-        if (resp := _insufficient_balance(current_user.id)):
-            return resp
+        # Reading is free, so anyone sees the estimate before paying; learning
+        # waits for a confirmed estimate the balance covers (confirm_crawling_job)
 
         # Persist the selected crawl_mode so all worker tasks pick it up from the DB
         valid_modes = {'soup', 'playwright', 'playwright_llm'}
@@ -428,7 +427,11 @@ def confirm_crawling_job(current_user, tenant_id, job_id):
         if job['status'] != 'SCANNED':
             return jsonify({"error": "This crawl is not waiting for confirmation", "status": job['status']}), 409
 
-        estimate_chf = float((job.get('estimate') or {}).get('cost_chf') or 0)
+        # the customer picks the learning model; the price is that model's
+        from app.ai_models import learning_model_key
+        estimate = job.get('estimate') or {}
+        model = learning_model_key((request.get_json(silent=True) or {}).get('model'))
+        estimate_chf = float((estimate.get('costs') or {}).get(model, estimate.get('cost_chf')) or 0)
         balance = BillingService.check_balance(current_user.id)
         if balance < estimate_chf:
             return jsonify({
@@ -436,8 +439,11 @@ def confirm_crawling_job(current_user, tenant_id, job_id):
                 "balance_chf": balance, "estimate_chf": estimate_chf,
             }), 402
 
+        supabase.table('crawling_jobs').update({
+            'learning_model': model, 'estimate': {**estimate, 'model': model, 'cost_chf': estimate_chf},
+        }).eq('id', job_id).execute()
         start_learning_task.delay(job_id)
-        return jsonify({"message": "Learning started"}), 202
+        return jsonify({"message": "Learning started", "model": model}), 202
     except Exception as e:
         error_logger.error(f"Error confirming crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to confirm crawl job"}), 500
@@ -536,6 +542,9 @@ def resume_crawling_job(current_user, tenant_id, job_id):
             .in_('status', ['IN_PROGRESS', 'SCANNED', 'INDEXING']).neq('id', job_id).limit(1).execute().data
         if running:
             return jsonify({"error": "Another crawl of this chatbot is still running", "code": "busy"}), 409
+        # continuing to learn spends money: only with a paid balance
+        if job[0].get('confirmed_at') and BillingService.check_balance(current_user.id) <= 0:
+            return jsonify({"error": "Insufficient balance. Please recharge.", "code": "balance"}), 402
         phase = knowledge_jobs.resume_job(job[0])
         if not phase:
             return jsonify({"error": "Nothing left to continue", "code": "nothing_to_resume"}), 409

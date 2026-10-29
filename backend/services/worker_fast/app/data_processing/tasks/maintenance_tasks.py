@@ -109,7 +109,7 @@ def weekly_recrawl_task(self):
     """
     try:
         tenants = (
-            supabase.table("tenants").select("id, recrawl_interval_days").eq("auto_recrawl", True).execute()
+            supabase.table("tenants").select("id, recrawl_interval_days, learning_model").eq("auto_recrawl", True).execute()
         ).data or []
         for tenant in tenants:
             tenant_jobs = (
@@ -135,6 +135,8 @@ def weekly_recrawl_task(self):
                     "same_language": j.get("same_language") or False,
                     "use_sitemap": j.get("use_sitemap") or False,
                     "skip_funnel": j.get("skip_funnel") or False,
+                    # the model it was learned with last time, else the chatbot's default
+                    "learning_model": j.get("learning_model") or tenant.get("learning_model"),
                     "max_depth": j.get("max_depth") or 3,
                     "trigger": "scheduled",
                     "auto_confirm": True,
@@ -174,7 +176,7 @@ def review_conversations_task(self, tenant_id=None):
             supabase.table("tenants").update({"last_review_at": now.isoformat()}).eq("id", tenant["id"]).execute()
             result = review.review_tenant(
                 tenant["id"], tenant["user_id"],
-                lambda owner, i, o: BillingService.deduct_cost(owner, "review", i, o),
+                lambda owner, i, o, tid=tenant["id"]: BillingService.deduct_cost(owner, "review", i, o, tid),
             )
             if result["reviewed"]:
                 error_logger.info("review: tenant %s — %d conversations, %d findings",

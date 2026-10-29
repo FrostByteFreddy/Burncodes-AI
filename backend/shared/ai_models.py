@@ -63,6 +63,42 @@ RATES = {
 }
 
 
+# ── Learning: the customer picks the model when confirming an estimate ───────
+# Google's list prices in USD per 1M tokens (input, output), each from the date
+# it applies (ai.google.dev/gemini-api/docs/pricing). Customers pay them times
+# LEARNING_PRICE_FACTOR, converted at USD_TO_CHF; embedding the learned sections
+# is charged the same way.
+LEARNING_MODELS = {
+    "lite": {
+        "model": _env("LEARNING_LITE_MODEL", "gemini-3.1-flash-lite"),
+        "prices": [("", 0.25, 1.50)],
+    },
+    "argon": {
+        "model": _env("LEARNING_ARGON_MODEL", "gemini-4-argon"),
+        "prices": [("", 2.00, 10.00), ("2026-12-01", 4.00, 20.00)],
+    },
+}
+DEFAULT_LEARNING_MODEL = "argon"
+EMBEDDING_USD_PER_1M = _rate("EMBEDDING_USD_PER_1M", 0.20)
+LEARNING_PRICE_FACTOR = _rate("LEARNING_PRICE_FACTOR", 5.0)
+USD_TO_CHF = _rate("USD_TO_CHF", 0.80)
+
+
+def learning_model_key(key: str | None) -> str:
+    """A known learning model key; anything else is the default."""
+    return key if key in LEARNING_MODELS else DEFAULT_LEARNING_MODEL
+
+
+def learning_rates(key: str | None, on: str | None = None) -> dict:
+    """What the customer pays in CHF per 1M tokens for learning with this model: input, output, embed."""
+    from datetime import date
+    day = on or date.today().isoformat()
+    prices = LEARNING_MODELS[learning_model_key(key)]["prices"]
+    _, usd_in, usd_out = [p for p in sorted(prices) if p[0] <= day][-1]
+    chf = LEARNING_PRICE_FACTOR * USD_TO_CHF
+    return {"input": usd_in * chf, "output": usd_out * chf, "embed": EMBEDDING_USD_PER_1M * chf}
+
+
 def billable_tokens(usage) -> tuple[int, int]:
     """
     (input, output) tokens as Google bills them, from a response's usage_metadata.

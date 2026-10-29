@@ -137,6 +137,11 @@ def update_tenant(current_user, tenant_id):
             tenant_update_data['test_password_hash'] = hash_password(password) if password else None
         if 'calendar_feeds' in data:
             tenant_update_data['calendar_feeds'] = bool(data['calendar_feeds'])
+        if 'learning_model' in data:
+            from app.ai_models import LEARNING_MODELS
+            if data['learning_model'] not in LEARNING_MODELS:
+                return jsonify({"error": f"learning_model must be one of {', '.join(LEARNING_MODELS)}"}), 400
+            tenant_update_data['learning_model'] = data['learning_model']
         if 'audience' in data:
             if data['audience'] not in AUDIENCES:
                 return jsonify({"error": f"audience must be one of {', '.join(AUDIENCES)}"}), 400
@@ -301,8 +306,14 @@ def get_tenant_overview(current_user, tenant_id):
             .select("id, start_url, status, created_at, finished_at, report, estimate, trigger")
             .eq('tenant_id', tenant_id_str).order('created_at', desc=True).limit(200).execute()
         ).data or []
-        learn_cost = sum(float((j.get('report') or {}).get('cost_chf') or 0)
-                         for j in jobs if (j.get('finished_at') or '') >= since.isoformat())
+        # spending in both periods, as booked in the ledger
+        booked = fetch_all(lambda: (
+            supabase.table('billing_ledger').select('kind, amount_chf, created_at')
+            .eq('tenant_id', tenant_id_str).gte('created_at', prev_since.isoformat()).order('id')))
+
+        def spent(kind, current_period=True):
+            return round(-sum(float(r['amount_chf']) for r in booked if r['kind'] == kind
+                              and (r['created_at'] >= since.isoformat()) == current_period), 4)
         last = jobs[0] if jobs else None
 
         from app.knowledge.jobs import issues_of
@@ -328,9 +339,6 @@ def get_tenant_overview(current_user, tenant_id):
             .eq('user_id', current_user.id).limit(1).execute()
         ).data
 
-        def money(rows):
-            return round(sum(float(r.get('cost_chf') or 0) for r in rows), 4)
-
         return jsonify({
             "days": days,
             "is_active": tenant.get('is_active') is not False,
@@ -348,9 +356,10 @@ def get_tenant_overview(current_user, tenant_id):
                 "open_findings": open_findings,
             },
             "costs": {
-                "chat_chf": money(current),
-                "chat_prev_chf": money(previous),
-                "learning_chf": round(learn_cost, 4),
+                "chat_chf": spent('answer'),
+                "chat_prev_chf": spent('answer', current_period=False),
+                "learning_chf": spent('learning'),
+                "review_chf": spent('review'),
                 "balance_chf": float(balance[0]['balance_chf']) if balance else 0.0,
             },
             "knowledge": {

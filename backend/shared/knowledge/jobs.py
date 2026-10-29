@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 
 from celery import current_app as celery_app
 
-from app.ai_models import RATES
+from app.ai_models import DEFAULT_LEARNING_MODEL, LEARNING_MODELS, learning_model_key, learning_rates
 from app.database.supabase_client import fetch_all, supabase
 from app.logging_config import error_logger
 from app.models.database import CrawlingStatus
@@ -207,13 +207,10 @@ def estimate_source(src: dict, cal: dict | None = None) -> tuple[int, int, int]:
     return (_PROMPT_OVERHEAD + int(tokens * 1.3), out, int(tokens * 1.2))
 
 
-def tokens_cost(ext_in: int, ext_out: int, embed: int) -> float:
-    """What learning costs the customer for these token counts, in CHF."""
-    return (
-        ext_in / 1e6 * RATES["extraction"]["input"]
-        + ext_out / 1e6 * RATES["extraction"]["output"]
-        + embed / 1e6 * RATES["indexing"]["input"]
-    )
+def tokens_cost(ext_in: int, ext_out: int, embed: int, model: str | None = None) -> float:
+    """What learning costs the customer for these token counts with this learning model, in CHF."""
+    rate = learning_rates(model)
+    return ext_in / 1e6 * rate["input"] + ext_out / 1e6 * rate["output"] + embed / 1e6 * rate["embed"]
 
 
 def compute_estimate(job_id: int) -> dict:
@@ -241,7 +238,8 @@ def compute_estimate(job_id: int) -> dict:
     for s in skipped:
         key = s.get("skip_reason") or "other"
         skipped_by_reason[key] = skipped_by_reason.get(key, 0) + 1
-    cost = tokens_cost(ext_in, ext_out, embed)
+    # one price per learning model; the customer picks when confirming
+    costs = {key: round(tokens_cost(ext_in, ext_out, embed, key), 2) for key in LEARNING_MODELS}
     return {
         "to_learn": len(pending),
         "pages": sum(1 for s in pending if not s.get("file_pages")),
@@ -254,7 +252,9 @@ def compute_estimate(job_id: int) -> dict:
         "outcomes": outcomes,
         "tokens_in": ext_in,
         "tokens_out": ext_out,
-        "cost_chf": round(cost, 2),
+        "costs": costs,
+        "model": DEFAULT_LEARNING_MODEL,
+        "cost_chf": costs[DEFAULT_LEARNING_MODEL],
         "computed_at": now_iso(),
     }
 
@@ -320,9 +320,13 @@ def complete_scan_if_done(job_id: int) -> None:
     log_event(job_id, job["tenant_id"], "scan_done", to_learn=estimate["to_learn"],
               cost_chf=estimate["cost_chf"], removed=removed, outcomes=estimate["outcomes"])
 
-    # Scheduled re-crawls are pre-approved up to a cap; anything pricier waits
-    # for the user like a manual crawl.
-    auto = job.get("auto_confirm") and estimate["cost_chf"] <= AUTO_CONFIRM_MAX_CHF
+    # Scheduled re-crawls are pre-approved up to a cap and only while the
+    # balance covers them; anything else waits for the user like a manual crawl.
+    # (with the model the previous run of this website was learned with)
+    model = learning_model_key(job.get("learning_model"))
+    cost = estimate["costs"][model]
+    auto = (job.get("auto_confirm") and cost <= AUTO_CONFIRM_MAX_CHF
+            and _balance_covers(job["tenant_id"], cost))
     if auto or estimate["to_learn"] == 0:
         start_learning(job_id)
 

@@ -589,6 +589,91 @@ CREATE TRIGGER trg_release_source_events BEFORE DELETE ON public.tenant_sources
     FOR EACH ROW EXECUTE FUNCTION public.release_events_of_deleted_source();
 
 -- ----------------------------------------------------------------------------
+-- Money ledger: every top-up and every charge is one row, so spend survives
+-- deleted runs and chatbots, and the balance always equals the ledger's sum.
+-- ----------------------------------------------------------------------------
+-- the learning model the customer chose for a run, and a chatbot's default
+-- ('lite', 'argon'; see ai_models.LEARNING_MODELS)
+ALTER TABLE public.crawling_jobs ADD COLUMN IF NOT EXISTS learning_model TEXT;
+ALTER TABLE public.tenants       ADD COLUMN IF NOT EXISTS learning_model TEXT;
+
+CREATE TABLE IF NOT EXISTS public.billing_ledger (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    -- the chatbot it was spent on; kept by name when the chatbot is deleted
+    tenant_id   UUID REFERENCES public.tenants(id) ON DELETE SET NULL,
+    tenant_name TEXT,
+    -- topup · answer · learning · review · opening (balance before the ledger existed)
+    kind        TEXT NOT NULL,
+    -- positive credits the balance, negative spends it
+    amount_chf  DECIMAL(12, 6) NOT NULL,
+    ref         TEXT,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_billing_ledger_user   ON public.billing_ledger (user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_billing_ledger_tenant ON public.billing_ledger (tenant_id, created_at);
+ALTER TABLE public.billing_ledger ENABLE ROW LEVEL SECURITY;
+
+-- Spends from the balance and books it in one step. Returns the new balance, -1 without a billing row.
+CREATE OR REPLACE FUNCTION public.charge(p_user_id UUID, p_tenant_id UUID, p_kind TEXT, p_amount DECIMAL, p_ref TEXT DEFAULT NULL)
+RETURNS DECIMAL AS $$
+DECLARE
+    v_new_balance DECIMAL;
+BEGIN
+    UPDATE public.user_billing SET balance_chf = balance_chf - p_amount, updated_at = now()
+     WHERE user_id = p_user_id RETURNING balance_chf INTO v_new_balance;
+    IF NOT FOUND THEN
+        RETURN -1;
+    END IF;
+    INSERT INTO public.billing_ledger (user_id, tenant_id, tenant_name, kind, amount_chf, ref)
+    VALUES (p_user_id, p_tenant_id, (SELECT name FROM public.tenants WHERE id = p_tenant_id), p_kind, -p_amount, p_ref);
+    RETURN v_new_balance;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Credits a Stripe payment at most once, and books it. Returns TRUE if this call credited.
+CREATE OR REPLACE FUNCTION public.apply_payment(p_source_id TEXT, p_user_id UUID, p_amount DECIMAL)
+RETURNS BOOLEAN AS $$
+BEGIN
+    INSERT INTO public.processed_payments (source_id, user_id, amount_chf)
+    VALUES (p_source_id, p_user_id, p_amount)
+    ON CONFLICT (source_id) DO NOTHING;
+    IF NOT FOUND THEN
+        RETURN FALSE;
+    END IF;
+    PERFORM public.credit_balance(p_user_id, p_amount);
+    INSERT INTO public.billing_ledger (user_id, kind, amount_chf, ref) VALUES (p_user_id, 'topup', p_amount, p_source_id);
+    RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Backfill once from the records kept so far, then an opening row per account
+-- so that the ledger's sum equals today's balance.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM public.billing_ledger) THEN
+        INSERT INTO public.billing_ledger (user_id, tenant_id, tenant_name, kind, amount_chf, ref, created_at)
+        SELECT t.user_id, t.id, t.name, 'answer', -SUM(c.cost_chf), 'backfill', date_trunc('day', c.created_at)
+          FROM public.chat_logs c JOIN public.tenants t ON t.id = c.tenant_id
+         WHERE c.cost_chf > 0 GROUP BY t.user_id, t.id, t.name, date_trunc('day', c.created_at);
+        INSERT INTO public.billing_ledger (user_id, tenant_id, tenant_name, kind, amount_chf, ref, created_at)
+        SELECT t.user_id, t.id, t.name, 'review', -SUM(r.cost_chf), 'backfill', date_trunc('day', r.reviewed_at)
+          FROM public.chat_reviews r JOIN public.tenants t ON t.id = r.tenant_id
+         WHERE r.cost_chf > 0 GROUP BY t.user_id, t.id, t.name, date_trunc('day', r.reviewed_at);
+        INSERT INTO public.billing_ledger (user_id, tenant_id, tenant_name, kind, amount_chf, ref, created_at)
+        SELECT t.user_id, t.id, t.name, 'learning', -SUM(s.cost_chf), 'backfill',
+               date_trunc('day', COALESCE(s.last_changed_at, s.created_at))
+          FROM public.tenant_sources s JOIN public.tenants t ON t.id = s.tenant_id
+         WHERE s.cost_chf > 0 GROUP BY t.user_id, t.id, t.name, date_trunc('day', COALESCE(s.last_changed_at, s.created_at));
+        INSERT INTO public.billing_ledger (user_id, kind, amount_chf, ref, created_at)
+        SELECT user_id, 'topup', amount_chf, source_id, created_at FROM public.processed_payments;
+        INSERT INTO public.billing_ledger (user_id, kind, amount_chf, ref)
+        SELECT b.user_id, 'opening', b.balance_chf - COALESCE((SELECT SUM(l.amount_chf) FROM public.billing_ledger l WHERE l.user_id = b.user_id), 0), 'backfill'
+          FROM public.user_billing b;
+    END IF;
+END $$;
+
+-- ----------------------------------------------------------------------------
 -- Row Level Security
 -- ----------------------------------------------------------------------------
 

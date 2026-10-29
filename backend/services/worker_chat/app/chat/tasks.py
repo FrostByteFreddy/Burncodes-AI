@@ -645,7 +645,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         # --- Billing ---
         cost = 0.0
         if user_id and user_id != "None":
-            cost = BillingService.deduct_cost(user_id, "chat", input_tokens, output_tokens)
+            cost = BillingService.deduct_cost(user_id, "chat", input_tokens, output_tokens, tenant_id)
 
         # --- Log to DB ---
         try:

@@ -90,15 +90,16 @@ def get_usage(current_user):
 
         response = supabase.rpc('usage_totals', {'p_user_id': current_user.id}).execute()
         row = (response.data or [{}])[0]
-        chat_cost = float(row.get('chat_cost') or 0)
-        sources_cost = float(row.get('sources_cost') or 0)
-        tenant_ids = [t['id'] for t in (supabase.table('tenants').select('id').eq('user_id', current_user.id).execute().data or [])]
+        # what was spent, as booked in the ledger (survives deleted runs and chatbots)
         from app.database.supabase_client import fetch_all
-        review_cost = sum(
-            float(r.get('cost_chf') or 0) for r in fetch_all(
-                lambda: supabase.table('chat_reviews').select('cost_chf').in_('tenant_id', tenant_ids).order('conversation_id'))
-        ) if tenant_ids else 0.0
-
+        booked = fetch_all(lambda: supabase.table('billing_ledger').select('kind, amount_chf')
+                           .eq('user_id', current_user.id).lt('amount_chf', 0).order('id'))
+        by_kind = {}
+        for r in booked:
+            by_kind[r['kind']] = by_kind.get(r['kind'], 0.0) - float(r['amount_chf'])
+        chat_cost = round(by_kind.get('answer', 0.0), 4)
+        sources_cost = round(by_kind.get('learning', 0.0), 4)
+        review_cost = round(by_kind.get('review', 0.0), 4)
         return jsonify({
             'total_cost': chat_cost + sources_cost + review_cost,
             'input_tokens': int(row.get('chat_input') or 0) + int(row.get('sources_input') or 0),

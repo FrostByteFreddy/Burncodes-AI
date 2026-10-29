@@ -104,3 +104,27 @@ def test_indexing_estimate_uses_text_vs_binary_ratio():
     assert BillingService.estimate_indexing_tokens(4000, ".txt") == 1000
     assert BillingService.estimate_indexing_tokens(4000, ".pdf") == 400
     assert BillingService.estimate_indexing_tokens(0, ".pdf") == 1
+
+
+def test_charges_are_booked_with_kind_and_chatbot(rpc):
+    """Every charge goes through public.charge, which spends and writes the ledger row in one step."""
+    rpc.rpc.return_value.execute.return_value.data = 12.5
+    assert BillingService.deduct_amount("user-1", 0.42, tenant_id="bot-1") == 0.42
+    BillingService.deduct_cost("user-1", "chat", 1_000_000, 0, tenant_id="bot-1")
+    (learn, answer) = [c.args[1] for c in rpc.rpc.call_args_list if c.args[0] == "charge"]
+    assert learn == {"p_user_id": "user-1", "p_tenant_id": "bot-1", "p_kind": "learning", "p_amount": 0.42, "p_ref": None}
+    assert answer["p_kind"] == "answer" and answer["p_amount"] > 0
+
+
+def test_charges_are_rounded_to_what_the_balance_keeps(rpc):
+    """user_billing keeps 4 decimals; the ledger must book the same amount."""
+    rpc.rpc.return_value.execute.return_value.data = 1.0
+    assert BillingService.deduct_amount("user-1", 0.055745) == 0.0557
+    (call,) = [c.args[1] for c in rpc.rpc.call_args_list if c.args[0] == "charge"]
+    assert call["p_amount"] == 0.0557
+
+
+def test_nothing_is_booked_for_free(rpc):
+    assert BillingService.deduct_amount("user-1", 0) == 0.0
+    assert BillingService.deduct_amount("user-1", 0.00004) == 0.0   # below what the balance can hold
+    rpc.rpc.assert_not_called()
