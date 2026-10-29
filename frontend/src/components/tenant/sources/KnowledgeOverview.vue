@@ -219,7 +219,7 @@ defineExpose({ reload: load });
 }
 .ko-day:nth-child(7n + 1) { border-left: none; }
 .ko-day:nth-last-child(-n + 7) { border-bottom: none; }
-.ko-day--weekend { background: rgba(17, 21, 45, 0.45); }
+.ko-day--weekend { background: var(--surface-0); }
 .ko-day--today::before {
   content: ''; position: absolute; left: 0; right: 0; top: -1px; height: 3px;
   background: var(--interactive);
@@ -227,8 +227,8 @@ defineExpose({ reload: load });
 .ko-day__weekday { font-size: var(--text-xs); font-weight: 600; color: var(--surface-muted); }
 .ko-day--today .ko-day__weekday { color: var(--interactive); }
 .ko-day__date { display: flex; align-items: baseline; gap: 4px; margin: 2px 0 10px; }
-.ko-day__num { font-size: var(--text-2xl); font-weight: 800; line-height: 1; color: var(--surface-heading); letter-spacing: -0.02em; }
-.ko-day--empty .ko-day__num { color: var(--surface-3); }
+.ko-day__num { font-size: 28px; font-weight: 700; line-height: 1; color: var(--text-primary); letter-spacing: -0.01em; }
+.ko-day--empty .ko-day__num { color: var(--text-disabled); }
 .ko-day__month { font-size: var(--text-xs); color: var(--surface-muted); }
 
 .ko-day__events { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -237,7 +237,6 @@ defineExpose({ reload: load });
   padding: 6px 8px;
   border-radius: var(--radius-sm);
   background: var(--interactive-soft);
-  border-left: 2px solid var(--interactive);
 }
 .ko-event--moved { background: var(--status-warning-soft); border-left-color: var(--status-warning); }
 .ko-event__series { font-size: 13px; font-weight: 700; color: var(--surface-heading); line-height: 1.25; hyphens: auto; overflow-wrap: break-word; }
@@ -258,15 +257,6 @@ defineExpose({ reload: load });
 .ko-cal__more { margin-top: 10px; background: none; border: none; padding: 0; cursor: pointer; font-size: var(--text-sm); color: var(--surface-text); }
 .ko-cal__more-action { margin-left: 6px; font-weight: 600; color: var(--interactive); }
 .ko-cal__more:hover .ko-cal__more-action { text-decoration: underline; }
-.ko-switch {
-  appearance: none; flex-shrink: 0; position: relative; cursor: pointer;
-  width: 44px; height: 24px; border-radius: var(--radius-pill); background: var(--surface-3); transition: background var(--t-fast);
-}
-.ko-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface-heading); transition: transform var(--t-fast); }
-.ko-switch:checked { background: var(--interactive-strong); }
-.ko-switch:checked::after { transform: translateX(20px); }
-.ko-switch:focus-visible { box-shadow: var(--focus-ring); }
-.ko-switch:disabled { opacity: 0.5; }
 
 /* ── Needs you ───────────────────────────────────────────────────── */
 

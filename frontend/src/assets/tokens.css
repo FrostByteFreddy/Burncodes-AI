@@ -1,0 +1,133 @@
+/* Burncodes AI design tokens: generated from the design system's tokens.json.
+   Light is the default; dark applies with data-theme="dark" on <html>. Edit the
+   design system, not this file. */
+:root {
+  color-scheme: light;
+  --surface-0: #f5f5f2;
+  --surface-1: #ffffff;
+  --surface-2: #ecece7;
+  --surface-3: #e1e1db;
+  --surface-inverse: #15171c;
+  --scrim: rgba(16,18,23,0.48);
+  --border-subtle: #e2e2dc;
+  --border-strong: #7d818a;
+  --text-primary: #15171c;
+  --text-secondary: #474c56;
+  --text-tertiary: #5f646e;
+  --text-disabled: #9da1a8;
+  --text-inverse: #ffffff;
+  --text-link: #0a1fab;
+  --interactive: #0a1fab;
+  --interactive-hover: #071685;
+  --interactive-soft: #e9ebfb;
+  --on-interactive: #ffffff;
+  --focus-ring: #0a1fab;
+  --ai: #e01883;
+  --ai-text: #a8105c;
+  --ai-soft: #fce8f2;
+  --status-ok: #1c7a3b;
+  --status-ok-soft: #e5f4ea;
+  --status-warn: #875200;
+  --status-warn-soft: #fff2d4;
+  --status-error: #b42318;
+  --status-error-soft: #fdecea;
+  --on-status-error: #ffffff;
+  --status-neutral: #5f646e;
+  --chart-1: #0a1fab;
+  --chart-2: #1d86b0;
+  --chart-3: #b9bdc4;
+  --chart-grid: #e2e2dc;
+  --brand-indigo: #0a1fab;
+  --brand-magenta: #ff2095;
+  --brand-cyan: #50d3fc;
+  --brand-violet: #3b1fa8;
+  --widget-primary: #0a1fab;
+  --widget-on-primary: #ffffff;
+  --widget-bg: #ffffff;
+  --widget-bot-bg: #f1f2f4;
+  --widget-bot-text: #15171c;
+  --shadow-1: 0 1px 2px rgba(16,18,23,0.06);
+  --shadow-2: 0 4px 16px rgba(16,18,23,0.10), 0 1px 3px rgba(16,18,23,0.08);
+  --shadow-3: 0 16px 48px rgba(16,18,23,0.18), 0 2px 6px rgba(16,18,23,0.08);
+  --font-sans: "Atkinson Hyperlegible Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, Consolas, "SF Mono", monospace;
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+  --control-sm: 32px;
+  --control-md: 40px;
+  --control-lg: 48px;
+  --touch-min: 44px;
+  --launcher: 60px;
+  --sidebar-width: 272px;
+  --content-max: 1120px;
+  --reading-max: 680px;
+  --sidepanel-width: 520px;
+  --widget-width: 400px;
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --z-sticky: 10;
+  --z-overlay: 40;
+  --z-toast: 50;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-0: #101217;
+  --surface-1: #171a21;
+  --surface-2: #1f232b;
+  --surface-3: #2a2f39;
+  --surface-inverse: #eceef1;
+  --scrim: rgba(0,0,0,0.64);
+  --border-subtle: #2a2e37;
+  --border-strong: #6b7280;
+  --text-primary: #eceef1;
+  --text-secondary: #b6bac2;
+  --text-tertiary: #979ca6;
+  --text-disabled: #5d626c;
+  --text-inverse: #15171c;
+  --text-link: #97a3ff;
+  --interactive: #97a3ff;
+  --interactive-hover: #b3bcff;
+  --interactive-soft: #1f2452;
+  --on-interactive: #0b0f33;
+  --focus-ring: #97a3ff;
+  --ai: #ff5aaa;
+  --ai-text: #ff8cc4;
+  --ai-soft: #3a1229;
+  --status-ok: #5fcf8c;
+  --status-ok-soft: #13301f;
+  --status-warn: #f2b450;
+  --status-warn-soft: #3a2a0c;
+  --status-error: #ff8f85;
+  --status-error-soft: #3e1613;
+  --on-status-error: #1a0705;
+  --status-neutral: #979ca6;
+  --chart-1: #97a3ff;
+  --chart-2: #2f86ad;
+  --chart-3: #555b66;
+  --chart-grid: #2a2e37;
+  --shadow-1: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-2: 0 4px 16px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-3: 0 16px 48px rgba(0,0,0,0.6), 0 2px 6px rgba(0,0,0,0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --duration-fast: 0ms; --duration-base: 0ms; --duration-slow: 0ms; }
+}

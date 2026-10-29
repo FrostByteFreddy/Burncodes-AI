@@ -6,6 +6,7 @@
 @import './components/tenant/settings/AppearanceTab.css';
 @import './components/tenant/settings/BehaviorTab.css';
 @import './components/tenant/sources/RulesTab.css';
+@import './legacy.css';
 
 @tailwind base;
 @tailwind components;
@@ -67,9 +68,6 @@
   }
 }
 
-body {
-  background-color: theme('colors.base-200');
-}
 
 .sidebar-logo svg {
   max-width: 70%;

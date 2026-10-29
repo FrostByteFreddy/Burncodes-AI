@@ -67,7 +67,7 @@
 }
 .rule-card__trigger.is-editing:focus {
   border-color: var(--interactive);
-  box-shadow: var(--focus-ring);
+  box-shadow: var(--focus-ring-shadow);
 }
 
 .rule-card__instruction {
@@ -93,7 +93,7 @@
 }
 .rule-card__instruction.is-editing:focus {
   border-color: var(--interactive);
-  box-shadow: var(--focus-ring);
+  box-shadow: var(--focus-ring-shadow);
 }
 
 .rule-card__actions {
@@ -186,5 +186,5 @@
 
 .form-input:focus {
   border-color: var(--interactive);
-  box-shadow: var(--focus-ring);
+  box-shadow: var(--focus-ring-shadow);
 }

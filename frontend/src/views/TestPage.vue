@@ -159,15 +159,6 @@ const savePassword = () => save(newPassword.value, t('testPage.password.saved'))
 .tp-switch-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .tp-label { display: block; cursor: pointer; }
 /* switch look shared with the Overview page */
-.ov-switch {
-  appearance: none; flex-shrink: 0; position: relative; cursor: pointer; margin-top: 2px;
-  width: 44px; height: 24px; border-radius: var(--radius-pill); background: var(--surface-3); transition: background var(--t-fast);
-}
-.ov-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface-heading); transition: transform var(--t-fast); }
-.ov-switch:checked { background: var(--interactive-strong); }
-.ov-switch:checked::after { transform: translateX(20px); }
-.ov-switch:focus-visible { box-shadow: var(--focus-ring); }
-.ov-switch:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .tp-pw { display: flex; gap: 8px; align-items: center; }
 .tp-pw .form-input { flex: 1; max-width: 360px; }
