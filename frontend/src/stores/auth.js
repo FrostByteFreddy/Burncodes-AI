@@ -4,6 +4,7 @@ import { supabase } from "../supabase";
 import router from "../router";
 import { useToast } from "../composables/useToast";
 import i18n from "../i18n";
+import { onboardingPending } from "../utils/onboarding";
 
 export const useAuthStore = defineStore("auth", () => {
   const user = ref(null);
@@ -59,7 +60,9 @@ export const useAuthStore = defineStore("auth", () => {
     sessionExpired.value = false; // Reset on new login
 
     const lastRoute = localStorage.getItem("lastVisitedRoute");
-    if (lastRoute) {
+    if (onboardingPending()) {
+      router.push({ name: "Onboarding" });
+    } else if (lastRoute) {
       router.push(lastRoute);
     } else {
       router.push("/manage-tenants");

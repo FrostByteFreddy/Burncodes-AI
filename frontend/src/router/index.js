@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "../stores/auth";
+import { ONBOARDING_PARAM, markOnboardingPending, onboardingPending } from "../utils/onboarding";
 
 const uuidRegex =
   "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
@@ -41,6 +42,12 @@ const routes = [
   { path: "/profile", redirect: { name: "AccountSettings", params: { section: "profile" } } },
   { path: "/subscription", redirect: (to) => ({ name: "AccountSettings", params: { section: "billing" }, query: to.query }) },
   {
+    path: "/onboarding",
+    name: "Onboarding",
+    component: () => import("../views/Onboarding.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
     path: "/manage-tenants",
     name: "ManageTenants",
     component: () => import("../views/ManageTenants.vue"),
@@ -73,6 +80,10 @@ router.beforeEach(async (to, from, next) => {
 
   const authStore = useAuthStore();
 
+  // ?onboarding on any address: the guided setup opens once logged in
+  const wantsOnboarding = ONBOARDING_PARAM in to.query;
+  if (wantsOnboarding) markOnboardingPending();
+
   let sessionFoundInStorage = false;
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
@@ -100,7 +111,9 @@ router.beforeEach(async (to, from, next) => {
     next("/login");
   } else if ((to.name === "Login" || to.name === "Signup") && authStore.user) {
     // If user is logged in, redirect from login/signup to the main view
-    next("/manage-tenants");
+    next(onboardingPending() ? { name: "Onboarding" } : "/manage-tenants");
+  } else if (wantsOnboarding && authStore.user && to.name !== "Onboarding") {
+    next({ name: "Onboarding" });
   } else {
     // Otherwise, proceed
     next();
