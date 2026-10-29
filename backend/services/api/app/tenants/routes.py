@@ -198,20 +198,27 @@ def delete_tenant(current_user, tenant_id):
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
         # Delete the Gemini File Search Store (and all its documents) if it exists
+        # Gemini first: the chatbot is only deleted once its store is gone, so
+        # nothing it learned is left behind without a way to delete it
         store_name = (tenant_resp.data or {}).get('gemini_file_store_name')
         if store_name:
-            try:
-                from app.gemini_store.service import GeminiStoreService
-                GeminiStoreService.delete_store(store_name)
-            except Exception as store_err:
-                error_logger.error(
-                    "Soft failure: could not delete Gemini store %s for tenant %s: %s",
-                    store_name, tenant_id_str, store_err
-                )
+            from app.gemini_store.service import GeminiStoreService
+            if not GeminiStoreService.delete_store(store_name):
+                return jsonify({"error": "The chatbot's knowledge could not be removed from Gemini. Nothing was deleted; please try again.",
+                                "code": "gemini_failed"}), 502
 
         supabase.table('tenant_fine_tune').delete().eq('tenant_id', tenant_id_str).execute()
         supabase.table('tenant_sources').delete().eq('tenant_id', tenant_id_str).execute()
+        # runs, their logs, chats, reviews, facts and dates go with the chatbot (ON DELETE CASCADE);
+        # its spending stays in the billing ledger under its name
         supabase.table('tenants').delete().eq('id', tenant_id_str).execute()
+
+        # files uploaded by hand live on disk, not in the database
+        from app.tenants.sources import UPLOADS_DIR
+        import shutil
+        upload_dir = os.path.join(UPLOADS_DIR, tenant_id_str)
+        if os.path.realpath(upload_dir).startswith(os.path.realpath(UPLOADS_DIR) + os.sep):
+            shutil.rmtree(upload_dir, ignore_errors=True)
         return jsonify({"message": "Tenant deleted successfully"}), 200
     except Exception as e:
         error_logger.error(f"Error deleting tenant {tenant_id} for user {current_user.id}: {e}", extra={'user_id': current_user.id}, exc_info=True)

@@ -32,13 +32,30 @@ def _document_names(source):
 
 
 def _delete_documents(sources, context):
+    """
+    Deletes the sources' Gemini documents. Returns the ids of the sources whose
+    documents are all gone; only those rows may be deleted, the others keep the
+    document names so the deletion can be retried.
+    """
     from app.gemini_store.service import GeminiStoreService
+    gone = []
     for src in sources:
+        ok = True
         for name in _document_names(src):
             try:
-                GeminiStoreService.delete_document(name)
+                ok = GeminiStoreService.delete_document(name) is not False and ok
             except Exception as err:
                 error_logger.warning("%s: could not delete Gemini document %s: %s", context, name, err)
+                ok = False
+        if ok:
+            gone.append(src['id'])
+    return gone
+
+
+def _gemini_failed(count):
+    """The response when Gemini kept documents: nothing more was deleted, the user can retry."""
+    return jsonify({"error": "Some content could not be removed from Gemini. Nothing else was deleted; please try again.",
+                    "code": "gemini_failed", "failed": count}), 502
 
 
 def _invalid_urls(urls):
@@ -646,6 +663,7 @@ def delete_crawling_job(current_user, tenant_id, job_id):
 
         # 3. Find + delete matching tenant_sources rows in batches
         deleted_source_ids = []
+        failed = 0
         if crawled_urls:
             from app.gemini_store.service import GeminiStoreService
             
@@ -664,16 +682,17 @@ def delete_crawling_job(current_user, tenant_id, job_id):
                 if not batch_sources:
                     continue
                     
-                batch_ids = [s['id'] for s in batch_sources]
-                deleted_source_ids.extend(batch_ids)
-                
-                # Delete the sources from Supabase
-                supabase.table('tenant_sources').delete().in_('id', batch_ids).execute()
-                
-                # Delete from Gemini Store
-                _delete_documents(batch_sources, f"delete_job {job_id}")
+                # Gemini first; a row goes only once its documents are gone
+                gone = _delete_documents(batch_sources, f"delete_job {job_id}")
+                if gone:
+                    supabase.table('tenant_sources').delete().in_('id', gone).execute()
+                deleted_source_ids.extend(gone)
+                failed += len(batch_sources) - len(gone)
 
-            error_logger.info("delete_job: purged %d Gemini document(s) for job %s", len(deleted_source_ids), job_id)
+            error_logger.info("delete_job: purged %d source(s) for job %s, %d kept", len(deleted_source_ids), job_id, failed)
+        if failed:
+            # keep the run so deleting it again retries what Gemini kept
+            return _gemini_failed(failed)
 
         # 5. Delete crawling_tasks + job row
         supabase.table('crawling_tasks').delete().eq('job_id', job_id).execute()
@@ -708,8 +727,9 @@ def delete_source(current_user, tenant_id, source_id):
 
         source = source_resp.data
 
-        # Delete its documents from the Gemini File Search Store
-        _delete_documents([source], f"delete_source {source_id}")
+        # Delete its documents from the Gemini File Search Store; the row stays if that fails
+        if not _delete_documents([source], f"delete_source {source_id}"):
+            return _gemini_failed(1)
 
         # Delete the local file if this was a user upload
         if source.get('source_type') == 'FILE':
@@ -756,15 +776,10 @@ def delete_all_sources(current_user, tenant_id):
         # 1. Delete the Gemini File Search Store (drops all indexed documents at once)
         store_name = (tenant_resp.data or {}).get('gemini_file_store_name')
         if store_name:
-            try:
-                from app.gemini_store.service import GeminiStoreService
-                GeminiStoreService.delete_store(store_name)
-                error_logger.info("delete_all: deleted Gemini store %s for tenant %s", store_name, tenant_id_str)
-            except Exception as store_err:
-                error_logger.warning(
-                    "delete_all: soft failure deleting Gemini store %s: %s",
-                    store_name, store_err
-                )
+            from app.gemini_store.service import GeminiStoreService
+            if not GeminiStoreService.delete_store(store_name):
+                return _gemini_failed(1)
+            error_logger.info("delete_all: deleted Gemini store %s for tenant %s", store_name, tenant_id_str)
 
         # 2. Clear the store reference on the tenant so a fresh one is created next upload
         supabase.table('tenants') \

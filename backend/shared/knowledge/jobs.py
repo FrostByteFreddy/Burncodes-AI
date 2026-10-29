@@ -129,18 +129,21 @@ def record_scan(
     return row, "unchanged" if unchanged else "changed"
 
 
-def delete_source_documents(source: dict) -> None:
-    """Deletes every File Search document of a source (legacy single doc + sections)."""
+def delete_source_documents(source: dict) -> bool:
+    """Deletes every File Search document of a source (legacy single doc + sections). True if all are gone."""
     from app.gemini_store.service import GeminiStoreService
 
     names = list(source.get("gemini_document_names") or [])
     if source.get("gemini_document_name"):
         names.append(source["gemini_document_name"])
+    gone = True
     for name in dict.fromkeys(names):
         try:
-            GeminiStoreService.delete_document(name)
+            gone = GeminiStoreService.delete_document(name) is not False and gone
         except Exception as e:
             error_logger.warning("Could not delete Gemini document %s: %s", name, e)
+            gone = False
+    return gone
 
 
 # ---------------------------------------------------------------------------
@@ -282,9 +285,10 @@ def _mark_missed_sources(job: dict) -> int:
             continue
         misses = (src.get("missed_crawls") or 0) + 1
         if misses >= MISSED_CRAWLS_BEFORE_REMOVAL:
-            delete_source_documents(src)
-            supabase.table("tenant_sources").delete().eq("id", src["id"]).execute()
-            removed += 1
+            # the row goes only once Gemini no longer has its documents; else the next run retries
+            if delete_source_documents(src):
+                supabase.table("tenant_sources").delete().eq("id", src["id"]).execute()
+                removed += 1
         else:
             supabase.table("tenant_sources").update({"missed_crawls": misses}).eq("id", src["id"]).execute()
     return removed
@@ -329,6 +333,17 @@ def complete_scan_if_done(job_id: int) -> None:
             and _balance_covers(job["tenant_id"], cost))
     if auto or estimate["to_learn"] == 0:
         start_learning(job_id)
+
+
+def _balance_covers(tenant_id: str, cost_chf: float) -> bool:
+    """True if the chatbot's owner has paid enough for this learning. Fails closed."""
+    try:
+        from app.billing.services import BillingService
+        owner = BillingService.get_tenant_owner(tenant_id)
+        return bool(owner) and BillingService.check_balance(owner) >= max(cost_chf, 0.01)
+    except Exception as e:
+        error_logger.warning("balance check for tenant %s failed: %s", tenant_id, e)
+        return False
 
 
 def refresh_estimate(job_id: int) -> dict:
