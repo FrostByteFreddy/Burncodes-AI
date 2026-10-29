@@ -530,7 +530,8 @@
     "confirmation": {
       "cancel": "Annuler",
       "confirm": "Confirmer",
-      "typeToConfirm": "Pour confirmer, veuillez taper \"{text}\" ci-dessous :"
+      "typeToConfirm": "Pour confirmer, veuillez taper \"{text}\" ci-dessous :",
+      "deleting": "Suppression en cours … Avec beaucoup de pages, cela peut prendre une minute."
     },
     "sessionExpired": {
       "title": "Session expirée",
@@ -747,7 +748,8 @@
     },
     "deleteJob": {
       "title": "Supprimer le passage ?",
-      "message": "Supprime le passage pour <strong>{url}</strong> et tout ce que votre chatbot sait de ses pages et documents, même si un autre passage les a appris. Cette action est irréversible."
+      "message": "Supprime le passage pour <strong>{url}</strong> et tout ce que votre chatbot sait de ses pages et documents, même si un autre passage les a appris. Cette action est irréversible.",
+      "deleted": "Passage supprimé"
     },
     "rules": {
       "title": "Réponses personnalisées",

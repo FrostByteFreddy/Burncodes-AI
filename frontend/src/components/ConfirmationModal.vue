@@ -1,8 +1,9 @@
 <template>
   <BcDialog :open="show" :title="title" tone="danger" icon="triangle-exclamation"
-    :confirm-label="confirmButtonText || $t('modals.confirmation.confirm')" :confirm-disabled="isConfirmDisabled"
+    :confirm-label="confirmButtonText || $t('modals.confirmation.confirm')" :confirm-disabled="isConfirmDisabled" :loading="loading"
     @confirm="onConfirm" @cancel="onCancel">
     <p v-html="message"></p>
+    <p v-if="loading" class="cm-busy" role="status">{{ $t('modals.confirmation.deleting') }}</p>
     <div v-if="confirmationText" class="cm-type">
       <BcTextInput v-model="userInput" :label="$t('modals.confirmation.typeToConfirm', { text: confirmationText })" autocomplete="off" />
     </div>
@@ -20,6 +21,8 @@ const props = defineProps({
   message: { type: String, required: true },
   confirmationText: { type: String, default: '' },
   confirmButtonText: { type: String, default: '' },
+  // the action is running: the dialog stays open, with a spinner and a note, until the caller closes it
+  loading: Boolean,
 });
 const emit = defineEmits(['confirm', 'cancel']);
 const userInput = ref('');
@@ -30,4 +33,5 @@ const onCancel = () => { emit('cancel'); userInput.value = ''; };
 
 <style scoped>
 .cm-type { margin-top: var(--space-4); }
+.cm-busy { margin-top: var(--space-4); color: var(--text-secondary); }
 </style>

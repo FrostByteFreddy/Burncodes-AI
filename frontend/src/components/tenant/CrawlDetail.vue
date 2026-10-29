@@ -100,6 +100,7 @@
       :title="$t('knowledge.deleteJob.title')"
       :message="$t('knowledge.deleteJob.message', { url: escapeHtml(job?.start_url) })"
       :confirmButtonText="$t('tenant.sources.deleteModal.confirm')"
+      :loading="deleting"
       @confirm="onDelete"
       @cancel="askDelete = false"
     />
@@ -121,6 +122,7 @@ import PageTree from './sources/PageTree.vue';
 import { useTenantsStore } from '@/stores/tenants';
 import ConfirmationModal from '../ConfirmationModal.vue';
 import { useBillingStore } from '@/stores/billing';
+import { useToast } from '@/composables/useToast';
 import { useLearningModels } from '@/composables/useLearningModels';
 import {
   BcActivityLogRow, BcButton, BcIcon, BcKeyFigure, BcMoney, BcNotice, BcPageHeader, BcPanel, BcProgressBar, BcRadioCards,
@@ -135,6 +137,7 @@ const props = defineProps({
 const router = useRouter();
 const { t } = useI18n();
 const { fmtChf, fmtDateTime, displayUrl, latestPage } = useCrawlText();
+const { addToast } = useToast();
 
 // a crawl's status in the design system's badge names
 const BADGE = { IN_PROGRESS: 'scanning', SCANNED: 'ready', INDEXING: 'learning', COMPLETED: 'done', FAILED: 'stopped' };
@@ -154,6 +157,7 @@ const log = ref([]);
 const loading = ref(false);
 const busy = ref(false);
 const askDelete = ref(false);
+const deleting = ref(false);
 
 // pages and files of this crawl, from the chatbot's sources (reloaded when the crawl ends)
 const tenantsStore = useTenantsStore();
@@ -237,9 +241,16 @@ const onResume = async () => {
   if (await actions.resume(job.value)) await Promise.all([fetchJob(), fetchLog()]);
   busy.value = false;
 };
+// The dialog stays open while it works: removing hundreds of pages from Gemini takes a while
 const onDelete = async () => {
+  deleting.value = true;
+  const done = await actions.remove(job.value);
+  deleting.value = false;
   askDelete.value = false;
-  if (await actions.remove(job.value)) router.push({ name: 'TenantSources', params: { tenantId: props.tenantId } });
+  if (done) {
+    addToast(t('knowledge.deleteJob.deleted'), 'success');
+    router.push({ name: 'TenantSources', params: { tenantId: props.tenantId } });
+  }
 };
 </script>
 

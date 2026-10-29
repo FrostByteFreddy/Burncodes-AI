@@ -45,6 +45,7 @@
       :title="$t('manageTenants.deleteModal.title')"
       :message="$t('manageTenants.deleteModal.message', { name: escapeHtml(tenantToDelete?.name) })"
       :confirm-button-text="$t('manageTenants.deleteModal.confirm')"
+      :loading="deleting"
       @confirm="deleteTenant"
       @cancel="tenantToDelete = null"
     />
@@ -69,18 +70,21 @@ const { addToast } = useToast();
 
 const showCreateModal = ref(false);
 const tenantToDelete = ref(null);
+const deleting = ref(false);
 
 // the list endpoint returns the count as tenant_sources: [{ count }]
 const sourceCount = (tenant) => tenant.source_count ?? tenant.tenant_sources?.[0]?.count ?? 0;
 const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const deleteTenant = async () => {
+  deleting.value = true;
   try {
     await tenantsStore.deleteTenant(tenantToDelete.value.id);
     addToast(t('manageTenants.toast.deleteSuccess'), 'success');
   } catch (e) {
     addToast(t(e.response?.data?.code === 'gemini_failed' ? 'common.geminiFailed' : 'manageTenants.toast.deleteError'), 'error');
   } finally {
+    deleting.value = false;
     tenantToDelete.value = null;
   }
 };

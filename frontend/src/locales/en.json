@@ -530,7 +530,8 @@
     "confirmation": {
       "cancel": "Cancel",
       "confirm": "Confirm",
-      "typeToConfirm": "To confirm, please type \"{text}\" below:"
+      "typeToConfirm": "To confirm, please type \"{text}\" below:",
+      "deleting": "Deleting … With many pages this can take a minute."
     },
     "sessionExpired": {
       "title": "Session Expired",
@@ -747,7 +748,8 @@
     },
     "deleteJob": {
       "title": "Delete run?",
-      "message": "Deletes the run for <strong>{url}</strong> and everything your chatbot knows from its pages and documents, even if another run learned them. This can't be undone."
+      "message": "Deletes the run for <strong>{url}</strong> and everything your chatbot knows from its pages and documents, even if another run learned them. This can't be undone.",
+      "deleted": "Run deleted"
     },
     "rules": {
       "title": "Custom answers",

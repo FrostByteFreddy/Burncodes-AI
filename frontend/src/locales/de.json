@@ -530,7 +530,8 @@
     "confirmation": {
       "cancel": "Abbrechen",
       "confirm": "Bestätigen",
-      "typeToConfirm": "Zur Bestätigung geben Sie bitte \"{text}\" unten ein:"
+      "typeToConfirm": "Zur Bestätigung geben Sie bitte \"{text}\" unten ein:",
+      "deleting": "Wird gelöscht … Bei vielen Seiten kann das eine Minute dauern."
     },
     "sessionExpired": {
       "title": "Sitzung abgelaufen",
@@ -747,7 +748,8 @@
     },
     "deleteJob": {
       "title": "Durchlauf löschen?",
-      "message": "Löscht den Durchlauf für <strong>{url}</strong> und alles, was Ihr Chatbot über dessen Seiten und Dokumente weiss, auch wenn ein anderer Durchlauf sie gelernt hat. Das lässt sich nicht rückgängig machen."
+      "message": "Löscht den Durchlauf für <strong>{url}</strong> und alles, was Ihr Chatbot über dessen Seiten und Dokumente weiss, auch wenn ein anderer Durchlauf sie gelernt hat. Das lässt sich nicht rückgängig machen.",
+      "deleted": "Durchlauf gelöscht"
     },
     "rules": {
       "title": "Eigene Antworten",

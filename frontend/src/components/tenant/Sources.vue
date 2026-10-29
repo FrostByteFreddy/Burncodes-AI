@@ -120,6 +120,7 @@
       :title="$t('tenant.sources.deleteModal.title')"
       :message="$t('tenant.sources.deleteModal.message', { source: escapeHtml(fileName(sourceToDelete || {})) })"
       :confirmButtonText="$t('tenant.sources.deleteModal.confirm')"
+      :loading="deleting"
       @confirm="handleDelete"
       @cancel="cancelDelete"
     />
@@ -156,6 +157,7 @@ const logsByJob             = ref({});
 const showAllJobs           = ref(false);
 const sourceToDelete        = ref(null);
 const showConfirmationModal = ref(false);
+const deleting = ref(false);
 const rulesTabRef           = ref(null);
 
 const tenantId = computed(() => tenantsStore.currentTenant?.id || '');
@@ -299,13 +301,14 @@ const cancelDelete = () => { sourceToDelete.value = null; showConfirmationModal.
 const handleDelete = async () => {
   if (!sourceToDelete.value) return;
   const id = sourceToDelete.value.id;
+  deleting.value = true;
   try {
     await apiClient.delete(`/tenants/${tenantId.value}/sources/${id}`);
     addToast(t('tenant.sources.actions.deleteSuccess'), 'success');
     await refreshSources();
   } catch (e) {
     addToast(t(e.response?.data?.code === 'gemini_failed' ? 'common.geminiFailed' : 'tenant.sources.actions.deleteFailed'), 'error');
-  } finally { cancelDelete(); }
+  } finally { deleting.value = false; cancelDelete(); }
 };
 </script>
 
