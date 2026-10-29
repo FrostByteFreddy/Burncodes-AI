@@ -241,34 +241,17 @@ class GeminiStoreService:
         Deletes a specific document from its store.
         Called when a user deletes a source.
 
-        The Gemini API raises FAILED_PRECONDITION if you attempt to delete a
-        document that still contains chunks.  We must purge all chunks first.
+        force=True deletes the document together with its chunks (without it
+        Gemini refuses a document that still has chunks).
         Returns True once the document is gone (also if it didn't exist),
         False if Gemini failed: the caller keeps its reference to retry.
         """
         if not gemini_document_name:
             return True
         try:
-            client = _get_client()
-
-            # 1. List every chunk in the document and delete them all.
-            chunks = client.file_search_stores.documents.chunks.list(
-                parent=gemini_document_name
+            _get_client().file_search_stores.documents.delete(
+                name=gemini_document_name, config={"force": True}
             )
-            chunk_names = [c.name for c in chunks]
-            if chunk_names:
-                error_logger.info(
-                    "Deleting %d chunk(s) from document %s",
-                    len(chunk_names),
-                    gemini_document_name,
-                )
-                client.file_search_stores.documents.chunks.batch_delete(
-                    parent=gemini_document_name,
-                    config={"names": chunk_names},
-                )
-
-            # 2. Now the document is empty — safe to delete.
-            client.file_search_stores.documents.delete(name=gemini_document_name)
             error_logger.info("Deleted document %s", gemini_document_name)
             return True
         except Exception as e:

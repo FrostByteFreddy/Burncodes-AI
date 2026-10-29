@@ -17,8 +17,11 @@ def _client(fails=None):
 
 
 def test_document_deletion_reports_success(monkeypatch):
-    monkeypatch.setattr(gemini, "_get_client", lambda: _client())
+    client = _client()
+    monkeypatch.setattr(gemini, "_get_client", lambda: client)
     assert gemini.GeminiStoreService.delete_document("fileSearchStores/s/documents/d") is True
+    # force: the document goes with its chunks (the SDK has no chunk API to empty it first)
+    client.file_search_stores.documents.delete.assert_called_once_with(name="fileSearchStores/s/documents/d", config={"force": True})
     assert gemini.GeminiStoreService.delete_store("fileSearchStores/s") is True
 
 
