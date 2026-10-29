@@ -27,6 +27,11 @@ export const useTenantsStore = defineStore("tenants", () => {
     return { Authorization: `Bearer ${authStore.session.access_token}` };
   };
 
+  // The chatbot asked for last. Loads can overlap (the one restored from the
+  // browser at start-up, the one in the address); an older answer arriving
+  // later must not replace the chatbot the page is showing.
+  let wantedId = null;
+
   async function restoreTenant() {
     if (!authStore.session?.access_token) return; // Skip on public pages
     const tenantId = localStorage.getItem("currentTenantId");
@@ -52,14 +57,16 @@ export const useTenantsStore = defineStore("tenants", () => {
   }
 
   async function fetchTenant(id) {
+    wantedId = id;
     loading.value = true;
     error.value = null;
     try {
       const response = await apiClient.get(`/tenants/${id}`, {
         headers: getAuthHeaders(),
       });
-      currentTenant.value = response.data;
+      if (wantedId === id) currentTenant.value = response.data;
     } catch (e) {
+      if (wantedId !== id) return;
       error.value = e.response?.data?.error || "Failed to fetch tenant";
       currentTenant.value = null;
     } finally {
@@ -128,7 +135,7 @@ export const useTenantsStore = defineStore("tenants", () => {
       const response = await apiClient.get(`/tenants/${id}`, {
         headers: getAuthHeaders(),
       });
-      currentTenant.value = response.data;
+      if (!wantedId || wantedId === id) currentTenant.value = response.data;
     } catch (e) {
       // Don't set the global error state, but maybe log it
       console.error("Failed to refetch tenant:", e);
@@ -136,6 +143,7 @@ export const useTenantsStore = defineStore("tenants", () => {
   }
 
   function selectTenant(tenant) {
+    wantedId = tenant?.id ?? null;
     currentTenant.value = tenant;
   }
 
