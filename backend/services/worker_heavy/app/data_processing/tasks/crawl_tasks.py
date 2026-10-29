@@ -32,7 +32,7 @@ from app.data_processing.ingestion.utils import normalize_url
 from app.data_processing.soup_extractor import HEADERS, extract_internal_links, fetch_html
 from app.database.supabase_client import supabase
 from app.gemini_store.service import INDEXABLE_FILE_EXTENSIONS, UNSUPPORTED_EXTENSIONS
-from app.knowledge import jobs
+from app.knowledge import jobs, politeness
 from app.ai_models import INDEXING_GEMINI_MODEL, count_tokens
 from app.knowledge.markdown import content_hash, estimate_tokens, html_to_markdown, pdf_page_count, contact_from_link
 from app.knowledge.url_scope import is_excluded, is_funnel_page, other_language, site as _site
@@ -172,12 +172,10 @@ def _record_error(tenant_id: str, url: str, source_type: str, job_id: int, statu
 # ---------------------------------------------------------------------------
 # Politeness: one website, one request at a time, at a steady pace
 # ---------------------------------------------------------------------------
-# All scan workers share these slots through Redis, so 5 workers don't hit one
-# server five times at once. A website that answers "too many requests" gets a
-# slower pace for an hour and the page is retried instead of failing.
+# All scan workers share these slots through Redis, so 10 workers don't hit
+# one server ten times at once. When a site gets a slower pace: politeness.py.
 
-HOST_INTERVAL_MS = int(os.getenv("CRAWL_HOST_INTERVAL_MS", "1000"))
-MAX_HOST_INTERVAL_MS = 10_000
+HOST_INTERVAL_MS = politeness.HOST_INTERVAL_MS
 RATE_LIMIT_RETRIES = 4
 
 # reserve the next free slot for a host; returns how long to wait (ms)
@@ -209,23 +207,21 @@ def _wait_for_host(url: str) -> None:
         error_logger.debug("crawl throttle unavailable: %s", e)
         return  # best effort: never block a crawl on Redis
     if wait_ms and wait_ms > 0:
-        time.sleep(min(int(wait_ms), 120_000) / 1000)
+        time.sleep(min(int(wait_ms), politeness.MAX_HOLD_MS) / 1000)
 
 
-def _slow_down(url: str) -> None:
-    """The website pushed back: double the pause between requests to it (for an hour)."""
+def _after_failure(url: str, e: "RateLimited") -> None:
+    """The page couldn't be read: slower pace if the website pushed back (or keeps not answering)."""
     host = _site(urlparse(url).hostname)
-    key = f"crawl:interval:{host}"
     try:
-        r = _redis_client()
-        current = int(r.get(key) or HOST_INTERVAL_MS)
-        r.set(key, min(MAX_HOST_INTERVAL_MS, current * 2), ex=3600)
+        if politeness.after_failure(_redis_client(), host, e.status_code, e.retry_after):
+            error_logger.info("Slowing down for %s (status %s)", host, e.status_code)
     except Exception:
         pass
 
 
 class RateLimited(Exception):
-    """The website answered 429/503 or not at all: try this page again later."""
+    """The website answered 429/503 or not at all (408 timeout, 0 no connection): try this page again later."""
 
     def __init__(self, retry_after: int | None = None, status_code: int = 429):
         super().__init__(f"try later (status {status_code}, retry after {retry_after})")
@@ -428,7 +424,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
 def _retry_later(task: dict, tenant_id: str, parent_url: str | None, e: RateLimited) -> None:
     """Re-queues the page with a growing pause; after RATE_LIMIT_RETRIES it counts as failed."""
     task_id, job_id, url = task["id"], task["job_id"], task["url"]
-    _slow_down(url)
+    _after_failure(url, e)
     attempts = (task.get("attempts") or 0) + 1
     if attempts <= RATE_LIMIT_RETRIES:
         delay = min(600, e.retry_after or 30 * 2 ** (attempts - 1))
