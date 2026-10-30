@@ -5,6 +5,9 @@ Every model the backend uses, configurable via .env. Change a value and
 restart the affected containers (env_file is read at container start).
 
   CHAT_GEMINI_MODEL       answers widget/chat messages (worker_chat)
+  CHAT_THINKING_LEVEL     how long it thinks before answering: low (default),
+                          medium or high; empty = the model's own default.
+                          Thinking is billed as output and makes answers slower.
   INDEXING_GEMINI_MODEL   reads documents during indexing: structured
                           extraction of schedules/tables (worker_fast/heavy)
   TRIAGE_GEMINI_MODEL     sorts out pages and documents not worth learning
@@ -32,12 +35,17 @@ def _rate(name: str, default: float) -> float:
         return default
 
 
-CHAT_GEMINI_MODEL = _env("CHAT_GEMINI_MODEL", "gemini-3.1-flash-lite")
+CHAT_GEMINI_MODEL = _env("CHAT_GEMINI_MODEL", "gemini-3.8-flash")
+# 3.8 Flash at its default thinks for 1–2k tokens and takes 20–35 s per answer;
+# "low" answered as well in 7–11 s at a sixth of the tokens (younity, 2026-10-30)
+CHAT_THINKING_LEVEL = os.getenv("CHAT_THINKING_LEVEL", "low").strip()
 INDEXING_GEMINI_MODEL = _env("INDEXING_GEMINI_MODEL", "gemini-4-argon")
 EMBEDDING_GEMINI_MODEL = _env("EMBEDDING_GEMINI_MODEL", "gemini-embedding-2")
-REVIEW_GEMINI_MODEL = _env("REVIEW_GEMINI_MODEL", CHAT_GEMINI_MODEL)
+# simple jobs that don't need the chat model: the cheapest one
+_LITE_MODEL = "gemini-3.1-flash-lite"
+REVIEW_GEMINI_MODEL = _env("REVIEW_GEMINI_MODEL", _LITE_MODEL)
 # sorts the list of found pages before learning (one cheap call per ~300 entries)
-TRIAGE_GEMINI_MODEL = _env("TRIAGE_GEMINI_MODEL", CHAT_GEMINI_MODEL)
+TRIAGE_GEMINI_MODEL = _env("TRIAGE_GEMINI_MODEL", _LITE_MODEL)
 
 # role -> {"input": CHF/1M tokens, "output": CHF/1M tokens}
 RATES = {

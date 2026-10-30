@@ -26,7 +26,7 @@ from app.database.supabase_client import fetch_all, supabase
 from app.billing.services import BillingService
 from app.logging_config import error_logger
 from app.prompts import FINE_TUNE_RULE_PROMPT
-from app.ai_models import CHAT_GEMINI_MODEL, billable_tokens
+from app.ai_models import CHAT_GEMINI_MODEL, CHAT_THINKING_LEVEL, billable_tokens
 from app.knowledge.calendar import dedupe_events, source_rank
 from app.knowledge.contact import contact_context
 from app.knowledge.facts import fact_mentioned, facts_context, relevant_facts
@@ -618,14 +618,10 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         contents = _build_contents(history, query)
 
         # --- Generate ---
-        response = client.models.generate_content(
-            model=CHAT_GEMINI_MODEL,
-            contents=contents,
-            config={
-                "system_instruction": system_instruction,
-                "tools": tools,
-            },
-        )
+        config = {"system_instruction": system_instruction, "tools": tools}
+        if CHAT_THINKING_LEVEL:
+            config["thinking_config"] = {"thinking_level": CHAT_THINKING_LEVEL}
+        response = client.models.generate_content(model=CHAT_GEMINI_MODEL, contents=contents, config=config)
 
         ai_message = response.text or ""
         try:
