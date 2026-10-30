@@ -5,8 +5,8 @@ Every model the backend uses, configurable via .env. Change a value and
 restart the affected containers (env_file is read at container start).
 
   CHAT_GEMINI_MODEL       answers widget/chat messages (worker_chat)
-  CHAT_THINKING_LEVEL     how long it thinks before answering: low (default),
-                          medium or high; empty = the model's own default.
+  CHAT_THINKING_LEVEL     how long it thinks before answering: low, medium or
+                          high; empty (default) = the model's own default.
                           Thinking is billed as output and makes answers slower.
   INDEXING_GEMINI_MODEL   reads documents during indexing: structured
                           extraction of schedules/tables (worker_fast/heavy)
@@ -35,10 +35,10 @@ def _rate(name: str, default: float) -> float:
         return default
 
 
-CHAT_GEMINI_MODEL = _env("CHAT_GEMINI_MODEL", "gemini-3.8-flash")
-# 3.8 Flash at its default thinks for 1–2k tokens and takes 20–35 s per answer;
-# "low" answered as well in 7–11 s at a sixth of the tokens (younity, 2026-10-30)
-CHAT_THINKING_LEVEL = os.getenv("CHAT_THINKING_LEVEL", "low").strip()
+CHAT_GEMINI_MODEL = _env("CHAT_GEMINI_MODEL", "gemini-3.1-flash-lite")
+# Answers have to come within a few seconds: 3.1 Flash-Lite takes ~5 s; 3.8
+# Flash took 8-15 s with thinking "low" and 20-35 s at its default (2026-10-30)
+CHAT_THINKING_LEVEL = os.getenv("CHAT_THINKING_LEVEL", "").strip()
 INDEXING_GEMINI_MODEL = _env("INDEXING_GEMINI_MODEL", "gemini-4-argon")
 EMBEDDING_GEMINI_MODEL = _env("EMBEDDING_GEMINI_MODEL", "gemini-embedding-2")
 # simple jobs that don't need the chat model: the cheapest one

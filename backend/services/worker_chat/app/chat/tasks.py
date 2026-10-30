@@ -30,6 +30,7 @@ from app.ai_models import CHAT_GEMINI_MODEL, CHAT_THINKING_LEVEL, billable_token
 from app.knowledge.calendar import dedupe_events, source_rank
 from app.knowledge.contact import contact_context
 from app.knowledge.facts import fact_mentioned, facts_context, relevant_facts
+from app.knowledge.names import fold, mentioned
 
 
 # Number of previous exchanges (user + AI message pairs) sent as context.
@@ -65,7 +66,7 @@ def _build_contents(chat_history_json: list, query: str) -> list:
         role = "user" if msg["type"] == "human" else "model"
         contents.append({"role": role, "parts": [{"text": msg["content"]}]})
     # Gemini requires the last message to be from "user"
-    contents.append({"role": "user", "parts": [{"text": query}]})
+    contents.append({"role": "user", "parts": [{"text": query}, {"text": _LANGUAGE_NOTE}]})
     return contents
 
 
@@ -115,7 +116,12 @@ _WEEKDAY = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 _WEEKDAY_LONG = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 # Upcoming dates per series given to the model; enough for "next" / "this week"
 _UPCOMING_PER_SERIES = 4
-_MAX_SERIES = 30
+# Series in the prompt: those with future dates first (soonest first, those the
+# question names before all others); series that are over fill the rest, most
+# recently ended first, so the model says "no future dates" instead of guessing
+_MAX_SERIES = 40
+# series that are over but named in the question always go in
+_MAX_NAMED_PAST_SERIES = 3
 
 
 def _calendars_offered(tenant_config: dict) -> bool:
@@ -147,11 +153,17 @@ def _now_context(now: datetime) -> str:
 
 
 def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, sources_out: dict | None = None,
-                   calendars_out: dict | None = None) -> str:
+                   calendars_out: dict | None = None, asked: str = "", names_out: list | None = None) -> str:
     """
     Verified dates extracted at indexing time (tenant_events), "" if there are none:
     the next few per series, or — when a series has no future dates — when its
     data ends, so the model doesn't present an expired calendar as current.
+
+    Series with future dates go in first (soonest first, up to a cap); series
+    that are over fill the room left, and always when the question names them,
+    typos included. Before, the
+    first 30 series by date went in: on younity 64 of 100 were long over, and
+    "find your flow! Festival 2026" (a week away) was number 75 and left out.
     """
     lines = []
     rows = fetch_all(lambda: (
@@ -175,27 +187,43 @@ def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, s
 
     rows = dedupe_events(rows, lambda r: source_rank(r, source_rows.get(r.get("source_id"))))
 
+    # one series however its name is punctuated ("Kurs 'Leben im flow'" and "Kurs Leben im flow")
     series: dict[tuple[str, str], dict] = {}
     for r in rows:
-        entry = series.setdefault((r["series"], r["zone"]), {"upcoming": [], "last": None, "notes": r.get("notes") or "",
-                                                             "source_id": r.get("source_id")})
+        entry = series.setdefault((fold(r["series"]), fold(r["zone"])), {
+            "name": r["series"], "zone": r["zone"], "upcoming": [], "first": None, "last": None,
+            "notes": r.get("notes") or "", "source_id": r.get("source_id")})
         d = date.fromisoformat(r["event_date"])
         if d >= today:
-            if len(entry["upcoming"]) < _UPCOMING_PER_SERIES:
-                entry["upcoming"].append(f"{_WEEKDAY[d.weekday()]} {d.isoformat()}" + (" (exception)" if r["is_exception"] else ""))
+            day = f"{_WEEKDAY[d.weekday()]} {d.isoformat()}" + (" (exception)" if r["is_exception"] else "")
+            if len(entry["upcoming"]) < _UPCOMING_PER_SERIES and day not in entry["upcoming"]:
+                entry["upcoming"].append(day)
+                entry["first"] = entry["first"] or d
         else:
             entry["last"] = d
+    names = list(dict.fromkeys(e["name"] for e in series.values()))
+    if names_out is not None:
+        names_out.extend(names)
+    named = {n for n, _ in mentioned(names, asked, limit=5)} if asked else set()
+    upcoming = sorted((e for e in series.values() if e["upcoming"]), key=lambda e: (e["name"] not in named, e["first"]))
+    past = sorted((e for e in series.values() if not e["upcoming"] and e["last"]),
+                  key=lambda e: (e["name"] not in named, -e["last"].toordinal()))
+    upcoming = upcoming[:_MAX_SERIES]
+    past_named = [e for e in past if e["name"] in named][:_MAX_NAMED_PAST_SERIES]
+    room = max(0, _MAX_SERIES - len(upcoming) - len(past_named))
+    chosen = upcoming + past_named + [e for e in past if e["name"] not in named][:room]
 
     sources = {sid: f"{(s.get('title') or '').strip()} {s['source_location']}".strip() for sid, s in source_rows.items()}
     if sources_out is not None:
         # series name -> (title, url), for the source fallback after answering
-        for (name, _zone), entry in series.items():
+        for entry in series.values():
             s = source_rows.get(entry["source_id"])
             if s:
-                sources_out[name] = ((s.get("title") or s["source_location"]).strip(), s["source_location"])
+                sources_out[entry["name"]] = ((s.get("title") or s["source_location"]).strip(), s["source_location"])
 
     lines.append("Verified dates from this organisation's documents (use these for questions about dates; never invent dates):")
-    for (name, zone), entry in list(series.items())[:_MAX_SERIES]:
+    for entry in chosen:
+        name, zone = entry["name"], entry["zone"]
         label = f"{name} ({zone})" if zone else name
         notes = f" [{entry['notes']}]" if entry["notes"] else ""
         if entry["upcoming"]:
@@ -215,6 +243,25 @@ def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, s
             "marker in your text; the chat turns it into a button."
         )
     return "\n".join(lines)
+
+
+def _name_hint(query: str, names: list[str]) -> str:
+    """
+    The question misspells a known name ("find our follow"): tell the model the
+    probable name, so it searches and answers with that ("" if nothing matches).
+    """
+    typos = [n for n, score in mentioned(names, query, limit=3) if score < 0.97]
+    if not typos:
+        return ""
+    return ("The visitor's message probably misspells a name. They most likely mean: "
+            + ", ".join(f"«{n}»" for n in typos)
+            + ". Look it up under that spelling (in your documents and in the dates above), answer about it, "
+              "and write the name correctly. If it clearly doesn't fit the question, ignore this.")
+
+
+# Repeated next to the question: after a few German turns, an English question
+# got a German answer although the system instruction says otherwise.
+_LANGUAGE_NOTE = "(Answer in the language of my message above.)"
 
 
 def _build_system_instruction(tenant_config: dict, fine_tune_rules: list) -> str:
@@ -566,14 +613,18 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
 
         # --- Build system instruction ---
         system_instruction = _build_system_instruction(tenant_config, fine_tune_rules)
+        chat_history_json = _load_history(tenant_id, conversation_id)
+        # the previous question too, so a follow-up ("und was kostet sie?") finds its facts and dates
+        asked = " ".join([m["content"] for m in chat_history_json if m["type"] == "human"][-1:] + [query])
         date_sources: dict[str, tuple[str, str]] = {}
         calendars: dict[str, tuple[str, list[str]]] = {}
+        series_names: list[str] = []
         now = datetime.now(TIMEZONE)
         system_instruction += "\n\n" + _now_context(now)
         try:
             dates = _dates_context(
                 tenant_id, now.date(), offer_calendars=_calendars_offered(tenant_config), sources_out=date_sources,
-                calendars_out=calendars)
+                calendars_out=calendars, asked=asked, names_out=series_names)
             if dates:
                 system_instruction += "\n\n" + dates
         except Exception as e:
@@ -582,11 +633,18 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         if contact_card:
             system_instruction += "\n\n" + contact_context(contact_card)
 
-        chat_history_json = _load_history(tenant_id, conversation_id)
+        # every page of the tenant: titles for the typo hint, urls to check the answer's links
+        known: dict[str, str] | None = None
+        try:
+            known = _known_source_urls(tenant_id)
+            hint = _name_hint(query, series_names + [t for t in known.values() if t])
+            if hint:
+                system_instruction += "\n\n" + hint
+        except Exception as e:
+            error_logger.warning("chat_task: name hint skipped for tenant %s: %s", tenant_id, e)
+
         facts, fact_sources = [], {}
         try:
-            # the previous question too, so a follow-up ("und was kostet sie?") finds its facts
-            asked = " ".join([m["content"] for m in chat_history_json if m["type"] == "human"][-1:] + [query])
             all_facts, fact_sources = _tenant_facts(tenant_id)
             facts = relevant_facts(all_facts, asked)
             if facts:
@@ -625,7 +683,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
 
         ai_message = response.text or ""
         try:
-            known = _known_source_urls(tenant_id)
+            known = dict(known) if known is not None else _known_source_urls(tenant_id)
             if contact_card and contact_card.get("maps_url"):
                 known[contact_card["maps_url"]] = ""   # the address's map link is ours, not invented
             ai_message = _keep_known_links(ai_message, known)

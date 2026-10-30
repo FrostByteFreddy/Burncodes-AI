@@ -291,6 +291,75 @@ class TestChatDates:
         assert "within the next 7 days" in now
 
 
+class TestChatDateSelection:
+    """Which dates go into the prompt when a tenant has many series (younity: 100, 64 of them over)."""
+
+    @staticmethod
+    def _chat(monkeypatch, rows):
+        import importlib
+        import sys
+        sys.modules.setdefault("app.prompts", type(sys)("app.prompts"))
+        sys.modules["app.prompts"].FINE_TUNE_RULE_PROMPT = "{trigger}{instruction}"
+        spec = importlib.util.spec_from_file_location(
+            "chat_tasks", __file__.replace("tests/test_knowledge.py", "services/worker_chat/app/chat/tasks.py"))
+        chat = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(chat)
+
+        class Q:
+            def __init__(self, table):
+                self.table = table
+
+            def __getattr__(self, name):
+                return lambda *a, **k: self
+
+            def execute(self):
+                return type("R", (), {"data": rows if self.table == "tenant_events" else []})()
+
+        monkeypatch.setattr(chat, "supabase", type("S", (), {"table": lambda self, n: Q(n)})())
+        return chat
+
+    @staticmethod
+    def _row(series, day):
+        return {"series": series, "zone": "", "event_date": day, "is_exception": False, "notes": ""}
+
+    def test_future_series_come_before_old_ones_however_many(self, monkeypatch):
+        rows = [self._row(f"Kongress {i}", f"2025-0{1 + i % 9}-1{i % 10}") for i in range(60)]   # all over
+        rows += [self._row("find your flow! Festival 2026", "2026-11-07")]
+        chat = self._chat(monkeypatch, sorted(rows, key=lambda r: r["event_date"]))
+        text = chat._dates_context("t", date(2026, 10, 30))
+        assert "find your flow! Festival 2026: upcoming Sat 2026-11-07" in text
+        assert text.count("\n- ") == chat._MAX_SERIES   # the old ones fill the rest
+
+    def test_a_series_the_question_names_goes_in_even_when_over(self, monkeypatch):
+        rows = [self._row(f"Sommerfest {i}", "2026-12-0" + str(1 + i % 9)) for i in range(45)]   # all upcoming
+        rows += [self._row("Find Your Flow Event 2019", "2019-05-04")]
+        chat = self._chat(monkeypatch, sorted(rows, key=lambda r: r["event_date"]))
+        assert "Find Your Flow" not in chat._dates_context("t", date(2026, 10, 30))
+        text = chat._dates_context("t", date(2026, 10, 30), asked="wann war find our follow")
+        assert "Find Your Flow Event 2019: no future dates known" in text
+
+    def test_names_differing_only_in_punctuation_are_one_series(self, monkeypatch):
+        rows = [self._row("Kurs 'Leben im flow'", "2027-03-26"), self._row("Kurs Leben im flow", "2027-03-26")]
+        chat = self._chat(monkeypatch, rows)
+        text = chat._dates_context("t", date(2026, 10, 30))
+        assert text.count("Leben im flow") == 1
+        assert text.count("2027-03-26") == 1
+
+    def test_a_misspelled_name_becomes_a_hint(self, monkeypatch):
+        chat = self._chat(monkeypatch, [])
+        hint = chat._name_hint("Wann ist find our follow?", ["find your flow! Festival 2026", "Kehricht"])
+        assert "«find your flow! Festival 2026»" in hint and "Kehricht" not in hint
+        # spelled right: nothing to correct
+        assert chat._name_hint("Wann ist find your flow?", ["find your flow! Festival 2026"]) == ""
+
+    def test_the_language_note_follows_the_question(self, monkeypatch):
+        chat = self._chat(monkeypatch, [])
+        contents = chat._build_contents([{"type": "human", "content": "Hallo"}, {"type": "ai", "content": "Hoi"}],
+                                        "Do you have a course?")
+        assert contents[-1]["parts"][0] == {"text": "Do you have a course?"}
+        assert "language of my message" in contents[-1]["parts"][1]["text"]
+        assert len(contents[0]["parts"]) == 1   # earlier turns stay as they were
+
 class TestSystemInstruction:
     @staticmethod
     def _chat():
