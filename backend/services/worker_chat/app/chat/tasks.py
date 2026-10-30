@@ -112,6 +112,7 @@ def _tenant_facts(tenant_id: str) -> tuple[list[dict], dict]:
 
 
 _WEEKDAY = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+_WEEKDAY_LONG = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 # Upcoming dates per series given to the model; enough for "next" / "this week"
 _UPCOMING_PER_SERIES = 4
 _MAX_SERIES = 30
@@ -131,14 +132,28 @@ def _calendar_key(series: str, zone: str) -> str:
     return slug(series) + (f"--{slug(zone)}" if zone else "")
 
 
+def _now_context(now: datetime) -> str:
+    """
+    The visitors' current date and time, in every prompt: the model has no clock
+    and otherwise turns "upcoming Tue 2026-11-24" into "next Tuesday" weeks ahead.
+    """
+    return (
+        f"Now: {_WEEKDAY_LONG[now.weekday()]} {now.date().isoformat()}, {now.strftime('%H:%M')} ({now.tzinfo}). "
+        "Work out \"today\", \"tomorrow\", \"this week\" and how far away a date is from this. "
+        "Words like \"next Tuesday\" or \"tomorrow\" only for dates within the next 7 days; "
+        "for later dates give the date itself (e.g. \"on Tuesday, 24 November\", optionally \"in 3 weeks\"). "
+        "A date before today is past: never present it as upcoming."
+    )
+
+
 def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, sources_out: dict | None = None,
                    calendars_out: dict | None = None) -> str:
     """
-    Today's date plus verified dates extracted at indexing time (tenant_events):
+    Verified dates extracted at indexing time (tenant_events), "" if there are none:
     the next few per series, or — when a series has no future dates — when its
     data ends, so the model doesn't present an expired calendar as current.
     """
-    lines = [f"Today is {_WEEKDAY[today.weekday()]} {today.isoformat()}."]
+    lines = []
     rows = fetch_all(lambda: (
         supabase.table("tenant_events")
         .select("series, zone, event_date, is_exception, notes, source_id")
@@ -148,7 +163,7 @@ def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, s
         .order("event_date").order("id")
     ), max_rows=20_000)
     if not rows:
-        return lines[0]
+        return ""
 
     # the same event read from several pages counts once; its source is the most specific page
     source_ids = list({r["source_id"] for r in rows if r.get("source_id")})
@@ -188,7 +203,7 @@ def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, s
             if calendars_out is not None:
                 calendars_out[_calendar_key(name, zone)] = (name, [u.split()[1] for u in entry["upcoming"]])
             source = f" {{source: {sources[entry['source_id']]}}}" if entry["source_id"] in sources else ""
-            lines.append(f"- {label}{notes}{key}{source}: next {', '.join(entry['upcoming'])}")
+            lines.append(f"- {label}{notes}{key}{source}: upcoming {', '.join(entry['upcoming'])}")
         elif entry["last"]:
             lines.append(f"- {label}{notes}: no future dates known — the published schedule ends "
                          f"{entry['last'].isoformat()}; say so instead of guessing.")
@@ -553,10 +568,14 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         system_instruction = _build_system_instruction(tenant_config, fine_tune_rules)
         date_sources: dict[str, tuple[str, str]] = {}
         calendars: dict[str, tuple[str, list[str]]] = {}
+        now = datetime.now(TIMEZONE)
+        system_instruction += "\n\n" + _now_context(now)
         try:
-            system_instruction += "\n\n" + _dates_context(
-                tenant_id, datetime.now(TIMEZONE).date(), offer_calendars=_calendars_offered(tenant_config), sources_out=date_sources,
+            dates = _dates_context(
+                tenant_id, now.date(), offer_calendars=_calendars_offered(tenant_config), sources_out=date_sources,
                 calendars_out=calendars)
+            if dates:
+                system_instruction += "\n\n" + dates
         except Exception as e:
             error_logger.warning("chat_task: dates context unavailable for tenant %s: %s", tenant_id, e)
         contact_card = tenant_config.get("contact_card") or None

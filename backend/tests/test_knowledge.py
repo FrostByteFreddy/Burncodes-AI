@@ -276,9 +276,19 @@ class TestChatDates:
 
         monkeypatch.setattr(chat, "supabase", type("S", (), {"table": lambda self, n: Q(n)})())
         text = chat._dates_context("t", date(2026, 10, 24))
-        assert text.startswith("Today is Sat 2026-10-24.")
-        assert "Kehricht (Zone 1): next Mon 2026-10-26, Mon 2026-11-02 (exception)" in text
+        assert "Kehricht (Zone 1): upcoming Mon 2026-10-26, Mon 2026-11-02 (exception)" in text
         assert "Grünabfuhr: no future dates known — the published schedule ends 2025-12-09" in text
+        # today comes from _now_context, which every prompt gets
+        assert "Today is" not in text
+
+        rows.clear()
+        assert chat._dates_context("t", date(2026, 10, 24)) == ""
+
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        now = chat._now_context(datetime(2026, 10, 30, 17, 42, tzinfo=ZoneInfo("Europe/Zurich")))
+        assert now.startswith("Now: Friday 2026-10-30, 17:42 (Europe/Zurich).")
+        assert "within the next 7 days" in now
 
 
 class TestSystemInstruction:
