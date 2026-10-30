@@ -26,6 +26,7 @@ COPY shared/ai_models.py      app/ai_models.py
 COPY shared/knowledge/calendar.py app/knowledge/calendar.py
 COPY shared/knowledge/contact.py app/knowledge/contact.py
 COPY shared/knowledge/facts.py app/knowledge/facts.py
+COPY shared/knowledge/names.py app/knowledge/names.py
 COPY shared/knowledge/__init__.py app/knowledge/__init__.py
 
 COPY services/worker_chat/celery_worker.py .
