@@ -64,27 +64,26 @@ ssh "$SERVER" << EOF
       echo "✅ SSL Certificates already exist for $DOMAIN."
   fi
 
-  # Build all services using layer cache where possible.
-  # worker_heavy uses --no-cache because Playwright binaries must be
-  # re-fetched if the base image or system deps have changed on the server.
-  docker compose -f docker-compose.prod.yml build \
-    backend celery_worker_fast celery_worker_chat celery_beat
+  # Build with the layer cache. Every Dockerfile installs its dependencies
+  # (pip, npm, Playwright's Chromium) before copying the code, so a code change
+  # only rebuilds the last layers; dependencies are reinstalled only when
+  # requirements.txt / package-lock.json change. Images that come out the same
+  # keep their ID, and "up" leaves their containers running.
+  docker compose -f docker-compose.prod.yml build
 
-  docker compose -f docker-compose.prod.yml build --no-cache \
-    celery_worker_heavy
-
-  # Always force-rebuild the frontend so Vue code changes are never skipped
-  docker compose -f docker-compose.prod.yml build --no-cache frontend
-
-  # Tear down stale containers cleanly before bringing up new ones.
-  # Keeps named volumes (app_data, uploads) intact.
-  docker compose -f docker-compose.prod.yml down --remove-orphans
-
-  # Flush all Celery queues to discard stale tasks from the previous deploy.
-  docker run --rm --network host redis:7-alpine redis-cli -h 127.0.0.1 DEL celery fast heavy chat || true
-
-  docker compose -f docker-compose.prod.yml up -d \
+  # Recreate only the containers whose image or settings changed (no "down":
+  # redis, nginx and untouched workers keep running, queued tasks stay queued;
+  # the watchdog re-sends tasks a restarted worker was holding).
+  docker compose -f docker-compose.prod.yml up -d --remove-orphans \
     --scale celery_worker_heavy=$HEAVY_WORKERS
+
+  # nginx resolves backend/frontend to IPs when it starts, and recreated
+  # containers get new ones; it also reads nginx.conf only at start. A restart
+  # (about a second) picks up both.
+  docker compose -f docker-compose.prod.yml restart nginx
+
+  # Old image layers pile up with cached builds; drop the unused ones
+  docker image prune -f > /dev/null
 
   echo "🔓 Fixing data directory permissions..."
   docker compose -f docker-compose.prod.yml exec -T backend \
