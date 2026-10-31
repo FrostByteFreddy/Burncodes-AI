@@ -56,7 +56,9 @@ def create_tenant(current_user):
 @token_required
 def get_tenants(current_user):
     try:
-        tenants = supabase.table('tenants').select("*, tenant_sources(count)").eq('user_id', current_user.id).execute()
+        # what the chatbot knows: learned sources only, not the ones set aside or failed
+        tenants = (supabase.table('tenants').select("*, tenant_sources(count)").eq('user_id', current_user.id)
+                   .eq('tenant_sources.status', 'COMPLETED').execute())
         for tenant in tenants.data:
             tenant['test_protected'] = bool(tenant.pop('test_password_hash', None))
             counts = tenant.pop('tenant_sources', None) or [{}]
@@ -370,8 +372,9 @@ def get_tenant_overview(current_user, tenant_id):
                 "balance_chf": float(balance[0]['balance_chf']) if balance else 0.0,
             },
             "knowledge": {
-                "pages": sum(1 for s in sources if s['source_type'] == 'URL'),
-                "files": sum(1 for s in sources if s['source_type'] != 'URL'),
+                # learned only: set-aside and failed sources aren't knowledge
+                "pages": sum(1 for s in sources if s['source_type'] == 'URL' and s.get('status') == 'COMPLETED'),
+                "files": sum(1 for s in sources if s['source_type'] != 'URL' and s.get('status') == 'COMPLETED'),
                 "sections": sum(int(s.get('indexed_chunks') or 0) for s in sources),
                 "needs_attention": sum(1 for s in sources if s.get('status') == 'ERROR' or issues_of(s.get('warnings'))),
                 "upcoming_dates": upcoming,

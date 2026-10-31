@@ -152,7 +152,14 @@
       "status": "Status",
       "invoice": "Rechnung",
       "noHistory": "Kein Rechnungsverlauf gefunden",
-      "oneTimePayment": "Einmalzahlung"
+      "oneTimePayment": "Einmalzahlung",
+      "statuses": {
+        "draft": "Entwurf",
+        "open": "Offen",
+        "paid": "Bezahlt",
+        "uncollectible": "Uneinbringlich",
+        "void": "Storniert"
+      }
     },
     "errors": {
       "amountRequired": "Betrag ist erforderlich",
@@ -552,7 +559,7 @@
     },
     "calendars": {
       "title": "Termine im eigenen Kalender",
-      "sub": "Einwohnerinnen und Einwohner können die Termine in ihrer Kalender-App abonnieren. Der Chatbot bietet das bei Fragen zu Terminen an.",
+      "sub": "Besucherinnen und Besucher können die Termine in ihrer Kalender-App abonnieren. Der Chatbot bietet das bei Fragen zu Terminen an.",
       "protected": "Kalender-Abos sind pausiert, solange der Chatbot ein Passwort verlangt.",
       "dates": "{n} Termin | {n} Termine",
       "copy": "Link kopieren",
@@ -721,7 +728,16 @@
       "until": "Bis {date}",
       "noDates": "In diesem Durchlauf wurden keine Termine gefunden.",
       "noReview": "Nichts zu prüfen — alles in Ordnung.",
-      "unreachable": "Nicht erreichbar: {list}"
+      "unreachable": "Nicht gelesen: {list}",
+      "codes": {
+        "empty": "{n} ohne Inhalt",
+        "notFound": "{n} nicht gefunden",
+        "blocked": "{n} gesperrt",
+        "timeout": "{n} ohne Antwort",
+        "limited": "{n} von der Website gebremst",
+        "serverError": "{n} mit Fehler der Website",
+        "other": "{n} aus anderem Grund"
+      }
     },
     "log": {
       "title": "Aktivität",
@@ -753,13 +769,13 @@
     },
     "rules": {
       "title": "Eigene Antworten",
-      "sub": "Feste Antworten für bestimmte Fragen, z. B. wer für Baugesuche zuständig ist.",
+      "sub": "Feste Antworten für bestimmte Fragen, z. B. wer für ein bestimmtes Anliegen zuständig ist.",
       "add": "Antwort hinzufügen"
     },
     "selection": {
       "suggestionsTitle": "Sparvorschläge",
       "suggestionsLede": "Gemini hat Bereiche gefunden, die Ihr Chatbot kaum brauchen wird. Ausgelassen wird erst etwas, wenn Sie es wählen.",
-      "saves": "{n} Quellen, spart CHF {cost}",
+      "saves": "{n} Quelle, spart CHF {cost} | {n} Quellen, spart CHF {cost}",
       "excludedSaves": "Ausgelassen, spart CHF {cost}",
       "exclude": "Auslassen",
       "undo": "Rückgängig",
@@ -882,7 +898,7 @@
       "brief": "Kurz und sachlich",
       "briefDesc": "Ein Satz oder eine kurze Liste.",
       "persona": "Persönlichkeit und Anweisungen",
-      "personaHint": "Einfache Worte funktionieren am besten, z. B. «Verweise bei Baugesuchen an die Bauverwaltung.»",
+      "personaHint": "Einfache Worte funktionieren am besten, z. B. «Verweise bei Fragen zu Rechnungen an den Kundendienst.»",
       "thinking": "Wartetexte",
       "thinkingHint": "Ein Text pro Zeile. Einer davon wird angezeigt, während der Chatbot seine Antwort vorbereitet."
     },
@@ -1049,7 +1065,7 @@
       "spentSplit": "Antworten CHF {chat}, Lernen CHF {learning}",
       "balance": "Guthaben",
       "topUp": "Aufladen",
-      "chartLabel": "{n} Fragen in den letzten {days} Tagen",
+      "chartLabel": "{n} Frage in den letzten {days} Tagen | {n} Fragen in den letzten {days} Tagen",
       "today": "Heute",
       "new": "neu",
       "same": "unverändert",
@@ -1071,7 +1087,7 @@
       "recrawlOff": "Prüft nicht automatisch auf Änderungen."
     },
     "latest": {
-      "findings": "{n} Fragen zu prüfen",
+      "findings": "{n} Frage zu prüfen | {n} Fragen zu prüfen",
       "title": "Neueste Fragen",
       "more": "Alle Gespräche",
       "none": "In diesem Zeitraum noch keine Fragen."
@@ -1111,7 +1127,7 @@
       "change": "Zeitplan ändern",
       "toggle": "Gespräche prüfen",
       "how": "Abgeschlossene Gespräche werden einmal pro Nacht geprüft, etwa CHF {cost} pro Gespräch. Jedes Gespräch wird nur einmal geprüft.",
-      "stats": "Letzte 30 Tage: {n} Gespräche, CHF {cost}.",
+      "stats": "Letzte 30 Tage: {n} Gespräch, CHF {cost}. | Letzte 30 Tage: {n} Gespräche, CHF {cost}.",
       "off": "Schalten Sie dies ein, um Fragen zu finden, die Ihr Chatbot nicht beantworten konnte.",
       "now": "Jetzt prüfen",
       "queued": "Wird geprüft…",
@@ -1122,14 +1138,14 @@
       "title": "Gespräche",
       "sub": "Alles, was gefragt wurde, das Neueste zuerst.",
       "none": "Noch keine Gespräche.",
-      "questions": "{n} Fragen",
+      "questions": "{n} Frage | {n} Fragen",
       "flagged": "zu prüfen",
       "close": "Gespräch schliessen"
     }
   },
   "settings": {
     "title": "Einstellungen",
-    "lede": "Ihr Konto, die Abrechnung und was automatisch läuft.",
+    "lede": "Ihr Konto und die Abrechnung.",
     "save": "Änderungen speichern",
     "saved": "Gespeichert",
     "sections": {
@@ -1403,7 +1419,7 @@
         "Vor dem Lernen sortieren wir aus, was sich nicht lohnt, z. B. veraltete Seiten. Unter «Auswahl anpassen» sehen Sie alles im Detail.",
         "Sie können diese Seite schliessen. Das Lernen läuft weiter, und Sie finden den Stand unter «Wissen»."
       ],
-      "estimateTitle": "{n} Seiten und Dokumente lernen",
+      "estimateTitle": "{n} Seite oder Dokument lernen | {n} Seiten und Dokumente lernen",
       "estimateBody": "Gemini liest sie, teilt sie in Abschnitte und merkt sich Fakten und Termine. Unveränderte Seiten kosten nichts.",
       "cost": "Kosten",
       "yourBalance": "Ihr Guthaben",

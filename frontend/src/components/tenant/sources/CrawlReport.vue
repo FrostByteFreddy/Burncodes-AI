@@ -129,9 +129,25 @@ const stats = computed(() => {
   ];
 });
 
-const unreachable = computed(() =>
-  Object.entries(props.report.errors || {}).map(([code, n]) => `${n}× ${code}`).join(', ')
-);
+// HTTP codes in words: municipal staff don't read "204"
+const CODE_KIND = (code) => {
+  const n = Number(code);
+  if (n === 204) return 'empty';
+  if (n === 404 || n === 410) return 'notFound';
+  if (n === 401 || n === 403) return 'blocked';
+  if (n === 408 || n === 0) return 'timeout';
+  if (n === 429 || n === 503) return 'limited';
+  if (n >= 500) return 'serverError';
+  return 'other';
+};
+const unreachable = computed(() => {
+  const byKind = {};
+  for (const [code, n] of Object.entries(props.report.errors || {})) {
+    const kind = CODE_KIND(code);
+    byKind[kind] = (byKind[kind] || 0) + n;
+  }
+  return Object.entries(byKind).map(([kind, n]) => t(`knowledge.report.codes.${kind}`, { n }, n)).join(', ');
+});
 
 const fmtDay = (iso) => (iso
   ? new Date(`${iso}T00:00:00`).toLocaleDateString(locale.value, { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })
