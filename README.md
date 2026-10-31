@@ -135,7 +135,7 @@ frontend; `/chat/` may be framed by any site (the widget).
 
 | Script | Does |
 |---|---|
-| `./_prod_deploy.sh` | rsyncs the **working tree** (uncommitted changes included) to the server, builds and restarts everything, starts `DEPLOY_HEAVY_WORKERS` crawl workers (default 10) |
+| `./_prod_deploy.sh` | rsyncs the **working tree** (uncommitted changes included) to the server, builds with the layer cache, recreates only the containers whose image changed, restarts nginx, runs `DEPLOY_HEAVY_WORKERS` crawl workers (default 10). The release workflow calls it |
 | `./_prod_frontend_deploy.sh` | rebuilds and restarts the frontend only |
 | `./_prod_logs.sh` | tails the logs on the server |
 | `./_restart_docker.sh` | restarts the stack |

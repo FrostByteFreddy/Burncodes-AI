@@ -101,8 +101,18 @@ settings there and restart the affected containers.
 
 `./_prod_deploy.sh` (repo root) still works for emergencies: rsync the
 **working tree** (uncommitted changes go live!) to
-`root@142.132.206.182:/var/www/burncodes-ai`, rebuild, flush the Celery
-queues, `up -d --scale celery_worker_heavy=$DEPLOY_HEAVY_WORKERS` (10).
+`root@142.132.206.182:/var/www/burncodes-ai`, then on the server: `build`
+with the layer cache, `up -d` (recreates only containers whose image or
+settings changed; no `down`, queues are kept), `restart nginx`, prune old images.
+The release workflow runs the same script.
+
+Why it's fast: every Dockerfile installs dependencies before copying code, so a
+code change rebuilds only the last layers; pip/npm/Chromium are reinstalled
+only when `requirements.txt` / `package-lock.json` change. Don't add
+`--no-cache` or `down` back: `--no-cache` re-downloads Chromium (~minutes), `down`
+stops everything and threw away queued tasks. nginx must restart after every
+deploy: it resolves `backend`/`frontend` to IPs at start (recreated containers
+get new ones → 502) and reads `nginx/nginx.conf` only at start.
 It also copies the local `.env` to the server (rsync excludes only `.env.*`),
 overwriting the production configuration with the local one: prefer a tag.
 `./_prod_frontend_deploy.sh` rebuilds the frontend only.
