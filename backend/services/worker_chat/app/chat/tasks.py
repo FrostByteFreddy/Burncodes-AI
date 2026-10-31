@@ -377,6 +377,16 @@ def _guess_language(text: str) -> str:
     return best if score[best] > score["de"] else "de"
 
 
+# A chatbot that hasn't learned anything yet (no store, dates, facts or contact
+# card) isn't asked at all: Gemini would answer from its general knowledge, and
+# Zofingen's bot, whose website blocks the crawler, made up the office hours.
+_NOT_READY = {
+    "de": "Ich habe noch keine Informationen zu dieser Organisation gelernt und kann deshalb noch keine Fragen beantworten. Bitte wenden Sie sich direkt an die Organisation.",
+    "fr": "Je n'ai encore rien appris sur cette organisation et ne peux donc pas encore répondre. Veuillez vous adresser directement à l'organisation.",
+    "en": "I haven't learned anything about this organisation yet, so I can't answer questions so far. Please contact the organisation directly.",
+}
+
+
 _MD_LINK = re.compile(r"\[([^\]]+)\]\((https?://[^)\s]+)\)")
 
 
@@ -702,7 +712,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         except Exception as e:
             error_logger.warning("chat_task: name hint skipped for tenant %s: %s", tenant_id, e)
 
-        facts, fact_sources = [], {}
+        facts, fact_sources, all_facts = [], {}, []
         try:
             all_facts, fact_sources = _tenant_facts(tenant_id)
             facts = relevant_facts(all_facts, asked)
@@ -718,11 +728,21 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         store_name = tenant_config.get("gemini_file_store_name")
         if store_name:
             tools = [{"file_search": {"file_search_store_names": [store_name]}}]
+        elif not (series_names or all_facts or contact_card):
+            # nothing learned at all: an honest fixed answer instead of Gemini's general knowledge
+            error_logger.info("chat_task: tenant %s has no knowledge yet; not asking Gemini", tenant_id)
+            answer = _NOT_READY[_guess_language(query)]
+            try:
+                supabase.table("chat_logs").insert({
+                    "tenant_id": tenant_id, "conversation_id": conversation_id, "user_message": query,
+                    "ai_message": answer, "model_used": "none", "input_tokens": 0, "output_tokens": 0, "cost_chf": 0,
+                }).execute()
+            except Exception as db_error:
+                error_logger.error("chat_task: DB log failed for tenant %s: %s", tenant_id, db_error)
+            return {"answer": answer, "chat_history": list(chat_history_json) + [
+                {"type": "human", "content": query}, {"type": "ai", "content": answer}], "citations": []}
         else:
-            error_logger.info(
-                "chat_task: no File Search store for tenant %s — answering from base knowledge",
-                tenant_id,
-            )
+            error_logger.info("chat_task: no File Search store for tenant %s — dates, facts and contact only", tenant_id)
 
         # --- Build contents (conversation history + current query) ---
         # chat_history_json is ignored (kept in the signature for queued tasks
