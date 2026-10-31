@@ -207,6 +207,23 @@ class TestEstimate:
         cal = jobs.calibration()
         assert cal["pdf_in"] == 2000 and cal["pdf_out"] == 300 and cal["samples"] == 12
 
+    def test_calibrated_pages_dont_add_the_overhead_twice(self, monkeypatch):
+        # younity: the estimate added 2000 in / 500 out per page on top of rates measured
+        # with that overhead in them, CHF 19.22 for a run that cost CHF 5.99
+        rows = [{"file_pages": None, "content_tokens": 1000, "last_learn_in_tokens": 1700, "last_learn_out_tokens": 450}] * 12
+        class Q:
+            def __getattr__(self, name):
+                return lambda *a, **k: self
+            @property
+            def not_(self):
+                return self
+            def execute(self):
+                return type("R", (), {"data": rows})()
+        monkeypatch.setattr(jobs, "supabase", type("S", (), {"table": lambda self, n: Q()})())
+        cal = jobs.calibration()
+        page_in, page_out, _ = jobs.estimate_source({"content_tokens": 1000, "file_pages": None}, cal)
+        assert (page_in, page_out) == (1700, 450)   # exactly what such a page took
+
 
 class TestTriage:
     def test_only_valid_ids_and_reasons_are_set_aside(self, monkeypatch):
