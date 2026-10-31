@@ -50,8 +50,12 @@ and import the code inside it.
 `root@142.132.206.182:/var/www/burncodes-ai`, rebuild, flush the Celery
 queues, `up -d --scale celery_worker_heavy=$DEPLOY_HEAVY_WORKERS` (10).
 Uncommitted changes go live; migrations don't (Supabase SQL editor first).
-`./_prod_frontend_deploy.sh` for frontend only. Releases via version tags on
-`main` run `.github/workflows/release.yml`.
+A local deploy also copies the local `.env` to the server (rsync excludes only
+`.env.*`). `./_prod_frontend_deploy.sh` for frontend only.
+
+Releases: a tag `vX.X.X` on `main` runs `.github/workflows/release.yml` (CI,
+deploy, health check, GitHub release). GitHub environment `Prod`: secret
+`PROD_SSH_KEY` (the `github-deploy burncodes-ai` key), variable `PROD_KNOWN_HOSTS`.
 
 Sessions can't SSH to the server or push to GitHub without the user's key
 agent: give the user the command to run.

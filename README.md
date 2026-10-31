@@ -157,8 +157,11 @@ docker compose -f docker-compose.prod.yml exec redis redis-cli \
 
 Pushing a version tag from `main` (`git tag v1.5.0 && git push origin v1.5.0`)
 runs `.github/workflows/release.yml`: CI checks, deploy with `_prod_deploy.sh`,
-wait for `/api/health`, GitHub release. It needs the `production` environment
-secrets `PROD_SSH_KEY`, `PROD_KNOWN_HOSTS` and optionally `PROD_SERVER`.
+wait for `/api/health`, GitHub release. It needs the GitHub environment `Prod`
+with the **secret** `PROD_SSH_KEY` (private key of `github-deploy burncodes-ai`,
+in the server's `authorized_keys`) and the **variable** `PROD_KNOWN_HOSTS`
+(`ssh-keyscan -t ed25519 142.132.206.182`); optionally the variable `PROD_SERVER`.
+The GitHub deploy has no `.env`: the server keeps its own, change settings there.
 
 ---
 
