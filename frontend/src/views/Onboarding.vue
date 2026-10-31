@@ -84,7 +84,7 @@
             <BcPanel v-if="estimate.to_learn">
               <div class="onb-estimate">
                 <div>
-                  <h2 class="onb-estimate__title">{{ $t('onboarding.learning.estimateTitle', { n: formatNumber(estimate.to_learn) }) }}</h2>
+                  <h2 class="onb-estimate__title">{{ $t('onboarding.learning.estimateTitle', { n: formatNumber(estimate.to_learn) }, estimate.to_learn) }}</h2>
                   <p class="onb-muted">{{ $t('onboarding.learning.estimateBody') }}</p>
                   <BcRadioCards v-if="modelOptions.length > 1" v-model="model" class="onb-models" :legend="$t('knowledge.models.legend')" :options="modelOptions" :columns="1" />
                 </div>

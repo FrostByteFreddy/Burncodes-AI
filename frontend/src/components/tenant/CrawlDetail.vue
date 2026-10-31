@@ -32,7 +32,7 @@
           <div class="crawl-estimate__grid">
             <div class="crawl-estimate__text">
               <h2 class="crawl-estimate__title">
-                {{ estimate.to_learn ? $t('onboarding.learning.estimateTitle', { n: formatNumber(estimate.to_learn) }) : $t('knowledge.estimate.title') }}
+                {{ estimate.to_learn ? $t('onboarding.learning.estimateTitle', { n: formatNumber(estimate.to_learn) }, estimate.to_learn) : $t('knowledge.estimate.title') }}
               </h2>
               <p class="crawl-muted">
                 {{ estimate.to_learn ? $t('knowledge.estimate.body', { n: formatNumber(estimate.to_learn) }) : $t(estimate.skipped ? 'knowledge.estimate.noneSelected' : 'knowledge.estimate.nothing') }}

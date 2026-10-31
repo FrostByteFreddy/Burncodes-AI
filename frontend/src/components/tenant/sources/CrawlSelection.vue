@@ -15,7 +15,7 @@
             <p class="meta">
               {{ s.done
                 ? $t('knowledge.selection.excludedSaves', { cost: fmtChf(s.saves) })
-                : $t('knowledge.selection.saves', { n: s.count, cost: fmtChf(s.saves) }) }}
+                : $t('knowledge.selection.saves', { n: s.count, cost: fmtChf(s.saves) }, s.count) }}
             </p>
           </div>
           <button v-if="s.done" type="button" class="btn-quiet" :disabled="saving" @click="restoreFolder(s.folder)">

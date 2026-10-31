@@ -71,7 +71,7 @@
         <p class="meta">
           <template v-if="review.enabled">
             {{ $t(review.interval_days === 7 ? 'insights.review.howWeekly' : 'insights.review.how', { cost: fmtChf(review.est_chf_per_conversation) }) }}
-            <template v-if="review.reviewed_30d"> {{ $t('insights.review.stats', { n: review.reviewed_30d, cost: fmtChf(review.cost_30d_chf) }) }}</template>
+            <template v-if="review.reviewed_30d"> {{ $t('insights.review.stats', { n: review.reviewed_30d, cost: fmtChf(review.cost_30d_chf) }, review.reviewed_30d) }}</template>
           </template>
           <template v-else>{{ $t('insights.review.off') }}</template>
           <router-link :to="{ name: 'TenantSettings', params: { tenantId } }" class="ins-link ins-link--inline">{{ $t('insights.review.change') }}</router-link>
@@ -106,7 +106,7 @@
             <button type="button" class="ins-row" :class="{ 'ins-row--on': selected === c.conversation_id }" @click="openConversation(c.conversation_id)">
               <span class="ins-row__first">{{ c.first_message || $t('chatLogs.noMessage') }}</span>
               <span class="ins-row__meta">
-                {{ $t('insights.conversations.questions', { n: c.message_count }) }}, CHF {{ fmtChf(c.total_cost) }}
+                {{ $t('insights.conversations.questions', { n: c.message_count }, c.message_count) }}, CHF {{ fmtChf(c.total_cost) }}
                 <span v-if="flagged.has(c.conversation_id)" class="ins-row__flag">{{ $t('insights.conversations.flagged') }}</span>
               </span>
               <time class="ins-row__time" :datetime="c.last_active">{{ fmtDateTime(c.last_active) }}</time>

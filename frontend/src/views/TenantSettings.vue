@@ -50,7 +50,7 @@
               <BcIcon :name="r.path ? 'folder' : 'file-lines'" class="ts-list__icon" />
               <span class="ts-list__label">
                 {{ r.title || r.path || r.url }}
-                <span class="ts-muted">{{ r.path || r.url }}</span>
+                <span v-if="r.title" class="ts-muted">{{ r.path || r.url }}</span>
               </span>
               <BcButton variant="quiet" size="sm" :disabled="saving" @click="removeExclusion(r)">{{ $t('settings.schedules.excludedRemove') }}</BcButton>
             </li>

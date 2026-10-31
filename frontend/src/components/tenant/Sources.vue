@@ -136,6 +136,7 @@ import { useToast } from '../../composables/useToast';
 import apiClient from '@/utils/api';
 import { supabase } from '@/supabase';
 import { escapeHtml } from '@/utils/escapeHtml';
+import { formatNumber } from '@/utils/format';
 import AddKnowledgeWizard from './sources/AddKnowledgeWizard.vue';
 import CrawlJobRow from './sources/CrawlJobRow.vue';
 import KnowledgeOverview from './sources/KnowledgeOverview.vue';
@@ -174,8 +175,8 @@ const summary = computed(() => {
   if (!learned.length) return t('knowledge.overview.summaryNever');
   const lastCrawl = crawlingJobs.value[0]?.created_at;
   return t('knowledge.overview.summary', {
-    sources: learned.length.toLocaleString(locale.value),
-    chunks: learned.reduce((n, src) => n + (src.indexed_chunks || 0), 0).toLocaleString(locale.value),
+    sources: formatNumber(learned.length),
+    chunks: formatNumber(learned.reduce((n, src) => n + (src.indexed_chunks || 0), 0)),
     date: lastCrawl ? new Date(lastCrawl).toLocaleDateString(locale.value, { day: 'numeric', month: 'long' }) : '—',
   });
 });

@@ -152,7 +152,14 @@
       "status": "Status",
       "invoice": "Invoice",
       "noHistory": "No billing history found",
-      "oneTimePayment": "One-time Payment"
+      "oneTimePayment": "One-time Payment",
+      "statuses": {
+        "draft": "Draft",
+        "open": "Open",
+        "paid": "Paid",
+        "uncollectible": "Uncollectible",
+        "void": "Void"
+      }
     },
     "errors": {
       "amountRequired": "Amount is required",
@@ -551,8 +558,8 @@
       "other": "Other"
     },
     "calendars": {
-      "title": "Calendars for residents",
-      "sub": "Residents can subscribe to the dates in their calendar app. The chatbot offers this when asked about dates.",
+      "title": "Calendars for visitors",
+      "sub": "Visitors can subscribe to the dates in their calendar app. The chatbot offers this when asked about dates.",
       "protected": "Calendars are paused while the chatbot needs a password.",
       "dates": "{n} date | {n} dates",
       "copy": "Copy link",
@@ -577,7 +584,7 @@
     },
     "overview": {
       "stripTitle": "Dates your chatbot knows",
-      "stripSub": "Verified dates from your documents for the next 14 days. Residents asking “when is the next…” get these answers.",
+      "stripSub": "Verified dates from your documents for the next 14 days. Visitors asking “when is the next…” get these answers.",
       "noneUpcoming": "No dates in the next two weeks. When your documents contain calendars, they show up here.",
       "noneUpcomingEnded": "No upcoming dates — the calendars your chatbot knows have ended. See below.",
       "moved": "moved",
@@ -721,7 +728,16 @@
       "until": "Until {date}",
       "noDates": "No dates were found in this crawl.",
       "noReview": "Nothing to review — all good.",
-      "unreachable": "Not reachable: {list}"
+      "unreachable": "Not read: {list}",
+      "codes": {
+        "empty": "{n} without content",
+        "notFound": "{n} not found",
+        "blocked": "{n} blocked",
+        "timeout": "{n} without an answer",
+        "limited": "{n} slowed down by the website",
+        "serverError": "{n} with an error on the website",
+        "other": "{n} for another reason"
+      }
     },
     "log": {
       "title": "Activity",
@@ -753,13 +769,13 @@
     },
     "rules": {
       "title": "Custom answers",
-      "sub": "Fixed answers for particular questions, e.g. who to contact about building permits.",
+      "sub": "Fixed answers for particular questions, e.g. who to contact about a certain request.",
       "add": "Add answer"
     },
     "selection": {
       "suggestionsTitle": "Ways to save",
       "suggestionsLede": "Gemini found areas your chatbot will rarely need. Nothing here is left out until you choose to.",
-      "saves": "{n} sources, saves CHF {cost}",
+      "saves": "{n} source, saves CHF {cost} | {n} sources, saves CHF {cost}",
       "excludedSaves": "Left out, saves CHF {cost}",
       "exclude": "Leave out",
       "undo": "Undo",
@@ -882,7 +898,7 @@
       "brief": "Short and factual",
       "briefDesc": "One sentence or a short list.",
       "persona": "Personality and instructions",
-      "personaHint": "Plain words work best, e.g. “Refer to the town office for anything about building permits.”",
+      "personaHint": "Plain words work best, e.g. “Refer questions about invoices to customer service.”",
       "thinking": "Messages while it thinks",
       "thinkingHint": "One per line. One of them is shown while an answer is being written."
     },
@@ -1049,7 +1065,7 @@
       "spentSplit": "CHF {chat} answers, CHF {learning} learning",
       "balance": "Balance",
       "topUp": "Top up",
-      "chartLabel": "{n} questions in the last {days} days",
+      "chartLabel": "{n} question in the last {days} days | {n} questions in the last {days} days",
       "today": "Today",
       "new": "new",
       "same": "no change",
@@ -1071,7 +1087,7 @@
       "recrawlOff": "Doesn't check for changes automatically."
     },
     "latest": {
-      "findings": "{n} questions to look at",
+      "findings": "{n} question to look at | {n} questions to look at",
       "title": "Latest questions",
       "more": "All conversations",
       "none": "No questions in this period yet."
@@ -1111,7 +1127,7 @@
       "change": "Change schedule",
       "toggle": "Review conversations",
       "how": "Finished conversations are checked once a night, about CHF {cost} each. Each conversation is checked once.",
-      "stats": "Last 30 days: {n} conversations, CHF {cost}.",
+      "stats": "Last 30 days: {n} conversation, CHF {cost}. | Last 30 days: {n} conversations, CHF {cost}.",
       "off": "Turn this on to find questions your chatbot couldn't answer.",
       "now": "Review now",
       "queued": "Reviewing…",
@@ -1122,14 +1138,14 @@
       "title": "Conversations",
       "sub": "Everything people asked, newest first.",
       "none": "No conversations yet.",
-      "questions": "{n} questions",
+      "questions": "{n} question | {n} questions",
       "flagged": "to look at",
       "close": "Close conversation"
     }
   },
   "settings": {
     "title": "Settings",
-    "lede": "Your account, billing, and what runs automatically.",
+    "lede": "Your account and billing.",
     "save": "Save changes",
     "saved": "Saved",
     "sections": {
@@ -1403,7 +1419,7 @@
         "Before learning, we sort out what isn't worth it, e.g. outdated pages. \"Adjust selection\" shows everything in detail.",
         "You can close this page. Learning continues, and you'll find its progress under \"Knowledge\"."
       ],
-      "estimateTitle": "Learn {n} pages and documents",
+      "estimateTitle": "Learn {n} page or document | Learn {n} pages and documents",
       "estimateBody": "Gemini reads them, splits them into sections and notes facts and dates. Unchanged pages cost nothing.",
       "cost": "Cost",
       "yourBalance": "Your balance",

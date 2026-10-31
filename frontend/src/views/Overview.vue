@@ -50,7 +50,7 @@
           <!-- Questions per day -->
           <figure class="bc-chart ov-chart">
             <svg class="bc-chart__svg" :viewBox="`0 0 ${chart.w} ${chart.h}`" preserveAspectRatio="none" role="img" :height="chart.h"
-              :aria-label="$t('overview.usage.chartLabel', { n: data.usage.questions, days: data.days })">
+              :aria-label="$t('overview.usage.chartLabel', { n: data.usage.questions, days: data.days }, data.usage.questions)">
               <line class="bc-chart__base" x1="0" :x2="chart.w" :y1="chart.h - 0.5" :y2="chart.h - 0.5" />
               <rect v-for="(b, i) in chart.bars" :key="i" :x="b.x" :y="b.y" :width="b.w" :height="b.h" rx="1.5" class="bc-chart__bar--1">
                 <title>{{ b.label }}</title>
@@ -96,7 +96,7 @@
           <template #actions>
             <router-link :to="{ name: 'TenantInsights', params: { tenantId } }" class="bc-btn bc-btn--quiet bc-btn--sm">{{ $t('overview.latest.more') }}</router-link>
           </template>
-          <BcNotice v-if="data.usage.open_findings" tone="warning" :title="$t('overview.latest.findings', { n: data.usage.open_findings })">
+          <BcNotice v-if="data.usage.open_findings" tone="warning" :title="$t('overview.latest.findings', { n: data.usage.open_findings }, data.usage.open_findings)">
             <template #actions>
               <router-link :to="{ name: 'TenantInsights', params: { tenantId } }" class="bc-btn bc-btn--secondary bc-btn--sm">{{ $t('overview.usage.more') }}</router-link>
             </template>

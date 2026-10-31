@@ -49,6 +49,7 @@ _PROMPT_OVERHEAD = 2_000
 _PDF_IN_PER_PAGE = 2_900
 _PDF_OUT_PER_PAGE = 900          # text PDFs answer with line ranges, not re-typed text
 _INDEX_TOKENS_PER_PAGE = 600     # text of a page, for "searchable only" documents
+_PAGE_IN_PER_TOKEN = 1.3         # a page's text as Gemini reads it (numbered lines)
 _CALIBRATION_MIN_SAMPLES = 10
 
 
@@ -178,7 +179,15 @@ def _median(values: list[float]) -> float | None:
 
 
 def calibration() -> dict:
-    """Typical tokens per PDF page / per page token, from recent real learning runs."""
+    """
+    Tokens learning really took, from recent runs, so the estimate is close to
+    the bill. Fitted on sums (not a typical page): what matters is the total.
+
+    Until enough runs are recorded: conservative defaults with a fixed prompt
+    overhead per source. Once calibrated, the per-token / per-page rates already
+    contain that overhead and the fixed parts drop to what the data shows; adding
+    them on top made younity's estimate CHF 19.22 for a run that cost CHF 5.99.
+    """
     rows = (
         supabase.table("tenant_sources")
         .select("file_pages, content_tokens, last_learn_in_tokens, last_learn_out_tokens")
@@ -187,27 +196,39 @@ def calibration() -> dict:
     ).data or []
     pdfs = [r for r in rows if r.get("file_pages")]
     pages = [r for r in rows if not r.get("file_pages") and r.get("content_tokens")]
-    cal = {"pdf_in": _PDF_IN_PER_PAGE, "pdf_out": _PDF_OUT_PER_PAGE, "page_out": 0.6, "samples": len(rows)}
+    cal = {**calibration_defaults(), "samples": len(rows)}
     if len(pdfs) >= _CALIBRATION_MIN_SAMPLES:
-        cal["pdf_in"] = _median([r["last_learn_in_tokens"] / r["file_pages"] for r in pdfs]) or cal["pdf_in"]
-        cal["pdf_out"] = _median([r["last_learn_out_tokens"] / r["file_pages"] for r in pdfs]) or cal["pdf_out"]
+        n_pages = sum(r["file_pages"] for r in pdfs)
+        cal.update(pdf_in=sum(r["last_learn_in_tokens"] or 0 for r in pdfs) / n_pages,
+                   pdf_out=sum(r["last_learn_out_tokens"] or 0 for r in pdfs) / n_pages,
+                   pdf_base=0)
     if len(pages) >= _CALIBRATION_MIN_SAMPLES:
-        cal["page_out"] = _median([r["last_learn_out_tokens"] / r["content_tokens"] for r in pages]) or cal["page_out"]
+        tokens = sum(r["content_tokens"] for r in pages)
+        read = sum(r["last_learn_in_tokens"] or 0 for r in pages) - _PAGE_IN_PER_TOKEN * tokens
+        cal.update(page_in_base=max(0, read / len(pages)),
+                   page_out=sum(r["last_learn_out_tokens"] or 0 for r in pages) / tokens,
+                   page_out_base=0)
     return cal
 
 
 def estimate_source(src: dict, cal: dict | None = None) -> tuple[int, int, int]:
     """(extraction_in, extraction_out, embedding_tokens) expected for learning one source."""
-    cal = cal or {"pdf_in": _PDF_IN_PER_PAGE, "pdf_out": _PDF_OUT_PER_PAGE, "page_out": 0.6}
+    cal = {**calibration_defaults(), **(cal or {})}
     pages = src.get("file_pages") or 0
     if pages and pages > MAX_LLM_PAGES:
         return (0, 0, _INDEX_TOKENS_PER_PAGE * pages)   # searchable only: embedding, no Gemini reading
     if pages:
         out = min(_MAX_OUT, int(cal["pdf_out"] * pages))
-        return (_PROMPT_OVERHEAD + int(cal["pdf_in"] * pages), out, out)
+        return (int(cal["pdf_base"] + cal["pdf_in"] * pages), out, out)
     tokens = src.get("content_tokens") or 0
-    out = min(_MAX_OUT, 500 + int(tokens * cal["page_out"]))
-    return (_PROMPT_OVERHEAD + int(tokens * 1.3), out, int(tokens * 1.2))
+    out = min(_MAX_OUT, int(cal["page_out_base"] + tokens * cal["page_out"]))
+    return (int(cal["page_in_base"] + tokens * _PAGE_IN_PER_TOKEN), out, int(tokens * 1.2))
+
+
+def calibration_defaults() -> dict:
+    """The estimate's rates before any run is recorded (conservative)."""
+    return {"pdf_in": _PDF_IN_PER_PAGE, "pdf_out": _PDF_OUT_PER_PAGE, "pdf_base": _PROMPT_OVERHEAD,
+            "page_in_base": _PROMPT_OVERHEAD, "page_out": 0.6, "page_out_base": 500}
 
 
 def tokens_cost(ext_in: int, ext_out: int, embed: int, model: str | None = None) -> float:

@@ -69,7 +69,7 @@
           <td>{{ new Date(item.date * 1000).toLocaleDateString(locale) }}</td>
           <td>{{ item.number || $t('subscription.history.oneTimePayment') }}</td>
           <td class="num">{{ item.currency }} {{ item.amount.toFixed(2) }}</td>
-          <td><span class="bil-status" :class="`bil-status--${item.status}`">{{ item.status }}</span></td>
+          <td><span class="bil-status" :class="`bil-status--${item.status}`">{{ $te(`subscription.history.statuses.${item.status}`) ? $t(`subscription.history.statuses.${item.status}`) : item.status }}</span></td>
           <td><a v-if="item.pdf_url" :href="item.pdf_url" target="_blank" rel="noopener" class="bil-pdf">{{ $t('settings.billing.invoice') }}</a></td>
         </tr>
       </tbody>
