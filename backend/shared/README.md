@@ -1,30 +1,32 @@
-# backend/shared — Shared Application Modules
+# backend/shared — code used by several services
 
-This directory is the **single source of truth** for code that is used identically across all backend services (`api`, `worker_fast`, `worker_heavy`, `worker_chat`).
+The single source of truth for code that more than one backend service
+(`api`, `worker_fast`, `worker_heavy`, `worker_chat`, `beat`) uses. A map of
+everything: `.claude/skills/burncodes-codebase/references/backend.md`.
 
-## Modules
-
-| Module | Description |
+| Module | Does |
 |---|---|
-| `auth/` | `@token_required` decorator + auth routes |
-| `database/` | Supabase client singleton |
-| `models/` | Pydantic domain models + Enums |
-| `logging_config.py` | Rotating file + stdout logging setup |
+| `ai_models.py` | every model and price setting (read from `.env`) |
+| `auth/` | `token_required` / `optional_user`, change password, delete account |
+| `billing/services.py` | balance, charges (ledger), Stripe crediting |
+| `database/` | Supabase service-role client, `fetch_all`, retries |
+| `gemini_store/` | Gemini File Search stores and documents |
+| `knowledge/` | the knowledge pipeline: crawl scope and pace, learning, dates, facts, names, review, branding |
+| `logging_config.py` | `error_logger` |
+| `models/` | enums (`CrawlingStatus`, `SourceType`) |
+| `security/url_guard.py` | every fetch of a user-given URL goes through it |
+| `soup_extractor.py` | light HTML fetch and link extraction |
 
-## How it works
+## How services get it
 
-Each service's `app/` directory contains **relative symlinks** that point here:
-
-```
-backend/services/worker_fast/app/auth  →  ../../../../shared/auth
-backend/services/worker_fast/app/database  →  ../../../../shared/database
-# etc.
-```
-
-Git tracks symlinks natively, and Docker's `COPY` instruction dereferences them — so Dockerfiles require **no changes**: they continue to `COPY app/ .` and the shared files are resolved and included automatically.
-
-## Rules
-
-- **Only add truly shared code here.** If a module is service-specific, it belongs in that service's `app/` directory.
-- **Edit files here, never in a service's `app/` directory** — those are just symlinks and changes would be lost.
-- **Adding a new shared module**: copy it here, then create a symlink in each service's `app/` that needs it.
+- **Locally:** each service's `app/` holds relative symlinks to these files and
+  folders (tracked by git). Edit the files here, never through a link.
+- **In the images:** each service's `Dockerfile` copies what it needs with
+  `COPY shared/<module> app/<module>`. A new module, or a new import of one, needs
+  a `COPY` line in every Dockerfile whose service imports it, and a symlink in
+  that service's `app/`.
+- **`worker_chat` copies `knowledge/` file by file.** A missing line only shows
+  in production, where every chat then fails on import;
+  `backend/tests/test_images.py` checks the chat worker's imports.
+- Build the image the way production does before relying on a new module:
+  `docker build -f services/<service>/Dockerfile -t check .` (from `backend/`).
