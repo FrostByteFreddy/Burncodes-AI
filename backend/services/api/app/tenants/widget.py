@@ -1,15 +1,14 @@
 from flask import Blueprint, Response, jsonify
 from app.logging_config import error_logger
-import os
 
 widget_bp = Blueprint('widget', __name__)
 
 @widget_bp.route('/widget.js', methods=['GET'])
 def get_widget_script():
     try:
-        from app.public_url import public_api_base
+        from app.public_url import public_api_base, public_frontend_base
         api_base_url = public_api_base()
-        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+        frontend_url = public_frontend_base()
 
         js_content = f"""
 (function() {{

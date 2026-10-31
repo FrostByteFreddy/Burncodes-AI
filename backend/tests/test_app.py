@@ -16,10 +16,17 @@ def test_blueprints_registered(app):
 def test_public_links_use_the_address_the_request_came_in_on(app, monkeypatch):
     """Behind nginx without API_BASE_URL: calendar feeds and the embed script must not point at localhost."""
     monkeypatch.delenv("API_BASE_URL", raising=False)
+    monkeypatch.delenv("FRONTEND_URL", raising=False)
     client = app.test_client()
     behind_nginx = {"Host": "ai.burn.codes", "X-Forwarded-Proto": "https", "X-Forwarded-For": "1.2.3.4"}
     script = client.get("/api/tenants/widget.js", headers=behind_nginx).get_data(as_text=True)
     assert '"https://ai.burn.codes"' in script and "localhost" not in script
+    assert "https://ai.burn.codes/chat/" in script.replace("${frontendUrl}", "https://ai.burn.codes")
+
+    # FRONTEND_URL, when set, is where the chat pages are
+    monkeypatch.setenv("FRONTEND_URL", "https://chat.example.ch/")
+    script = client.get("/api/tenants/widget.js", headers=behind_nginx).get_data(as_text=True)
+    assert 'const frontendUrl = "https://chat.example.ch"' in script
 
     # test_request_context skips ProxyFix (the widget request above went through it): set its result
     after_proxyfix = {"base_url": "https://ai.burn.codes/"}

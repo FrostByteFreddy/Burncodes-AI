@@ -753,7 +753,13 @@ class TestWarnings:
 class TestLinkExtraction:
     def test_links_inside_escaped_json_widgets_are_found(self):
         """i-web "Wie, wann, wo": the table's links only exist as escaped HTML in a data attribute."""
-        from app.data_processing.soup_extractor import extract_internal_links
+        import importlib.util
+        # only the crawl workers have it (not the API package the tests run against): load it by file
+        spec = importlib.util.spec_from_file_location(
+            "soup_extractor", __file__.replace("tests/test_knowledge.py", "shared/soup_extractor.py"))
+        soup = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(soup)
+        extract_internal_links = soup.extract_internal_links
         html = (
             '<html><body><a href="/abfallarten">Abfallarten</a>'
             '<div data-entities="[{&quot;name&quot;:&quot;&lt;a href=\\&quot;\\/_rte\\/regelmaessigeranlass\\/4885'

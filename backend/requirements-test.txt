@@ -5,3 +5,4 @@ beautifulsoup4==4.13.4
 lxml==5.4.0
 markdownify==1.2.0
 pdfplumber==0.11.7
+trafilatura==2.0.0   # shared/soup_extractor.py (crawl workers)
