@@ -33,9 +33,10 @@ cd backend && docker run --rm -v "$PWD":/src -w /src --entrypoint sh \
   -c "pip install -q -r requirements-test.txt >/dev/null; python -m pytest -q -p no:cacheprovider"
 ```
 
-There the widget-address and task-name tests fail for setup reasons (they
-expect the production address / the repo root); `TestLinkExtraction` fails
-everywhere (imports a module the API package lacks).
+There `test_task_names` fails for setup reasons (it reads worker files from
+the repo root, which only `backend/` is mounted as); with the whole repo, as
+in CI, all tests pass. CI also runs `npm audit --audit-level=high`: check it
+locally with `npm audit --audit-level=high` in `frontend/` after dependency changes.
 
 Frontend: `docker exec swiftanswer-local-frontend-1 sh -c "cd /app && npx vite build --outDir /tmp/b"`.
 

@@ -82,4 +82,3 @@ Details per area — read the one you need:
 - `get_or_create_store` can race when 8 learn tasks start at once.
 - Account deletion ignores a failed store delete and a failed Stripe cancel.
 - The prepaid check covers one run's estimate, not the balance across runs.
-- `tests/test_knowledge.py::TestLinkExtraction` imports a module the API package doesn't have.
