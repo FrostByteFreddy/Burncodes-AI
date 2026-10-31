@@ -20,10 +20,11 @@ jobs:
   deploy:
     needs: checks
     runs-on: ubuntu-latest
-    # Settings > Environments > production: holds the secrets below and can
+    # Settings > Environments > Prod: holds PROD_SSH_KEY (secret) and
+    # PROD_KNOWN_HOSTS (variable; the server's public host key), and can
     # require a manual approval before anything reaches the server
     environment:
-      name: production
+      name: Prod
       url: https://ai.burn.codes
     steps:
       - uses: actions/checkout@v7
@@ -41,8 +42,12 @@ jobs:
       - name: Set up SSH
         env:
           SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
-          KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS }}
+          KNOWN_HOSTS: ${{ vars.PROD_KNOWN_HOSTS }}
         run: |
+          if [ -z "$SSH_KEY" ] || [ -z "$KNOWN_HOSTS" ]; then
+            echo "::error::Environment Prod needs the secret PROD_SSH_KEY and the variable PROD_KNOWN_HOSTS."
+            exit 1
+          fi
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
@@ -51,7 +56,7 @@ jobs:
 
       - name: Deploy
         env:
-          DEPLOY_SERVER: ${{ secrets.PROD_SERVER }}
+          DEPLOY_SERVER: ${{ vars.PROD_SERVER || 'root@142.132.206.182' }}
         run: ./_prod_deploy.sh
 
       - name: Check the site answers
