@@ -24,7 +24,7 @@ Gemini learns every page → a chat widget answers with sources, dates and facts
 | change a dashboard screen | `frontend/src/views/`, `frontend/src/components/tenant/` |
 | change the look | `frontend/src/assets/tokens.css`, `bc.css`, `components/ui/Bc*.vue` |
 | change dashboard text | `frontend/src/locales/{de,en,fr}.json` |
-| deploy / check production | `_prod_deploy.sh`, `docker-compose.prod.yml`, see `references/operations.md` |
+| deploy / check production | release tag → `.github/workflows/release.yml`; `docker-compose.prod.yml`; see `references/operations.md` |
 
 Details per area — read the one you need:
 
@@ -58,8 +58,11 @@ Details per area — read the one you need:
 5. **The local `.env` points at the production database.** Never start
    `celery_beat` locally (scheduled re-crawls and reviews would run twice), and
    treat local test chats as real data (they land in `chat_logs`).
-6. **`_prod_deploy.sh` ships the working tree**, uncommitted changes included,
-   and does not run migrations: run new SQL in the Supabase SQL editor first.
+6. **Deploy with a release tag** (`vX.Y.Z` on `main` → `release.yml`), not
+   `_prod_deploy.sh` from a machine, which ships the working tree and the
+   local `.env`. Neither runs migrations: run new SQL in the Supabase SQL
+   editor first. Push with `~/.ssh/id_ed25519_new` via `GIT_SSH_COMMAND`,
+   never by changing the user's default key; tags (= deploys) only when asked.
 7. **Realtime only delivers tables `authenticated` may SELECT** (tenants,
    crawling_jobs, crawling_tasks, crawl_job_log). Everything else is read
    through the API with the service role; users can't write tables directly.

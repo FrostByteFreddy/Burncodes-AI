@@ -46,19 +46,75 @@ and import the code inside it.
 
 ## Deploy
 
-`./_prod_deploy.sh` (from the repo root): rsync the working tree to
+### Normal way: a release tag
+
+Everything reaches production as a version tag on `main`:
+
+1. Work on a branch, push it, merge it into `main` through a PR (CI must be green).
+2. Run new SQL from `supabase/migrations/` in the Supabase SQL editor **before**
+   tagging; deploys never migrate.
+3. Tag the merged `main` and push the tag:
+   ```sh
+   git checkout main && git pull
+   git tag v1.2.3 && git push origin v1.2.3
+   ```
+4. `.github/workflows/release.yml` runs: the CI checks, a check that the tag
+   is on `main`, `./_prod_deploy.sh` with the deploy key, a wait (up to 5 min)
+   for `https://ai.burn.codes/api/health`, then a GitHub release with notes.
+   Follow it under GitHub → Actions → Release; a failed check stops it before
+   anything reaches the server.
+
+Versions: patch (`v1.2.4`) for fixes, minor (`v1.3.0`) for features, major for
+breaking changes. Never move or reuse a tag: a broken release is fixed by the
+next one.
+
+Setup (done 2026-10-31): GitHub environment **`Prod`** (GitHub can't rename
+environments, so the workflow uses this name) with the **secret**
+`PROD_SSH_KEY` (private key of `github-deploy burncodes-ai`, stored on the
+user's machine as `~/.ssh/burncodes_deploy`) and the **variable**
+`PROD_KNOWN_HOSTS` (the server's public ed25519 host key); optionally the
+variable `PROD_SERVER` (default `root@142.132.206.182`). The deploy key is in
+the server's `authorized_keys` with `no-pty,no-port-forwarding,…`.
+
+The workflow deploys a clean checkout, without `.env`: **the server's
+`/var/www/burncodes-ai/.env` is the production configuration**; change
+settings there and restart the affected containers.
+
+### Pushing and server access from a Claude session
+
+- The user's default key (`~/.ssh/id_ed25519`) has a passphrase; **don't
+  change the user's default key or SSH/git config**.
+- `~/.ssh/id_ed25519_new` (no passphrase) is on GitHub and on the server for
+  sessions to use, explicitly per command:
+  ```sh
+  GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519_new -o IdentitiesOnly=yes -o BatchMode=yes" git push origin <branch>
+  ssh -i ~/.ssh/id_ed25519_new -o IdentitiesOnly=yes -o BatchMode=yes root@142.132.206.182 '<read-only command>'
+  ```
+- Read-only checks on the server are fine. Changes on the server (files,
+  `authorized_keys`, `.env`, restarting containers) need the user's explicit
+  go-ahead each time; otherwise give them the command.
+- Pushing a release tag deploys to production: only when the user asks for it.
+- `gh` isn't installed: create PRs through the `pull/new/<branch>` link or the
+  GitHub web UI (Chrome).
+
+### Fallback: deploying from the machine
+
+`./_prod_deploy.sh` (repo root) still works for emergencies: rsync the
+**working tree** (uncommitted changes go live!) to
 `root@142.132.206.182:/var/www/burncodes-ai`, rebuild, flush the Celery
 queues, `up -d --scale celery_worker_heavy=$DEPLOY_HEAVY_WORKERS` (10).
-Uncommitted changes go live; migrations don't (Supabase SQL editor first).
-A local deploy also copies the local `.env` to the server (rsync excludes only
-`.env.*`). `./_prod_frontend_deploy.sh` for frontend only.
+It also copies the local `.env` to the server (rsync excludes only `.env.*`),
+overwriting the production configuration with the local one: prefer a tag.
+`./_prod_frontend_deploy.sh` rebuilds the frontend only.
 
-Releases: a tag `vX.X.X` on `main` runs `.github/workflows/release.yml` (CI,
-deploy, health check, GitHub release). GitHub environment `Prod`: secret
-`PROD_SSH_KEY` (the `github-deploy burncodes-ai` key), variable `PROD_KNOWN_HOSTS`.
+### After a deploy
 
-Sessions can't SSH to the server or push to GitHub without the user's key
-agent: give the user the command to run.
+- `curl -fsS https://ai.burn.codes/api/health`
+- A new frontend string is in the live bundle (`/assets/index-*.js` and chunks).
+- A new backend module loads: if chat stops answering ("Ich suche das Passende
+  für dich …" forever), suspect a missing `COPY` in a worker Dockerfile first.
+- Test a chatbot on `https://ai.burn.codes/chat/<tenant-id>` (younity:
+  `d4d5099f-5e51-4710-b2e9-3a7c25f6cfac`).
 
 ## Checking production
 
