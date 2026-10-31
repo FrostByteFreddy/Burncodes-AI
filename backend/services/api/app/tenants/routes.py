@@ -4,6 +4,8 @@ from app.database.supabase_client import fetch_all, supabase
 from app.auth.decorators import token_required
 from app.models.database import Tenant, TenantFineTune
 from app.logging_config import error_logger
+from app import limiter
+from app.knowledge.audience import AUDIENCES
 from uuid import uuid4
 import os
 
@@ -31,6 +33,8 @@ def create_tenant(current_user):
             "translation_target": data.get('translation_target'),
             "crawl_mode": data.get('crawl_mode', 'playwright_llm'),
         }
+        if data.get('audience') in AUDIENCES:
+            tenant_data['audience'] = data['audience']
         supabase.table('tenants').insert(tenant_data).execute()
 
         # Fine-tune rules are stored in DB only — injected into the system
@@ -133,6 +137,15 @@ def update_tenant(current_user, tenant_id):
             tenant_update_data['test_password_hash'] = hash_password(password) if password else None
         if 'calendar_feeds' in data:
             tenant_update_data['calendar_feeds'] = bool(data['calendar_feeds'])
+        if 'learning_model' in data:
+            from app.ai_models import LEARNING_MODELS
+            if data['learning_model'] not in LEARNING_MODELS:
+                return jsonify({"error": f"learning_model must be one of {', '.join(LEARNING_MODELS)}"}), 400
+            tenant_update_data['learning_model'] = data['learning_model']
+        if 'audience' in data:
+            if data['audience'] not in AUDIENCES:
+                return jsonify({"error": f"audience must be one of {', '.join(AUDIENCES)}"}), 400
+            tenant_update_data['audience'] = data['audience']
         if 'crawl_exclusions' in data:
             # the settings only remove rules; new ones come from the crawl's selection
             current = supabase.table('tenants').select('crawl_exclusions').eq('id', tenant_id_str).limit(1).execute().data
@@ -185,20 +198,27 @@ def delete_tenant(current_user, tenant_id):
             return jsonify({"error": "Tenant not found or access denied"}), 404
 
         # Delete the Gemini File Search Store (and all its documents) if it exists
+        # Gemini first: the chatbot is only deleted once its store is gone, so
+        # nothing it learned is left behind without a way to delete it
         store_name = (tenant_resp.data or {}).get('gemini_file_store_name')
         if store_name:
-            try:
-                from app.gemini_store.service import GeminiStoreService
-                GeminiStoreService.delete_store(store_name)
-            except Exception as store_err:
-                error_logger.error(
-                    "Soft failure: could not delete Gemini store %s for tenant %s: %s",
-                    store_name, tenant_id_str, store_err
-                )
+            from app.gemini_store.service import GeminiStoreService
+            if not GeminiStoreService.delete_store(store_name):
+                return jsonify({"error": "The chatbot's knowledge could not be removed from Gemini. Nothing was deleted; please try again.",
+                                "code": "gemini_failed"}), 502
 
         supabase.table('tenant_fine_tune').delete().eq('tenant_id', tenant_id_str).execute()
         supabase.table('tenant_sources').delete().eq('tenant_id', tenant_id_str).execute()
+        # runs, their logs, chats, reviews, facts and dates go with the chatbot (ON DELETE CASCADE);
+        # its spending stays in the billing ledger under its name
         supabase.table('tenants').delete().eq('id', tenant_id_str).execute()
+
+        # files uploaded by hand live on disk, not in the database
+        from app.tenants.sources import UPLOADS_DIR
+        import shutil
+        upload_dir = os.path.join(UPLOADS_DIR, tenant_id_str)
+        if os.path.realpath(upload_dir).startswith(os.path.realpath(UPLOADS_DIR) + os.sep):
+            shutil.rmtree(upload_dir, ignore_errors=True)
         return jsonify({"message": "Tenant deleted successfully"}), 200
     except Exception as e:
         error_logger.error(f"Error deleting tenant {tenant_id} for user {current_user.id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
@@ -293,8 +313,14 @@ def get_tenant_overview(current_user, tenant_id):
             .select("id, start_url, status, created_at, finished_at, report, estimate, trigger")
             .eq('tenant_id', tenant_id_str).order('created_at', desc=True).limit(200).execute()
         ).data or []
-        learn_cost = sum(float((j.get('report') or {}).get('cost_chf') or 0)
-                         for j in jobs if (j.get('finished_at') or '') >= since.isoformat())
+        # spending in both periods, as booked in the ledger
+        booked = fetch_all(lambda: (
+            supabase.table('billing_ledger').select('kind, amount_chf, created_at')
+            .eq('tenant_id', tenant_id_str).gte('created_at', prev_since.isoformat()).order('id')))
+
+        def spent(kind, current_period=True):
+            return round(-sum(float(r['amount_chf']) for r in booked if r['kind'] == kind
+                              and (r['created_at'] >= since.isoformat()) == current_period), 4)
         last = jobs[0] if jobs else None
 
         from app.knowledge.jobs import issues_of
@@ -303,13 +329,14 @@ def get_tenant_overview(current_user, tenant_id):
             .select("source_type, status, indexed_chunks, warnings")
             .eq('tenant_id', tenant_id_str).order('id')
         ))
-        upcoming = (
-            supabase.table('tenant_events').select("id", count="exact")
+        from app.knowledge.calendar import dedupe_events
+        upcoming = len(dedupe_events(
+            supabase.table('tenant_events').select("series, zone, event_date")
             .eq('tenant_id', tenant_id_str)
             .gte('event_date', date.today().isoformat())
             .lte('event_date', (date.today() + timedelta(days=13)).isoformat())
-            .limit(1).execute()
-        ).count or 0
+            .limit(1000).execute().data or []
+        ))
         open_findings = (
             supabase.table('chat_findings').select("id", count="exact")
             .eq('tenant_id', tenant_id_str).eq('status', 'open').limit(1).execute()
@@ -318,9 +345,6 @@ def get_tenant_overview(current_user, tenant_id):
             supabase.table('user_billing').select("balance_chf")
             .eq('user_id', current_user.id).limit(1).execute()
         ).data
-
-        def money(rows):
-            return round(sum(float(r.get('cost_chf') or 0) for r in rows), 4)
 
         return jsonify({
             "days": days,
@@ -339,9 +363,10 @@ def get_tenant_overview(current_user, tenant_id):
                 "open_findings": open_findings,
             },
             "costs": {
-                "chat_chf": money(current),
-                "chat_prev_chf": money(previous),
-                "learning_chf": round(learn_cost, 4),
+                "chat_chf": spent('answer'),
+                "chat_prev_chf": spent('answer', current_period=False),
+                "learning_chf": spent('learning'),
+                "review_chf": spent('review'),
                 "balance_chf": float(balance[0]['balance_chf']) if balance else 0.0,
             },
             "knowledge": {
@@ -451,3 +476,37 @@ def run_review_now(current_user, tenant_id):
     except Exception as e:
         error_logger.error(f"Error starting review for {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to start review"}), 500
+
+
+# ── Look of the widget, taken from the customer's website ────────────────────
+
+@tenants_bp.route('/<uuid:tenant_id>/branding', methods=['POST'])
+@limiter.limit("10 per minute")
+@token_required
+def suggest_branding(current_user, tenant_id):
+    """
+    Reads brand colours, logo and name from the start page of the chatbot's
+    latest website crawl (or the given url). Nothing is saved: the
+    configurator applies it for the customer to review.
+    """
+    from app.knowledge.branding import read_branding
+    from app.security.url_guard import is_public_url
+
+    if not _owned(tenant_id, current_user.id):
+        return jsonify({"error": "Tenant not found or access denied"}), 404
+    url = ((request.get_json(silent=True) or {}).get('url') or '').strip()
+    if not url:
+        jobs = supabase.table('crawling_jobs').select('start_url, single_page_only') \
+            .eq('tenant_id', str(tenant_id)).order('created_at', desc=True).limit(50).execute().data or []
+        # a whole-site crawl starts at the home page; a single page is only a fallback
+        job = next((j for j in jobs if not j.get('single_page_only')), jobs[0] if jobs else None)
+        url = job['start_url'] if job else ''
+    if not url:
+        return jsonify({"error": "no_website"}), 404
+    if not is_public_url(url):
+        return jsonify({"error": "Only public http(s) URLs can be read"}), 400
+    try:
+        return jsonify(read_branding(url)), 200
+    except Exception as e:
+        error_logger.warning(f"Reading the look of {url} for tenant {tenant_id} failed: {e}")
+        return jsonify({"error": "unreadable", "url": url}), 422

@@ -33,6 +33,11 @@ UNSUPPORTED_EXTENSIONS: set[str] = {
 _client: genai.Client | None = None
 
 
+def _not_found(error: Exception) -> bool:
+    """Gemini says the store or document doesn't exist: nothing left to delete."""
+    text = str(error)
+    return "NOT_FOUND" in text or "404" in text
+
 def _get_client() -> genai.Client:
     global _client
     if _client is None:
@@ -81,10 +86,11 @@ class GeminiStoreService:
         return store_name
 
     @staticmethod
-    def delete_store(store_name: str) -> None:
+    def delete_store(store_name: str) -> bool:
         """
         Deletes the entire store and all contained documents.
-        Called when a tenant is deleted.
+        Called when a tenant is deleted. Returns True once the store is gone
+        (also if it didn't exist), False if Gemini refused or failed.
         """
         try:
             client = _get_client()
@@ -92,8 +98,12 @@ class GeminiStoreService:
                 name=store_name, config={"force": True}
             )
             error_logger.info("Deleted File Search store %s", store_name)
+            return True
         except Exception as e:
+            if _not_found(e):
+                return True
             error_logger.error("Failed to delete store %s: %s", store_name, e, exc_info=True)
+            return False
 
     # -----------------------------------------------------------------------
     # Document upload
@@ -226,42 +236,31 @@ class GeminiStoreService:
     # -----------------------------------------------------------------------
 
     @staticmethod
-    def delete_document(gemini_document_name: str) -> None:
+    def delete_document(gemini_document_name: str) -> bool:
         """
         Deletes a specific document from its store.
         Called when a user deletes a source.
 
-        The Gemini API raises FAILED_PRECONDITION if you attempt to delete a
-        document that still contains chunks.  We must purge all chunks first.
+        force=True deletes the document together with its chunks (without it
+        Gemini refuses a document that still has chunks).
+        Returns True once the document is gone (also if it didn't exist),
+        False if Gemini failed: the caller keeps its reference to retry.
         """
         if not gemini_document_name:
-            return
+            return True
         try:
-            client = _get_client()
-
-            # 1. List every chunk in the document and delete them all.
-            chunks = client.file_search_stores.documents.chunks.list(
-                parent=gemini_document_name
+            _get_client().file_search_stores.documents.delete(
+                name=gemini_document_name, config={"force": True}
             )
-            chunk_names = [c.name for c in chunks]
-            if chunk_names:
-                error_logger.info(
-                    "Deleting %d chunk(s) from document %s",
-                    len(chunk_names),
-                    gemini_document_name,
-                )
-                client.file_search_stores.documents.chunks.batch_delete(
-                    parent=gemini_document_name,
-                    config={"names": chunk_names},
-                )
-
-            # 2. Now the document is empty — safe to delete.
-            client.file_search_stores.documents.delete(name=gemini_document_name)
             error_logger.info("Deleted document %s", gemini_document_name)
+            return True
         except Exception as e:
+            if _not_found(e):
+                return True
             error_logger.error(
                 "Failed to delete document %s: %s", gemini_document_name, e, exc_info=True
             )
+            return False
 
     # -----------------------------------------------------------------------
     # Internal helpers

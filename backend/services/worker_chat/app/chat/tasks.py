@@ -13,9 +13,11 @@ Key changes:
 """
 import os
 import re
+import time
 import unicodedata
 from urllib.parse import urlparse
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from celery import shared_task
 from google import genai
@@ -24,13 +26,22 @@ from app.database.supabase_client import fetch_all, supabase
 from app.billing.services import BillingService
 from app.logging_config import error_logger
 from app.prompts import FINE_TUNE_RULE_PROMPT
-from app.ai_models import CHAT_GEMINI_MODEL, billable_tokens
+from app.ai_models import CHAT_GEMINI_MODEL, CHAT_THINKING_LEVEL, billable_tokens
+from app.knowledge.calendar import dedupe_events, source_rank
+from app.knowledge.contact import contact_context
+from app.knowledge.facts import fact_mentioned, facts_context, relevant_facts
+from app.knowledge.names import fold, mentioned
 
 
 # Number of previous exchanges (user + AI message pairs) sent as context.
 HISTORY_TURNS = int(os.getenv("CHAT_HISTORY_TURNS", "10"))
 # Per-request timeout for the Gemini call, in milliseconds (google-genai unit).
 GEMINI_TIMEOUT_MS = int(os.getenv("CHAT_GEMINI_TIMEOUT_MS", "90000"))
+
+# "Today" for dates and events: the visitors' day, not the server's UTC one
+TIMEZONE = ZoneInfo(os.getenv("APP_TIMEZONE", "Europe/Zurich"))
+# Facts per tenant, re-read after this many seconds (they change only when the site is learned)
+FACTS_CACHE_SECONDS = 300
 
 _client: genai.Client | None = None
 
@@ -55,7 +66,7 @@ def _build_contents(chat_history_json: list, query: str) -> list:
         role = "user" if msg["type"] == "human" else "model"
         contents.append({"role": role, "parts": [{"text": msg["content"]}]})
     # Gemini requires the last message to be from "user"
-    contents.append({"role": "user", "parts": [{"text": query}]})
+    contents.append({"role": "user", "parts": [{"text": query}, {"text": _LANGUAGE_NOTE}]})
     return contents
 
 
@@ -81,10 +92,36 @@ def _load_history(tenant_id: str, conversation_id: str) -> list:
     return history
 
 
+_facts_cache: dict[str, tuple[float, list[dict], dict]] = {}
+
+
+def _tenant_facts(tenant_id: str) -> tuple[list[dict], dict]:
+    """All facts of the tenant and source_id -> (title, url), cached for a few minutes."""
+    hit = _facts_cache.get(tenant_id)
+    if hit and time.monotonic() - hit[0] < FACTS_CACHE_SECONDS:
+        return hit[1], hit[2]
+    facts = fetch_all(lambda: supabase.table("tenant_facts").select("label, value, source_id")
+                      .eq("tenant_id", str(tenant_id)).order("id"), max_rows=20_000)
+    ids = list({f["source_id"] for f in facts if f.get("source_id")})
+    sources = {}
+    for i in range(0, len(ids), 200):
+        for s in supabase.table("tenant_sources").select("id, title, source_location") \
+                .in_("id", ids[i:i + 200]).execute().data or []:
+            sources[s["id"]] = ((s.get("title") or s["source_location"]).strip(), s["source_location"])
+    _facts_cache[tenant_id] = (time.monotonic(), facts, sources)
+    return facts, sources
+
+
 _WEEKDAY = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+_WEEKDAY_LONG = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 # Upcoming dates per series given to the model; enough for "next" / "this week"
 _UPCOMING_PER_SERIES = 4
-_MAX_SERIES = 30
+# Series in the prompt: those with future dates first (soonest first, those the
+# question names before all others); series that are over fill the rest, most
+# recently ended first, so the model says "no future dates" instead of guessing
+_MAX_SERIES = 40
+# series that are over but named in the question always go in
+_MAX_NAMED_PAST_SERIES = 3
 
 
 def _calendars_offered(tenant_config: dict) -> bool:
@@ -101,13 +138,34 @@ def _calendar_key(series: str, zone: str) -> str:
     return slug(series) + (f"--{slug(zone)}" if zone else "")
 
 
-def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, sources_out: dict | None = None) -> str:
+def _now_context(now: datetime) -> str:
     """
-    Today's date plus verified dates extracted at indexing time (tenant_events):
+    The visitors' current date and time, in every prompt: the model has no clock
+    and otherwise turns "upcoming Tue 2026-11-24" into "next Tuesday" weeks ahead.
+    """
+    return (
+        f"Now: {_WEEKDAY_LONG[now.weekday()]} {now.date().isoformat()}, {now.strftime('%H:%M')} ({now.tzinfo}). "
+        "Work out \"today\", \"tomorrow\", \"this week\" and how far away a date is from this. "
+        "Words like \"next Tuesday\" or \"tomorrow\" only for dates within the next 7 days; "
+        "for later dates give the date itself (e.g. \"on Tuesday, 24 November\", optionally \"in 3 weeks\"). "
+        "A date before today is past: never present it as upcoming."
+    )
+
+
+def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, sources_out: dict | None = None,
+                   calendars_out: dict | None = None, asked: str = "", names_out: list | None = None) -> str:
+    """
+    Verified dates extracted at indexing time (tenant_events), "" if there are none:
     the next few per series, or — when a series has no future dates — when its
     data ends, so the model doesn't present an expired calendar as current.
+
+    Series with future dates go in first (soonest first, up to a cap); series
+    that are over fill the room left, and always when the question names them,
+    typos included. Before, the
+    first 30 series by date went in: on younity 64 of 100 were long over, and
+    "find your flow! Festival 2026" (a week away) was number 75 and left out.
     """
-    lines = [f"Today is {_WEEKDAY[today.weekday()]} {today.isoformat()}."]
+    lines = []
     rows = fetch_all(lambda: (
         supabase.table("tenant_events")
         .select("series, zone, event_date, is_exception, notes, source_id")
@@ -117,51 +175,93 @@ def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, s
         .order("event_date").order("id")
     ), max_rows=20_000)
     if not rows:
-        return lines[0]
+        return ""
 
+    # the same event read from several pages counts once; its source is the most specific page
+    source_ids = list({r["source_id"] for r in rows if r.get("source_id")})
+    source_rows = {}
+    for i in range(0, len(source_ids), 200):
+        for s in supabase.table("tenant_sources").select("id, title, source_location") \
+                .in_("id", source_ids[i:i + 200]).execute().data or []:
+            source_rows[s["id"]] = s
+
+    rows = dedupe_events(rows, lambda r: source_rank(r, source_rows.get(r.get("source_id"))))
+
+    # one series however its name is punctuated ("Kurs 'Leben im flow'" and "Kurs Leben im flow")
     series: dict[tuple[str, str], dict] = {}
     for r in rows:
-        entry = series.setdefault((r["series"], r["zone"]), {"upcoming": [], "last": None, "notes": r.get("notes") or "",
-                                                             "source_id": r.get("source_id")})
+        entry = series.setdefault((fold(r["series"]), fold(r["zone"])), {
+            "name": r["series"], "zone": r["zone"], "upcoming": [], "first": None, "last": None,
+            "notes": r.get("notes") or "", "source_id": r.get("source_id")})
         d = date.fromisoformat(r["event_date"])
         if d >= today:
-            if len(entry["upcoming"]) < _UPCOMING_PER_SERIES:
-                entry["upcoming"].append(f"{_WEEKDAY[d.weekday()]} {d.isoformat()}" + (" (exception)" if r["is_exception"] else ""))
+            day = f"{_WEEKDAY[d.weekday()]} {d.isoformat()}" + (" (exception)" if r["is_exception"] else "")
+            if len(entry["upcoming"]) < _UPCOMING_PER_SERIES and day not in entry["upcoming"]:
+                entry["upcoming"].append(day)
+                entry["first"] = entry["first"] or d
         else:
             entry["last"] = d
+    names = list(dict.fromkeys(e["name"] for e in series.values()))
+    if names_out is not None:
+        names_out.extend(names)
+    named = {n for n, _ in mentioned(names, asked, limit=5)} if asked else set()
+    upcoming = sorted((e for e in series.values() if e["upcoming"]), key=lambda e: (e["name"] not in named, e["first"]))
+    past = sorted((e for e in series.values() if not e["upcoming"] and e["last"]),
+                  key=lambda e: (e["name"] not in named, -e["last"].toordinal()))
+    upcoming = upcoming[:_MAX_SERIES]
+    past_named = [e for e in past if e["name"] in named][:_MAX_NAMED_PAST_SERIES]
+    room = max(0, _MAX_SERIES - len(upcoming) - len(past_named))
+    chosen = upcoming + past_named + [e for e in past if e["name"] not in named][:room]
 
-    source_ids = list({e["source_id"] for e in series.values() if e["source_id"]})
-    source_rows = {
-        s["id"]: s for s in (supabase.table("tenant_sources").select("id, title, source_location")
-                             .in_("id", source_ids).execute().data or [])
-    } if source_ids else {}
     sources = {sid: f"{(s.get('title') or '').strip()} {s['source_location']}".strip() for sid, s in source_rows.items()}
     if sources_out is not None:
         # series name -> (title, url), for the source fallback after answering
-        for (name, _zone), entry in series.items():
+        for entry in series.values():
             s = source_rows.get(entry["source_id"])
             if s:
-                sources_out[name] = ((s.get("title") or s["source_location"]).strip(), s["source_location"])
+                sources_out[entry["name"]] = ((s.get("title") or s["source_location"]).strip(), s["source_location"])
 
     lines.append("Verified dates from this organisation's documents (use these for questions about dates; never invent dates):")
-    for (name, zone), entry in list(series.items())[:_MAX_SERIES]:
+    for entry in chosen:
+        name, zone = entry["name"], entry["zone"]
         label = f"{name} ({zone})" if zone else name
         notes = f" [{entry['notes']}]" if entry["notes"] else ""
         if entry["upcoming"]:
             key = f" {{calendar: {_calendar_key(name, zone)}}}" if offer_calendars else ""
+            if calendars_out is not None:
+                calendars_out[_calendar_key(name, zone)] = (name, [u.split()[1] for u in entry["upcoming"]])
             source = f" {{source: {sources[entry['source_id']]}}}" if entry["source_id"] in sources else ""
-            lines.append(f"- {label}{notes}{key}{source}: next {', '.join(entry['upcoming'])}")
+            lines.append(f"- {label}{notes}{key}{source}: upcoming {', '.join(entry['upcoming'])}")
         elif entry["last"]:
             lines.append(f"- {label}{notes}: no future dates known — the published schedule ends "
                          f"{entry['last'].isoformat()}; say so instead of guessing.")
     if offer_calendars:
         lines.append(
-            "Residents can subscribe to these dates in their own calendar. When your answer gives dates "
+            "Visitors can subscribe to these dates in their own calendar. When your answer gives dates "
             "of a series that has a {calendar: KEY}, add the line [[calendar:KEY]] at the very end of your "
             "answer, once per series you gave dates for (at most three). Never mention the key or this "
             "marker in your text; the chat turns it into a button."
         )
     return "\n".join(lines)
+
+
+def _name_hint(query: str, names: list[str]) -> str:
+    """
+    The question misspells a known name ("find our follow"): tell the model the
+    probable name, so it searches and answers with that ("" if nothing matches).
+    """
+    typos = [n for n, score in mentioned(names, query, limit=3) if score < 0.97]
+    if not typos:
+        return ""
+    return ("The visitor's message probably misspells a name. They most likely mean: "
+            + ", ".join(f"«{n}»" for n in typos)
+            + ". Look it up under that spelling (in your documents and in the dates above), answer about it, "
+              "and write the name correctly. If it clearly doesn't fit the question, ignore this.")
+
+
+# Repeated next to the question: after a few German turns, an English question
+# got a German answer although the system instruction says otherwise.
+_LANGUAGE_NOTE = "(Answer in the language of my message above.)"
 
 
 def _build_system_instruction(tenant_config: dict, fine_tune_rules: list) -> str:
@@ -198,6 +298,26 @@ _SOURCES_RULE = (
     "take its address from that document's \"Quelle:\" line."
 )
 
+_UNKNOWN_RULE = (
+    "When you don't know something: say so in one short sentence, without mentioning documents, sources "
+    "or what you were given (never \"in den vorliegenden Dokumenten …\" or similar), then give the most "
+    "fitting contact straight away: the office, its phone, email and opening hours if you know them. "
+    "Never guess a figure, fee, date, opening hour, phone number or email address that isn't in your "
+    "documents or the facts above. "
+    "No apologies, no \"I recommend\". A question that has nothing to do with this organisation "
+    "(general knowledge, weather, other places) gets one friendly sentence saying what you can help "
+    "with instead, without contact details."
+)
+
+_STYLE_RULE = (
+    "Style: this is a chat, not a letter. Start with the answer itself: no salutation (\"Sehr geehrte Damen "
+    "und Herren\", \"Guten Tag\"), no \"thank you for your question\", no closing formula or signature. "
+    "Short sentences, the most useful fact first. Address the person the way they address you: someone "
+    "who writes \"du\" (\"kannst du\", \"hesch\", \"weisst du\") gets \"du\" for the whole answer, "
+    "someone who writes \"Sie\" gets \"Sie\"; this wins over the form of address named above, which "
+    "only applies when it's unclear."
+)
+
 _MD_LINK = re.compile(r"\[([^\]]+)\]\((https?://[^)\s]+)\)")
 
 
@@ -224,9 +344,25 @@ def _named_page(line: str, known: dict) -> tuple[str, str] | None:
     return best[1] if best else None
 
 
-def _keep_known_links(answer: str, known: set[str]) -> str:
-    """Links to anything but the organisation's own sources become plain text (no invented URLs)."""
-    return _MD_LINK.sub(lambda m: m.group(0) if m.group(2) in known else m.group(1), answer)
+_BARE_URL = re.compile(r"(?<![(<\[\"])\bhttps?://[^\s)\]>\"]+")
+
+
+def _keep_known_links(answer: str, known) -> str:
+    """
+    Links to anything but the organisation's own sources become plain text (no
+    invented URLs). A bare address of a known page becomes a source chip with
+    its title instead of a long raw URL.
+    """
+    answer = _MD_LINK.sub(lambda m: m.group(0) if m.group(2) in known else m.group(1), answer)
+
+    def bare(m):
+        url = m.group(0).rstrip(".,;:")
+        tail = m.group(0)[len(url):]
+        if url not in known:
+            return m.group(0)
+        title = (known.get(url) if isinstance(known, dict) else "") or url.rsplit("/", 1)[-1]
+        return _chip(title, url) + tail
+    return _BARE_URL.sub(bare, answer)
 
 
 _QUELLE = re.compile(r"Quelle:\s*(https?://\S+)")
@@ -337,6 +473,34 @@ def _inline_sources(answer: str, response, known: set[str]) -> tuple[str, set[st
     return answer, linked
 
 
+_CALENDAR_MARKER = re.compile(r"\s*\[\[calendar:([a-z0-9-]+)\]\]")
+
+
+def _fold(text: str) -> str:
+    return unicodedata.normalize("NFKD", (text or "").lower()).encode("ascii", "ignore").decode()
+
+
+def _drop_stray_calendars(answer: str, calendars: dict[str, tuple[str, list[str]]]) -> str:
+    """
+    Calendar buttons only for series the answer is about: the model sometimes
+    adds one to an unrelated answer (a testament question got the council's
+    meeting calendar). Kept when the answer names the series or gives one of
+    its dates (day and year, for answers in another language).
+    """
+    folded = _fold(answer)
+    numbers = set(re.findall(r"\d+", answer))
+
+    def keep(m):
+        name, dates = calendars.get(m.group(1), ("", []))
+        word = next((w for w in re.findall(r"[a-z]{4,}", _fold(name))), None)
+        if word and word in folded:
+            return m.group(0)
+        if any(d[:4] in numbers and str(int(d[8:10])) in {n.lstrip("0") for n in numbers} for d in dates):
+            return m.group(0)
+        return ""
+    return _CALENDAR_MARKER.sub(keep, answer)
+
+
 def _ensure_source(answer: str, candidates: list[tuple[str, str]], known: set[str]) -> str:
     """
     Fills the model's "Quelle: [[sources]]" line with the documents the answer
@@ -363,10 +527,14 @@ def _language_rule() -> str:
     return (
         "Language: always reply in the language of the user's most recent message, "
         "even when your documents and these instructions are in another language "
-        "(e.g. a question in Ukrainian gets an answer in Ukrainian). Translate the content "
+        "(e.g. a question in English gets an answer in English, one in Ukrainian an answer in "
+        "Ukrainian). Translate the content "
         "you found; keep names of places, streets, offices and documents as written, and "
         "give dates in the reply language. If the language of the message is unclear "
-        "(only a name, number or single word), reply in the language of your documents."
+        "(only a name, number or single word), reply in the language of your documents. "
+        "This overrides any language named above: a rule like \"write German the Swiss way\" only "
+        "applies when you reply in German. Search your documents in their own language (translate "
+        "the question's key words first), whatever language the question is in."
     )
 
 
@@ -445,13 +613,45 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
 
         # --- Build system instruction ---
         system_instruction = _build_system_instruction(tenant_config, fine_tune_rules)
+        chat_history_json = _load_history(tenant_id, conversation_id)
+        # the previous question too, so a follow-up ("und was kostet sie?") finds its facts and dates
+        asked = " ".join([m["content"] for m in chat_history_json if m["type"] == "human"][-1:] + [query])
         date_sources: dict[str, tuple[str, str]] = {}
+        calendars: dict[str, tuple[str, list[str]]] = {}
+        series_names: list[str] = []
+        now = datetime.now(TIMEZONE)
+        system_instruction += "\n\n" + _now_context(now)
         try:
-            system_instruction += "\n\n" + _dates_context(
-                tenant_id, date.today(), offer_calendars=_calendars_offered(tenant_config), sources_out=date_sources)
+            dates = _dates_context(
+                tenant_id, now.date(), offer_calendars=_calendars_offered(tenant_config), sources_out=date_sources,
+                calendars_out=calendars, asked=asked, names_out=series_names)
+            if dates:
+                system_instruction += "\n\n" + dates
         except Exception as e:
             error_logger.warning("chat_task: dates context unavailable for tenant %s: %s", tenant_id, e)
-        system_instruction += "\n\n" + _SOURCES_RULE + "\n\n" + _language_rule()
+        contact_card = tenant_config.get("contact_card") or None
+        if contact_card:
+            system_instruction += "\n\n" + contact_context(contact_card)
+
+        # every page of the tenant: titles for the typo hint, urls to check the answer's links
+        known: dict[str, str] | None = None
+        try:
+            known = _known_source_urls(tenant_id)
+            hint = _name_hint(query, series_names + [t for t in known.values() if t])
+            if hint:
+                system_instruction += "\n\n" + hint
+        except Exception as e:
+            error_logger.warning("chat_task: name hint skipped for tenant %s: %s", tenant_id, e)
+
+        facts, fact_sources = [], {}
+        try:
+            all_facts, fact_sources = _tenant_facts(tenant_id)
+            facts = relevant_facts(all_facts, asked)
+            if facts:
+                system_instruction += "\n\n" + facts_context(facts, fact_sources)
+        except Exception as e:
+            error_logger.warning("chat_task: facts unavailable for tenant %s: %s", tenant_id, e)
+        system_instruction += "\n\n" + _SOURCES_RULE + "\n\n" + _UNKNOWN_RULE + "\n\n" + _STYLE_RULE + "\n\n" + _language_rule()
 
         # --- Build tool config ---
         # Only attach file_search if the tenant has an indexed store
@@ -468,7 +668,6 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         # --- Build contents (conversation history + current query) ---
         # chat_history_json is ignored (kept in the signature for queued tasks
         # from older API versions); history comes from the database.
-        chat_history_json = _load_history(tenant_id, conversation_id)
         # Strip leading model messages — Gemini requires first message to be "user"
         history = list(chat_history_json)
         while history and history[0].get("type") != "human":
@@ -477,20 +676,21 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         contents = _build_contents(history, query)
 
         # --- Generate ---
-        response = client.models.generate_content(
-            model=CHAT_GEMINI_MODEL,
-            contents=contents,
-            config={
-                "system_instruction": system_instruction,
-                "tools": tools,
-            },
-        )
+        config = {"system_instruction": system_instruction, "tools": tools}
+        if CHAT_THINKING_LEVEL:
+            config["thinking_config"] = {"thinking_level": CHAT_THINKING_LEVEL}
+        response = client.models.generate_content(model=CHAT_GEMINI_MODEL, contents=contents, config=config)
 
         ai_message = response.text or ""
         try:
-            known = _known_source_urls(tenant_id)
+            known = dict(known) if known is not None else _known_source_urls(tenant_id)
+            if contact_card and contact_card.get("maps_url"):
+                known[contact_card["maps_url"]] = ""   # the address's map link is ours, not invented
             ai_message = _keep_known_links(ai_message, known)
+            ai_message = _drop_stray_calendars(ai_message, calendars)
             mentioned = [src for name, src in date_sources.items() if name.lower() in ai_message.lower()]
+            mentioned += [fact_sources[f["source_id"]] for f in facts
+                          if f.get("source_id") in fact_sources and fact_mentioned(f, ai_message)]
             ai_message, linked = _inline_sources(ai_message, response, known)
             if linked:
                 ai_message = _ensure_source(ai_message, [], known)   # only drops a stray [[sources]] line
@@ -518,7 +718,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         # --- Billing ---
         cost = 0.0
         if user_id and user_id != "None":
-            cost = BillingService.deduct_cost(user_id, "chat", input_tokens, output_tokens)
+            cost = BillingService.deduct_cost(user_id, "chat", input_tokens, output_tokens, tenant_id)
 
         # --- Log to DB ---
         try:

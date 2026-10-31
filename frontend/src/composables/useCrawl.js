@@ -3,8 +3,19 @@
 import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';
 import { useToast } from './useToast';
+import { formatNumber } from '@/utils/format';
 
 export const ACTIVE_STATUSES = ['IN_PROGRESS', 'SCANNED', 'INDEXING'];
+
+// Learning progress: the server's count (exact, survives a reload) or what the
+// live log has shown since, whichever is further along. The log in the browser
+// is only the latest entries, so it can't be the count on its own.
+export function learnProgress(job, log = []) {
+  const total = job?.estimate?.to_learn || 0;
+  const live = log.filter((e) => e.event === 'learned' || e.event === 'learn_failed').length;
+  const done = Math.min(total || Infinity, Math.max(job?.learn_done || 0, live));
+  return { done, total, percent: total ? Math.min(100, (done / total) * 100) : 0 };
+}
 
 // Scan finished, but the sorting step and the cost estimate are still being prepared
 export const isPreparing = (job) => job?.status === 'SCANNED' && !job.estimate;
@@ -16,7 +27,7 @@ const FINISH_EVENTS = Object.values(FINISHES).flat();
 export function useCrawlText() {
   const { t, locale } = useI18n();
 
-  const fmtChf = (v) => Number(v || 0).toFixed(2);
+  const fmtChf = (v) => formatNumber(v, 2);
   const fmtDateTime = (iso) => new Date(iso).toLocaleString(locale.value, {
     day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
@@ -45,9 +56,12 @@ export function useCrawlText() {
       case 'scan':         return t('knowledge.log.scan', { page });
       case 'scanned':      return t('knowledge.log.scanned', { page, outcome: t(`knowledge.estimate.${d.outcome}`, d.outcome || '') });
       case 'links_found':  return t('knowledge.log.links_found', { page, count: d.count });
+      case 'sitemap_read': return t('knowledge.log.sitemap_read', { count: d.count });
       case 'triage_start': return t('knowledge.log.triage_start');
       case 'triage':       return t('knowledge.log.triage', { n: d.skipped || 0 });
       case 'scan_done':    return t('knowledge.log.scan_done', { n: d.to_learn, cost: fmtChf(d.cost_chf) });
+      case 'contact_found': return t('knowledge.log.contact_found', { n: d.hours || 0 });
+      case 'resumed':      return t(`knowledge.log.resumed.${d.phase}`, { n: d.count || 0 });
       case 'learn_start':  return t('knowledge.log.learn_start', { n: d.count });
       case 'learn_source': return t('knowledge.log.learn_source', { page });
       case 'learned':      return t('knowledge.log.learned', { page, sections: d.sections, facts: d.facts, dates: d.dates });
@@ -104,12 +118,12 @@ export function useCrawlText() {
     const r = job.report;
     if (job.status === 'COMPLETED' && r) {
       const c = r.counts || {};
-      return t('knowledge.job.summaryDone', { learned: c.learned || 0, unchanged: c.unchanged || 0, cost: fmtChf(r.cost_chf) });
+      return t('knowledge.job.summaryDone', { learned: formatNumber(c.learned || 0), unchanged: formatNumber(c.unchanged || 0), cost: fmtChf(r.cost_chf) });
     }
     if (isPreparing(job)) return t('knowledge.estimate.preparing');
     if (job.status === 'SCANNED') {
       return e.to_learn
-        ? t('knowledge.job.summaryScanned', { n: e.to_learn, cost: fmtChf(e.cost_chf) })
+        ? t('knowledge.job.summaryScanned', { n: formatNumber(e.to_learn), cost: fmtChf(e.cost_chf) })
         : t('knowledge.estimate.nothing');
     }
     if (job.status === 'FAILED') return t('knowledge.job.summaryStopped');
@@ -124,12 +138,13 @@ export function useCrawlText() {
 export function useCrawlActions(getTenantId) {
   const { t } = useI18n();
   const { addToast } = useToast();
-  const fmtChf = (v) => Number(v || 0).toFixed(2);
+  const fmtChf = (v) => formatNumber(v, 2);
   const base = (jobId) => `/tenants/${getTenantId()}/crawling_jobs/${jobId}`;
 
-  async function confirm(job) {
+  // model: the learning model the customer picked (see knowledge.models); default when omitted
+  async function confirm(job, model = null) {
     try {
-      await apiClient.post(`${base(job.id)}/confirm`);
+      await apiClient.post(`${base(job.id)}/confirm`, model ? { model } : {});
       addToast(t('knowledge.estimate.started'), 'success');
       return true;
     } catch (e) {
@@ -153,15 +168,30 @@ export function useCrawlActions(getTenantId) {
     }
   }
 
-  async function remove(job) {
+  // Continues a stopped crawl where it stopped (learning, scanning or the estimate)
+  async function resume(job) {
     try {
-      await apiClient.delete(base(job.id));
+      const { data } = await apiClient.post(`${base(job.id)}/resume`);
+      addToast(t(`knowledge.job.resumed.${data.phase}`), 'success');
       return true;
-    } catch {
-      addToast(t('tenant.sources.actions.deleteFailed'), 'error');
+    } catch (e) {
+      const code = e.response?.data?.code;
+      addToast(code ? t(`knowledge.job.resumeError.${code}`) : t('knowledge.job.actionFailed'), 'error');
       return false;
     }
   }
 
-  return { confirm, stop, remove };
+  async function remove(job) {
+    try {
+      // A large run is removed in rounds: 202 means the server stopped to stay within its time limit
+      while ((await apiClient.delete(base(job.id))).status === 202);
+      return true;
+    } catch (e) {
+      // Gemini kept some pages: nothing else was deleted, deleting again retries
+      addToast(t(e.response?.data?.code === 'gemini_failed' ? 'common.geminiFailed' : 'tenant.sources.actions.deleteFailed'), 'error');
+      return false;
+    }
+  }
+
+  return { confirm, stop, resume, remove };
 }

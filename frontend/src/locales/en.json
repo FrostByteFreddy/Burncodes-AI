@@ -4,7 +4,9 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
-    "menu": "Menu"
+    "menu": "Menu",
+    "retry": "Try again",
+    "geminiFailed": "Gemini didn't delete everything. Nothing else was removed; please try again."
   },
   "auth": {
     "signup": {
@@ -42,25 +44,26 @@
     "newChatbot": "New Chatbot",
     "noTenants": "No chatbots yet",
     "noChatbots": "No chatbots yet.",
-    "noChatbotsSubtitle": "Create your first one to start building your AI knowledge base.",
+    "noChatbotsSubtitle": "The guided setup takes you to a chatbot that knows your website in about ten minutes.",
     "startMessage": "Create your first chatbot to get started.",
     "createTenant": "Create Chatbot",
     "createChatbot": "Create Chatbot",
-    "sources": "{n} source | {n} sources",
+    "sources": "{n} page or document | {n} pages and documents",
     "openChatbot": "Open chatbot",
     "configure": "Configure",
     "delete": "Delete",
     "deleteModal": {
-      "title": "Delete Chatbot",
-      "message": "Are you sure you want to delete '{name}'? This action cannot be undone.",
-      "confirm": "Delete"
+      "title": "Delete chatbot?",
+      "message": "<strong>{name}</strong> disappears from every website right away, with everything it learned and all conversations. This can't be undone.",
+      "confirm": "Delete chatbot"
     },
     "toast": {
       "createSuccess": "Chatbot created successfully!",
       "createError": "Failed to create chatbot.",
       "deleteSuccess": "Chatbot deleted successfully!",
       "deleteError": "Failed to delete chatbot."
-    }
+    },
+    "guided": "Start the guided setup"
   },
   "analytics": {
     "title": "Chat Analytics",
@@ -386,6 +389,16 @@
           "cancel": "Cancel",
           "addRow": "Add a path or subdomain",
           "none": "Nothing left out. You can skip this step."
+        },
+        "confirmOptions": "Reads",
+        "options": {
+          "title": "What to read",
+          "useSitemap": "Pages from the sitemap",
+          "useSitemapDesc": "Also reads the pages the website lists in its sitemap, e.g. landing pages that no menu links to.",
+          "sameLanguage": "Only one language",
+          "sameLanguageDesc": "Skips other language versions of the website (e.g. /de/, /fr/), so nothing is read and paid for twice. The chatbot answers in every language anyway.",
+          "skipFunnel": "Skip thank-you and ad pages",
+          "skipFunnelDesc": "Leaves out thank-you, confirmation and error pages after forms, copies for online ads, carts and log-ins."
         }
       }
     },
@@ -502,7 +515,9 @@
     "subscription": "Billing",
     "logout": "Logout",
     "workspace": "Workspace",
-    "account": "Account"
+    "account": "Account",
+    "mainNav": "Main navigation",
+    "botSettings": "Advanced"
   },
   "modals": {
     "createTenant": {
@@ -515,7 +530,8 @@
     "confirmation": {
       "cancel": "Cancel",
       "confirm": "Confirm",
-      "typeToConfirm": "To confirm, please type \"{text}\" below:"
+      "typeToConfirm": "To confirm, please type \"{text}\" below:",
+      "deleting": "Deleting … With many pages this can take a minute."
     },
     "sessionExpired": {
       "title": "Session Expired",
@@ -529,19 +545,23 @@
       "old_minutes": "Old minutes",
       "outdated": "Outdated",
       "older_version": "Older versions",
+      "thin": "Thin pages (only video, form or teaser)",
       "internal": "Internal or technical",
       "manual": "Set aside by you",
       "other": "Other"
     },
     "calendars": {
       "title": "Calendars for residents",
-      "sub": "These dates can be subscribed to in any calendar app. The chatbot offers it when it answers with dates, and calendars update by themselves.",
+      "sub": "Residents can subscribe to the dates in their calendar app. The chatbot offers this when asked about dates.",
       "protected": "Calendars are paused while the chatbot needs a password.",
-      "dates": "{n} dates",
+      "dates": "{n} date | {n} dates",
       "copy": "Copy link",
       "copied": "Copied",
       "on": "Calendars switched on",
-      "off": "Calendars switched off. Subscribers' calendars empty out on their next update."
+      "off": "Calendars switched off. Subscribers' calendars empty out on their next update.",
+      "count": "{n} calendar | {n} calendars",
+      "show": "Show",
+      "hide": "Hide"
     },
     "recrawl": {
       "onHint": "Checks for changes every {n} days.",
@@ -561,8 +581,6 @@
       "noneUpcoming": "No dates in the next two weeks. When your documents contain calendars, they show up here.",
       "noneUpcomingEnded": "No upcoming dates — the calendars your chatbot knows have ended. See below.",
       "moved": "moved",
-      "needsTitle": "Needs you",
-      "needsNone": "Nothing needs your attention right now.",
       "ended": "{series}: the published dates ended on {date}.",
       "endedHint": "Your chatbot can’t say when the next one is. Publish the new calendar and re-crawl.",
       "summary": "{sources} sources, {chunks} indexed sections. Last crawl {date}.",
@@ -584,7 +602,7 @@
     },
     "content": {
       "title": "Website content",
-      "sub": "Everything learned from your websites, including files found on them",
+      "sub": "Every page and file this crawl read, and what became of it. On the latest crawl: the website as your chatbot knows it.",
       "filter": "Filter pages…",
       "empty": "Nothing crawled yet.",
       "noMatch": "No page matches “{q}”."
@@ -611,7 +629,7 @@
       }
     },
     "status": {
-      "IN_PROGRESS": "Scanning",
+      "IN_PROGRESS": "Reading",
       "SCANNED": "Ready to learn",
       "INDEXING": "Learning",
       "COMPLETED": "Completed",
@@ -640,7 +658,18 @@
       "scanProgress": "{done} of {total} pages scanned",
       "learnProgress": "{done} of {total} sources learned",
       "report": "Report",
-      "hideReport": "Hide report"
+      "hideReport": "Hide report",
+      "resume": "Continue",
+      "resumed": {
+        "learning": "Learning continues with the sources not learned yet.",
+        "scanning": "The scan continues with the pages not read yet.",
+        "estimate": "Back to the estimate: choose what to learn."
+      },
+      "resumeError": {
+        "busy": "Another crawl of this chatbot is still running. Wait until it has finished.",
+        "nothing_to_resume": "There is nothing left to continue. Start a new crawl instead.",
+        "balance": "Your balance is used up. Top it up to continue learning."
+      }
     },
     "estimate": {
       "indexOnly": "{n} long documents (over {pages} pages) are only made searchable: their text, without dates or facts.",
@@ -700,6 +729,7 @@
       "scan": "Scanning {page}",
       "scanned": "{page} — {outcome}",
       "links_found": "{count} new links on {page}",
+      "sitemap_read": "Sitemap read: {count} more pages",
       "scan_done": "Scan complete: {n} sources to learn · approx. CHF {cost}",
       "learn_start": "Gemini is learning {n} sources",
       "learn_source": "Gemini is reading {page}",
@@ -708,11 +738,18 @@
       "job_done": "Done: {n} learned · CHF {cost}",
       "empty": "Waiting for activity…",
       "triage_start": "Sorting out what isn't worth learning",
-      "triage": "{n} sources set aside as not worth learning"
+      "triage": "{n} sources set aside as not worth learning",
+      "resumed": {
+        "learning": "Continued: learning the remaining {n} sources",
+        "scanning": "Continued: reading the remaining {n} pages",
+        "estimate": "Continued: back to the estimate"
+      },
+      "contact_found": "Contact details and opening hours taken from the footer"
     },
     "deleteJob": {
-      "title": "Delete crawl",
-      "message": "Delete the crawl of <strong>{url}</strong> and everything it indexed? This cannot be undone."
+      "title": "Delete run?",
+      "message": "Deletes the run for <strong>{url}</strong> and everything your chatbot knows from its pages and documents, even if another run learned them. This can't be undone.",
+      "deleted": "Run deleted"
     },
     "rules": {
       "title": "Custom answers",
@@ -762,6 +799,21 @@
       },
       "showAll": "Show all {n}",
       "showLess": "Show fewer"
+    },
+    "contact": {
+      "title": "Contact and opening hours",
+      "sub": "Taken from your website footer and updated on every crawl. Your chatbot uses these details for questions about how to reach you and when you are open."
+    },
+    "models": {
+      "legend": "What it learns with",
+      "lite": {
+        "title": "Economical",
+        "desc": "Cheap and fast. Fine for normal pages, less precise with tables, calendars and long PDFs."
+      },
+      "argon": {
+        "title": "Thorough",
+        "desc": "Reads tables, calendars and long PDFs most reliably. Recommended for municipalities."
+      }
     }
   },
   "pages": {
@@ -773,12 +825,19 @@
     "subscription": "Your prepaid balance pays for chat answers and for learning new content.",
     "profile": "Your name, password and account.",
     "knowledgeTitle": "Knowledge",
-    "knowledge": "What your chatbot knows, which dates it can answer, and where it needs you.",
+    "knowledge": "What your chatbot knows, which dates it knows and which websites it reads.",
     "configure": "How your chatbot talks and how it looks on your website.",
     "installTitle": "Install",
     "install": "Add the chatbot to your website with one line of code."
   },
   "configure": {
+    "branding": {
+      "button": "Use my website's look",
+      "applied": "Colour and logo taken from {site}. Check the preview and save.",
+      "nothing": "No brand colour or logo found on your website.",
+      "noWebsite": "Read your website under Knowledge first; its look is taken from there.",
+      "failed": "Your website could not be read. Please try again later."
+    },
     "tabs": {
       "conversation": "Conversation",
       "look": "Look"
@@ -792,7 +851,15 @@
     "basics": {
       "title": "Basics",
       "name": "Name",
-      "nameHint": "Only shown here in the dashboard."
+      "nameHint": "Only shown here in the dashboard.",
+      "audience": "Who it answers",
+      "audienceHint": "Decides which pages are worth learning when your website is read.",
+      "audiences": {
+        "municipality": "Municipality",
+        "municipalityDesc": "Residents asking about services, fees, collection dates and opening hours.",
+        "general": "General",
+        "generalDesc": "Visitors of a company, shop, school or club asking about offers, prices and dates."
+      }
     },
     "welcome": {
       "title": "First impression",
@@ -986,7 +1053,8 @@
       "today": "Today",
       "new": "new",
       "same": "no change",
-      "vsPrevious": "Compared with the previous period"
+      "vsPrevious": "Compared with the previous period",
+      "spentSplit3": "Answers CHF {chat} · Learning CHF {learning} · Reviews CHF {reviews}"
     },
     "knowledge": {
       "title": "Knowledge",
@@ -1069,7 +1137,8 @@
       "security": "Security",
       "billing": "Billing",
       "schedules": "Schedules",
-      "danger": "Delete account"
+      "danger": "Delete account",
+      "chatbots": "Chatbots"
     },
     "profile": {
       "title": "Profile",
@@ -1130,6 +1199,10 @@
       "typeEmail": "Type {email} to confirm",
       "delete": "Delete account for good",
       "failed": "The account could not be deleted."
+    },
+    "chatbots": {
+      "title": "Chatbots",
+      "sub": "Who your chatbots answer. This decides which pages are worth learning when your website is read, from the next run on."
     }
   },
   "testPage": {
@@ -1219,6 +1292,209 @@
       "text": "Open your website. A round chat button appears in the bottom-right corner. Click it and ask a question.",
       "cache": "Don't see it? Reload the page with Ctrl+Shift+R (Cmd+Shift+R on a Mac); some websites cache pages for a few minutes.",
       "consent": "Using a cookie banner that blocks scripts? Allow this script there; the chatbot itself sets no cookies."
+    }
+  },
+  "onboarding": {
+    "stepOf": "Step {n} of {total}",
+    "stepsLabel": "Setup steps",
+    "later": "Continue later",
+    "back": "Back",
+    "next": "Next",
+    "goodToKnow": "Good to know",
+    "failed": "That didn't work. Please try again.",
+    "welcome": {
+      "short": "Welcome",
+      "title": "Welcome! Let's set up your chatbot.",
+      "lede": "In about ten minutes you'll have a chatbot that answers questions about your website. We'll guide you step by step; no technical knowledge needed.",
+      "start": "Let's go",
+      "points": {
+        "create": {
+          "title": "Create the chatbot",
+          "text": "Name, website and who it answers."
+        },
+        "read": {
+          "title": "Read the website",
+          "text": "We read your pages and documents. This is free."
+        },
+        "look": {
+          "title": "Choose the look",
+          "text": "We take colours and logo from your website."
+        },
+        "learn": {
+          "title": "Let it learn",
+          "text": "You see exactly what it costs beforehand and confirm it yourself."
+        },
+        "install": {
+          "title": "Install",
+          "text": "A small code snippet for your website, or you send it to your webmaster."
+        }
+      },
+      "tips": [
+        "You can stop at any time: with \"Continue later\" nothing is lost.",
+        "Everything you set here can be changed later in the dashboard."
+      ]
+    },
+    "basics": {
+      "short": "Basics",
+      "title": "Which website is it about?",
+      "lede": "So your chatbot knows what it's there for.",
+      "name": "Chatbot name",
+      "namePlaceholder": "e.g. Sample Town",
+      "nameHint": "Only shown to you in the dashboard, e.g. your organisation's name.",
+      "url": "Your website's address",
+      "urlPlaceholder": "www.example.com",
+      "urlHint": "Usually the home page. From there, the chatbot finds all other pages.",
+      "tips": [
+        "\"Who it answers\" decides which pages are worth learning: for municipalities e.g. collection dates and fees, for companies offers and prices.",
+        "You don't need any log-in for your website. We only read what is publicly visible."
+      ]
+    },
+    "reading": {
+      "short": "Read website",
+      "title": "What should the chatbot read?",
+      "lede": "The recommendation fits most websites. You can simply keep it.",
+      "start": "Start reading",
+      "started": "Reading {url} is already under way. You can carry on.",
+      "more": "More settings",
+      "excludePlaceholder": "e.g. login\nshop.example.com",
+      "excludeHint": "One path or subdomain per line. These parts are skipped entirely.",
+      "tips": [
+        "Reading is free. Only learning costs something, and you see the amount beforehand.",
+        "Reading continues in the background while you set up the look. Large websites take up to an hour."
+      ]
+    },
+    "look": {
+      "short": "Look",
+      "title": "How should your chatbot look and sound?",
+      "lede": "Click an element in the preview to change its colour. \"Try it\" shows the chat as it will appear on your website.",
+      "branding": "Taking colours and logo from your website …",
+      "brandingFound": "Your website's colours and logo are applied.",
+      "brandingNone": "We found no brand colour or logo on your website. You can choose both yourself in the preview.",
+      "greeting": "Greeting",
+      "greetingHint": "The first sentence visitors see in the chat.",
+      "tips": [
+        "The chatbot always answers in the language people write in, even if the greeting is in English.",
+        "Later you'll find all settings under \"Configure\"."
+      ]
+    },
+    "learning": {
+      "short": "Learn",
+      "title": "Your chatbot gets to know your website",
+      "lede": "First we read all pages. Then you see what learning costs and start it with one click.",
+      "reading": "Reading your website …",
+      "starting": "Starting …",
+      "pagesRead": "{done} of {total} pages read",
+      "estimating": "Working out what learning costs …",
+      "estimate": "Learn {n} pages and documents · about CHF {cost}",
+      "nothing": "We found nothing worth learning on this website.",
+      "balance": "Your balance: CHF {balance}",
+      "balanceShort": "Learning costs approx. {cost}, your balance is {balance}. Top it up, then check again.",
+      "topUp": "Top up balance",
+      "recheck": "Check balance again",
+      "start": "Start learning ({cost})",
+      "choose": "Adjust selection",
+      "learning": "Your chatbot is learning …",
+      "learned": "{done} of {total} learned",
+      "done": "Done! Your chatbot now knows your website.",
+      "stopped": "The run was stopped.",
+      "details": "See details",
+      "continue": "Continue while it learns",
+      "tips": [
+        "Before learning, we sort out what isn't worth it, e.g. outdated pages. \"Adjust selection\" shows everything in detail.",
+        "You can close this page. Learning continues, and you'll find its progress under \"Knowledge\"."
+      ],
+      "estimateTitle": "Learn {n} pages and documents",
+      "estimateBody": "Gemini reads them, splits them into sections and notes facts and dates. Unchanged pages cost nothing.",
+      "cost": "Cost",
+      "yourBalance": "Your balance",
+      "after": "Afterwards",
+      "balanceShortTitle": "Your balance isn't enough"
+    },
+    "try": {
+      "short": "Try it",
+      "title": "Ask your chatbot a question",
+      "lede": "This is the real chatbot. Ask something that's on your website.",
+      "notYet": "Your chatbot is still learning. It only knows your website once learning is finished.",
+      "tips": [
+        "Below each answer, the chatbot shows on which page it found the information.",
+        "Is an answer wrong or something missing? Under \"Knowledge\" you can add your own answers."
+      ]
+    },
+    "install": {
+      "short": "Install",
+      "title": "Add the chatbot to your website",
+      "lede": "A small code snippet is all it takes. If someone else looks after your website, simply email it to them.",
+      "tips": [
+        "The chat button appears in the bottom right of every page that has the snippet.",
+        "You can also do this later. The instructions are always under \"Install\"."
+      ]
+    },
+    "done": {
+      "short": "Done",
+      "title": "All done!",
+      "lede": "Your chatbot is set up. Here's what's next:",
+      "finish": "Go to dashboard",
+      "next": {
+        "knowledge": "Under \"Knowledge\" you see what your chatbot learned and let it re-read your website regularly.",
+        "look": "Under \"Configure\" you change the look, tone and suggested questions.",
+        "insights": "Under \"Insights\" you see what visitors ask."
+      },
+      "tips": []
+    }
+  },
+  "ui": {
+    "status": {
+      "scanning": "Reading",
+      "preparing": "Preparing",
+      "ready": "Ready to learn",
+      "learning": "Learning",
+      "done": "Completed",
+      "stopped": "Stopped",
+      "on": "On",
+      "off": "Off",
+      "hidden": "Button hidden",
+      "warn": "To review",
+      "error": "Error"
+    },
+    "of": "{done} of {total}",
+    "ca": "approx.",
+    "balance": "Balance",
+    "topUp": "Top up",
+    "optional": "(optional)",
+    "recommended": "Recommended",
+    "on": "On",
+    "off": "Off",
+    "remove": "Remove",
+    "close": "Close",
+    "cancel": "Cancel",
+    "goodToKnow": "Good to know",
+    "copyCode": "Copy code",
+    "copied": "Copied",
+    "progress": "Progress",
+    "setup": "Setup",
+    "stepOf": "Step {n} of {total}",
+    "doneSr": "(done)",
+    "vsPrevious": "vs. previous period",
+    "unsaved": "You have unsaved changes",
+    "discard": "Discard",
+    "save": "Save changes",
+    "checking": "Checking",
+    "reachable": "Reachable",
+    "unreachable": "Not reachable",
+    "menu": "Open menu",
+    "allBots": "All chatbots"
+  },
+  "botSettings": {
+    "title": "Advanced",
+    "lede": "What applies to this chatbot only: who it answers, what it learns with and what runs by itself.",
+    "model": {
+      "title": "What it learns with",
+      "sub": "Preselected in every estimate and used for automatic runs. You can choose differently before each learning."
+    },
+    "excluded": {
+      "title": "Left-out areas",
+      "none": "Nothing left out",
+      "how": "Leave out folders and pages in a run's estimate. They then stay left out in every run."
     }
   }
 }

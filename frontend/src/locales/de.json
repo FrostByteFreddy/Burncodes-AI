@@ -4,7 +4,9 @@
     "loading": "Laden...",
     "error": "Fehler",
     "success": "Erfolg",
-    "menu": "Menü"
+    "menu": "Menü",
+    "retry": "Nochmals versuchen",
+    "geminiFailed": "Gemini hat nicht alles gelöscht. Es wurde nichts weiter entfernt; bitte versuchen Sie es nochmals."
   },
   "auth": {
     "signup": {
@@ -42,25 +44,26 @@
     "newChatbot": "Neuer Chatbot",
     "noTenants": "Noch keine Chatbots",
     "noChatbots": "Noch keine Chatbots.",
-    "noChatbotsSubtitle": "Erstellen Sie Ihren ersten Chatbot, um Ihre KI-Wissensdatenbank aufzubauen.",
+    "noChatbotsSubtitle": "Die geführte Einrichtung führt Sie in etwa zehn Minuten zu einem Chatbot, der Ihre Website kennt.",
     "startMessage": "Erstellen Sie Ihren ersten Chatbot, um zu beginnen.",
     "createTenant": "Chatbot erstellen",
     "createChatbot": "Chatbot erstellen",
-    "sources": "{n} Quelle | {n} Quellen",
+    "sources": "{n} Seite oder Dokument | {n} Seiten und Dokumente",
     "openChatbot": "Chatbot öffnen",
     "configure": "Konfigurieren",
     "delete": "Löschen",
     "deleteModal": {
-      "title": "Chatbot löschen",
-      "message": "Sind Sie sicher, dass Sie '{name}' löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
-      "confirm": "Löschen"
+      "title": "Chatbot löschen?",
+      "message": "<strong>{name}</strong> verschwindet sofort von jeder Website, mit allem, was er gelernt hat, und allen Gesprächen. Das lässt sich nicht rückgängig machen.",
+      "confirm": "Chatbot löschen"
     },
     "toast": {
       "createSuccess": "Chatbot erfolgreich erstellt!",
       "createError": "Fehler beim Erstellen des Chatbots.",
       "deleteSuccess": "Chatbot erfolgreich gelöscht!",
       "deleteError": "Fehler beim Löschen des Chatbots."
-    }
+    },
+    "guided": "Geführte Einrichtung starten"
   },
   "analytics": {
     "title": "Chat-Analysen",
@@ -386,6 +389,16 @@
           "cancel": "Abbrechen",
           "addRow": "Pfad oder Subdomain hinzufügen",
           "none": "Nichts ausgelassen. Sie können diesen Schritt überspringen."
+        },
+        "confirmOptions": "Liest",
+        "options": {
+          "title": "Was gelesen wird",
+          "useSitemap": "Seiten aus der Sitemap",
+          "useSitemapDesc": "Liest auch die Seiten, die die Website in ihrer Sitemap aufführt, z. B. Landingpages, auf die kein Menü verlinkt.",
+          "sameLanguage": "Nur eine Sprache",
+          "sameLanguageDesc": "Überspringt andere Sprachversionen der Website (z. B. /en/, /fr/), damit nichts doppelt gelesen und bezahlt wird. Der Chatbot antwortet sowieso in jeder Sprache.",
+          "skipFunnel": "Danke- und Werbeseiten überspringen",
+          "skipFunnelDesc": "Lässt Danke-, Bestätigungs- und Fehlerseiten nach Formularen, Kopien für Online-Werbung, Warenkörbe und Logins aus."
         }
       }
     },
@@ -502,7 +515,9 @@
     "subscription": "Abrechnung",
     "logout": "Abmelden",
     "workspace": "Arbeitsbereich",
-    "account": "Konto"
+    "account": "Konto",
+    "mainNav": "Hauptnavigation",
+    "botSettings": "Erweitert"
   },
   "modals": {
     "createTenant": {
@@ -515,7 +530,8 @@
     "confirmation": {
       "cancel": "Abbrechen",
       "confirm": "Bestätigen",
-      "typeToConfirm": "Zur Bestätigung geben Sie bitte \"{text}\" unten ein:"
+      "typeToConfirm": "Zur Bestätigung geben Sie bitte \"{text}\" unten ein:",
+      "deleting": "Wird gelöscht … Bei vielen Seiten kann das eine Minute dauern."
     },
     "sessionExpired": {
       "title": "Sitzung abgelaufen",
@@ -529,19 +545,23 @@
       "old_minutes": "Alte Protokolle",
       "outdated": "Veraltet",
       "older_version": "Ältere Fassungen",
+      "thin": "Dünne Seiten (nur Video, Formular oder Teaser)",
       "internal": "Intern oder technisch",
       "manual": "Von Ihnen aussortiert",
       "other": "Sonstiges"
     },
     "calendars": {
       "title": "Termine im eigenen Kalender",
-      "sub": "Einwohnerinnen und Einwohner können diese Termine in ihrer Kalender-App abonnieren (z. B. Apple, Google oder Outlook). Der Chatbot bietet das bei Fragen zu Terminen an. Neue oder verschobene Termine erscheinen automatisch.",
+      "sub": "Einwohnerinnen und Einwohner können die Termine in ihrer Kalender-App abonnieren. Der Chatbot bietet das bei Fragen zu Terminen an.",
       "protected": "Kalender-Abos sind pausiert, solange der Chatbot ein Passwort verlangt.",
-      "dates": "{n} Termine",
+      "dates": "{n} Termin | {n} Termine",
       "copy": "Link kopieren",
       "copied": "Kopiert",
       "on": "Kalender-Abos eingeschaltet",
-      "off": "Kalender-Abos ausgeschaltet. Bereits abonnierte Kalender werden bei der nächsten Aktualisierung geleert."
+      "off": "Kalender-Abos ausgeschaltet. Bereits abonnierte Kalender werden bei der nächsten Aktualisierung geleert.",
+      "count": "{n} Kalender | {n} Kalender",
+      "show": "Anzeigen",
+      "hide": "Ausblenden"
     },
     "recrawl": {
       "onHint": "Prüft alle {n} Tage auf Änderungen.",
@@ -561,8 +581,6 @@
       "noneUpcoming": "Keine Termine in den nächsten zwei Wochen. Enthalten Ihre Dokumente Kalender, erscheinen sie hier.",
       "noneUpcomingEnded": "Keine kommenden Termine — die Kalender, die Ihr Chatbot kennt, sind abgelaufen. Siehe unten.",
       "moved": "verschoben",
-      "needsTitle": "Handlungsbedarf",
-      "needsNone": "Zurzeit gibt es nichts zu tun.",
       "ended": "{series}: Die veröffentlichten Termine endeten am {date}.",
       "endedHint": "Ihr Chatbot kann deshalb keine nächsten Termine nennen. Veröffentlichen Sie den neuen Kalender und lesen Sie die Website erneut ein.",
       "summary": "{sources} Quellen, {chunks} gelernte Abschnitte. Zuletzt eingelesen am {date}.",
@@ -584,7 +602,7 @@
     },
     "content": {
       "title": "Website-Inhalte",
-      "sub": "Alles, was von Ihren Websites gelernt wurde — inklusive dort gefundener Dateien",
+      "sub": "Jede Seite und Datei, die dieser Durchlauf gelesen hat, und was daraus wurde. Beim neusten Durchlauf: die Website, wie Ihr Chatbot sie kennt.",
       "filter": "Seiten filtern…",
       "empty": "Noch nichts eingelesen.",
       "noMatch": "Keine Seite passt zu «{q}»."
@@ -611,7 +629,7 @@
       }
     },
     "status": {
-      "IN_PROGRESS": "Scannt",
+      "IN_PROGRESS": "Liest",
       "SCANNED": "Bereit zum Lernen",
       "INDEXING": "Lernt",
       "COMPLETED": "Abgeschlossen",
@@ -640,7 +658,18 @@
       "scanProgress": "{done} von {total} Seiten gelesen",
       "learnProgress": "{done} von {total} Quellen gelernt",
       "report": "Bericht",
-      "hideReport": "Bericht ausblenden"
+      "hideReport": "Bericht ausblenden",
+      "resume": "Fortsetzen",
+      "resumed": {
+        "learning": "Das Lernen geht mit den noch offenen Quellen weiter.",
+        "scanning": "Der Scan geht mit den noch nicht gelesenen Seiten weiter.",
+        "estimate": "Zurück zur Kostenschätzung: Wählen Sie, was gelernt wird."
+      },
+      "resumeError": {
+        "busy": "Ein anderer Durchlauf dieses Chatbots läuft noch. Warten Sie, bis er fertig ist.",
+        "nothing_to_resume": "Es gibt nichts mehr fortzusetzen. Starten Sie stattdessen einen neuen Durchlauf.",
+        "balance": "Ihr Guthaben ist aufgebraucht. Laden Sie es auf, um weiterzulernen."
+      }
     },
     "estimate": {
       "indexOnly": "{n} lange Dokumente (über {pages} Seiten) werden nur durchsuchbar gemacht: ihr Text, ohne Termine und Fakten.",
@@ -700,6 +729,7 @@
       "scan": "Scanne {page}",
       "scanned": "{page} — {outcome}",
       "links_found": "{count} neue Links auf {page}",
+      "sitemap_read": "Sitemap gelesen: {count} weitere Seiten",
       "scan_done": "Scan abgeschlossen: {n} Quellen zu lernen · ca. CHF {cost}",
       "learn_start": "Gemini lernt {n} Quellen",
       "learn_source": "Gemini liest {page}",
@@ -708,11 +738,18 @@
       "job_done": "Fertig: {n} gelernt · CHF {cost}",
       "empty": "Warte auf Aktivität…",
       "triage_start": "Sortiert aus, was sich nicht zu lernen lohnt",
-      "triage": "{n} Quellen als nicht lernenswert aussortiert"
+      "triage": "{n} Quellen als nicht lernenswert aussortiert",
+      "resumed": {
+        "learning": "Fortgesetzt: lernt die übrigen {n} Quellen",
+        "scanning": "Fortgesetzt: liest die übrigen {n} Seiten",
+        "estimate": "Fortgesetzt: zurück zur Kostenschätzung"
+      },
+      "contact_found": "Kontakt und Öffnungszeiten aus der Fusszeile übernommen"
     },
     "deleteJob": {
-      "title": "Durchlauf löschen",
-      "message": "Den Durchlauf für <strong>{url}</strong> und alles, was dabei gelernt wurde, löschen? Das kann nicht rückgängig gemacht werden."
+      "title": "Durchlauf löschen?",
+      "message": "Löscht den Durchlauf für <strong>{url}</strong> und alles, was Ihr Chatbot über dessen Seiten und Dokumente weiss, auch wenn ein anderer Durchlauf sie gelernt hat. Das lässt sich nicht rückgängig machen.",
+      "deleted": "Durchlauf gelöscht"
     },
     "rules": {
       "title": "Eigene Antworten",
@@ -762,6 +799,21 @@
       },
       "showAll": "Alle {n} anzeigen",
       "showLess": "Weniger anzeigen"
+    },
+    "contact": {
+      "title": "Kontakt und Öffnungszeiten",
+      "sub": "Aus der Fusszeile Ihrer Website übernommen und bei jedem Durchlauf aktualisiert. Ihr Chatbot nennt diese Angaben bei Fragen zu Erreichbarkeit und Öffnungszeiten."
+    },
+    "models": {
+      "legend": "Womit gelernt wird",
+      "lite": {
+        "title": "Sparsam",
+        "desc": "Günstig und schnell. Gut für normale Seiten, weniger genau bei Tabellen, Kalendern und langen PDFs."
+      },
+      "argon": {
+        "title": "Gründlich",
+        "desc": "Liest Tabellen, Kalender und lange PDFs am zuverlässigsten. Empfohlen für Gemeinden."
+      }
     }
   },
   "pages": {
@@ -773,12 +825,19 @@
     "subscription": "Ihr Guthaben bezahlt Chat-Antworten und das Lernen neuer Inhalte.",
     "profile": "Ihr Name, Ihr Passwort und Ihr Konto.",
     "knowledgeTitle": "Wissen",
-    "knowledge": "Was Ihr Chatbot weiss, welche Termine er kennt und wo Handlungsbedarf besteht.",
+    "knowledge": "Was Ihr Chatbot weiss, welche Termine er kennt und welche Websites er liest.",
     "configure": "Wie Ihr Chatbot antwortet und wie er auf Ihrer Website aussieht.",
     "installTitle": "Einbinden",
     "install": "Binden Sie den Chatbot mit einer Zeile Code in Ihre Website ein."
   },
   "configure": {
+    "branding": {
+      "button": "Aussehen meiner Website übernehmen",
+      "applied": "Farbe und Logo von {site} übernommen. Prüfen Sie die Vorschau und speichern Sie.",
+      "nothing": "Auf Ihrer Website wurde keine Markenfarbe und kein Logo gefunden.",
+      "noWebsite": "Lesen Sie zuerst Ihre Website unter «Wissen» ein; das Aussehen wird von dort übernommen.",
+      "failed": "Ihre Website konnte nicht gelesen werden. Bitte versuchen Sie es später nochmals."
+    },
     "tabs": {
       "conversation": "Gespräch",
       "look": "Aussehen"
@@ -792,7 +851,15 @@
     "basics": {
       "title": "Grundlagen",
       "name": "Name",
-      "nameHint": "Wird nur hier im Dashboard angezeigt."
+      "nameHint": "Wird nur hier im Dashboard angezeigt.",
+      "audience": "Wen er berät",
+      "audienceHint": "Bestimmt, welche Seiten beim Einlesen Ihrer Website als lernenswert gelten.",
+      "audiences": {
+        "municipality": "Gemeinde",
+        "municipalityDesc": "Einwohnerinnen und Einwohner mit Fragen zu Dienstleistungen, Gebühren, Sammeldaten und Öffnungszeiten.",
+        "general": "Allgemein",
+        "generalDesc": "Besucherinnen und Besucher eines Unternehmens, Shops, einer Schule oder eines Vereins mit Fragen zu Angeboten, Preisen und Terminen."
+      }
     },
     "welcome": {
       "title": "Erster Eindruck",
@@ -986,7 +1053,8 @@
       "today": "Heute",
       "new": "neu",
       "same": "unverändert",
-      "vsPrevious": "Im Vergleich zum vorherigen Zeitraum"
+      "vsPrevious": "Im Vergleich zum vorherigen Zeitraum",
+      "spentSplit3": "Antworten CHF {chat} · Lernen CHF {learning} · Prüfungen CHF {reviews}"
     },
     "knowledge": {
       "title": "Wissen",
@@ -1069,7 +1137,8 @@
       "security": "Sicherheit",
       "billing": "Abrechnung",
       "schedules": "Zeitpläne",
-      "danger": "Konto löschen"
+      "danger": "Konto löschen",
+      "chatbots": "Chatbots"
     },
     "profile": {
       "title": "Profil",
@@ -1130,6 +1199,10 @@
       "typeEmail": "Geben Sie {email} zur Bestätigung ein",
       "delete": "Konto endgültig löschen",
       "failed": "Das Konto konnte nicht gelöscht werden."
+    },
+    "chatbots": {
+      "title": "Chatbots",
+      "sub": "Wen Ihre Chatbots beraten. Das bestimmt, welche Seiten beim Lesen Ihrer Website als lernenswert gelten, ab dem nächsten Durchlauf."
     }
   },
   "testPage": {
@@ -1219,6 +1292,209 @@
       "text": "Öffnen Sie Ihre Website. Unten rechts erscheint ein runder Chat-Knopf. Klicken Sie darauf und stellen Sie eine Frage.",
       "cache": "Nicht zu sehen? Laden Sie die Seite mit Ctrl+Shift+R neu (Cmd+Shift+R auf dem Mac); manche Websites speichern Seiten einige Minuten zwischen.",
       "consent": "Blockiert ein Cookie-Banner Skripte? Erlauben Sie dort dieses Skript; der Chatbot selbst setzt keine Cookies."
+    }
+  },
+  "onboarding": {
+    "stepOf": "Schritt {n} von {total}",
+    "stepsLabel": "Schritte der Einrichtung",
+    "later": "Später fortsetzen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "goodToKnow": "Gut zu wissen",
+    "failed": "Das hat nicht geklappt. Bitte versuchen Sie es nochmals.",
+    "welcome": {
+      "short": "Willkommen",
+      "title": "Willkommen! Richten wir Ihren Chatbot ein.",
+      "lede": "In etwa zehn Minuten haben Sie einen Chatbot, der Fragen zu Ihrer Website beantwortet. Wir führen Sie Schritt für Schritt durch, technisches Wissen brauchen Sie keines.",
+      "start": "Los geht's",
+      "points": {
+        "create": {
+          "title": "Chatbot anlegen",
+          "text": "Name, Website und wen er berät."
+        },
+        "read": {
+          "title": "Website lesen",
+          "text": "Wir lesen Ihre Seiten und Dokumente. Das ist kostenlos."
+        },
+        "look": {
+          "title": "Aussehen wählen",
+          "text": "Farben und Logo übernehmen wir von Ihrer Website."
+        },
+        "learn": {
+          "title": "Lernen lassen",
+          "text": "Sie sehen vorher genau, was es kostet, und bestätigen selbst."
+        },
+        "install": {
+          "title": "Einbauen",
+          "text": "Ein kleiner Code-Schnipsel für Ihre Website, oder Sie schicken ihn Ihrem Webmaster."
+        }
+      },
+      "tips": [
+        "Sie können jederzeit unterbrechen: Mit «Später fortsetzen» geht nichts verloren.",
+        "Alles, was Sie hier einstellen, lässt sich später im Dashboard ändern."
+      ]
+    },
+    "basics": {
+      "short": "Grundlagen",
+      "title": "Um welche Website geht es?",
+      "lede": "Damit Ihr Chatbot weiss, wofür er da ist.",
+      "name": "Name des Chatbots",
+      "namePlaceholder": "z. B. Gemeinde Musterdorf",
+      "nameHint": "Nur für Sie im Dashboard sichtbar, z. B. der Name Ihrer Organisation.",
+      "url": "Adresse Ihrer Website",
+      "urlPlaceholder": "www.beispiel.ch",
+      "urlHint": "Meist die Startseite. Von dort aus findet der Chatbot alle weiteren Seiten.",
+      "tips": [
+        "«Wen er berät» bestimmt, welche Seiten als lernenswert gelten: bei Gemeinden z. B. Sammeldaten und Gebühren, bei Unternehmen Angebote und Preise.",
+        "Sie brauchen keine Zugangsdaten zu Ihrer Website. Wir lesen nur, was öffentlich sichtbar ist."
+      ]
+    },
+    "reading": {
+      "short": "Website lesen",
+      "title": "Was soll der Chatbot lesen?",
+      "lede": "Die Empfehlung passt für die meisten Websites. Sie können sie einfach übernehmen.",
+      "start": "Einlesen starten",
+      "started": "Das Einlesen von {url} läuft bereits. Sie können weitermachen.",
+      "more": "Weitere Einstellungen",
+      "excludePlaceholder": "z. B. login\nshop.beispiel.ch",
+      "excludeHint": "Ein Pfad oder eine Subdomain pro Zeile. Diese Bereiche werden ganz übersprungen.",
+      "tips": [
+        "Das Lesen ist kostenlos. Erst das Lernen kostet etwas, und Sie sehen den Betrag vorher.",
+        "Das Lesen läuft im Hintergrund weiter, während Sie das Aussehen einstellen. Bei grossen Websites dauert es bis zu einer Stunde."
+      ]
+    },
+    "look": {
+      "short": "Aussehen",
+      "title": "Wie soll Ihr Chatbot aussehen und klingen?",
+      "lede": "Klicken Sie in der Vorschau auf ein Element, um seine Farbe zu ändern. Unter «Ausprobieren» sehen Sie den Chat, wie er auf Ihrer Website erscheint.",
+      "branding": "Wir übernehmen Farben und Logo von Ihrer Website …",
+      "brandingFound": "Farben und Logo Ihrer Website sind übernommen.",
+      "brandingNone": "Auf Ihrer Website haben wir keine Markenfarbe und kein Logo gefunden. Sie können beides in der Vorschau selbst wählen.",
+      "greeting": "Begrüssung",
+      "greetingHint": "Der erste Satz, den Besucherinnen und Besucher im Chat sehen.",
+      "tips": [
+        "Der Chatbot antwortet immer in der Sprache, in der man ihm schreibt, auch wenn die Begrüssung deutsch ist.",
+        "Später finden Sie alle Einstellungen unter «Anpassen»."
+      ]
+    },
+    "learning": {
+      "short": "Lernen",
+      "title": "Ihr Chatbot lernt Ihre Website kennen",
+      "lede": "Zuerst lesen wir alle Seiten. Danach sehen Sie, was das Lernen kostet, und starten es mit einem Klick.",
+      "reading": "Ihre Website wird gelesen …",
+      "starting": "Wird gestartet …",
+      "pagesRead": "{done} von {total} Seiten gelesen",
+      "estimating": "Wir berechnen, was das Lernen kostet …",
+      "estimate": "{n} Seiten und Dokumente lernen · ca. CHF {cost}",
+      "nothing": "Auf dieser Website haben wir nichts gefunden, das sich zu lernen lohnt.",
+      "balance": "Ihr Guthaben: CHF {balance}",
+      "balanceShort": "Das Lernen kostet ca. {cost}, Ihr Guthaben beträgt {balance}. Laden Sie es auf und prüfen Sie dann nochmals.",
+      "topUp": "Guthaben aufladen",
+      "recheck": "Guthaben neu prüfen",
+      "start": "Lernen starten ({cost})",
+      "choose": "Auswahl anpassen",
+      "learning": "Ihr Chatbot lernt …",
+      "learned": "{done} von {total} gelernt",
+      "done": "Fertig gelernt! Ihr Chatbot kennt jetzt Ihre Website.",
+      "stopped": "Der Durchlauf wurde angehalten.",
+      "details": "Details ansehen",
+      "continue": "Weiter, während er lernt",
+      "tips": [
+        "Vor dem Lernen sortieren wir aus, was sich nicht lohnt, z. B. veraltete Seiten. Unter «Auswahl anpassen» sehen Sie alles im Detail.",
+        "Sie können diese Seite schliessen. Das Lernen läuft weiter, und Sie finden den Stand unter «Wissen»."
+      ],
+      "estimateTitle": "{n} Seiten und Dokumente lernen",
+      "estimateBody": "Gemini liest sie, teilt sie in Abschnitte und merkt sich Fakten und Termine. Unveränderte Seiten kosten nichts.",
+      "cost": "Kosten",
+      "yourBalance": "Ihr Guthaben",
+      "after": "Danach",
+      "balanceShortTitle": "Ihr Guthaben reicht nicht"
+    },
+    "try": {
+      "short": "Ausprobieren",
+      "title": "Stellen Sie Ihrem Chatbot eine Frage",
+      "lede": "Das ist der echte Chatbot. Fragen Sie etwas, das auf Ihrer Website steht.",
+      "notYet": "Ihr Chatbot lernt noch. Er kennt Ihre Website erst, wenn das Lernen fertig ist.",
+      "tips": [
+        "Unter jeder Antwort zeigt der Chatbot, auf welcher Seite er die Information gefunden hat.",
+        "Ist eine Antwort falsch oder fehlt etwas? Unter «Wissen» legen Sie eigene Antworten fest."
+      ]
+    },
+    "install": {
+      "short": "Einbauen",
+      "title": "Bauen Sie den Chatbot auf Ihrer Website ein",
+      "lede": "Ein kleiner Code-Schnipsel genügt. Wenn sich jemand anderes um Ihre Website kümmert, schicken Sie ihn einfach per E-Mail weiter.",
+      "tips": [
+        "Der Chat-Knopf erscheint unten rechts auf jeder Seite, auf der der Schnipsel eingebaut ist.",
+        "Sie können das auch später erledigen. Die Anleitung finden Sie jederzeit unter «Einbinden»."
+      ]
+    },
+    "done": {
+      "short": "Fertig",
+      "title": "Geschafft!",
+      "lede": "Ihr Chatbot ist eingerichtet. So geht es weiter:",
+      "finish": "Zum Dashboard",
+      "next": {
+        "knowledge": "Unter «Wissen» sehen Sie, was Ihr Chatbot gelernt hat, und lassen ihn Ihre Website regelmässig neu lesen.",
+        "look": "Unter «Anpassen» ändern Sie Aussehen, Ton und vorgeschlagene Fragen.",
+        "insights": "Unter «Auswertung» sehen Sie, was Besucherinnen und Besucher fragen."
+      },
+      "tips": []
+    }
+  },
+  "ui": {
+    "status": {
+      "scanning": "Liest",
+      "preparing": "Wird vorbereitet",
+      "ready": "Bereit zum Lernen",
+      "learning": "Lernt",
+      "done": "Abgeschlossen",
+      "stopped": "Angehalten",
+      "on": "Eingeschaltet",
+      "off": "Ausgeschaltet",
+      "hidden": "Knopf ausgeblendet",
+      "warn": "Zu prüfen",
+      "error": "Fehler"
+    },
+    "of": "{done} von {total}",
+    "ca": "ca.",
+    "balance": "Guthaben",
+    "topUp": "Aufladen",
+    "optional": "(optional)",
+    "recommended": "Empfohlen",
+    "on": "Ein",
+    "off": "Aus",
+    "remove": "Entfernen",
+    "close": "Schliessen",
+    "cancel": "Abbrechen",
+    "goodToKnow": "Gut zu wissen",
+    "copyCode": "Code kopieren",
+    "copied": "Kopiert",
+    "progress": "Fortschritt",
+    "setup": "Einrichtung",
+    "stepOf": "Schritt {n} von {total}",
+    "doneSr": "(erledigt)",
+    "vsPrevious": "ggü. Vorperiode",
+    "unsaved": "Sie haben ungespeicherte Änderungen",
+    "discard": "Verwerfen",
+    "save": "Änderungen speichern",
+    "checking": "Wird geprüft",
+    "reachable": "Erreichbar",
+    "unreachable": "Nicht erreichbar",
+    "menu": "Menü öffnen",
+    "allBots": "Alle Chatbots"
+  },
+  "botSettings": {
+    "title": "Erweitert",
+    "lede": "Was nur für diesen Chatbot gilt: wen er berät, womit er lernt und was von selbst läuft.",
+    "model": {
+      "title": "Womit gelernt wird",
+      "sub": "Vorausgewählt bei jeder Kostenschätzung und für automatische Durchläufe. Sie können vor dem Lernen jedes Mal anders wählen."
+    },
+    "excluded": {
+      "title": "Ausgelassene Bereiche",
+      "none": "Nichts ausgelassen",
+      "how": "Ordner und Seiten lassen Sie in der Kostenschätzung eines Durchlaufs aus. Sie bleiben dann bei jedem Durchlauf ausgelassen."
     }
   }
 }

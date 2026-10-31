@@ -136,7 +136,7 @@ import SwatchPicker from './SwatchPicker.vue';
 import ImageField from './ImageField.vue';
 import { colorOf, contrast, getStyle, setStyle } from './palette';
 import { processBotMessage } from '@/utils/chatProcessor';
-import { SAMPLE_CONVERSATION } from '@/utils/chatbotDefaults';
+import { DEFAULT_AUDIENCE, SAMPLE_CONVERSATION } from '@/utils/chatbotDefaults';
 
 const props = defineProps({
   form:     { type: Object, required: true },
@@ -150,7 +150,10 @@ const mode = ref('edit');
 const state = ref('start');
 
 // ── Sample content ──────────────────────────────────────────────────
-const sample = computed(() => SAMPLE_CONVERSATION[locale.value] || SAMPLE_CONVERSATION.en);
+const sample = computed(() => {
+  const samples = SAMPLE_CONVERSATION[props.form.audience] || SAMPLE_CONVERSATION[DEFAULT_AUDIENCE];
+  return samples[locale.value] || samples.en;
+});
 const bot = (text) => ({ ...processBotMessage(text || ''), isUser: false });
 const sampleHistory = computed(() => {
   const intro = bot(props.form.intro_message);
@@ -402,7 +405,7 @@ onBeforeUnmount(() => {
 }
 .epv__toggle input:checked { background: var(--interactive-strong); }
 .epv__toggle input:checked::after { transform: translateX(16px); }
-.epv__toggle input:focus-visible { box-shadow: var(--focus-ring); }
+.epv__toggle input:focus-visible { box-shadow: var(--focus-ring-shadow); }
 
 @media (prefers-reduced-motion: reduce) {
   .epv__tag, .epv__toggle input, .epv__toggle input::after { transition: none; }

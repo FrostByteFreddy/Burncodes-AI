@@ -1,28 +1,19 @@
 <template>
   <div class="app-root">
-    <!-- Sidebar layout (authenticated routes) -->
-    <template v-if="layout === 'default'">
-      <!-- Mobile top bar -->
-      <header class="mobile-topbar">
-        <button class="mobile-topbar__menu" @click="mobileOpen = !mobileOpen" :aria-label="$t('common.menu')">
-          <font-awesome-icon :icon="mobileOpen ? ['fas', 'xmark'] : ['fas', 'bars']" />
-        </button>
-        <router-link to="/manage-tenants" class="mobile-topbar__logo">
-          <img src="/logo.png" alt="Logo" style="height:28px;width:auto;" />
-        </router-link>
-      </header>
-
-      <div class="app-shell" id="app-layout">
-        <Sidebar
-          :mobile-open="mobileOpen"
-          @new-tenant="showCreateModal = true"
-          @close-mobile="mobileOpen = false"
-        />
-        <main class="app-main" :class="{ 'has-chat': route.name === 'Chat' }">
-          <router-view />
-        </main>
+    <!-- Dashboard: sidebar + centred content -->
+    <div v-if="layout === 'default'" :class="['bc-shell', { 'is-menu-open': mobileOpen }]">
+      <div class="bc-shell__top">
+        <BcIconButton :icon="mobileOpen ? 'xmark' : 'bars'" :label="$t('ui.menu')" @click="mobileOpen = !mobileOpen" />
+        <router-link to="/manage-tenants"><img src="/logo.svg" alt="Burncodes AI" class="bc-shell__toplogo" /></router-link>
       </div>
-    </template>
+      <div class="bc-shell__side">
+        <Sidebar @new-tenant="showCreateModal = true; mobileOpen = false" @navigate="mobileOpen = false" />
+      </div>
+      <div v-if="mobileOpen" class="app-scrim" @click="mobileOpen = false"></div>
+      <main class="bc-shell__main">
+        <div class="bc-shell__content"><router-view /></div>
+      </main>
+    </div>
 
     <!-- Blank layout: Login, Signup, Chat -->
     <template v-else>
@@ -39,6 +30,7 @@
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import Sidebar from './components/Sidebar.vue'
+import { BcIconButton } from './components/ui'
 import ToastContainer from './components/ToastContainer.vue'
 import SessionExpiredModal from './components/SessionExpiredModal.vue'
 import CreateTenantModal from './components/CreateTenantModal.vue'
@@ -51,89 +43,64 @@ const mobileOpen = ref(false)
 const showCreateModal = ref(false)
 
 const layout = computed(() => {
-  const blank = ['Login', 'Signup', 'Chat', 'Share']
+  const blank = ['Login', 'Signup', 'Chat', 'Share', 'Onboarding']
   // Default to blank while route is unresolved to prevent sidebar flash
   return (!route.name || blank.includes(route.name)) ? 'blank' : 'default'
 })
 </script>
 
 <style>
+@import './assets/tokens.css';
 @import './assets/design-tokens.css';
+@import './assets/bc.css';
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; }
 
 body {
   font-family: var(--font-sans);
-  font-size: 15px;
-  line-height: var(--leading-body);
+  font-size: 16px;
+  line-height: 24px;
   background: var(--surface-0);
-  color: var(--surface-text);
+  color: var(--text-primary);
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4 { color: var(--surface-heading); line-height: var(--leading-tight); font-weight: 700; }
+h1, h2, h3, h4 { color: var(--text-primary); line-height: var(--leading-tight); font-weight: 700; }
 
-a { color: var(--interactive); }
+a { color: var(--text-link); text-underline-offset: 2px; }
+a:hover { color: var(--interactive-hover); }
 
 /* One visible focus style everywhere (keyboard only) */
-:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 
-::selection { background: var(--interactive-soft); color: var(--surface-heading); }
-
-/* Sidebar and content form one centered column, so wide screens get
-   even margins on both sides instead of everything hugging the left edge */
-.app-main > :not(.full-bleed) { max-width: var(--content-max); }
+::selection { background: var(--interactive-soft); color: var(--text-primary); }
 
 .app-root { min-height: 100vh; }
-
-.app-shell {
-  display: flex;
-  min-height: 100vh;
-  max-width: var(--shell-max);
-  margin: 0 auto;
+/* Sidebar and content form one centred column, so wide screens get even
+   margins on both sides instead of everything hugging the left edge */
+.bc-shell { min-height: 100vh; max-width: var(--shell-max); margin: 0 auto; }
+@media (min-width: 1101px) {
+  .bc-shell__side { border-left: 1px solid var(--border-subtle); }
 }
 
-.app-main {
-  flex: 1;
-  min-width: 0;
-  min-height: 100vh;
-  padding: 40px 48px 64px;
-}
+/* The shell's sidebar is sticky on wide screens and slides in from the menu button below 1100px */
+.bc-shell__side { position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.app-scrim { display: none; }
+/* The brand pages' (login, sign-up, onboarding) primary button: the logo's gradient.
+   The dashboard never uses it. */
+.bc-btn--brand { border: none; color: #fff; background: linear-gradient(135deg, var(--brand-indigo) 0%, var(--brand-magenta) 100%); }
+.bc-btn--brand:hover:not(:disabled) { filter: brightness(1.08); }
+.bc-btn--brand:disabled { background: var(--surface-2); color: var(--text-disabled); }
 
-.app-main.has-chat {
-  padding: 0;
-  overflow: hidden;
-}
-
-/* Mobile top bar (hidden on desktop) */
-.mobile-topbar {
-  display: none;
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  height: 56px;
-  background: var(--surface-1);
-  border-bottom: 1px solid var(--surface-3);
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  z-index: 101;
-}
-.mobile-topbar__menu {
-  background: none;
-  border: none;
-  color: var(--surface-text);
-  font-size: 18px;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: var(--radius-sm);
-}
-.mobile-topbar__menu:hover { background: var(--surface-2); }
-
-@media (max-width: 768px) {
-  .mobile-topbar { display: flex; }
-  .app-main {
-    padding: 80px 20px 24px;
+/* nav items fill the width of their row, not the height of the sidebar */
+.bc-sidebar > .bc-nav__item { flex: none; }
+.bc-sidebar__logo img { width: auto; }
+@media (max-width: 1100px) {
+  .bc-shell.is-menu-open .bc-shell__side {
+    display: block; position: fixed; top: 56px; left: 0; bottom: 0; height: auto;
+    z-index: var(--z-overlay); box-shadow: var(--shadow-3);
   }
+  .bc-shell.is-menu-open .app-scrim { display: block; position: fixed; inset: 56px 0 0; background: var(--scrim); z-index: calc(var(--z-overlay) - 1); }
 }
 </style>

@@ -1,117 +1,39 @@
 <template>
-  <div class="min-h-screen flex">
-
-    <!-- Left: Brand panel -->
-    <div class="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative overflow-hidden"
-         style="background: linear-gradient(135deg, #0A1FAB 0%, #3B1FA8 40%, #FF2095 100%)">
-      <div class="absolute inset-0 noise-overlay"></div>
-
-      <div class="relative">
-        <!-- Logo -->
-        <img src="/logo_white.png" alt="Logo" style="height:48px;width:auto;" />
-      </div>
-
-      <div class="relative">
-        <p class="text-white/90 text-2xl font-light leading-relaxed mb-6">
-          {{ $t('auth.taglineLogin') }}
-        </p>
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-px bg-white/40"></div>
-          <span class="text-white/50 text-sm">{{ $t('auth.poweredBy') }}</span>
-        </div>
-      </div>
+  <AuthLayout :tagline="$t('auth.taglineLogin')">
+    <div>
+      <h1 class="auth-title">{{ $t('auth.login.title') }}</h1>
+      <p class="auth-sub">
+        {{ $t('auth.login.noAccount') }}
+        <router-link to="/signup">{{ $t('auth.login.signupLink') }}</router-link>
+      </p>
     </div>
 
-    <!-- Right: Form panel -->
-    <div class="flex-1 flex flex-col justify-center px-6 py-12 lg:px-16 bg-base-100">
-      <!-- Mobile logo -->
-      <div class="lg:hidden mb-10 flex justify-center">
-        <img src="/logo_white.png" alt="Logo" style="height:40px;width:auto;" />
-      </div>
-
-      <div class="w-full max-w-sm mx-auto lg:mx-0">
-        <h1 class="text-3xl font-bold text-base-content mb-2">
-          {{ $t("auth.login.title") }}
-        </h1>
-        <p class="text-base-content/50 text-sm mb-8">
-          {{ $t("auth.login.noAccount") }}
-          <router-link to="/signup" class="text-primary font-medium hover:underline">
-            {{ $t("auth.login.signupLink") }}
-          </router-link>
-        </p>
-
-        <form @submit.prevent="handleLogin" class="space-y-5">
-          <div>
-            <label for="email" class="block text-sm font-medium text-base-content mb-1.5">
-              {{ $t("auth.login.email") }}
-            </label>
-            <input
-              v-model="email"
-              type="email"
-              id="email"
-              required
-              autocomplete="email"
-              class="w-full px-4 py-3 bg-base-200 border border-base-300 rounded-lg text-base-content placeholder:text-base-content/30 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-              :placeholder="$t('auth.login.email')"
-            />
-          </div>
-
-          <div>
-            <div class="flex justify-between mb-1.5">
-              <label for="password" class="text-sm font-medium text-base-content">
-                {{ $t("auth.login.password") }}
-              </label>
-            </div>
-            <input
-              v-model="password"
-              type="password"
-              id="password"
-              required
-              autocomplete="current-password"
-              class="w-full px-4 py-3 bg-base-200 border border-base-300 rounded-lg text-base-content placeholder:text-base-content/30 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-              :placeholder="'••••••••'"
-            />
-          </div>
-
-          <div v-if="errorMessage" class="flex items-center gap-2 text-error text-sm bg-error/10 px-4 py-3 rounded-lg">
-            <font-awesome-icon :icon="['fas', 'circle-exclamation']" class="shrink-0" />
-            {{ errorMessage }}
-          </div>
-
-          <button
-            type="submit"
-            :disabled="loading"
-            class="w-full py-3 font-semibold text-white rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-            style="background: linear-gradient(135deg, #0A1FAB 0%, #FF2095 100%)"
-          >
-            <span v-if="loading" class="flex items-center justify-center gap-2">
-              <font-awesome-icon :icon="['fas', 'spinner']" class="animate-spin" />
-              {{ $t("auth.login.submitting") }}
-            </span>
-            <span v-else>{{ $t("auth.login.submit") }}</span>
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
+    <form class="auth-fields" @submit.prevent="handleLogin">
+      <BcTextInput v-model="email" type="email" :label="$t('auth.login.email')" required autocomplete="email" />
+      <BcTextInput v-model="password" type="password" :label="$t('auth.login.password')" required autocomplete="current-password" />
+      <BcNotice v-if="errorMessage" tone="error" :title="errorMessage" />
+      <BcButton type="submit" variant="brand" size="lg" block :loading="loading">{{ $t('auth.login.submit') }}</BcButton>
+    </form>
+  </AuthLayout>
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useAuthStore } from "../stores/auth";
-import { useI18n } from "vue-i18n";
+import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useAuthStore } from '../stores/auth';
+import AuthLayout from '../components/AuthLayout.vue';
+import { BcButton, BcNotice, BcTextInput } from '../components/ui';
 
 const { t } = useI18n();
-
-const email = ref("");
-const password = ref("");
-const loading = ref(false);
-const errorMessage = ref("");
 const authStore = useAuthStore();
+const email = ref('');
+const password = ref('');
+const loading = ref(false);
+const errorMessage = ref('');
 
 const handleLogin = async () => {
   loading.value = true;
-  errorMessage.value = "";
+  errorMessage.value = '';
   try {
     await authStore.login(email.value, password.value);
   } catch (error) {
@@ -121,10 +43,3 @@ const handleLogin = async () => {
   }
 };
 </script>
-
-<style scoped>
-.noise-overlay {
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-}
-</style>

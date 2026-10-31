@@ -115,7 +115,7 @@ const { addToast } = useToast();
 const { fmtChf, pageLabel } = useCrawlText();
 
 const ICONS = { folder: 'folder', page: 'file-lines', file: 'file-pdf' };
-const SKIP_ORDER = ['archive_finance', 'old_minutes', 'outdated', 'older_version', 'internal', 'manual', 'other'];
+const SKIP_ORDER = ['archive_finance', 'old_minutes', 'outdated', 'older_version', 'thin', 'internal', 'manual', 'other'];
 
 const items = ref(null);
 const recommendations = ref([]);

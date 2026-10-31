@@ -225,11 +225,25 @@ class BillingService:
         rate = RATES.get(role, RATES["chat"])
         return (input_tokens / 1_000_000 * rate["input"]) + (output_tokens / 1_000_000 * rate["output"])
 
+    # role → the ledger's kind of spending
+    _KIND = {"chat": "answer", "review": "review", "indexing": "learning", "extraction": "learning"}
+
     @staticmethod
-    def deduct_cost(user_id, role, input_tokens, output_tokens):
-        cost = BillingService.calculate_cost(role, input_tokens, output_tokens)
+    def charge(user_id, amount_chf, kind, tenant_id=None, ref=None):
+        """
+        Spends a CHF amount from the balance and books it in the ledger, in one
+        database step (public.charge). kind: answer · learning · review.
+        Returns what was charged; 0 if it couldn't be (logged, never raises).
+        """
+        # the balance keeps 4 decimals; charge and book exactly that, so they never drift apart
+        cost = round(max(0.0, float(amount_chf or 0)), 4)
+        if not cost:
+            return 0.0
         try:
-            result = supabase.rpc("deduct_balance", {"p_user_id": user_id, "p_amount": cost}).execute()
+            result = supabase.rpc("charge", {
+                "p_user_id": user_id, "p_tenant_id": str(tenant_id) if tenant_id else None,
+                "p_kind": kind, "p_amount": cost, "p_ref": ref,
+            }).execute()
             if result.data == -1:
                 error_logger.error(f"User {user_id} not found in user_billing during deduction")
                 return 0.0
@@ -237,6 +251,17 @@ class BillingService:
         except Exception as e:
             error_logger.error(f"Error deducting cost: {e}")
             return 0.0
+
+    @staticmethod
+    def deduct_cost(user_id, role, input_tokens, output_tokens, tenant_id=None):
+        """Charges tokens at a role's rate (see app.ai_models.RATES)."""
+        cost = BillingService.calculate_cost(role, input_tokens, output_tokens)
+        return BillingService.charge(user_id, cost, BillingService._KIND.get(role, role), tenant_id)
+
+    @staticmethod
+    def deduct_amount(user_id, amount_chf, tenant_id=None, kind="learning"):
+        """Charges a cost already priced in CHF (learning: chosen model × factor)."""
+        return BillingService.charge(user_id, amount_chf, kind, tenant_id)
 
     @staticmethod
     def estimate_indexing_tokens(size_bytes, suffix):
@@ -254,7 +279,7 @@ class BillingService:
             owner = BillingService.get_tenant_owner(tenant_id)
             if not owner:
                 return 0.0
-            cost = BillingService.deduct_cost(owner, "indexing", input_tokens, 0)
+            cost = BillingService.deduct_cost(owner, "indexing", input_tokens, 0, tenant_id)
             if source_id is not None:
                 supabase.table("tenant_sources").update({
                     "cost_chf": cost,

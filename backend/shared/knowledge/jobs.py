@@ -15,17 +15,20 @@ State transitions are conditional UPDATEs (… WHERE status = X), so when
 several workers finish at the same time exactly one performs the transition.
 """
 import os
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from urllib.parse import urlparse
 
 from celery import current_app as celery_app
 
-from app.ai_models import RATES
+from app.ai_models import DEFAULT_LEARNING_MODEL, LEARNING_MODELS, learning_model_key, learning_rates
 from app.database.supabase_client import fetch_all, supabase
 from app.logging_config import error_logger
 from app.models.database import CrawlingStatus
 
 LEARN_TASK = "app.data_processing.tasks.learn_source_task"
+SCAN_TASK = "app.data_processing.tasks.crawl_tasks.process_single_url_task"
+# a learn task that says "processing" for this long has died with its worker
+STALE_LEARN_MINUTES = 20
 START_LEARNING_TASK = "app.data_processing.tasks.start_learning_task"
 
 # Removed pages are deleted after this many crawls without seeing them
@@ -126,18 +129,21 @@ def record_scan(
     return row, "unchanged" if unchanged else "changed"
 
 
-def delete_source_documents(source: dict) -> None:
-    """Deletes every File Search document of a source (legacy single doc + sections)."""
+def delete_source_documents(source: dict) -> bool:
+    """Deletes every File Search document of a source (legacy single doc + sections). True if all are gone."""
     from app.gemini_store.service import GeminiStoreService
 
     names = list(source.get("gemini_document_names") or [])
     if source.get("gemini_document_name"):
         names.append(source["gemini_document_name"])
+    gone = True
     for name in dict.fromkeys(names):
         try:
-            GeminiStoreService.delete_document(name)
+            gone = GeminiStoreService.delete_document(name) is not False and gone
         except Exception as e:
             error_logger.warning("Could not delete Gemini document %s: %s", name, e)
+            gone = False
+    return gone
 
 
 # ---------------------------------------------------------------------------
@@ -204,13 +210,10 @@ def estimate_source(src: dict, cal: dict | None = None) -> tuple[int, int, int]:
     return (_PROMPT_OVERHEAD + int(tokens * 1.3), out, int(tokens * 1.2))
 
 
-def tokens_cost(ext_in: int, ext_out: int, embed: int) -> float:
-    """What learning costs the customer for these token counts, in CHF."""
-    return (
-        ext_in / 1e6 * RATES["extraction"]["input"]
-        + ext_out / 1e6 * RATES["extraction"]["output"]
-        + embed / 1e6 * RATES["indexing"]["input"]
-    )
+def tokens_cost(ext_in: int, ext_out: int, embed: int, model: str | None = None) -> float:
+    """What learning costs the customer for these token counts with this learning model, in CHF."""
+    rate = learning_rates(model)
+    return ext_in / 1e6 * rate["input"] + ext_out / 1e6 * rate["output"] + embed / 1e6 * rate["embed"]
 
 
 def compute_estimate(job_id: int) -> dict:
@@ -238,7 +241,8 @@ def compute_estimate(job_id: int) -> dict:
     for s in skipped:
         key = s.get("skip_reason") or "other"
         skipped_by_reason[key] = skipped_by_reason.get(key, 0) + 1
-    cost = tokens_cost(ext_in, ext_out, embed)
+    # one price per learning model; the customer picks when confirming
+    costs = {key: round(tokens_cost(ext_in, ext_out, embed, key), 2) for key in LEARNING_MODELS}
     return {
         "to_learn": len(pending),
         "pages": sum(1 for s in pending if not s.get("file_pages")),
@@ -251,7 +255,9 @@ def compute_estimate(job_id: int) -> dict:
         "outcomes": outcomes,
         "tokens_in": ext_in,
         "tokens_out": ext_out,
-        "cost_chf": round(cost, 2),
+        "costs": costs,
+        "model": DEFAULT_LEARNING_MODEL,
+        "cost_chf": costs[DEFAULT_LEARNING_MODEL],
         "computed_at": now_iso(),
     }
 
@@ -279,9 +285,10 @@ def _mark_missed_sources(job: dict) -> int:
             continue
         misses = (src.get("missed_crawls") or 0) + 1
         if misses >= MISSED_CRAWLS_BEFORE_REMOVAL:
-            delete_source_documents(src)
-            supabase.table("tenant_sources").delete().eq("id", src["id"]).execute()
-            removed += 1
+            # the row goes only once Gemini no longer has its documents; else the next run retries
+            if delete_source_documents(src):
+                supabase.table("tenant_sources").delete().eq("id", src["id"]).execute()
+                removed += 1
         else:
             supabase.table("tenant_sources").update({"missed_crawls": misses}).eq("id", src["id"]).execute()
     return removed
@@ -317,11 +324,26 @@ def complete_scan_if_done(job_id: int) -> None:
     log_event(job_id, job["tenant_id"], "scan_done", to_learn=estimate["to_learn"],
               cost_chf=estimate["cost_chf"], removed=removed, outcomes=estimate["outcomes"])
 
-    # Scheduled re-crawls are pre-approved up to a cap; anything pricier waits
-    # for the user like a manual crawl.
-    auto = job.get("auto_confirm") and estimate["cost_chf"] <= AUTO_CONFIRM_MAX_CHF
+    # Scheduled re-crawls are pre-approved up to a cap and only while the
+    # balance covers them; anything else waits for the user like a manual crawl.
+    # (with the model the previous run of this website was learned with)
+    model = learning_model_key(job.get("learning_model"))
+    cost = estimate["costs"][model]
+    auto = (job.get("auto_confirm") and cost <= AUTO_CONFIRM_MAX_CHF
+            and _balance_covers(job["tenant_id"], cost))
     if auto or estimate["to_learn"] == 0:
         start_learning(job_id)
+
+
+def _balance_covers(tenant_id: str, cost_chf: float) -> bool:
+    """True if the chatbot's owner has paid enough for this learning. Fails closed."""
+    try:
+        from app.billing.services import BillingService
+        owner = BillingService.get_tenant_owner(tenant_id)
+        return bool(owner) and BillingService.check_balance(owner) >= max(cost_chf, 0.01)
+    except Exception as e:
+        error_logger.warning("balance check for tenant %s failed: %s", tenant_id, e)
+        return False
 
 
 def refresh_estimate(job_id: int) -> dict:
@@ -354,6 +376,68 @@ def start_learning(job_id: int) -> bool:
     if not pending:
         finish_job_if_learned(job_id)
     return True
+
+
+def resume_job(job: dict) -> str | None:
+    """
+    Continues a stopped crawl where it stopped. Returns the phase it resumes
+    ("learning", "scanning", "estimate") or None if there's nothing to resume.
+
+    - Stopped while learning: sources not learned yet are queued again; what
+      was learned stays and isn't paid for twice.
+    - Stopped while scanning: pages found but not read yet are read.
+    - Discarded after the scan: back to the estimate.
+    """
+    job_id, tenant_id = job["id"], job["tenant_id"]
+    if job.get("status") != CrawlingStatus.FAILED.value:
+        return None
+
+    if job.get("confirmed_at"):
+        stale = (datetime.now(timezone.utc) - timedelta(minutes=STALE_LEARN_MINUTES)).isoformat()
+        supabase.table("tenant_sources").update({"status": "QUEUED"}) \
+            .eq("last_job_id", job_id).eq("status", "PROCESSING").lt("learn_started_at", stale).execute()
+        pending = _pending_sources(job_id)
+        if not pending:
+            return None
+        moved = supabase.table("crawling_jobs").update({"status": CrawlingStatus.INDEXING.value}) \
+            .eq("id", job_id).eq("status", CrawlingStatus.FAILED.value).execute().data
+        if not moved:
+            return None
+        for src in pending:
+            celery_app.send_task(LEARN_TASK, args=[src["id"], job_id], queue="fast")
+        log_event(job_id, tenant_id, "resumed", phase="learning", count=len(pending))
+        return "learning"
+
+    # stopped while scanning: "Stop" marks waiting pages FAILED without a result,
+    # pages picked up afterwards end as "cancelled"
+    stopped = fetch_all(lambda: (
+        supabase.table("crawling_tasks").select("id, parent_url, outcome")
+        .eq("job_id", job_id).eq("status", CrawlingStatus.FAILED.value).order("id")
+    ))
+    stopped = [t for t in stopped if t.get("outcome") in (None, "cancelled")]
+    if stopped:
+        moved = supabase.table("crawling_jobs").update({"status": CrawlingStatus.IN_PROGRESS.value}) \
+            .eq("id", job_id).eq("status", CrawlingStatus.FAILED.value).execute().data
+        if not moved:
+            return None
+        ids = [t["id"] for t in stopped]
+        for i in range(0, len(ids), 200):
+            supabase.table("crawling_tasks").update({
+                "status": CrawlingStatus.PENDING.value, "outcome": None, "attempts": 0, "enqueued_at": now_iso(),
+            }).in_("id", ids[i:i + 200]).execute()
+        for t in stopped:
+            celery_app.send_task(SCAN_TASK, kwargs={"task_id": t["id"], "tenant_id": tenant_id,
+                                                    "parent_url": t.get("parent_url")}, queue="heavy")
+        log_event(job_id, tenant_id, "resumed", phase="scanning", count=len(stopped))
+        return "scanning"
+
+    if job.get("estimate"):
+        moved = supabase.table("crawling_jobs").update({"status": CrawlingStatus.SCANNED.value}) \
+            .eq("id", job_id).eq("status", CrawlingStatus.FAILED.value).execute().data
+        if moved:
+            log_event(job_id, tenant_id, "resumed", phase="estimate")
+            return "estimate"
+    return None
 
 
 # ---------------------------------------------------------------------------

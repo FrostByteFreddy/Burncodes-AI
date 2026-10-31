@@ -29,7 +29,7 @@
       </div>
       <p v-if="crawlingJobs.length" class="krecrawl__hint">
         {{ tenantsStore.currentTenant?.auto_recrawl ? $t('knowledge.recrawl.onHint', { n: tenantsStore.currentTenant.recrawl_interval_days || 7 }) : $t('knowledge.recrawl.offHint') }}
-        <router-link :to="{ name: 'AccountSettings', params: { section: 'schedules' } }">{{ $t('knowledge.recrawl.change') }}</router-link>
+        <router-link :to="{ name: 'TenantSettings', params: { tenantId } }">{{ $t('knowledge.recrawl.change') }}</router-link>
       </p>
 
       <div v-if="!jobsLoaded" aria-busy="true">
@@ -55,19 +55,6 @@
         </button>
       </template>
       <p v-else class="kempty">{{ $t('knowledge.crawls.empty') }}</p>
-    </section>
-
-    <!-- ── Website content ──────────────────────────────────── -->
-    <section v-if="webSources.length" class="knowledge-panel">
-      <div class="knowledge-panel__header knowledge-panel__header--solo">
-        <div class="knowledge-panel__header-left">
-          <div>
-            <h2 class="knowledge-panel__title">{{ $t('knowledge.content.title') }}</h2>
-            <p class="knowledge-panel__sub">{{ $t('knowledge.content.sub') }}</p>
-          </div>
-        </div>
-      </div>
-      <PageTree :sources="webSources" />
     </section>
 
     <!-- ── Uploaded files ───────────────────────────────────── -->
@@ -133,6 +120,7 @@
       :title="$t('tenant.sources.deleteModal.title')"
       :message="$t('tenant.sources.deleteModal.message', { source: escapeHtml(fileName(sourceToDelete || {})) })"
       :confirmButtonText="$t('tenant.sources.deleteModal.confirm')"
+      :loading="deleting"
       @confirm="handleDelete"
       @cancel="cancelDelete"
     />
@@ -150,7 +138,6 @@ import { supabase } from '@/supabase';
 import { escapeHtml } from '@/utils/escapeHtml';
 import AddKnowledgeWizard from './sources/AddKnowledgeWizard.vue';
 import CrawlJobRow from './sources/CrawlJobRow.vue';
-import PageTree from './sources/PageTree.vue';
 import KnowledgeOverview from './sources/KnowledgeOverview.vue';
 import ConfirmationModal from '../ConfirmationModal.vue';
 import RulesTab from './sources/RulesTab.vue';
@@ -170,11 +157,11 @@ const logsByJob             = ref({});
 const showAllJobs           = ref(false);
 const sourceToDelete        = ref(null);
 const showConfirmationModal = ref(false);
+const deleting = ref(false);
 const rulesTabRef           = ref(null);
 
 const tenantId = computed(() => tenantsStore.currentTenant?.id || '');
 const allSources = computed(() => tenantsStore.currentTenant?.tenant_sources || []);
-const webSources = computed(() => allSources.value.filter((s) => s.source_type === 'URL' || s.source_type === 'FILE_URL'));
 const fileSources = computed(() => allSources.value.filter((s) => s.source_type === 'FILE'));
 const shownJobs = computed(() => (showAllJobs.value ? crawlingJobs.value : crawlingJobs.value.slice(0, JOBS_SHOWN)));
 const hasActiveJob = computed(() => crawlingJobs.value.some((j) => ACTIVE.includes(j.status)));
@@ -314,13 +301,14 @@ const cancelDelete = () => { sourceToDelete.value = null; showConfirmationModal.
 const handleDelete = async () => {
   if (!sourceToDelete.value) return;
   const id = sourceToDelete.value.id;
+  deleting.value = true;
   try {
     await apiClient.delete(`/tenants/${tenantId.value}/sources/${id}`);
     addToast(t('tenant.sources.actions.deleteSuccess'), 'success');
     await refreshSources();
-  } catch {
-    addToast(t('tenant.sources.actions.deleteFailed'), 'error');
-  } finally { cancelDelete(); }
+  } catch (e) {
+    addToast(t(e.response?.data?.code === 'gemini_failed' ? 'common.geminiFailed' : 'tenant.sources.actions.deleteFailed'), 'error');
+  } finally { deleting.value = false; cancelDelete(); }
 };
 </script>
 

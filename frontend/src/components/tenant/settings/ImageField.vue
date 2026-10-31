@@ -57,6 +57,6 @@ const onFile = (event) => {
 .imgf__empty { color: var(--surface-muted); font-size: 20px; }
 .imgf__actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .imgf__upload { position: relative; cursor: pointer; }
-.imgf__upload:focus-within { box-shadow: var(--focus-ring); }
+.imgf__upload:focus-within { box-shadow: var(--focus-ring-shadow); }
 .imgf__file { position: absolute; width: 1px; height: 1px; opacity: 0; }
 </style>

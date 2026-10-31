@@ -47,43 +47,46 @@
           <input id="ko-cal" type="checkbox" role="switch" class="ko-switch" :checked="calendarsOn" :disabled="savingCal" @change="setCalendars($event.target.checked)" />
         </div>
         <p v-if="tenant?.test_protected && calendarsOn" class="meta ko-cal__warn">{{ $t('knowledge.calendars.protected') }}</p>
-        <ul v-else-if="calendarsOn && feeds.length" class="ko-cal__list">
-          <li v-for="f in feeds" :key="f.key" class="ko-cal__feed">
-            <span class="ko-cal__name">{{ f.zone ? `${f.series} (${f.zone})` : f.series }}</span>
-            <span class="meta">{{ $t('knowledge.calendars.dates', { n: f.count }) }}</span>
-            <button type="button" class="ko-cal__copy" @click="copyFeed(f)">
-              <font-awesome-icon :icon="['fas', copied === f.key ? 'check' : 'link']" /> {{ copied === f.key ? $t('knowledge.calendars.copied') : $t('knowledge.calendars.copy') }}
-            </button>
-          </li>
-        </ul>
+        <template v-else-if="calendarsOn && feeds.length">
+          <button type="button" class="ko-cal__more" :aria-expanded="showFeeds" @click="showFeeds = !showFeeds">
+            {{ $t('knowledge.calendars.count', { n: feeds.length }, feeds.length) }}
+            <span class="ko-cal__more-action">{{ showFeeds ? $t('knowledge.calendars.hide') : $t('knowledge.calendars.show') }}</span>
+          </button>
+          <ul v-if="showFeeds" class="ko-cal__list">
+            <li v-for="f in feeds" :key="f.key" class="ko-cal__feed">
+              <span class="ko-cal__name">{{ f.zone ? `${f.series} (${f.zone})` : f.series }}</span>
+              <span class="meta">{{ $t('knowledge.calendars.dates', { n: f.count }, f.count) }}</span>
+              <button type="button" class="ko-cal__copy" :title="$t('knowledge.calendars.copy')" :aria-label="`${$t('knowledge.calendars.copy')}: ${f.series}`" @click="copyFeed(f)">
+                <font-awesome-icon :icon="['fas', copied === f.key ? 'check' : 'link']" />
+              </button>
+            </li>
+          </ul>
+        </template>
       </div>
     </section>
 
-    <!-- What needs a person -->
-    <section class="ko-needs panel" :aria-label="$t('knowledge.overview.needsTitle')">
-      <div class="ko-needs__head">
-        <h2 class="panel-title">
-          {{ $t('knowledge.overview.needsTitle') }}
-          <span v-if="needsCount" class="ko-needs__count">{{ needsCount }}</span>
-        </h2>
+    <!-- What the chatbot knows about reaching the organisation, read from the website footer -->
+    <section v-if="contact" class="panel ko-contact" :aria-label="$t('knowledge.contact.title')">
+      <h2 class="panel-title">{{ $t('knowledge.contact.title') }}</h2>
+      <p class="panel-sub">{{ $t('knowledge.contact.sub') }}</p>
+      <div class="ko-contact__grid">
+        <div class="ko-contact__col">
+          <p v-if="contact.name" class="ko-contact__name">{{ contact.name }}</p>
+          <a v-if="contactAddress && contact.maps_url" :href="contact.maps_url" target="_blank" rel="noopener noreferrer" class="ko-contact__line">{{ contactAddress }}</a>
+          <p v-else-if="contactAddress" class="ko-contact__line">{{ contactAddress }}</p>
+          <p v-if="contact.phone" class="ko-contact__line">{{ contact.phone }}</p>
+          <p v-if="contact.email" class="ko-contact__line">{{ contact.email }}</p>
+        </div>
+        <dl v-if="contact.opening_hours?.length" class="ko-contact__hours">
+          <template v-for="(h, i) in contact.opening_hours" :key="i">
+            <dt>{{ h.days }}</dt>
+            <dd>{{ h.hours }}</dd>
+          </template>
+        </dl>
       </div>
-
-      <p v-if="!needsCount" class="ko-needs__none">
-        <font-awesome-icon :icon="['fas', 'check']" class="ko-needs__ok" />
-        {{ $t('knowledge.overview.needsNone') }}
-      </p>
-
-      <ul v-else-if="data.ended?.length" class="ko-needs__list">
-        <li v-for="s in data.ended" :key="`ended-${s.series}-${s.zone}`" class="ko-need">
-          <font-awesome-icon :icon="['fas', 'calendar-xmark']" class="ko-need__icon" />
-          <div>
-            <p class="ko-need__text">{{ $t('knowledge.overview.ended', { series: s.zone ? `${s.series} (${s.zone})` : s.series, date: fmtDay(s.last) }) }}</p>
-            <p class="meta">{{ $t('knowledge.overview.endedHint') }}</p>
-          </div>
-        </li>
-      </ul>
-      <IssueList v-if="issues.length" :issues="issues" class="ko-needs__issues" />
+      <p v-if="contact.hours_note" class="meta">{{ contact.hours_note }}</p>
     </section>
+
   </div>
 </template>
 
@@ -93,7 +96,6 @@ import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';
 import { useTenantsStore } from '@/stores/tenants';
 import { useToast } from '@/composables/useToast';
-import IssueList from './IssueList.vue';
 
 const props = defineProps({
   tenantId: { type: String, required: true },
@@ -140,9 +142,6 @@ const days = computed(() => {
   });
 });
 
-// only structured issues; free-text warnings from before 2026-10-25 are filtered out server-side
-const issues = computed(() => (data.value?.issues || []).filter((i) => i.kind));
-const needsCount = computed(() => (data.value?.ended?.length || 0) + issues.value.length);
 
 // ── Calendar feeds ──────────────────────────────────────────────────
 const tenantsStore = useTenantsStore();
@@ -152,6 +151,14 @@ const calendarsOn = computed(() => tenant.value?.calendar_feeds !== false);
 const feeds = ref([]);
 const savingCal = ref(false);
 const copied = ref(null);
+const showFeeds = ref(false);
+
+// read from the website footer on each crawl
+const contact = computed(() => tenant.value?.contact_card || null);
+const contactAddress = computed(() => {
+  const c = contact.value || {};
+  return [c.street, [c.postal_code, c.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+});
 
 const loadFeeds = async () => {
   if (!props.tenantId) return;
@@ -212,7 +219,7 @@ defineExpose({ reload: load });
 }
 .ko-day:nth-child(7n + 1) { border-left: none; }
 .ko-day:nth-last-child(-n + 7) { border-bottom: none; }
-.ko-day--weekend { background: rgba(17, 21, 45, 0.45); }
+.ko-day--weekend { background: var(--surface-0); }
 .ko-day--today::before {
   content: ''; position: absolute; left: 0; right: 0; top: -1px; height: 3px;
   background: var(--interactive);
@@ -220,8 +227,8 @@ defineExpose({ reload: load });
 .ko-day__weekday { font-size: var(--text-xs); font-weight: 600; color: var(--surface-muted); }
 .ko-day--today .ko-day__weekday { color: var(--interactive); }
 .ko-day__date { display: flex; align-items: baseline; gap: 4px; margin: 2px 0 10px; }
-.ko-day__num { font-size: var(--text-2xl); font-weight: 800; line-height: 1; color: var(--surface-heading); letter-spacing: -0.02em; }
-.ko-day--empty .ko-day__num { color: var(--surface-3); }
+.ko-day__num { font-size: 28px; font-weight: 700; line-height: 1; color: var(--text-primary); letter-spacing: -0.01em; }
+.ko-day--empty .ko-day__num { color: var(--text-disabled); }
 .ko-day__month { font-size: var(--text-xs); color: var(--surface-muted); }
 
 .ko-day__events { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -230,7 +237,6 @@ defineExpose({ reload: load });
   padding: 6px 8px;
   border-radius: var(--radius-sm);
   background: var(--interactive-soft);
-  border-left: 2px solid var(--interactive);
 }
 .ko-event--moved { background: var(--status-warning-soft); border-left-color: var(--status-warning); }
 .ko-event__series { font-size: 13px; font-weight: 700; color: var(--surface-heading); line-height: 1.25; hyphens: auto; overflow-wrap: break-word; }
@@ -242,39 +248,17 @@ defineExpose({ reload: load });
 .ko-cal__row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .ko-cal__title { font-size: 15px; font-weight: 700; color: var(--surface-heading); cursor: pointer; }
 .ko-cal__warn { margin-top: 8px; color: var(--status-warning); }
-.ko-cal__list { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
-.ko-cal__feed { display: inline-flex; align-items: center; gap: 10px; padding: 6px 6px 6px 12px; border-radius: var(--radius-md); background: var(--surface-2); }
+.ko-cal__list { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; max-width: 560px; }
+.ko-cal__feed { display: grid; grid-template-columns: minmax(0, 1fr) auto 32px; align-items: center; gap: 12px; padding: 6px 0; border-top: 1px solid var(--surface-3); font-size: var(--text-sm); }
+.ko-cal__feed:first-child { border-top: none; }
 .ko-cal__name { font-size: var(--text-sm); font-weight: 700; color: var(--surface-heading); }
-.ko-cal__copy { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-sm); border: 1px solid var(--surface-3); background: none; color: var(--surface-text); font: inherit; font-size: var(--text-xs); font-weight: 600; cursor: pointer; }
-.ko-cal__copy:hover { color: var(--surface-heading); border-color: var(--surface-muted); }
-.ko-switch {
-  appearance: none; flex-shrink: 0; position: relative; cursor: pointer;
-  width: 44px; height: 24px; border-radius: var(--radius-pill); background: var(--surface-3); transition: background var(--t-fast);
-}
-.ko-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface-heading); transition: transform var(--t-fast); }
-.ko-switch:checked { background: var(--interactive-strong); }
-.ko-switch:checked::after { transform: translateX(20px); }
-.ko-switch:focus-visible { box-shadow: var(--focus-ring); }
-.ko-switch:disabled { opacity: 0.5; }
+.ko-cal__copy { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: var(--radius-md); background: none; color: var(--surface-muted); cursor: pointer; }
+.ko-cal__copy:hover { color: var(--interactive); background: var(--surface-3); }
+.ko-cal__more { margin-top: 10px; background: none; border: none; padding: 0; cursor: pointer; font-size: var(--text-sm); color: var(--surface-text); }
+.ko-cal__more-action { margin-left: 6px; font-weight: 600; color: var(--interactive); }
+.ko-cal__more:hover .ko-cal__more-action { text-decoration: underline; }
 
 /* ── Needs you ───────────────────────────────────────────────────── */
-.ko-needs__head { margin-bottom: 14px; }
-.ko-needs__head .panel-title { display: flex; align-items: center; gap: 10px; }
-.ko-needs__count {
-  font-size: 13px; font-weight: 800; min-width: 24px; padding: 1px 8px; text-align: center;
-  border-radius: var(--radius-pill); background: var(--status-warning); color: var(--surface-0);
-}
-.ko-needs__none { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--surface-text); }
-.ko-needs__ok { color: var(--status-success); }
-.ko-needs__issues { margin-top: 18px; }
-.ko-needs__list { list-style: none; padding: 0; display: flex; flex-direction: column; }
-.ko-need {
-  display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 12px;
-  padding: 14px 0; border-top: 1px solid var(--surface-3);
-}
-.ko-need:first-child { border-top: none; padding-top: 0; }
-.ko-need__icon { margin-top: 3px; color: var(--status-warning); }
-.ko-need__text { font-size: 15px; color: var(--surface-heading); font-weight: 600; max-width: var(--measure); }
 
 /* Phones: one day per row, empty days collapse to a single line */
 @media (max-width: 760px) {
@@ -289,4 +273,13 @@ defineExpose({ reload: load });
   .ko-day__num { font-size: var(--text-lg); }
   .ko-day--today::before { right: auto; bottom: 0; width: 3px; height: auto; left: -16px; }
 }
+.ko-contact { margin-top: 18px; }
+.ko-contact__grid { display: flex; flex-wrap: wrap; gap: 16px 48px; margin-top: 14px; }
+.ko-contact__col { display: flex; flex-direction: column; gap: 4px; font-size: var(--text-sm); color: var(--surface-text); }
+.ko-contact__name { font-weight: 700; color: var(--surface-heading); }
+a.ko-contact__line { color: var(--interactive); text-decoration: none; }
+a.ko-contact__line:hover { text-decoration: underline; }
+.ko-contact__hours { display: grid; grid-template-columns: auto auto; gap: 4px 20px; margin: 0; font-size: var(--text-sm); }
+.ko-contact__hours dt { color: var(--surface-muted); }
+.ko-contact__hours dd { margin: 0; color: var(--surface-heading); font-variant-numeric: tabular-nums; }
 </style>

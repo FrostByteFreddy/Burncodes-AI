@@ -47,7 +47,7 @@ const checkColor = (hex) => readableOn(hex);
 .swp__dot:hover { transform: scale(1.08); }
 .swp__custom { position: relative; background: var(--surface-2); color: var(--surface-muted); border-style: dashed; }
 .swp__custom:hover { color: var(--surface-heading); }
-.swp__custom:focus-within { box-shadow: var(--focus-ring); }
+.swp__custom:focus-within { box-shadow: var(--focus-ring-shadow); }
 .swp__custom-input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
 .swp__dot--active { box-shadow: 0 0 0 2px var(--surface-1), 0 0 0 4px var(--interactive); }
 </style>

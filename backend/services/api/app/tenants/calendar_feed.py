@@ -14,7 +14,7 @@ from flask import Blueprint, Response, jsonify, request
 
 from app import limiter
 from app.database.supabase_client import fetch_all, supabase
-from app.knowledge.calendar import build_ics, calendar_key
+from app.knowledge.calendar import build_ics, calendar_key, dedupe_events, source_rank
 from app.logging_config import error_logger
 
 calendar_bp = Blueprint('calendar', __name__)
@@ -65,7 +65,7 @@ def list_feeds(tenant_id):
         feeds = {}
         if _offered(tenant):
             today = date.today().isoformat()
-            for e in _events(tenant_id):
+            for e in dedupe_events(_events(tenant_id)):
                 if e['event_date'] < today:
                     continue
                 key = calendar_key(e['series'], e['zone'])
@@ -88,15 +88,19 @@ def get_feed(tenant_id, keys):
             return Response("Not found", status=404)
         wanted = {k for k in keys.split('+') if k}
         events = [e for e in _events(tenant_id) if calendar_key(e['series'], e['zone']) in wanted] if _offered(tenant) else []
+        source_rows = {}
+        source_ids = list({e['source_id'] for e in events if e.get('source_id')})
+        for i in range(0, len(source_ids), 200):
+            for s in supabase.table('tenant_sources').select("id, title, source_location") \
+                    .in_('id', source_ids[i:i + 200]).execute().data or []:
+                source_rows[s['id']] = s
+        # an event read from several pages is one entry (and one UID), named after its own page
+        events = dedupe_events(events, lambda e: source_rank(e, source_rows.get(e.get('source_id'))))
 
         labels = sorted({f"{e['series']} ({e['zone']})" if e['zone'] else e['series'] for e in events})
         title = f"{tenant['name']}: {', '.join(labels)}" if labels else tenant['name']
-        source_ids = list({e['source_id'] for e in events if e.get('source_id')})
-        sources = {
-            s['id']: {"title": s.get('title') or '', "url": s.get('source_location') or ''}
-            for s in (supabase.table('tenant_sources').select("id, title, source_location")
-                      .in_('id', source_ids).execute().data or [])
-        } if source_ids else {}
+        sources = {sid: {"title": s.get('title') or '', "url": s.get('source_location') or ''}
+                   for sid, s in source_rows.items()}
         # stamp from the data, not the clock, so an unchanged feed stays byte-identical (304s)
         from datetime import datetime, timezone
         newest = max((e.get('created_at') or '' for e in events), default='')

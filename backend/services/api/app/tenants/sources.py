@@ -9,6 +9,7 @@ from app.security.url_guard import is_public_url
 from app import celery
 from uuid import uuid4
 from werkzeug.utils import secure_filename
+import time
 import os
 
 UPLOADS_DIR = os.environ.get("UPLOADS_DIR", "/app/data/uploads")
@@ -17,7 +18,7 @@ sources_bp = Blueprint('sources', __name__)
 
 
 def _insufficient_balance(user_id):
-    """Returns a 402 response if the user can't pay for indexing, else None."""
+    """Returns a 402 response if the user can't pay for learning an upload, else None."""
     if BillingService.check_balance(user_id) <= 0:
         return jsonify({"error": "Insufficient balance. Please recharge."}), 402
     return None
@@ -32,13 +33,37 @@ def _document_names(source):
 
 
 def _delete_documents(sources, context):
+    """
+    Deletes the sources' Gemini documents, several at a time. Returns the ids of
+    the sources whose documents are all gone; only those rows may be deleted,
+    the others keep the document names so the deletion can be retried.
+    """
+    from concurrent.futures import ThreadPoolExecutor
     from app.gemini_store.service import GeminiStoreService
-    for src in sources:
-        for name in _document_names(src):
-            try:
-                GeminiStoreService.delete_document(name)
-            except Exception as err:
-                error_logger.warning("%s: could not delete Gemini document %s: %s", context, name, err)
+
+    def delete(name):
+        try:
+            return GeminiStoreService.delete_document(name) is not False
+        except Exception as err:
+            error_logger.warning("%s: could not delete Gemini document %s: %s", context, name, err)
+            return False
+
+    names = [(src['id'], name) for src in sources for name in _document_names(src)]
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        results = list(pool.map(lambda pair: delete(pair[1]), names))
+    kept = {sid for (sid, _), ok in zip(names, results) if not ok}
+    return [src['id'] for src in sources if src['id'] not in kept]
+
+
+# A large run takes longer to remove than one request may last (120 s): the
+# deletion stops after this long and answers 202, the client asks again.
+DELETE_BUDGET_SECONDS = 60
+
+
+def _gemini_failed(count):
+    """The response when Gemini kept documents: nothing more was deleted, the user can retry."""
+    return jsonify({"error": "Some content could not be removed from Gemini. Nothing else was deleted; please try again.",
+                    "code": "gemini_failed", "failed": count}), 502
 
 
 def _invalid_urls(urls):
@@ -125,8 +150,7 @@ def crawl_sources(current_user, tenant_id):
         rejected = _invalid_urls(urls)
         if rejected:
             return jsonify({"error": "Only public http(s) URLs can be added", "rejected": rejected}), 400
-        if (resp := _insufficient_balance(current_user.id)):
-            return resp
+        # Reading is free; learning waits for a confirmed estimate the balance covers
 
         # Each URL becomes a single-page crawl: scanned, estimated, then
         # learned after confirmation like any other crawl.
@@ -147,6 +171,9 @@ def discover_links(current_user, tenant_id):
         start_url = data.get('url')
         single_page_only = data.get('single_page_only', False)
         excluded_urls = data.get('excluded_urls', [])
+        same_language = data.get('same_language', False)
+        use_sitemap = data.get('use_sitemap', False)
+        skip_funnel = data.get('skip_funnel', False)
         crawl_mode = data.get('crawl_mode', 'playwright_llm')
         tenant_id_str = str(tenant_id)
 
@@ -159,8 +186,8 @@ def discover_links(current_user, tenant_id):
 
         if _invalid_urls([start_url]):
             return jsonify({"error": "Only public http(s) URLs can be crawled"}), 400
-        if (resp := _insufficient_balance(current_user.id)):
-            return resp
+        # Reading is free, so anyone sees the estimate before paying; learning
+        # waits for a confirmed estimate the balance covers (confirm_crawling_job)
 
         # Persist the selected crawl_mode so all worker tasks pick it up from the DB
         valid_modes = {'soup', 'playwright', 'playwright_llm'}
@@ -173,6 +200,9 @@ def discover_links(current_user, tenant_id):
             start_url=start_url,
             single_page_only=bool(single_page_only),
             excluded_urls=excluded_urls,
+            same_language=bool(same_language),
+            use_sitemap=bool(use_sitemap),
+            skip_funnel=bool(skip_funnel),
             crawl_mode=crawl_mode,
         )
 
@@ -180,6 +210,12 @@ def discover_links(current_user, tenant_id):
     except Exception as e:
         error_logger.error(f"Error discovering links for tenant {tenant_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to discover links"}), 500
+
+def _learn_done(job_id: int) -> int:
+    """Sources this job has finished learning (learned or failed), counted in the database."""
+    return supabase.table('crawl_job_log').select('id', count='exact') \
+        .eq('job_id', job_id).in_('event', ['learned', 'learn_failed']).limit(1).execute().count or 0
+
 
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs', methods=['GET'])
 @token_required
@@ -224,6 +260,8 @@ def get_crawling_jobs(current_user, tenant_id):
             job_tasks = tasks_by_job.get(job['id'], [])
             job['sources'] = [sources_by_url[t['url']] for t in job_tasks if t['url'] in sources_by_url]
             job['task_count'] = len(job_tasks)
+            if job.get('status') == 'INDEXING':
+                job['learn_done'] = _learn_done(job['id'])
 
         return jsonify(jobs), 200
     except Exception as e:
@@ -242,6 +280,8 @@ def get_crawling_job(current_user, tenant_id, job_id):
         rows = supabase.table('crawling_jobs').select("*").eq('id', job_id).eq('tenant_id', tenant_id_str).limit(1).execute().data
         if not rows:
             return jsonify({"error": "Job not found or not part of this tenant"}), 404
+        if rows[0].get('status') == 'INDEXING':
+            rows[0]['learn_done'] = _learn_done(job_id)
         return jsonify(rows[0]), 200
     except Exception as e:
         error_logger.error(f"Error getting crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
@@ -313,6 +353,8 @@ def get_knowledge_overview(current_user, tenant_id):
             .lte('event_date', (today + timedelta(days=days - 1)).isoformat())
             .order('event_date').limit(500).execute()
         ).data or []
+        from app.knowledge.calendar import dedupe_events
+        events = dedupe_events(events)   # the same event read from several pages shows once
         # Series whose published dates ended — the bot can't answer "next" for them
         past = fetch_all(lambda: (
             supabase.table('tenant_events').select("series, zone, event_date")
@@ -410,7 +452,11 @@ def confirm_crawling_job(current_user, tenant_id, job_id):
         if job['status'] != 'SCANNED':
             return jsonify({"error": "This crawl is not waiting for confirmation", "status": job['status']}), 409
 
-        estimate_chf = float((job.get('estimate') or {}).get('cost_chf') or 0)
+        # the customer picks the learning model; the price is that model's
+        from app.ai_models import learning_model_key
+        estimate = job.get('estimate') or {}
+        model = learning_model_key((request.get_json(silent=True) or {}).get('model'))
+        estimate_chf = float((estimate.get('costs') or {}).get(model, estimate.get('cost_chf')) or 0)
         balance = BillingService.check_balance(current_user.id)
         if balance < estimate_chf:
             return jsonify({
@@ -418,8 +464,11 @@ def confirm_crawling_job(current_user, tenant_id, job_id):
                 "balance_chf": balance, "estimate_chf": estimate_chf,
             }), 402
 
+        supabase.table('crawling_jobs').update({
+            'learning_model': model, 'estimate': {**estimate, 'model': model, 'cost_chf': estimate_chf},
+        }).eq('id', job_id).execute()
         start_learning_task.delay(job_id)
-        return jsonify({"message": "Learning started"}), 202
+        return jsonify({"message": "Learning started", "model": model}), 202
     except Exception as e:
         error_logger.error(f"Error confirming crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to confirm crawl job"}), 500
@@ -501,6 +550,33 @@ def change_selection(current_user, tenant_id, job_id):
     except Exception as e:
         error_logger.error(f"Error changing selection for job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to change the selection"}), 500
+
+
+@sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/resume', methods=['POST'])
+@token_required
+def resume_crawling_job(current_user, tenant_id, job_id):
+    """Continues a stopped crawl where it stopped (learning, scanning or the estimate)."""
+    try:
+        from app.knowledge import jobs as knowledge_jobs
+        tenant_id_str = str(tenant_id)
+        owns = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute().data
+        job = supabase.table('crawling_jobs').select("*").eq('id', job_id).eq('tenant_id', tenant_id_str).limit(1).execute().data
+        if not owns or not job:
+            return jsonify({"error": "Job not found or access denied"}), 404
+        running = supabase.table('crawling_jobs').select("id").eq('tenant_id', tenant_id_str) \
+            .in_('status', ['IN_PROGRESS', 'SCANNED', 'INDEXING']).neq('id', job_id).limit(1).execute().data
+        if running:
+            return jsonify({"error": "Another crawl of this chatbot is still running", "code": "busy"}), 409
+        # continuing to learn spends money: only with a paid balance
+        if job[0].get('confirmed_at') and BillingService.check_balance(current_user.id) <= 0:
+            return jsonify({"error": "Insufficient balance. Please recharge.", "code": "balance"}), 402
+        phase = knowledge_jobs.resume_job(job[0])
+        if not phase:
+            return jsonify({"error": "Nothing left to continue", "code": "nothing_to_resume"}), 409
+        return jsonify({"phase": phase}), 202
+    except Exception as e:
+        error_logger.error(f"Error resuming crawl job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
+        return jsonify({"error": "Failed to resume the crawl"}), 500
 
 
 @sources_bp.route('/<uuid:tenant_id>/crawling_jobs/<int:job_id>/cancel', methods=['POST'])
@@ -595,34 +671,36 @@ def delete_crawling_job(current_user, tenant_id, job_id):
 
         # 3. Find + delete matching tenant_sources rows in batches
         deleted_source_ids = []
-        if crawled_urls:
-            from app.gemini_store.service import GeminiStoreService
-            
-            # Batch size of 100 prevents "URL component 'query' too long" in Supabase
-            batch_size = 100
-            for i in range(0, len(crawled_urls), batch_size):
-                url_batch = crawled_urls[i:i + batch_size]
-                
-                sources_resp = supabase.table('tenant_sources') \
-                    .select("id, gemini_document_name, gemini_document_names") \
-                    .eq('tenant_id', tenant_id_str) \
-                    .in_('source_location', url_batch) \
-                    .execute()
-                    
-                batch_sources = sources_resp.data or []
-                if not batch_sources:
-                    continue
-                    
-                batch_ids = [s['id'] for s in batch_sources]
-                deleted_source_ids.extend(batch_ids)
-                
-                # Delete the sources from Supabase
-                supabase.table('tenant_sources').delete().in_('id', batch_ids).execute()
-                
-                # Delete from Gemini Store
-                _delete_documents(batch_sources, f"delete_job {job_id}")
+        failed = 0
+        remaining = False
+        started = time.monotonic()
+        # Batch size of 50 prevents "URL component 'query' too long" in Supabase
+        batch_size = 50
+        for i in range(0, len(crawled_urls), batch_size):
+            if time.monotonic() - started > DELETE_BUDGET_SECONDS:
+                remaining = True
+                break
+            sources_resp = supabase.table('tenant_sources') \
+                .select("id, gemini_document_name, gemini_document_names") \
+                .eq('tenant_id', tenant_id_str) \
+                .in_('source_location', crawled_urls[i:i + batch_size]) \
+                .execute()
+            batch_sources = sources_resp.data or []
+            if not batch_sources:
+                continue
+            # Gemini first; a row goes only once its documents are gone
+            gone = _delete_documents(batch_sources, f"delete_job {job_id}")
+            if gone:
+                supabase.table('tenant_sources').delete().in_('id', gone).execute()
+            deleted_source_ids.extend(gone)
+            failed += len(batch_sources) - len(gone)
 
-            error_logger.info("delete_job: purged %d Gemini document(s) for job %s", len(deleted_source_ids), job_id)
+        error_logger.info("delete_job: purged %d source(s) for job %s, %d kept", len(deleted_source_ids), job_id, failed)
+        if failed:
+            # keep the run so deleting it again retries what Gemini kept
+            return _gemini_failed(failed)
+        if remaining:
+            return jsonify({"message": "Still deleting.", "deleted_sources": len(deleted_source_ids), "done": False}), 202
 
         # 5. Delete crawling_tasks + job row
         supabase.table('crawling_tasks').delete().eq('job_id', job_id).execute()
@@ -657,8 +735,9 @@ def delete_source(current_user, tenant_id, source_id):
 
         source = source_resp.data
 
-        # Delete its documents from the Gemini File Search Store
-        _delete_documents([source], f"delete_source {source_id}")
+        # Delete its documents from the Gemini File Search Store; the row stays if that fails
+        if not _delete_documents([source], f"delete_source {source_id}"):
+            return _gemini_failed(1)
 
         # Delete the local file if this was a user upload
         if source.get('source_type') == 'FILE':
@@ -705,15 +784,10 @@ def delete_all_sources(current_user, tenant_id):
         # 1. Delete the Gemini File Search Store (drops all indexed documents at once)
         store_name = (tenant_resp.data or {}).get('gemini_file_store_name')
         if store_name:
-            try:
-                from app.gemini_store.service import GeminiStoreService
-                GeminiStoreService.delete_store(store_name)
-                error_logger.info("delete_all: deleted Gemini store %s for tenant %s", store_name, tenant_id_str)
-            except Exception as store_err:
-                error_logger.warning(
-                    "delete_all: soft failure deleting Gemini store %s: %s",
-                    store_name, store_err
-                )
+            from app.gemini_store.service import GeminiStoreService
+            if not GeminiStoreService.delete_store(store_name):
+                return _gemini_failed(1)
+            error_logger.info("delete_all: deleted Gemini store %s for tenant %s", store_name, tenant_id_str)
 
         # 2. Clear the store reference on the tenant so a fresh one is created next upload
         supabase.table('tenants') \

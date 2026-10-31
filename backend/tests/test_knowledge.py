@@ -231,7 +231,7 @@ class TestTriage:
 
         monkeypatch.setattr(triage, "fetch_all", lambda make: queued)
         monkeypatch.setattr(triage, "supabase", type("S", (), {"table": lambda self, n: Q()})())
-        monkeypatch.setattr(triage, "_ask", lambda lines, site: [
+        monkeypatch.setattr(triage, "_ask", lambda lines, site, audience=None: [
             {"id": 2, "reason": "archive_finance"}, {"id": 3, "reason": "archive_finance"},
             {"id": 99, "reason": "outdated"},          # not in this crawl
             {"id": 4, "reason": "because I said so"},  # unknown reason
@@ -276,10 +276,89 @@ class TestChatDates:
 
         monkeypatch.setattr(chat, "supabase", type("S", (), {"table": lambda self, n: Q(n)})())
         text = chat._dates_context("t", date(2026, 10, 24))
-        assert text.startswith("Today is Sat 2026-10-24.")
-        assert "Kehricht (Zone 1): next Mon 2026-10-26, Mon 2026-11-02 (exception)" in text
+        assert "Kehricht (Zone 1): upcoming Mon 2026-10-26, Mon 2026-11-02 (exception)" in text
         assert "Grünabfuhr: no future dates known — the published schedule ends 2025-12-09" in text
+        # today comes from _now_context, which every prompt gets
+        assert "Today is" not in text
 
+        rows.clear()
+        assert chat._dates_context("t", date(2026, 10, 24)) == ""
+
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        now = chat._now_context(datetime(2026, 10, 30, 17, 42, tzinfo=ZoneInfo("Europe/Zurich")))
+        assert now.startswith("Now: Friday 2026-10-30, 17:42 (Europe/Zurich).")
+        assert "within the next 7 days" in now
+
+
+class TestChatDateSelection:
+    """Which dates go into the prompt when a tenant has many series (younity: 100, 64 of them over)."""
+
+    @staticmethod
+    def _chat(monkeypatch, rows):
+        import importlib
+        import sys
+        sys.modules.setdefault("app.prompts", type(sys)("app.prompts"))
+        sys.modules["app.prompts"].FINE_TUNE_RULE_PROMPT = "{trigger}{instruction}"
+        spec = importlib.util.spec_from_file_location(
+            "chat_tasks", __file__.replace("tests/test_knowledge.py", "services/worker_chat/app/chat/tasks.py"))
+        chat = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(chat)
+
+        class Q:
+            def __init__(self, table):
+                self.table = table
+
+            def __getattr__(self, name):
+                return lambda *a, **k: self
+
+            def execute(self):
+                return type("R", (), {"data": rows if self.table == "tenant_events" else []})()
+
+        monkeypatch.setattr(chat, "supabase", type("S", (), {"table": lambda self, n: Q(n)})())
+        return chat
+
+    @staticmethod
+    def _row(series, day):
+        return {"series": series, "zone": "", "event_date": day, "is_exception": False, "notes": ""}
+
+    def test_future_series_come_before_old_ones_however_many(self, monkeypatch):
+        rows = [self._row(f"Kongress {i}", f"2025-0{1 + i % 9}-1{i % 10}") for i in range(60)]   # all over
+        rows += [self._row("find your flow! Festival 2026", "2026-11-07")]
+        chat = self._chat(monkeypatch, sorted(rows, key=lambda r: r["event_date"]))
+        text = chat._dates_context("t", date(2026, 10, 30))
+        assert "find your flow! Festival 2026: upcoming Sat 2026-11-07" in text
+        assert text.count("\n- ") == chat._MAX_SERIES   # the old ones fill the rest
+
+    def test_a_series_the_question_names_goes_in_even_when_over(self, monkeypatch):
+        rows = [self._row(f"Sommerfest {i}", "2026-12-0" + str(1 + i % 9)) for i in range(45)]   # all upcoming
+        rows += [self._row("Find Your Flow Event 2019", "2019-05-04")]
+        chat = self._chat(monkeypatch, sorted(rows, key=lambda r: r["event_date"]))
+        assert "Find Your Flow" not in chat._dates_context("t", date(2026, 10, 30))
+        text = chat._dates_context("t", date(2026, 10, 30), asked="wann war find our follow")
+        assert "Find Your Flow Event 2019: no future dates known" in text
+
+    def test_names_differing_only_in_punctuation_are_one_series(self, monkeypatch):
+        rows = [self._row("Kurs 'Leben im flow'", "2027-03-26"), self._row("Kurs Leben im flow", "2027-03-26")]
+        chat = self._chat(monkeypatch, rows)
+        text = chat._dates_context("t", date(2026, 10, 30))
+        assert text.count("Leben im flow") == 1
+        assert text.count("2027-03-26") == 1
+
+    def test_a_misspelled_name_becomes_a_hint(self, monkeypatch):
+        chat = self._chat(monkeypatch, [])
+        hint = chat._name_hint("Wann ist find our follow?", ["find your flow! Festival 2026", "Kehricht"])
+        assert "«find your flow! Festival 2026»" in hint and "Kehricht" not in hint
+        # spelled right: nothing to correct
+        assert chat._name_hint("Wann ist find your flow?", ["find your flow! Festival 2026"]) == ""
+
+    def test_the_language_note_follows_the_question(self, monkeypatch):
+        chat = self._chat(monkeypatch, [])
+        contents = chat._build_contents([{"type": "human", "content": "Hallo"}, {"type": "ai", "content": "Hoi"}],
+                                        "Do you have a course?")
+        assert contents[-1]["parts"][0] == {"text": "Do you have a course?"}
+        assert "language of my message" in contents[-1]["parts"][1]["text"]
+        assert len(contents[0]["parts"]) == 1   # earlier turns stay as they were
 
 class TestSystemInstruction:
     @staticmethod
@@ -305,7 +384,7 @@ class TestSystemInstruction:
         chat = self._chat()
         rule = chat._language_rule()
         assert "language of the user's most recent message" in rule
-        assert rule.endswith("reply in the language of your documents.")
+        assert rule.endswith("whatever language the question is in.")
 
     def test_persona_and_rules_survive_an_edited_template(self):
         chat = self._chat()
@@ -424,6 +503,32 @@ class TestCalendar:
         assert all(len(line.encode()) <= 75 for line in a.split("\r\n"))
 
 
+class TestEventDedupe:
+    def test_the_same_event_from_several_pages_counts_once_named_after_its_own_page(self):
+        from app.knowledge.calendar import dedupe_events, source_rank
+        sources = {1: {"title": "Startseite Gemeinde Brittnau", "source_location": "https://www.brittnau.ch"},
+                   2: {"title": "Anlässe", "source_location": "https://www.brittnau.ch/anlaesse"},
+                   3: {"title": 'Konzert "Akkordeon auf Reisen"', "source_location": "https://www.brittnau.ch/_rte/anlass/1"}}
+        rows = [
+            {"series": "Konzert „Akkordeon auf Reisen“", "zone": "", "event_date": "2026-11-06", "source_id": 1, "notes": "", "is_exception": False},
+            {"series": 'Konzert "Akkordeon auf Reisen"', "zone": "", "event_date": "2026-11-06", "source_id": 2, "notes": "", "is_exception": False},
+            {"series": 'konzert  "akkordeon auf reisen"', "zone": None, "event_date": "2026-11-06", "source_id": 3, "notes": "Mehrzweckhalle", "is_exception": False},
+            {"series": "Kehricht", "zone": "Zone 1", "event_date": "2026-11-06", "source_id": 2, "notes": "", "is_exception": True},
+            {"series": "Kehricht", "zone": "Zone 2", "event_date": "2026-11-06", "source_id": 2, "notes": "", "is_exception": False},
+        ]
+        out = dedupe_events(rows, lambda e: source_rank(e, sources.get(e["source_id"])))
+        assert len(out) == 3                                        # zones stay apart
+        assert out[0]["source_id"] == 3 and out[0]["notes"] == "Mehrzweckhalle"
+        assert [e["zone"] for e in out[1:]] == ["Zone 1", "Zone 2"]
+        assert len(dedupe_events(rows)) == 3                        # without ranking: the first copy
+
+    def test_an_exception_on_any_copy_wins(self):
+        from app.knowledge.calendar import dedupe_events
+        rows = [{"series": "Papier", "zone": "", "event_date": "2026-12-24", "is_exception": False, "source_id": 1},
+                {"series": "Papier", "zone": "", "event_date": "2026-12-24", "is_exception": True, "source_id": 2}]
+        assert dedupe_events(rows)[0]["is_exception"] is True
+
+
 class TestSourceLinks:
     def test_unknown_links_become_plain_text(self):
         chat = TestSystemInstruction._chat()
@@ -446,6 +551,17 @@ class TestSourceLinks:
         text = f"Nummer: 062 745 71 00. Quelle: [Kontakt]({url})"
         assert chat._ensure_source(text, [("Andere", "https://www.zofingen.ch/a")], {url, "https://www.zofingen.ch/a"}) == text
 
+
+    def test_a_bare_address_of_a_known_page_becomes_a_chip(self):
+        chat = TestSystemInstruction._chat()
+        pdf = "https://www.reichenbach.ch/wAssets/docs/Budget-2027_GV-12.10.2026.pdf"
+        known = {pdf: "Budget 2027 GV 12.10.2026"}
+        out = chat._keep_known_links(f"Details im Dokument:\n\n{pdf}.\nUnd https://evil.example/x", known)
+        assert f'[Budget 2027 GV 12.10.2026]({pdf} "source: Budget 2027 GV 12.10.2026").' in out
+        assert "https://evil.example/x" in out          # unknown bare text is left as it is
+        # a markdown link to a known page is not touched twice
+        linked = f"[Budget]({pdf})"
+        assert chat._keep_known_links(linked, known) == linked
 
     def test_marker_is_filled_with_the_used_documents_home_page_last_resort(self):
         chat = TestSystemInstruction._chat()
@@ -651,3 +767,137 @@ class TestLinkExtraction:
         assert "https://www.brittnau.ch/_rte/regelmaessigeranlass/4885" in links
         assert "https://www.brittnau.ch/_rte/anlass/7" in links
         assert not any("other.example" in l for l in links)
+
+
+class TestContactCard:
+    def test_card_formatting_map_link_and_fragment_filter(self, monkeypatch):
+        from types import SimpleNamespace as NS
+        import json as _json
+        from app.knowledge import contact
+        reply = {"found": True, "name": "Gemeinde Reichenbach", "street": "Bahnhofstrasse 30", "postal_code": "3713",
+                 "city": "Reichenbach im Kandertal", "phone": "+41 33 676 80 20", "email": "gmndrchnbchch",
+                 "hours_note": "", "opening_hours": [{"days": "Mittwoch", "hours": "geschlossen"}]}
+        fake = NS(models=NS(generate_content=lambda **kw: NS(text=_json.dumps(reply))))
+        import app.knowledge.triage as triage
+        monkeypatch.setattr(triage, "_get_client", lambda: fake)
+        card = contact.extract_contact("Gemeinde Reichenbach Bahnhofstrasse 30 …", "https://www.reichenbach.ch/")
+        assert card["email"] == "" and card["phone"] == "+41 33 676 80 20"
+        assert card["maps_url"] == ("https://www.google.com/maps/search/?api=1&query="
+                                    "Gemeinde+Reichenbach%2C+Bahnhofstrasse+30%2C+3713+Reichenbach+im+Kandertal")
+        text = contact.contact_context(card)
+        assert "Opening hours Mittwoch: geschlossen" in text and card["maps_url"] in text
+        assert contact.contact_context(None) == ""
+
+    def test_footer_text_is_found(self):
+        from app.knowledge.markdown import footer_markdown
+        html = ('<html><body><main>Inhalt</main><footer><p><strong>Gemeinde X</strong><br>Hauptstrasse 1</p>'
+                '<a href="tel:0621234567">062 123 45 67</a><p>Montag 08:00 - 12:00 Uhr</p></footer></body></html>')
+        text = footer_markdown(html)
+        assert "Hauptstrasse 1" in text and "Montag 08:00 - 12:00 Uhr" in text and "Inhalt" not in text
+
+
+class TestFacts:
+    FACTS = [
+        {"label": "Einwohnerzahl (Stand 31. August 2025)", "value": "3'883 Einwohnerinnen und Einwohner", "source_id": 1},
+        {"label": "Hundetaxe", "value": "100 Franken pro Jahr und Tier", "source_id": 1},
+        {"label": "Gemeindesteueranlage", "value": "1.77", "source_id": 1},
+        {"label": "Öffnungszeiten Entsorgungsstation", "value": "Freitag 14.00 - 17.00 Uhr", "source_id": 2},
+    ] + [{"label": f"Telefon Reichenbach Amt {i}", "value": "033 676 80 20", "source_id": 3} for i in range(10)]
+
+    def test_stems_find_compounds_and_skip_common_words(self):
+        from app.knowledge.facts import relevant_facts
+        assert relevant_facts(self.FACTS, "Wie viele Einwohner hat Reichenbach?")[0]["value"].startswith("3'883")
+        assert relevant_facts(self.FACTS, "Was kostet der Hund?")[0]["label"] == "Hundetaxe"
+        assert relevant_facts(self.FACTS, "Wie hoch sind die Steuern?")[0]["label"] == "Gemeindesteueranlage"
+        # "Reichenbach" is in many labels and alone matches nothing
+        assert relevant_facts(self.FACTS, "Reichenbach") == []
+        assert relevant_facts(self.FACTS, "Was ist die Hauptstadt von Frankreich?") == []
+
+    def test_context_and_mention(self):
+        from app.knowledge.facts import fact_mentioned, facts_context
+        text = facts_context(self.FACTS[:2], {1: ("Zahlen und Fakten", "https://x.ch/zahlen")})
+        assert "- Hundetaxe: 100 Franken pro Jahr und Tier {source: Zahlen und Fakten https://x.ch/zahlen}" in text
+        assert facts_context([], {}) == ""
+        assert fact_mentioned(self.FACTS[0], "Reichenbach hat 3883 Einwohner.")
+        assert not fact_mentioned(self.FACTS[1], "Die Hundetaxe beträgt 80 Franken.")
+
+
+class TestCrawlScope:
+    def test_left_out_paths_match_the_url_path(self):
+        from app.knowledge.url_scope import is_excluded
+        excluded = ["/de", "/hu/", "shop.younity.com", "https://www.younity.com/blog/old"]
+        assert is_excluded("https://www.younity.com/de", excluded)
+        assert is_excluded("https://younity.com/de/kontakt", excluded)
+        assert is_excluded("https://younity.com/HU/a", excluded)
+        assert not is_excluded("https://younity.com/design", excluded)       # prefix, not a subfolder
+        assert not is_excluded("https://younity.com/en/de", excluded)
+        assert is_excluded("https://shop.younity.com/cart", excluded)
+        assert is_excluded("https://younity.com/blog/old/post", excluded)
+        assert not is_excluded("https://younity.com/blog/new", excluded)
+        assert not is_excluded("https://younity.com/a", ["/", ""])
+
+    def test_one_language_version(self):
+        from app.knowledge.url_scope import language_of, other_language
+        assert language_of("https://x.com/de/kontakt") == "de"
+        assert language_of("https://x.com/en-us/") == "en"
+        assert language_of("https://x.com/fr_CH/a") == "fr"
+        assert language_of("https://x.com/page?lang=hu") == "hu"
+        assert language_of("https://x.com/kontakt") is None
+        assert language_of("https://x.com/xx/a") is None                    # not a language
+        # from the home page: language versions are skipped, everything else kept
+        assert other_language("https://x.com/de/a", "https://x.com/")
+        assert not other_language("https://x.com/about", "https://x.com/")
+        # from /de/: German and language-less pages are kept
+        assert not other_language("https://x.com/de-ch/a", "https://x.com/de/")
+        assert not other_language("https://x.com/impressum", "https://x.com/de/")
+        assert other_language("https://x.com/en/a", "https://x.com/de/")
+
+    def test_funnel_pages(self):
+        from app.knowledge.url_scope import is_funnel_page
+        for path in ("k1/offer/thanks", "k1/optin/thanks-start", "k1/optin/fehler", "k1/optin/confirmation",
+                     "k3/optin-ppc", "login", "opt-out-2", "warenkorb", "danke-fuer-deine-anmeldung"):
+            assert is_funnel_page("https://x.com/joe/" + path), path
+        for path in ("", "joe", "joe/k1/offer", "joe/k1/optin", "k3/tagesseiten/tag-1", "blog/thanksgiving-ritual",
+                     "blog/fehler-die-du-vermeiden-solltest", "dead-sea", "accountability-coaching"):
+            assert not is_funnel_page("https://x.com/" + path), path
+
+    def test_sitemaps(self):
+        from app.knowledge.sitemap import parse_sitemap, sitemaps_in_robots
+        index = """<sitemapindex><sitemap><loc>https://x.com/sitemap.xml?page=1&amp;sitemap=pages</loc></sitemap></sitemapindex>"""
+        assert parse_sitemap(index) == ([], ["https://x.com/sitemap.xml?page=1&sitemap=pages"])
+        pages = """<urlset><url><loc> https://x.com/a </loc></url><url><loc><![CDATA[https://x.com/b]]></loc></url></urlset>"""
+        assert parse_sitemap(pages) == (["https://x.com/a", "https://x.com/b"], [])
+        assert sitemaps_in_robots("User-agent: *\nSitemap: /map.xml\nsitemap: https://cdn.x.com/s.xml", "https://x.com/") \
+            == ["https://x.com/map.xml", "https://cdn.x.com/s.xml"]
+
+
+class TestBranding:
+    def test_theme_color_wins_and_framework_colours_are_ignored(self):
+        from app.knowledge.branding import brand_colors
+        css = """
+            .btn-primary { background-color: #0d6efd; }          /* Bootstrap's own */
+            .alert { color: #fff; border-color: #ddd; }           /* white, grey */
+            .nav a { color: #1a7f5a } .hero { background: rgb(26, 127, 90) }
+            :root { --brand-accent: #f39200; }
+        """
+        assert brand_colors(css) == ["#F39200", "#1A7F5A"]        # a brand variable counts most
+        assert brand_colors(css, "#E6007E")[0] == "#E6007E"
+        assert brand_colors(css, "#ffffff")[0] == "#F39200"        # a white theme-color is no brand colour
+        assert brand_colors("a { color: #1a7f5a } b { color: #1b805b }") == ["#1A7F5A"]  # one shade
+
+    def test_logo_is_the_image_marked_as_logo(self):
+        from app.knowledge.branding import parse_page
+        html = """<html><head>
+            <meta name="theme-color" content="#E6007E"><meta property="og:site_name" content="younity">
+            <link rel="icon" href="/favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="/touch.png">
+            <link href="/main.css" rel="stylesheet"><style>h1 { color: #123456 }</style>
+          </head><body>
+            <img src="/hero.jpg">
+            <header><a class="navbar-brand" href="/"><img src="/img/younity.gif" alt="younity"></a></header>
+          </body></html>"""
+        page = parse_page(html, "https://www.younity.com/de/")
+        assert page["logo_url"] == "https://www.younity.com/img/younity.gif"
+        assert page["icon_url"] == "https://www.younity.com/touch.png"
+        assert page["stylesheets"] == ["https://www.younity.com/main.css"]
+        assert page["theme_color"] == "#E6007E" and page["site_name"] == "younity"
+        assert "#123456" in page["css"]

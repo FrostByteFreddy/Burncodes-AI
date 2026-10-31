@@ -18,10 +18,11 @@ from google.genai import types
 
 from app.ai_models import TRIAGE_GEMINI_MODEL
 from app.database.supabase_client import fetch_all, supabase
+from app.knowledge.audience import DEFAULT as DEFAULT_AUDIENCE, audience_of, wording
 from app.logging_config import error_logger
 
 # Reasons are codes; the dashboard shows them in the user's language
-REASONS = ("archive_finance", "old_minutes", "outdated", "older_version", "internal", "other")
+REASONS = ("archive_finance", "old_minutes", "outdated", "older_version", "thin", "internal", "other")
 # set aside by hand in the estimate (not offered to the model)
 MANUAL = "manual"
 CHUNK = 300
@@ -53,8 +54,7 @@ _SCHEMA = {
 }
 
 _INSTRUCTIONS = """You prepare the knowledge base of a chatbot on the website of {site}.
-Residents ask it everyday questions: opening hours, contacts, fees, services, forms, rules,
-collection dates, events, current projects. Learning each document costs money.
+Its {people} ask it everyday questions: {questions}. Learning each document costs money.
 
 Below is the list of pages and documents found on the website. Return the ids of entries
 the chatbot will very likely never need, with one reason each:
@@ -62,10 +62,12 @@ the chatbot will very likely never need, with one reason each:
 - old_minutes: minutes, protocols, council decisions older than about a year
 - outdated: past events, expired announcements, documents for years before {last_year}
 - older_version: an older edition of a document that also exists in a newer edition in this list
-- internal: technical, internal or administrative files residents don't use
-- other: anything else clearly useless for residents' questions
+- thin: a page with hardly any content of its own, e.g. only a video, a sign-up form or a sales
+  teaser repeating what other pages in this list already say (keep the page that describes it)
+- internal: technical, internal or administrative files {people} don't use
+- other: anything else clearly useless for {people}'s questions
 
-Keep everything a resident could plausibly ask about, everything current, and anything you
+Keep everything {people} could plausibly ask about, everything current, and anything you
 are unsure about. When in doubt, keep it. Today is {today}."""
 
 
@@ -77,10 +79,10 @@ def _line(s: dict) -> str:
     return f"{s['id']} | {kind}{pages} | {title} | {s['source_location']}" + (f" | {snippet}" if snippet else "")
 
 
-def _ask(lines: list[str], site: str) -> list[dict]:
+def _ask(lines: list[str], site: str, audience: str = DEFAULT_AUDIENCE) -> list[dict]:
     from datetime import date
     today = date.today()
-    prompt = _INSTRUCTIONS.format(site=site, today=today.isoformat(), last_year=today.year - 1)
+    prompt = _INSTRUCTIONS.format(site=site, today=today.isoformat(), last_year=today.year - 1, **wording(audience))
     response = _get_client().models.generate_content(
         model=TRIAGE_GEMINI_MODEL,
         contents=[prompt, "ENTRIES (id | kind | title | url | first words):\n" + "\n".join(lines)],
@@ -113,11 +115,12 @@ def triage_job(job: dict) -> int:
             return 0  # a handful of pages: nothing worth sorting
         valid = {s["id"] for s in queued}
         site = job.get("start_url") or ""
+        audience = audience_of(job["tenant_id"]) if job.get("tenant_id") else DEFAULT_AUDIENCE
         skipped = 0
         for i in range(0, len(queued), CHUNK):
             chunk = queued[i:i + CHUNK]
             try:
-                decisions = _ask([_line(s) for s in chunk], site)
+                decisions = _ask([_line(s) for s in chunk], site, audience)
             except Exception as e:
                 error_logger.warning("triage: chunk %d of job %s failed: %s", i // CHUNK, job["id"], e)
                 continue

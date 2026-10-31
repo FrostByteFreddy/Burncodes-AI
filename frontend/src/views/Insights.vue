@@ -74,7 +74,7 @@
             <template v-if="review.reviewed_30d"> {{ $t('insights.review.stats', { n: review.reviewed_30d, cost: fmtChf(review.cost_30d_chf) }) }}</template>
           </template>
           <template v-else>{{ $t('insights.review.off') }}</template>
-          <router-link :to="{ name: 'AccountSettings', params: { section: 'schedules' } }" class="ins-link ins-link--inline">{{ $t('insights.review.change') }}</router-link>
+          <router-link :to="{ name: 'TenantSettings', params: { tenantId } }" class="ins-link ins-link--inline">{{ $t('insights.review.change') }}</router-link>
         </p>
         <button v-if="review.enabled" type="button" class="btn-quiet" :disabled="reviewQueued" @click="runNow">
           <font-awesome-icon :icon="['fas', 'rotate']" /> {{ reviewQueued ? $t('insights.review.queued') : $t('insights.review.now') }}

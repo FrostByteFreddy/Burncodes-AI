@@ -83,6 +83,10 @@ class CrawlingJob(BaseModel):
     max_depth: int
     status: CrawlingStatus = CrawlingStatus.PENDING
     excluded_urls: List[str] = []
+    same_language: bool = False
+    use_sitemap: bool = False
+    skip_funnel: bool = False
+    learning_model: Optional[str] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
 

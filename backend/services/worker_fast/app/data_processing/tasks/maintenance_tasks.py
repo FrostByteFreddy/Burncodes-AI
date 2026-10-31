@@ -109,12 +109,12 @@ def weekly_recrawl_task(self):
     """
     try:
         tenants = (
-            supabase.table("tenants").select("id, recrawl_interval_days").eq("auto_recrawl", True).execute()
+            supabase.table("tenants").select("id, recrawl_interval_days, learning_model").eq("auto_recrawl", True).execute()
         ).data or []
         for tenant in tenants:
             tenant_jobs = (
                 supabase.table("crawling_jobs")
-                .select("start_url, status, created_at, max_depth, single_page_only, excluded_urls, crawl_mode")
+                .select("start_url, status, created_at, max_depth, single_page_only, excluded_urls, same_language, use_sitemap, skip_funnel, learning_model, crawl_mode")
                 .eq("tenant_id", tenant["id"]).order("created_at", desc=True).limit(500).execute()
             ).data or []
             active = {CrawlingStatus.IN_PROGRESS.value, CrawlingStatus.SCANNED.value, CrawlingStatus.INDEXING.value}
@@ -132,6 +132,11 @@ def weekly_recrawl_task(self):
                     "start_url": start_url,
                     "single_page_only": j.get("single_page_only") or False,
                     "excluded_urls": j.get("excluded_urls") or [],
+                    "same_language": j.get("same_language") or False,
+                    "use_sitemap": j.get("use_sitemap") or False,
+                    "skip_funnel": j.get("skip_funnel") or False,
+                    # the model it was learned with last time, else the chatbot's default
+                    "learning_model": j.get("learning_model") or tenant.get("learning_model"),
                     "max_depth": j.get("max_depth") or 3,
                     "trigger": "scheduled",
                     "auto_confirm": True,
@@ -171,7 +176,7 @@ def review_conversations_task(self, tenant_id=None):
             supabase.table("tenants").update({"last_review_at": now.isoformat()}).eq("id", tenant["id"]).execute()
             result = review.review_tenant(
                 tenant["id"], tenant["user_id"],
-                lambda owner, i, o: BillingService.deduct_cost(owner, "review", i, o),
+                lambda owner, i, o, tid=tenant["id"]: BillingService.deduct_cost(owner, "review", i, o, tid),
             )
             if result["reviewed"]:
                 error_logger.info("review: tenant %s — %d conversations, %d findings",

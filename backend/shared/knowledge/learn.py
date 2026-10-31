@@ -22,7 +22,8 @@ from app.billing.services import BillingService
 from app.database.supabase_client import supabase
 from app.gemini_store.service import GeminiStoreService
 from app.knowledge import jobs
-from app.ai_models import count_tokens
+from app.ai_models import DEFAULT_LEARNING_MODEL, LEARNING_MODELS, count_tokens, learning_model_key
+from app.knowledge.calendar import dedupe_events, source_rank
 from app.knowledge.markdown import estimate_tokens, normalize_markdown, pdf_text
 from app.knowledge.pdf_crosscheck import crosscheck_schedules
 from app.knowledge.understanding import (
@@ -95,11 +96,11 @@ def index_only_result(source: dict, data: bytes) -> dict:
     }
 
 
-def understand_source(source: dict) -> tuple[dict, int, int]:
-    """Runs Gemini on a source. Returns (result, input_tokens, output_tokens)."""
+def understand_source(source: dict, model: str | None = None) -> tuple[dict, int, int]:
+    """Runs Gemini (the chosen learning model) on a source. Returns (result, input_tokens, output_tokens)."""
     location = source["source_location"]
     if source["source_type"] == "URL":
-        return understand_markdown(source.get("content_markdown") or "", location)
+        return understand_markdown(source.get("content_markdown") or "", location, model=model)
 
     ext = _ext(location)
     data = load_file(source)
@@ -109,7 +110,7 @@ def understand_source(source: dict) -> tuple[dict, int, int]:
         return index_only_result(source, data), 0, 0
     if ext in _VISUAL_MIME:
         text_layer = pdf_text(data) if ext == ".pdf" else None
-        result, i, o = understand_file(data, _VISUAL_MIME[ext], location, text_layer=text_layer)
+        result, i, o = understand_file(data, _VISUAL_MIME[ext], location, text_layer=text_layer, model=model)
         if ext == ".pdf" and result.get("schedules"):
             result["_crosscheck"] = crosscheck_schedules(data, result["schedules"])
         return result, i, o
@@ -117,12 +118,12 @@ def understand_source(source: dict) -> tuple[dict, int, int]:
         import io
         import docx2txt
         text = docx2txt.process(io.BytesIO(data))
-        return understand_markdown(normalize_markdown(text), location)
+        return understand_markdown(normalize_markdown(text), location, model=model)
     if ext in _TEXT_EXT:
-        return understand_markdown(normalize_markdown(data.decode("utf-8", errors="replace")), location)
+        return understand_markdown(normalize_markdown(data.decode("utf-8", errors="replace")), location, model=model)
     guessed = mimetypes.guess_type(location)[0] or ""
     if guessed.startswith("text/"):
-        return understand_markdown(normalize_markdown(data.decode("utf-8", errors="replace")), location)
+        return understand_markdown(normalize_markdown(data.decode("utf-8", errors="replace")), location, model=model)
     raise UnsupportedSource(ext or guessed or "unknown")
 
 
@@ -204,9 +205,10 @@ def _parse_date(value: str) -> str | None:
         return None
 
 
-def _store_facts_and_events(tenant_id: str, source_id: int, result: dict) -> None:
+def _store_facts_and_events(tenant_id: str, source_id: int, result: dict, url: str = "") -> None:
     supabase.table("tenant_facts").delete().eq("source_id", source_id).execute()
-    supabase.table("tenant_events").delete().eq("source_id", source_id).execute()
+    # this page leaves its old dates; dates other pages also name stay theirs
+    supabase.rpc("release_source_events", {"p_source": source_id}).execute()
 
     facts = [
         {
@@ -240,8 +242,12 @@ def _store_facts_and_events(tenant_id: str, source_id: int, result: dict) -> Non
                     "tenant_id": tenant_id, "source_id": source_id, "series": e.get("name") or "",
                     "zone": "", "event_date": iso, "is_exception": False, "notes": e.get("notes") or "",
                 })
-    for i in range(0, len(events), 500):
-        supabase.table("tenant_events").insert(events[i:i + 500]).execute()
+    # One row per event however many pages name it (unique in the database):
+    # a known event gains this page; the most specific page is the one cited.
+    page = {"title": result.get("title") or "", "source_location": url}
+    rows = [{**e, "source_rank": source_rank(e, page)} for e in dedupe_events(events)]
+    for i in range(0, len(rows), 500):
+        supabase.rpc("upsert_events", {"p_rows": rows[i:i + 500]}).execute()
 
 
 def _index(tenant_id: str, source: dict, result: dict) -> tuple[list[str], int]:
@@ -283,8 +289,11 @@ def learn_source(source_id: int, job_id: int | None = None) -> None:
     tenant_id = source["tenant_id"]
 
     try:
+        model_key = DEFAULT_LEARNING_MODEL   # uploads: the default
         if job_id is not None:
-            job = supabase.table("crawling_jobs").select("status").eq("id", job_id).limit(1).execute().data
+            job = supabase.table("crawling_jobs").select("status, learning_model").eq("id", job_id).limit(1).execute().data
+            if job:
+                model_key = learning_model_key(job[0].get("learning_model"))
             if not job or job[0]["status"] == "FAILED":
                 supabase.table("tenant_sources").update({"status": "QUEUED"}).eq("id", source_id).execute()
                 return
@@ -294,19 +303,19 @@ def learn_source(source_id: int, job_id: int | None = None) -> None:
 
         jobs.log_event(job_id, tenant_id, "learn_source", url=source["source_location"],
                        title=source.get("title") or "", kind=source["source_type"])
-        result, in_tok, out_tok = understand_source(source)
+        result, in_tok, out_tok = understand_source(source, LEARNING_MODELS[model_key]["model"])
         log_summary(source["source_location"], result)
         _validate(result)
 
         new_names, embed_tokens = _index(tenant_id, source, result)
         jobs.delete_source_documents(source)
-        _store_facts_and_events(tenant_id, source_id, result)
+        _store_facts_and_events(tenant_id, source_id, result, source["source_location"])
 
+        # charged at the chosen model's price (Google's rate × the learning factor)
         owner = BillingService.get_tenant_owner(tenant_id)
         cost = 0.0
         if owner:
-            cost += BillingService.deduct_cost(owner, "extraction", in_tok, out_tok)
-            cost += BillingService.deduct_cost(owner, "indexing", embed_tokens, 0)
+            cost = BillingService.deduct_amount(owner, jobs.tokens_cost(in_tok, out_tok, embed_tokens, model_key), tenant_id)
 
         supabase.table("tenant_sources").update({
             "status": "COMPLETED",

@@ -19,6 +19,12 @@
             <h1 class="page-title">{{ $t('pages.configureTitle') }}</h1>
             <p class="page-lede">{{ $t('pages.configure') }}</p>
           </div>
+          <div class="page-actions">
+            <button type="button" class="btn-quiet" :disabled="matching" @click="matchWebsite">
+              <font-awesome-icon :icon="matching ? ['fas', 'spinner'] : ['fas', 'wand-magic-sparkles']" :class="{ 'animate-spin': matching }" />
+              {{ $t('configure.branding.button') }}
+            </button>
+          </div>
         </div>
 
         <ConversationTab :model-value="formData" />
@@ -50,70 +56,16 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useTenantsStore } from '../../stores/tenants';
 import { useToast } from '../../composables/useToast';
+import apiClient from '../../utils/api';
 import ConversationTab from './settings/ConversationTab.vue';
 import EditablePreview from './settings/EditablePreview.vue';
+import { applyBranding, fromTenant } from '../../utils/widgetConfig';
 
 const tenantsStore = useTenantsStore();
 const { addToast } = useToast();
 const { t } = useI18n();
 
 const saving = ref(false);
-
-const defaultWidgetConfig = () => ({
-  chatbot_title: '',
-  logo: null,
-  launcher_icon: null,
-  show_reset_button: true,
-  show_share_button: false,
-  widget_enabled: true,
-  input_placeholder: '',
-  thinking_messages: [],
-  conversation_starters: [],
-  starter_background_color: 'c_primary',
-  starter_text_color: 'c_white',
-  color_palette: [
-    { id: 'c_primary',   name: 'Primary',   value: '#5F6DFF' },
-    { id: 'c_secondary', name: 'Secondary', value: '#F3F4F6' },
-    { id: 'c_black',     name: 'Black',     value: '#1F2937' },
-    { id: 'c_white',     name: 'White',     value: '#FFFFFF' },
-  ],
-  component_styles: {
-    header_background_color: 'c_secondary', header_text_color: 'c_black',
-    user_message_background_color: 'c_primary', user_message_text_color: 'c_white',
-    bot_message_background_color: 'c_secondary', bot_message_text_color: 'c_black',
-    send_button_background_color: 'c_primary', send_button_text_color: 'c_white',
-    input_background_color: 'c_secondary', input_text_color: 'c_black',
-    footer_background_color: 'c_secondary', chat_background_color: 'c_white',
-    reset_button_color: 'c_primary', reset_button_icon_color: 'c_white',
-    close_button_background_color: 'c_primary', close_button_icon_color: 'c_white',
-    share_button_color: 'c_primary', share_button_icon_color: 'c_white',
-    launcher_background_color: 'c_primary',
-  },
-});
-
-const FIELDS = ['name', 'intro_message', 'system_persona', 'rag_prompt_template'];
-
-// Plain deep copy; store objects are reactive proxies, which structuredClone rejects
-const clone = (v) => JSON.parse(JSON.stringify(v));
-
-const fromTenant = (tenant) => {
-  const saved = tenant.widget_config || {};
-  const base = defaultWidgetConfig();
-  return {
-    ...Object.fromEntries(FIELDS.map((f) => [f, tenant[f] ?? ''])),
-    widget_config: {
-      ...base,
-      ...clone(saved),
-      color_palette: clone(saved.color_palette || base.color_palette),
-      component_styles: {
-        ...base.component_styles,
-        // the footer used to follow the header colour; keep that look until changed
-        footer_background_color: saved.component_styles?.header_background_color || base.component_styles.footer_background_color,
-        ...(saved.component_styles || {}),
-      },
-    },
-  };
-};
 
 const formData = ref(fromTenant({}));
 const snapshot = ref('');
@@ -135,13 +87,36 @@ const save = async () => {
   if (!tenantsStore.currentTenant || saving.value) return;
   saving.value = true;
   try {
-    await tenantsStore.updateTenant(tenantsStore.currentTenant.id, formData.value);
+    // the audience is set under Einstellungen › Chatbots; only the preview reads it here
+    const { audience, ...changes } = formData.value;
+    await tenantsStore.updateTenant(tenantsStore.currentTenant.id, changes);
     snapshot.value = JSON.stringify(formData.value);
     addToast(t('configure.saved'), 'success');
   } catch {
     addToast(t('tenant.settings.actions.saveFailed'), 'error');
   } finally {
     saving.value = false;
+  }
+};
+
+// ── Look taken from the website ─────────────────────────────────────
+// Nothing is saved until the customer saves.
+const matching = ref(false);
+
+const matchWebsite = async () => {
+  const tenantId = tenantsStore.currentTenant?.id;
+  if (!tenantId || matching.value) return;
+  matching.value = true;
+  try {
+    const { data } = await apiClient.post(`/tenants/${tenantId}/branding`, {});
+    const found = applyBranding(formData.value.widget_config, data);
+    if (found) addToast(t('configure.branding.applied', { site: new URL(data.source_url).hostname }), 'success');
+    else addToast(t('configure.branding.nothing'), 'warning');
+  } catch (err) {
+    const code = err.response?.data?.error;
+    addToast(t(code === 'no_website' ? 'configure.branding.noWebsite' : 'configure.branding.failed'), 'error');
+  } finally {
+    matching.value = false;
   }
 };
 

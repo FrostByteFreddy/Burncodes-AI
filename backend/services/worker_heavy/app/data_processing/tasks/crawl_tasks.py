@@ -32,9 +32,10 @@ from app.data_processing.ingestion.utils import normalize_url
 from app.data_processing.soup_extractor import HEADERS, extract_internal_links, fetch_html
 from app.database.supabase_client import supabase
 from app.gemini_store.service import INDEXABLE_FILE_EXTENSIONS, UNSUPPORTED_EXTENSIONS
-from app.knowledge import jobs
+from app.knowledge import jobs, politeness
 from app.ai_models import INDEXING_GEMINI_MODEL, count_tokens
 from app.knowledge.markdown import content_hash, estimate_tokens, html_to_markdown, pdf_page_count, contact_from_link
+from app.knowledge.url_scope import is_excluded, is_funnel_page, other_language, site as _site
 from app.logging_config import error_logger
 from app.models.database import CrawlingStatus, SourceType
 from app.security.url_guard import UnsafeURLError, is_public_url, safe_client
@@ -54,12 +55,6 @@ def _is_file_link(url: str) -> bool:
     return ext in INDEXABLE_FILE_EXTENSIONS or ext in UNSUPPORTED_EXTENSIONS
 
 
-def _site(host: str | None) -> str:
-    """Host without a leading "www." — zofingen.ch and www.zofingen.ch are one site."""
-    host = (host or "").lower()
-    return host[4:] if host.startswith("www.") else host
-
-
 def _canonical_link(href: str) -> str:
     """
     Normalised URL for de-duplication. File links drop their query string:
@@ -75,15 +70,6 @@ def _canonical_link(href: str) -> str:
 def _is_contact_link(url: str) -> bool:
     """Email/phone links (also ones hidden in the path) aren't pages; their address is kept in the page text."""
     return contact_from_link(url) is not None
-
-
-def _is_excluded(url: str, excluded: list[str]) -> bool:
-    stripped = url.replace("https://", "").replace("http://", "").strip("/")
-    for ex in excluded:
-        ex = ex.replace("https://", "").replace("http://", "").strip("/")
-        if ex and (stripped == ex or stripped.startswith(ex + "/")):
-            return True
-    return False
 
 
 def _finish_task(task_id: int, status: CrawlingStatus, outcome: str) -> None:
@@ -104,7 +90,7 @@ def _enqueue(task_rows: list[dict], tenant_id: str) -> None:
 def _add_links(job: dict, tenant_id: str, depth: int, parent_url: str, hrefs: list[str]) -> int:
     """Inserts unseen links as tasks of this job and queues them. Returns how many were new."""
     start_site = _site(urlparse(job["start_url"]).hostname)
-    excluded = [normalize_url(str(e).strip()) for e in job.get("excluded_urls") or []]
+    excluded = job.get("excluded_urls") or []
     max_depth = job["max_depth"]
     rows, seen = [], set()
     for href in hrefs:
@@ -119,7 +105,11 @@ def _add_links(job: dict, tenant_id: str, depth: int, parent_url: str, hrefs: li
             url = "https://" + url[len("http://"):]
             if url in seen:
                 continue
-        if _is_excluded(url, excluded) or _is_contact_link(url):
+        if is_excluded(url, excluded) or _is_contact_link(url):
+            continue
+        if job.get("same_language") and other_language(url, job["start_url"]):
+            continue  # the bot answers in any language: one language version is enough
+        if job.get("skip_funnel") and is_funnel_page(url):
             continue
         if _is_file_link(url):
             if max_depth <= 1 and Path(parsed.path).suffix.lower() not in _DOCUMENT_EXTENSIONS:
@@ -140,6 +130,25 @@ def _add_links(job: dict, tenant_id: str, depth: int, parent_url: str, hrefs: li
     if inserted:
         _enqueue(inserted, tenant_id)
     return len(inserted)
+
+
+def _add_sitemap_pages(job: dict, tenant_id: str, start_url: str) -> None:
+    """
+    Whole-site crawls also visit what the sitemap lists below the start
+    address: landing pages no menu links to. They're read at the deepest
+    level, so they don't lead further. Never fails the scan.
+    """
+    if not job.get("use_sitemap") or job["max_depth"] <= 1:
+        return
+    try:
+        from app.knowledge.sitemap import sitemap_urls
+        below = urlparse(job["start_url"]).path.rstrip("/")
+        urls = [u for u in sitemap_urls(job["start_url"])
+                if not below or urlparse(u).path.rstrip("/") == below or urlparse(u).path.startswith(below + "/")]
+        found = _add_links(job, tenant_id, job["max_depth"] - 1, start_url, urls)
+        jobs.log_event(job["id"], tenant_id, "sitemap_read", url=start_url, listed=len(urls), count=found)
+    except Exception as e:
+        error_logger.warning("sitemap of %s skipped: %s", job["start_url"], e)
 
 
 def _record_error(tenant_id: str, url: str, source_type: str, job_id: int, status_code: int) -> None:
@@ -163,12 +172,10 @@ def _record_error(tenant_id: str, url: str, source_type: str, job_id: int, statu
 # ---------------------------------------------------------------------------
 # Politeness: one website, one request at a time, at a steady pace
 # ---------------------------------------------------------------------------
-# All scan workers share these slots through Redis, so 5 workers don't hit one
-# server five times at once. A website that answers "too many requests" gets a
-# slower pace for an hour and the page is retried instead of failing.
+# All scan workers share these slots through Redis, so 10 workers don't hit
+# one server ten times at once. When a site gets a slower pace: politeness.py.
 
-HOST_INTERVAL_MS = int(os.getenv("CRAWL_HOST_INTERVAL_MS", "1000"))
-MAX_HOST_INTERVAL_MS = 10_000
+HOST_INTERVAL_MS = politeness.HOST_INTERVAL_MS
 RATE_LIMIT_RETRIES = 4
 
 # reserve the next free slot for a host; returns how long to wait (ms)
@@ -200,23 +207,21 @@ def _wait_for_host(url: str) -> None:
         error_logger.debug("crawl throttle unavailable: %s", e)
         return  # best effort: never block a crawl on Redis
     if wait_ms and wait_ms > 0:
-        time.sleep(min(int(wait_ms), 120_000) / 1000)
+        time.sleep(min(int(wait_ms), politeness.MAX_HOLD_MS) / 1000)
 
 
-def _slow_down(url: str) -> None:
-    """The website pushed back: double the pause between requests to it (for an hour)."""
+def _after_failure(url: str, e: "RateLimited") -> None:
+    """The page couldn't be read: slower pace if the website pushed back (or keeps not answering)."""
     host = _site(urlparse(url).hostname)
-    key = f"crawl:interval:{host}"
     try:
-        r = _redis_client()
-        current = int(r.get(key) or HOST_INTERVAL_MS)
-        r.set(key, min(MAX_HOST_INTERVAL_MS, current * 2), ex=3600)
+        if politeness.after_failure(_redis_client(), host, e.status_code, e.retry_after):
+            error_logger.info("Slowing down for %s (status %s)", host, e.status_code)
     except Exception:
         pass
 
 
 class RateLimited(Exception):
-    """The website answered 429/503 or not at all: try this page again later."""
+    """The website answered 429/503 or not at all (408 timeout, 0 no connection): try this page again later."""
 
     def __init__(self, retry_after: int | None = None, status_code: int = 429):
         super().__init__(f"try later (status {status_code}, retry after {retry_after})")
@@ -319,6 +324,10 @@ def crawl_links_task(
     start_url: str,
     single_page_only: bool = False,
     excluded_urls: list[str] = None,
+    same_language: bool = False,
+    use_sitemap: bool = False,
+    skip_funnel: bool = False,
+    learning_model: str | None = None,
     max_depth: int = 3,
     trigger: str = "manual",
     auto_confirm: bool = False,
@@ -336,6 +345,10 @@ def crawl_links_task(
         "single_page_only": single_page_only,
         "status": CrawlingStatus.IN_PROGRESS.value,
         "excluded_urls": excluded_urls or [],
+        "same_language": bool(same_language),
+        "use_sitemap": bool(use_sitemap),
+        "skip_funnel": bool(skip_funnel),
+        "learning_model": learning_model,
         "crawl_mode": crawl_mode,
         "trigger": trigger,
         "auto_confirm": auto_confirm,
@@ -411,7 +424,7 @@ def process_single_url_task(self, task_id: int, tenant_id: UUID, parent_url: str
 def _retry_later(task: dict, tenant_id: str, parent_url: str | None, e: RateLimited) -> None:
     """Re-queues the page with a growing pause; after RATE_LIMIT_RETRIES it counts as failed."""
     task_id, job_id, url = task["id"], task["job_id"], task["url"]
-    _slow_down(url)
+    _after_failure(url, e)
     attempts = (task.get("attempts") or 0) + 1
     if attempts <= RATE_LIMIT_RETRIES:
         delay = min(600, e.retry_after or 30 * 2 ** (attempts - 1))
@@ -443,6 +456,31 @@ def _seen_in_this_crawl(tenant_id: str, job_id: int, url: str, digest: str) -> b
     return bool(rows)
 
 
+def _update_contact_card(tenant_id: str, job: dict, url: str, html: str) -> None:
+    """
+    The start page's footer → the chatbot's contact card (address, phone,
+    opening hours). Gemini reads it only when the footer changed. Never fails
+    the scan.
+    """
+    try:
+        from app.knowledge.contact import extract_contact
+        from app.knowledge.markdown import footer_markdown
+        footer = footer_markdown(html)
+        digest = content_hash(footer) if footer else ""
+        row = supabase.table("tenants").select("contact_footer_hash").eq("id", tenant_id).limit(1).execute().data
+        if not footer or (row and row[0].get("contact_footer_hash") == digest):
+            return
+        card = extract_contact(footer, url)
+        fields = {"contact_footer_hash": digest}
+        if card:
+            fields["contact_card"] = {**card, "source_url": url, "updated_at": jobs.now_iso()}
+            jobs.log_event(job["id"], tenant_id, "contact_found", url=url,
+                           hours=len(card.get("opening_hours") or []))
+        supabase.table("tenants").update(fields).eq("id", tenant_id).execute()
+    except Exception as e:
+        error_logger.warning("contact card for %s skipped: %s", url, e)
+
+
 def _scan_page(tenant_id: str, url: str, job: dict, depth: int, parent_url: str | None, info: dict | None = None) -> str:
     mode = job.get("crawl_mode") or "playwright"
     html, status_code, links = _fetch_soup(url) if mode == "soup" else _fetch_playwright(url, parent_url)
@@ -457,6 +495,9 @@ def _scan_page(tenant_id: str, url: str, job: dict, depth: int, parent_url: str 
     title, markdown = html_to_markdown(html)
     if info is not None and title:
         info["title"] = title[:200]
+    if depth == 1:
+        _update_contact_card(tenant_id, job, url, html)
+        _add_sitemap_pages(job, tenant_id, url)
     tokens = estimate_tokens(markdown)
     if tokens >= MIN_CONTENT_TOKENS:
         # exact size for the cost estimate (free call); the guess only as fallback

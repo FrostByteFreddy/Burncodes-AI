@@ -38,14 +38,12 @@ import { useRoute, useRouter } from 'vue-router';
 import ProfileSection from '@/components/settings/ProfileSection.vue';
 import SecuritySection from '@/components/settings/SecuritySection.vue';
 import BillingSection from '@/components/settings/BillingSection.vue';
-import SchedulesSection from '@/components/settings/SchedulesSection.vue';
 import DangerSection from '@/components/settings/DangerSection.vue';
 
 const SECTIONS = [
   { key: 'profile', icon: 'user', component: ProfileSection },
   { key: 'security', icon: 'lock', component: SecuritySection },
   { key: 'billing', icon: 'wallet', component: BillingSection },
-  { key: 'schedules', icon: 'clock', component: SchedulesSection },
   { key: 'danger', icon: 'triangle-exclamation', component: DangerSection },
 ];
 
