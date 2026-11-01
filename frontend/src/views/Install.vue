@@ -61,7 +61,7 @@
 
             <div class="inst-delegate">
               <p>{{ $t('install.delegate.text') }}</p>
-              <Button as-child variant="outline"><a :href="mailto" class="inst-link">
+              <Button as-child variant="outline" class="h-auto min-h-10 max-w-full shrink whitespace-normal py-2"><a :href="mailto" class="inst-link">
                 <font-awesome-icon :icon="['fas', 'envelope']" /> {{ $t('install.delegate.button') }}
               </a></Button>
             </div>
