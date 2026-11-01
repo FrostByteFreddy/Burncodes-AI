@@ -18,12 +18,12 @@
                 : $t('knowledge.selection.saves', { n: s.count, cost: fmtChf(s.saves) }, s.count) }}
             </p>
           </div>
-          <button v-if="s.done" type="button" class="btn-quiet" :disabled="saving" @click="restoreFolder(s.folder)">
+          <BcButton variant="secondary" v-if="s.done" type="button"  :disabled="saving" @click="restoreFolder(s.folder)">
             {{ $t('knowledge.selection.undo') }}
-          </button>
-          <button v-else type="button" class="btn-quiet cs__exclude" :disabled="saving" @click="setFolder(s.folder, false)">
+          </BcButton>
+          <BcButton variant="secondary" v-else type="button" class="cs__exclude" :disabled="saving" @click="setFolder(s.folder, false)">
             {{ $t('knowledge.selection.exclude') }}
-          </button>
+          </BcButton>
         </li>
       </ul>
     </section>
@@ -99,6 +99,7 @@
 </template>
 
 <script setup>
+import { BcButton } from '@/components/ui';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';

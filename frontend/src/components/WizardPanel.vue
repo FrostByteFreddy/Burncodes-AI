@@ -2,7 +2,7 @@
   <Teleport to="body">
     <Transition name="slide-over">
       <div v-if="open" class="fixed inset-0 z-50 flex justify-end">
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="$emit('close')"></div>
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-xs" @click="$emit('close')"></div>
 
         <div class="wizard-panel">
 

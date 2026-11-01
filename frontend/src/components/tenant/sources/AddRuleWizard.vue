@@ -26,16 +26,15 @@
       </div>
 
       <div>
-        <label for="rule-trigger" class="field-label">{{ $t('tenant.fineTune.trigger.label') }}</label>
-        <input
+        <Label for="rule-trigger" class="mb-2">{{ $t('tenant.fineTune.trigger.label') }}</Label>
+        <Input
           id="rule-trigger"
           v-model="trigger"
           type="text"
           :placeholder="$t('tenant.fineTune.wizard.triggerExample')"
-          class="field-input"
+          
           style="margin-top:8px;"
-          @keydown.enter.prevent="canProceed && step++"
-        />
+          @keydown.enter.prevent="canProceed && step++" />
       </div>
 
       <div v-if="trigger.trim()" class="trigger-preview">
@@ -62,15 +61,14 @@
       </div>
 
       <div>
-        <label for="rule-instruction" class="field-label">{{ $t('tenant.fineTune.instruction.label') }}</label>
-        <textarea
+        <Label for="rule-instruction" class="mb-2">{{ $t('tenant.fineTune.instruction.label') }}</Label>
+        <Textarea
           id="rule-instruction"
           v-model="instruction"
           :placeholder="$t('tenant.fineTune.wizard.actionExample')"
-          class="field-input field-input--textarea"
+          class="min-h-[110px] resize-y"
           rows="5"
-          style="margin-top:8px;"
-        ></textarea>
+          style="margin-top:8px;" />
       </div>
 
       <div class="recap-card">
@@ -82,6 +80,9 @@
 </template>
 
 <script setup>
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { ref, computed, watch } from 'vue';
 import WizardPanel from '../../WizardPanel.vue';
 
@@ -147,24 +148,6 @@ const submit = () => {
   text-transform: uppercase;
   color: var(--surface-muted);
 }
-.field-input {
-  width: 100%;
-  padding: 10px 14px;
-  background: var(--surface-2);
-  border: 1px solid var(--surface-3);
-  border-radius: var(--radius-md);
-  color: var(--surface-text);
-  font-size: 14px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color var(--t-fast), box-shadow var(--t-fast);
-  box-sizing: border-box;
-}
-.field-input:focus {
-  border-color: var(--brand-indigo);
-  box-shadow: 0 0 0 3px rgba(10,31,171,0.15);
-}
-.field-input--textarea { resize: vertical; min-height: 110px; line-height: 1.5; }
 
 .trigger-preview {
   display: flex;

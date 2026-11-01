@@ -1,6 +1,6 @@
 <template>
   <!-- Balance and spending -->
-  <section class="panel">
+  <BcPanel as="section"  >
     <div v-if="billing.balance === null && billing.loading" class="ghost-stack" aria-busy="true">
       <span class="ghost ghost--line" style="width: 100px"></span>
       <span class="ghost" style="width: 200px; height: 38px"></span>
@@ -12,9 +12,9 @@
           <p class="meta">{{ $t('settings.billing.balance') }}</p>
           <p class="bil-balance" :class="{ 'bil-balance--low': (billing.balance ?? 0) < 5 }">CHF {{ fmt(billing.balance) }}</p>
         </div>
-        <button type="button" class="btn-quiet" @click="openPortal">
+        <BcButton variant="secondary" type="button"  @click="openPortal">
           <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" /> {{ $t('settings.billing.portal') }}
-        </button>
+        </BcButton>
       </div>
       <dl class="bil-spent">
         <div><dt>{{ $t('settings.billing.answers') }}</dt><dd>CHF {{ fmt(billing.usage?.chat_cost) }}</dd></div>
@@ -24,10 +24,10 @@
       </dl>
       <p class="field-hint">{{ $t('settings.billing.spentHint') }}</p>
     </template>
-  </section>
+  </BcPanel>
 
   <!-- Top up -->
-  <section class="panel">
+  <BcPanel as="section"  >
     <h2 class="panel-title">{{ $t('settings.billing.topUpTitle') }}</h2>
     <p class="panel-sub">{{ $t('settings.billing.topUpSub') }}</p>
     <div class="cfg-fields">
@@ -45,16 +45,16 @@
       </div>
       <p class="field-hint" :class="{ 'field-hint--warn': !!amountError }">{{ amountError || (recurring ? $t('settings.billing.monthlyHint') : $t('settings.billing.onceHint')) }}</p>
       <div class="page-actions">
-        <button type="button" class="btn-action" :disabled="!!amountError || billing.loading" @click="checkout">
+        <BcButton variant="primary" type="button"  :disabled="!!amountError || billing.loading" @click="checkout">
           <font-awesome-icon v-if="billing.loading" :icon="['fas', 'spinner']" class="animate-spin" />
           {{ recurring ? $t('settings.billing.payMonthly', { amount: fmt(amount) }) : $t('settings.billing.pay', { amount: fmt(amount) }) }}
-        </button>
+        </BcButton>
       </div>
     </div>
-  </section>
+  </BcPanel>
 
   <!-- Payments -->
-  <section class="panel">
+  <BcPanel as="section"  >
     <h2 class="panel-title">{{ $t('settings.billing.historyTitle') }}</h2>
     <div v-if="billing.loading && !billing.history.length" style="margin-top: 16px" aria-busy="true">
       <div v-for="n in 3" :key="n" class="ghost-row"><span class="ghost ghost--line" style="width: 90px"></span><span class="ghost ghost--line" style="flex: 1"></span><span class="ghost ghost--line" style="width: 80px"></span></div>
@@ -74,10 +74,11 @@
         </tr>
       </tbody>
     </table>
-  </section>
+  </BcPanel>
 </template>
 
 <script setup>
+import { BcButton, BcPanel } from '@/components/ui';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useBillingStore } from '@/stores/billing';

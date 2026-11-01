@@ -57,42 +57,6 @@
   opacity: 1;
 }
 
-/* ── Field label ─────────────────────────────────────────────────────── */
-.field-label {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--surface-muted);
-  margin-bottom: 8px;
-}
-
-/* ── Standard text input ─────────────────────────────────────────────── */
-.field-input {
-  width: 100%;
-  background: var(--surface-2);
-  border: 1px solid var(--surface-3);
-  border-radius: var(--radius-md);
-  color: var(--surface-text);
-  font-size: 14px;
-  font-weight: 500;
-  height: 44px;
-  padding: 0 14px;
-  outline: none;
-  transition: border-color var(--t-fast), box-shadow var(--t-fast);
-}
-
-.field-input:focus {
-  border-color: var(--brand-indigo);
-  box-shadow: 0 0 0 3px rgba(10, 31, 171, 0.15);
-}
-
-.field-input.has-error {
-  border-color: var(--status-error);
-  background: rgba(255, 68, 68, 0.05);
-}
-
 /* ── Path exclusion chip ─────────────────────────────────────────────── */
 .path-chip {
   display: inline-flex;

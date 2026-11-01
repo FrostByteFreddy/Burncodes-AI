@@ -53,7 +53,7 @@
             :aria-expanded="openId === hit.id"
             @click.stop="toggle(hit)"
           >
-            <span class="epv__tag" :class="{ 'epv__tag--below': hit.tagBelow }">{{ $t(`configure.edit.parts.${hit.key}`) }}</span>
+            <span class="epv__tag" :class="{ 'epv__tag--below': hit.tagBelow, 'epv__tag--end': hit.tagEnd }">{{ $t(`configure.edit.parts.${hit.key}`) }}</span>
           </button>
 
           <button v-if="addButton" type="button" class="epv__add" :style="addButton" @click.stop="addQuestion">
@@ -71,19 +71,19 @@
             <!-- Texts -->
             <template v-if="openHit.key === 'header'">
               <div>
-                <label for="epv-title" class="form-field">{{ $t('configure.header.chatTitle') }}</label>
-                <input id="epv-title" v-model="config.chatbot_title" type="text" class="form-input" />
+                <Label for="epv-title" class="mb-2">{{ $t('configure.header.chatTitle') }}</Label>
+                <Input id="epv-title" v-model="config.chatbot_title" type="text"  />
               </div>
               <ImageField field="epv-logo" :label="$t('configure.header.logo')" v-model="config.logo" />
             </template>
             <div v-if="openHit.key === 'bot' && state === 'start' && openHit.index === 0">
-              <label for="epv-intro" class="form-field">{{ $t('configure.welcome.intro') }}</label>
-              <AutoGrowTextarea id="epv-intro" v-model="form.intro_message" rows="3" class="form-input" />
+              <Label for="epv-intro" class="mb-2">{{ $t('configure.welcome.intro') }}</Label>
+              <AutoGrowTextarea id="epv-intro" v-model="form.intro_message" rows="3" />
             </div>
             <div v-if="openHit.key === 'starter' && starters[openHit.index]">
-              <label for="epv-question" class="form-field">{{ $t('configure.edit.question') }}</label>
+              <Label for="epv-question" class="mb-2">{{ $t('configure.edit.question') }}</Label>
               <div class="epv__row">
-                <input id="epv-question" ref="questionInput" v-model="starters[openHit.index].label" type="text" class="form-input" />
+                <Input id="epv-question" ref="questionInput" v-model="starters[openHit.index].label" type="text"  />
                 <button type="button" class="cfg-icon-btn" :aria-label="$t('configure.edit.removeQuestion')" @click="removeQuestion(openHit.index)">
                   <font-awesome-icon :icon="['fas', 'trash-alt']" />
                 </button>
@@ -91,8 +91,8 @@
               <p class="field-hint">{{ $t('configure.edit.startersShared') }}</p>
             </div>
             <div v-if="openHit.key === 'input'">
-              <label for="epv-placeholder" class="form-field">{{ $t('configure.welcome.placeholder') }}</label>
-              <input id="epv-placeholder" v-model="config.input_placeholder" type="text" class="form-input" />
+              <Label for="epv-placeholder" class="mb-2">{{ $t('configure.welcome.placeholder') }}</Label>
+              <Input id="epv-placeholder" v-model="config.input_placeholder" type="text"  />
             </div>
 
             <!-- Colours -->
@@ -126,6 +126,8 @@
 </template>
 
 <script setup>
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { v4 as uuidv4 } from 'uuid';
@@ -202,6 +204,7 @@ function measure() {
       next.push({
         ...part, index, id: `${part.key}-${index}`, rect: p, area: p.width * p.height,
         tagBelow: p.top < 28,
+        tagEnd: p.left > box.width / 2,
         style: { left: `${p.left}px`, top: `${p.top}px`, width: `${p.width}px`, height: `${p.height}px` },
       });
     });
@@ -369,6 +372,7 @@ onBeforeUnmount(() => {
   opacity: 0; pointer-events: none; transition: opacity var(--t-fast);
 }
 .epv__tag--below { bottom: auto; top: calc(100% + 6px); }
+.epv__tag--end { left: auto; right: 0; }
 .epv__hit:hover > .epv__tag, .epv__hit:focus-visible > .epv__tag { opacity: 1; }
 .epv__hit--open > .epv__tag { opacity: 0; }
 

@@ -66,7 +66,7 @@
     </section>
 
     <!-- What the chatbot knows about reaching the organisation, read from the website footer -->
-    <section v-if="contact" class="panel ko-contact" :aria-label="$t('knowledge.contact.title')">
+    <BcPanel as="section"  v-if="contact" class="ko-contact" :aria-label="$t('knowledge.contact.title')">
       <h2 class="panel-title">{{ $t('knowledge.contact.title') }}</h2>
       <p class="panel-sub">{{ $t('knowledge.contact.sub') }}</p>
       <div class="ko-contact__grid">
@@ -85,12 +85,13 @@
         </dl>
       </div>
       <p v-if="contact.hours_note" class="meta">{{ contact.hours_note }}</p>
-    </section>
+    </BcPanel>
 
   </div>
 </template>
 
 <script setup>
+import { BcPanel } from '@/components/ui';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';

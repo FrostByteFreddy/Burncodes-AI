@@ -1,88 +1,89 @@
 /* ── Component CSS — mirrors src/components/ tree ──────────────────── */
-/* NOTE: @import must come before @tailwind directives in PostCSS      */
-@import './components/tenant/Sources.css';
-@import './components/tenant/Settings.css';
-@import './components/tenant/sources/AddKnowledgeWizard.css';
-@import './components/tenant/settings/AppearanceTab.css';
-@import './components/tenant/settings/BehaviorTab.css';
-@import './components/tenant/sources/RulesTab.css';
-@import './legacy.css';
+@import './components/tenant/Sources.css' layer(base);
+@import './components/tenant/sources/AddKnowledgeWizard.css' layer(base);
+@import './components/tenant/settings/BehaviorTab.css' layer(base);
+@import './components/tenant/sources/RulesTab.css' layer(base);
+@import './legacy.css' layer(base);
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import './shadcn.css';
 
-@layer components {
-  .card {
-    @apply bg-base-100 rounded-xl shadow-[0px_10px_30px_rgba(10,31,171,0.06)] border border-transparent;
+/* dark: follows the design tokens' switch on <html> */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+@plugin '@tailwindcss/typography';
+
+/* shadcn's colour names, resolved through the design tokens (tokens.css),
+   so its components follow light and dark with the rest of the dashboard */
+@theme inline {
+  --font-sans: "Atkinson Hyperlegible Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, Consolas, "SF Mono", monospace;
+  --color-background: var(--surface-0);
+  --color-foreground: var(--text-primary);
+  --color-card: var(--surface-1);
+  --color-card-foreground: var(--text-primary);
+  --color-popover: var(--surface-1);
+  --color-popover-foreground: var(--text-primary);
+  --color-primary: var(--interactive);
+  --color-primary-foreground: var(--on-interactive);
+  --color-secondary: var(--surface-2);
+  --color-secondary-foreground: var(--text-primary);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--text-secondary);
+  --color-accent: var(--interactive-soft);
+  --color-accent-foreground: var(--interactive);
+  --color-destructive: var(--status-error);
+  --color-border: var(--border-subtle);
+  --color-input: var(--border-strong);
+  --color-ring: var(--focus-ring);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
+
+  /* Colour names of the older screens */
+  --color-primary-focus: #071685;
+  --color-primary-light: #e9ebfb;
+  --color-primary-content: #ffffff;
+  --color-secondary-focus: #e1e1db;
+  --color-secondary-content: #15171c;
+  --color-neutral: #e1e1db;
+  --color-neutral-focus: #ecece7;
+  --color-neutral-content: #15171c;
+  --color-base-100: #ffffff;
+  --color-base-200: #f5f5f2;
+  --color-base-300: #e2e2dc;
+  --color-base-content: #15171c;
+  --color-info: #0a1fab;
+  --color-success: #1c7a3b;
+  --color-warning: #875200;
+  --color-error: #b42318;
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-border);
   }
+}
 
-  .card-login {
-    @apply bg-base-100 rounded-lg p-6 shadow-lg;
-  }
-
-  @media screen and (min-width: 768px) {
-    .card {
-      @apply p-8 shadow-[0px_10px_30px_rgba(10,31,171,0.06)];
-    }
-  }
-
-  /* ── Canonical button ──────────────────────────────────────────
-     Shape, size, and font are defined ONCE here.
-     Color variants (.btn-primary, .btn-secondary, etc.) ONLY
-     change background/text/border — nothing else.
-  ─────────────────────────────────────────────────────────────── */
-  .btn {
-    @apply inline-flex items-center justify-center gap-2
-           font-semibold text-sm
-           px-5 py-2.5
-           rounded-xl
-           border-none
-           transition-all duration-200
-           cursor-pointer
-           select-none;
-  }
-
-  /* Size modifiers */
-  .btn-sm  { @apply px-3.5 py-1.5 text-xs; }
-  .btn-lg  { @apply px-6 py-3 text-base; }
-  .btn-xs  { @apply px-2.5 py-1 text-xs; }
-
-  /* Shape modifiers */
-  .btn-circle        { @apply rounded-full w-10 h-10 p-0; }
-  .btn-circle.btn-sm { @apply w-8 h-8; }
-
-  /* Color variants */
-  .btn-primary   { background: var(--interactive-strong); @apply text-white hover:brightness-110; }
-  .btn-secondary { @apply bg-secondary hover:brightness-95; color: oklch(var(--sc)); }
-  .btn-error     { background: var(--status-error); @apply text-[#11152D] hover:brightness-110; }
-  .btn-success   { @apply bg-success hover:brightness-95; color: oklch(var(--suc)); }
-  .btn-warning   { @apply bg-warning hover:brightness-95; color: oklch(var(--wc)); }
-  .btn-ghost     { @apply bg-transparent text-base-content hover:bg-base-200; box-shadow: none !important; }
-  .btn-outline   { @apply bg-transparent border border-current hover:bg-base-200; box-shadow: none !important; }
-
-  .send-button > svg {
+@utility send-button {
+  & > svg {
     position: relative;
     transform: rotate(45deg);
     left: -2px;
   }
 }
 
-
-.sidebar-logo svg {
-  max-width: 70%;
-  margin-bottom: 1.5rem;
-}
-
 /* Custom Scrollbar */
 ::-webkit-scrollbar         { width: 0; height: 0; }
-::-webkit-scrollbar-track   { background: theme('colors.base-200'); }
-::-webkit-scrollbar-thumb   { background-color: theme('colors.base-300'); border-radius: 10px; border: 2px solid theme('colors.base-200'); }
-::-webkit-scrollbar-thumb:hover { background-color: theme('colors.neutral'); }
-
-details[open] > summary .details-arrow {
-  transform: rotate(180deg);
-}
+::-webkit-scrollbar-track   { background: var(--color-base-200); }
+::-webkit-scrollbar-thumb   { background-color: var(--color-base-300); border-radius: 10px; border: 2px solid var(--color-base-200); }
+::-webkit-scrollbar-thumb:hover { background-color: var(--color-neutral); }
 /* ── Page primitives ──────────────────────────────────────────────────
    Every page opens with a title and one plain sentence about what the
    page is for. No capitalised eyebrow labels above content.          */
@@ -122,34 +123,11 @@ details[open] > summary .details-arrow {
 /* Small text that qualifies something else (dates, counts, hints) */
 .meta { font-size: var(--text-sm); color: var(--surface-muted); }
 
-/* Primary action: solid interactive colour, no gradient */
-.btn-action {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 10px 16px;
-  border: none; border-radius: var(--radius-md);
-  background: var(--interactive-strong); color: #fff;
-  font: inherit; font-size: var(--text-sm); font-weight: 700;
-  cursor: pointer; transition: background var(--t-fast);
-}
-.btn-action:hover:not(:disabled) { background: var(--interactive); }
-.btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-quiet {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 9px 14px;
-  border: 1px solid var(--surface-3); border-radius: var(--radius-md);
-  background: transparent; color: var(--surface-text);
-  font: inherit; font-size: var(--text-sm); font-weight: 600;
-  cursor: pointer; transition: border-color var(--t-fast), color var(--t-fast);
-}
-.btn-quiet:hover:not(:disabled) { border-color: var(--surface-muted); color: var(--surface-heading); }
-.btn-quiet:disabled { opacity: 0.5; cursor: not-allowed; }
-
 /* ── Forms (Configure and friends) ─────────────────────────────── */
 .cfg-stack { display: flex; flex-direction: column; gap: 20px; }
 .cfg-fields { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
 .cfg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; }
 .field-hint { margin-top: 6px; font-size: var(--text-sm); color: var(--surface-muted); line-height: 1.45; max-width: var(--measure); }
-.field-hint--above { margin: -2px 0 0; }
 .field-hint--warn { color: var(--status-warning); }
 .cfg-icon-btn {
   width: 36px; height: 36px; flex-shrink: 0; border-radius: var(--radius-md);
@@ -169,10 +147,8 @@ details[open] > summary .details-arrow {
 }
 .ghost--line   { height: 12px; }
 .ghost--title  { height: 20px; }
-.ghost--figure { height: 30px; width: 60%; }
 .ghost--pill   { height: 22px; width: 84px; border-radius: var(--radius-pill); }
 .ghost--btn    { height: 34px; width: 96px; border-radius: var(--radius-md); }
-.ghost--dot    { width: 14px; height: 14px; border-radius: 50%; }
 .ghost-stack   { display: flex; flex-direction: column; gap: 10px; }
 .ghost-row     { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-top: 1px solid var(--surface-3); }
 .ghost-row:first-child { border-top: none; padding-top: 0; }

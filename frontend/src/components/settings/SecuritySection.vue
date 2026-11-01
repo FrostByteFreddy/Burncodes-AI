@@ -1,44 +1,47 @@
 <template>
-  <section class="panel">
+  <BcPanel as="section"  >
     <h2 class="panel-title">{{ $t('settings.security.passwordTitle') }}</h2>
     <form class="cfg-fields" @submit.prevent="changePassword">
       <div>
-        <label for="s-current" class="form-field">{{ $t('profile.security.currentPassword') }}</label>
-        <input id="s-current" v-model="pw.current" type="password" class="form-input" autocomplete="current-password" required />
+        <Label for="s-current" class="mb-2">{{ $t('profile.security.currentPassword') }}</Label>
+        <Input id="s-current" v-model="pw.current" type="password"  autocomplete="current-password" required />
       </div>
       <div class="cfg-grid">
         <div>
-          <label for="s-new" class="form-field">{{ $t('profile.security.newPassword') }}</label>
-          <input id="s-new" v-model="pw.next" type="password" class="form-input" autocomplete="new-password" minlength="8" required />
+          <Label for="s-new" class="mb-2">{{ $t('profile.security.newPassword') }}</Label>
+          <Input id="s-new" v-model="pw.next" type="password"  autocomplete="new-password" minlength="8" required />
           <p class="field-hint">{{ $t('settings.security.passwordHint') }}</p>
         </div>
         <div>
-          <label for="s-confirm" class="form-field">{{ $t('profile.security.confirmPassword') }}</label>
-          <input id="s-confirm" v-model="pw.confirm" type="password" class="form-input" autocomplete="new-password" minlength="8" required />
+          <Label for="s-confirm" class="mb-2">{{ $t('profile.security.confirmPassword') }}</Label>
+          <Input id="s-confirm" v-model="pw.confirm" type="password"  autocomplete="new-password" minlength="8" required />
           <p v-if="pw.confirm && pw.confirm !== pw.next" class="field-hint field-hint--warn">{{ $t('profile.security.passwordMismatch') }}</p>
         </div>
       </div>
       <div class="page-actions">
-        <button type="submit" class="btn-action" :disabled="savingPw || pw.confirm !== pw.next">
+        <BcButton variant="primary" type="submit"  :disabled="savingPw || pw.confirm !== pw.next">
           <font-awesome-icon v-if="savingPw" :icon="['fas', 'spinner']" class="animate-spin" />
           {{ $t('profile.security.updatePassword') }}
-        </button>
+        </BcButton>
       </div>
     </form>
-  </section>
+  </BcPanel>
 
-  <section class="panel">
+  <BcPanel as="section"  >
     <h2 class="panel-title">{{ $t('settings.security.sessionsTitle') }}</h2>
     <p class="panel-sub">{{ $t('settings.security.sessionsSub') }}</p>
     <div class="page-actions" style="margin-top: 16px">
-      <button type="button" class="btn-quiet" :disabled="signingOut" @click="signOutEverywhere">
+      <BcButton variant="secondary" type="button"  :disabled="signingOut" @click="signOutEverywhere">
         <font-awesome-icon :icon="['fas', 'right-from-bracket']" /> {{ $t('settings.security.signOutAll') }}
-      </button>
+      </BcButton>
     </div>
-  </section>
+  </BcPanel>
 </template>
 
 <script setup>
+import { BcButton, BcPanel } from '@/components/ui';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';

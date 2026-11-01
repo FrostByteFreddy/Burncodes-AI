@@ -8,26 +8,26 @@
     </div>
 
     <div v-if="!tenant" class="ghost-stack" aria-busy="true">
-      <section v-for="n in 2" :key="n" class="panel ghost-stack">
+      <BcPanel as="section"  v-for="n in 2" :key="n" class="ghost-stack">
         <span class="ghost ghost--title" style="width: 160px"></span>
         <span class="ghost" style="height: 44px"></span>
-      </section>
+      </BcPanel>
     </div>
 
     <template v-else>
       <!-- The link -->
-      <section class="panel">
+      <BcPanel as="section"  >
         <h2 class="panel-title">{{ $t('testPage.link.title') }}</h2>
         <p class="panel-sub">{{ $t('testPage.link.sub') }}</p>
         <div class="tp-link">
           <code class="tp-link__url">{{ url }}</code>
           <div class="page-actions">
-            <button type="button" class="btn-quiet" @click="copy">
+            <BcButton variant="secondary" type="button"  @click="copy">
               <font-awesome-icon :icon="['fas', copied ? 'check' : 'copy']" /> {{ copied ? $t('testPage.link.copied') : $t('testPage.link.copy') }}
-            </button>
-            <a :href="url" target="_blank" rel="noopener" class="btn-action tp-open">
+            </BcButton>
+            <Button as-child variant="default"><a :href="url" target="_blank" rel="noopener" class="tp-open">
               <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" /> {{ $t('testPage.link.open') }}
-            </a>
+            </a></Button>
           </div>
         </div>
         <p v-if="tenant.is_active === false" class="tp-note tp-note--warn">
@@ -38,10 +38,10 @@
           <font-awesome-icon :icon="['fas', 'lock']" />
           <span>{{ $t('testPage.link.protected') }}</span>
         </p>
-      </section>
+      </BcPanel>
 
       <!-- Password while in development -->
-      <section class="panel">
+      <BcPanel as="section"  >
         <div class="tp-switch-row">
           <div>
             <label for="tp-protect" class="panel-title tp-label">{{ $t('testPage.password.title') }}</label>
@@ -52,26 +52,26 @@
 
         <form v-if="editing" class="cfg-fields" @submit.prevent="savePassword">
           <div>
-            <label for="tp-pw" class="form-field">{{ tenant.test_protected ? $t('testPage.password.new') : $t('testPage.password.label') }}</label>
+            <Label for="tp-pw" class="mb-2">{{ tenant.test_protected ? $t('testPage.password.new') : $t('testPage.password.label') }}</Label>
             <div class="tp-pw">
-              <input id="tp-pw" ref="pwInput" v-model="newPassword" :type="showPassword ? 'text' : 'password'" class="form-input" minlength="6" autocomplete="new-password" />
-              <button type="button" class="btn-quiet" :aria-pressed="showPassword" @click="showPassword = !showPassword">
+              <Input id="tp-pw" ref="pwInput" v-model="newPassword" :type="showPassword ? 'text' : 'password'"  minlength="6" autocomplete="new-password" />
+              <BcButton variant="secondary" type="button"  :aria-pressed="showPassword" @click="showPassword = !showPassword">
                 <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" /> {{ showPassword ? $t('testPage.password.hide') : $t('testPage.password.show') }}
-              </button>
+              </BcButton>
             </div>
             <p class="field-hint" :class="{ 'field-hint--warn': newPassword && newPassword.length < 6 }">{{ $t('testPage.password.hint') }}</p>
           </div>
           <div class="page-actions">
-            <button type="submit" class="btn-action" :disabled="saving || newPassword.length < 6">
+            <BcButton variant="primary" type="submit"  :disabled="saving || newPassword.length < 6">
               <font-awesome-icon v-if="saving" :icon="['fas', 'spinner']" class="animate-spin" /> {{ $t('testPage.password.save') }}
-            </button>
-            <button type="button" class="btn-quiet" :disabled="saving" @click="cancelEdit">{{ $t('testPage.password.cancel') }}</button>
+            </BcButton>
+            <BcButton variant="secondary" type="button"  :disabled="saving" @click="cancelEdit">{{ $t('testPage.password.cancel') }}</BcButton>
           </div>
         </form>
 
         <div v-else-if="tenant.test_protected" class="tp-set">
           <p><font-awesome-icon :icon="['fas', 'check']" class="tp-set__ok" /> {{ $t('testPage.password.isSet') }}</p>
-          <button type="button" class="btn-quiet" @click="startEdit">{{ $t('testPage.password.change') }}</button>
+          <BcButton variant="secondary" type="button"  @click="startEdit">{{ $t('testPage.password.change') }}</BcButton>
         </div>
 
         <ul class="tp-notes">
@@ -79,12 +79,16 @@
           <li>{{ $t('testPage.password.shareNote') }}</li>
           <li>{{ $t('testPage.password.previewNote') }}</li>
         </ul>
-      </section>
+      </BcPanel>
     </template>
   </div>
 </template>
 
 <script setup>
+import { BcButton, BcPanel } from '@/components/ui';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { computed, nextTick, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';
@@ -161,7 +165,7 @@ const savePassword = () => save(newPassword.value, t('testPage.password.saved'))
 /* switch look shared with the Overview page */
 
 .tp-pw { display: flex; gap: 8px; align-items: center; }
-.tp-pw .form-input { flex: 1; max-width: 360px; }
+.tp-pw [data-slot=input] { flex: 1; max-width: 360px; }
 .tp-set { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 16px; padding: 12px 16px; border-radius: var(--radius-lg); background: var(--surface-2); font-size: 15px; color: var(--surface-heading); }
 .tp-set__ok { color: var(--status-success); margin-right: 6px; }
 .tp-notes { margin: 18px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); }

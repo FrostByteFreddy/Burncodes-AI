@@ -8,7 +8,7 @@
     </div>
 
     <!-- What the review found: the reason to open this page -->
-    <section class="panel">
+    <BcPanel as="section"  >
       <div class="ins-head">
         <div>
           <h2 class="panel-title">{{ $t('insights.findings.title') }}</h2>
@@ -53,15 +53,15 @@
           </div>
           <div class="ins-finding__actions">
             <template v-if="f.status === 'open'">
-              <button type="button" class="btn-quiet" @click="answerFor = f">
+              <BcButton variant="secondary" type="button"  @click="answerFor = f">
                 <font-awesome-icon :icon="['fas', 'plus']" /> {{ $t('insights.findings.addAnswer') }}
-              </button>
-              <button type="button" class="btn-quiet" @click="setStatus(f, 'resolved')">
+              </BcButton>
+              <BcButton variant="secondary" type="button"  @click="setStatus(f, 'resolved')">
                 <font-awesome-icon :icon="['fas', 'check']" /> {{ $t('insights.findings.done') }}
-              </button>
-              <button type="button" class="btn-quiet ins-dismiss" @click="setStatus(f, 'dismissed')">{{ $t('insights.findings.dismiss') }}</button>
+              </BcButton>
+              <BcButton variant="secondary" type="button" class="ins-dismiss" @click="setStatus(f, 'dismissed')">{{ $t('insights.findings.dismiss') }}</BcButton>
             </template>
-            <button v-else type="button" class="btn-quiet" @click="setStatus(f, 'open')">{{ $t('insights.findings.reopen') }}</button>
+            <BcButton variant="secondary" v-else type="button"  @click="setStatus(f, 'open')">{{ $t('insights.findings.reopen') }}</BcButton>
           </div>
         </li>
       </ul>
@@ -76,14 +76,14 @@
           <template v-else>{{ $t('insights.review.off') }}</template>
           <router-link :to="{ name: 'TenantSettings', params: { tenantId } }" class="ins-link ins-link--inline">{{ $t('insights.review.change') }}</router-link>
         </p>
-        <button v-if="review.enabled" type="button" class="btn-quiet" :disabled="reviewQueued" @click="runNow">
+        <BcButton variant="secondary" v-if="review.enabled" type="button"  :disabled="reviewQueued" @click="runNow">
           <font-awesome-icon :icon="['fas', 'rotate']" /> {{ reviewQueued ? $t('insights.review.queued') : $t('insights.review.now') }}
-        </button>
+        </BcButton>
       </div>
-    </section>
+    </BcPanel>
 
     <!-- Conversations -->
-    <section class="panel">
+    <BcPanel as="section"  >
       <div class="ins-head">
         <div>
           <h2 class="panel-title">{{ $t('insights.conversations.title') }}</h2>
@@ -130,7 +130,7 @@
           </div>
         </div>
       </div>
-    </section>
+    </BcPanel>
 
     <!-- Answer a finding with a custom rule: trigger prefilled, staff write the answer -->
     <AddRuleWizard
@@ -144,6 +144,8 @@
 </template>
 
 <script setup>
+import { useRoute } from 'vue-router'
+import { BcButton, BcPanel } from '@/components/ui';
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/api'
@@ -155,7 +157,8 @@ import AddRuleWizard from '@/components/tenant/sources/AddRuleWizard.vue'
 const { t, locale } = useI18n()
 const tenantsStore = useTenantsStore()
 const { addToast } = useToast()
-const tenantId = computed(() => tenantsStore.currentTenant?.id || '')
+const route = useRoute()
+const tenantId = computed(() => route.params.tenantId || tenantsStore.currentTenant?.id || '')
 
 const fmtChf = (n) => Number(n || 0).toFixed(2)
 const fmtDateTime = (iso) => (iso ? new Date(iso).toLocaleString(locale.value, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '')
@@ -294,7 +297,6 @@ watch(tenantId, (id) => {
 .ins-link { padding: 0; border: none; background: none; cursor: pointer; font: inherit; font-size: var(--text-xs); font-weight: 600; color: var(--interactive); }
 .ins-link:hover { text-decoration: underline; }
 .ins-finding__actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-.ins-finding__actions .btn-quiet { text-decoration: none; }
 .ins-dismiss { color: var(--surface-muted); }
 
 .ins-review { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--surface-3); }

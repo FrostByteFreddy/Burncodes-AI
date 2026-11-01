@@ -8,10 +8,10 @@
         <p class="ksummary">{{ summary }}</p>
       </div>
       <div class="page-actions">
-        <button class="btn-action" @click="wizardOpen = true">
+        <BcButton variant="primary"  @click="wizardOpen = true">
           <font-awesome-icon :icon="['fas', 'plus']" />
           {{ $t('tenant.sources.wizard.addKnowledge') }}
-        </button>
+        </BcButton>
       </div>
     </div>
 
@@ -66,10 +66,10 @@
             <p class="knowledge-panel__sub">{{ $t('knowledge.files.sub') }}</p>
           </div>
         </div>
-        <button @click="wizardOpen = true" class="btn-quiet">
+        <BcButton variant="secondary" @click="wizardOpen = true">
           <font-awesome-icon :icon="['fas', 'arrow-up-from-bracket']" />
           {{ $t('knowledge.files.upload') }}
-        </button>
+        </BcButton>
       </div>
 
       <div v-if="fileSources.length" class="kfiles">
@@ -100,10 +100,10 @@
             <p class="knowledge-panel__sub">{{ $t('knowledge.rules.sub') }}</p>
           </div>
         </div>
-        <button @click="rulesTabRef?.openModal()" class="btn-quiet">
+        <BcButton variant="secondary" @click="rulesTabRef?.openModal()">
           <font-awesome-icon :icon="['fas', 'plus']" />
           {{ $t('knowledge.rules.add') }}
-        </button>
+        </BcButton>
       </div>
       <RulesTab ref="rulesTabRef" />
     </section>
@@ -129,6 +129,7 @@
 </template>
 
 <script setup>
+import { BcButton } from '@/components/ui';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useTenantsStore } from '../../stores/tenants';

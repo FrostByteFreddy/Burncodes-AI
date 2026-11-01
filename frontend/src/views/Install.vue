@@ -6,9 +6,9 @@
         <p class="page-lede">{{ $t('pages.install') }}</p>
       </div>
       <div class="page-actions">
-        <a :href="`${baseUrl}preview.html?tenant_id=${tenantId}`" target="_blank" rel="noopener" class="btn-quiet inst-link">
+        <Button as-child variant="outline"><a :href="`${baseUrl}preview.html?tenant_id=${tenantId}`" target="_blank" rel="noopener" class="inst-link">
           <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" /> {{ $t('install.example') }}
-        </a>
+        </a></Button>
       </div>
     </div>
 
@@ -27,7 +27,7 @@
     </p>
 
     <!-- The three steps -->
-    <section class="panel">
+    <BcPanel as="section"  >
       <ol class="inst-steps">
         <li class="inst-step">
           <span class="inst-step__num">1</span>
@@ -36,9 +36,9 @@
             <p class="inst-step__text">{{ $t('install.step1.text') }}</p>
             <div class="inst-code">
               <pre><code>{{ snippet }}</code></pre>
-              <button type="button" class="btn-action inst-code__copy" @click="copy(snippet)">
+              <BcButton variant="primary" type="button" class="inst-code__copy" @click="copy(snippet)">
                 <font-awesome-icon :icon="['fas', copied ? 'check' : 'copy']" /> {{ copied ? $t('install.copied') : $t('install.copy') }}
-              </button>
+              </BcButton>
             </div>
           </div>
         </li>
@@ -61,9 +61,9 @@
 
             <div class="inst-delegate">
               <p>{{ $t('install.delegate.text') }}</p>
-              <a :href="mailto" class="btn-quiet inst-link">
+              <Button as-child variant="outline"><a :href="mailto" class="inst-link">
                 <font-awesome-icon :icon="['fas', 'envelope']" /> {{ $t('install.delegate.button') }}
-              </a>
+              </a></Button>
             </div>
           </div>
         </li>
@@ -80,11 +80,13 @@
           </div>
         </li>
       </ol>
-    </section>
+    </BcPanel>
   </div>
 </template>
 
 <script setup>
+import { BcButton, BcPanel } from '@/components/ui';
+import { Button } from '@/components/ui/button';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useTenantsStore } from '../stores/tenants';

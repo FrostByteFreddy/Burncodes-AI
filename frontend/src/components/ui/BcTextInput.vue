@@ -1,12 +1,13 @@
 <template>
   <BcField v-if="label" :label="label" :hint="hint" :error="error" :optional="optional" :html-for="fid">
-    <input v-bind="$attrs" :id="fid" v-model="model" :type="type" class="bc-input" :aria-invalid="error ? 'true' : undefined"
+    <Input v-bind="$attrs" :id="fid" v-model="model" :type="type" :aria-invalid="error ? 'true' : undefined"
       :aria-describedby="error ? `${fid}-err` : hint ? `${fid}-hint` : undefined" />
   </BcField>
-  <input v-else v-bind="$attrs" :id="fid" v-model="model" :type="type" class="bc-input" :aria-invalid="error ? 'true' : undefined" />
+  <Input v-else v-bind="$attrs" :id="fid" v-model="model" :type="type" :aria-invalid="error ? 'true' : undefined" />
 </template>
 
 <script setup>
+import { Input } from './input';
 import BcField from './BcField.vue';
 import { useFieldId } from './useFieldId';
 

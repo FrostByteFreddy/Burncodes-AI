@@ -77,22 +77,22 @@
       </BcPanel>
 
       <!-- Done: the report -->
-      <section v-if="job.status === 'COMPLETED' && job.report" class="panel">
+      <BcPanel as="section"  v-if="job.status === 'COMPLETED' && job.report" >
         <CrawlReport :report="job.report" />
-      </section>
+      </BcPanel>
 
       <!-- What this crawl brought in, page by page (the latest crawl: the website as the bot knows it) -->
-      <section v-if="(job.status === 'COMPLETED' || job.status === 'FAILED') && crawlSources.length" class="panel">
+      <BcPanel as="section"  v-if="(job.status === 'COMPLETED' || job.status === 'FAILED') && crawlSources.length" >
         <h2 class="panel-title">{{ $t('knowledge.content.title') }}</h2>
         <p class="panel-sub">{{ $t('knowledge.content.sub') }}</p>
         <PageTree :sources="crawlSources" class="crawl-tree" />
-      </section>
+      </BcPanel>
 
       <!-- Activity: live while running, history afterwards -->
-      <section class="panel">
+      <BcPanel as="section"  >
         <h2 class="panel-title crawl-section-title">{{ $t('knowledge.job.activity') }}</h2>
         <ActivityLog :entries="log" :max-height="isActive ? '560px' : '360px'" />
-      </section>
+      </BcPanel>
     </template>
 
     <ConfirmationModal
@@ -124,10 +124,7 @@ import ConfirmationModal from '../ConfirmationModal.vue';
 import { useBillingStore } from '@/stores/billing';
 import { useToast } from '@/composables/useToast';
 import { useLearningModels } from '@/composables/useLearningModels';
-import {
-  BcActivityLogRow, BcButton, BcIcon, BcKeyFigure, BcMoney, BcNotice, BcPageHeader, BcPanel, BcProgressBar, BcRadioCards,
-  BcSkeleton, BcStatusBadge,
-} from '@/components/ui';
+import { BcActivityLogRow, BcButton, BcIcon, BcKeyFigure, BcMoney, BcNotice, BcPageHeader, BcPanel, BcProgressBar, BcRadioCards, BcSkeleton, BcStatusBadge } from '@/components/ui';
 import { formatCHF, formatNumber } from '@/utils/format';
 
 const props = defineProps({

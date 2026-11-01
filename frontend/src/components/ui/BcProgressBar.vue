@@ -4,16 +4,21 @@
       <span class="bc-progress__label">{{ label ?? $t('ui.of', { done: formatNumber(clamped), total: formatNumber(max) }) }}</span>
       <span v-if="!hidePercent" class="bc-progress__pct">{{ pct }} %</span>
     </div>
-    <div class="bc-progress__track" role="progressbar" aria-valuemin="0" :aria-valuemax="max" :aria-valuenow="clamped">
-      <div class="bc-progress__fill" :style="{ width: `${pct}%` }"></div>
-    </div>
+    <Progress :model-value="clamped" :max="max || 1" :class="['h-2 bg-muted', TONES[tone]]" />
     <div v-if="detail || $slots.detail" class="bc-progress__detail"><slot name="detail">{{ detail }}</slot></div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
+import { Progress } from './progress';
 import { formatNumber } from '@/utils/format';
+
+const TONES = {
+  interactive: '*:data-[slot=progress-indicator]:bg-primary',
+  ai: '*:data-[slot=progress-indicator]:bg-[var(--ai)]',
+  ok: '*:data-[slot=progress-indicator]:bg-[var(--status-ok)]',
+};
 
 // Honest progress: real counts, never a fake spinner. tone: interactive · ai (learning) · ok
 const props = defineProps({

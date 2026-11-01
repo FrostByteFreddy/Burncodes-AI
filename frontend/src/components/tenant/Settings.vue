@@ -3,11 +3,11 @@
     <div v-if="!tenantsStore.currentTenant" class="cfg-layout" aria-busy="true">
       <div class="cfg-stack">
         <span class="ghost ghost--title" style="width: 160px; height: 28px"></span>
-        <section v-for="n in 3" :key="n" class="panel ghost-stack">
+        <BcPanel as="section"  v-for="n in 3" :key="n" class="ghost-stack">
           <span class="ghost ghost--title" style="width: 140px"></span>
           <span class="ghost" style="height: 40px"></span>
           <span class="ghost ghost--line" style="width: 60%"></span>
-        </section>
+        </BcPanel>
       </div>
       <div class="cfg-preview"><span class="ghost" style="height: 100%; border-radius: 20px"></span></div>
     </div>
@@ -20,10 +20,10 @@
             <p class="page-lede">{{ $t('pages.configure') }}</p>
           </div>
           <div class="page-actions">
-            <button type="button" class="btn-quiet" :disabled="matching" @click="matchWebsite">
+            <BcButton variant="secondary" type="button"  :disabled="matching" @click="matchWebsite">
               <font-awesome-icon :icon="matching ? ['fas', 'spinner'] : ['fas', 'wand-magic-sparkles']" :class="{ 'animate-spin': matching }" />
               {{ $t('configure.branding.button') }}
-            </button>
+            </BcButton>
           </div>
         </div>
 
@@ -34,11 +34,11 @@
           <div v-if="dirty" class="cfg-savebar" role="status">
             <p>{{ $t('configure.unsaved') }}</p>
             <div class="page-actions">
-              <button type="button" class="btn-quiet" :disabled="saving" @click="load">{{ $t('configure.discard') }}</button>
-              <button type="submit" class="btn-action" :disabled="saving">
+              <BcButton variant="secondary" type="button"  :disabled="saving" @click="load">{{ $t('configure.discard') }}</BcButton>
+              <BcButton variant="primary" type="submit"  :disabled="saving">
                 <font-awesome-icon v-if="saving" :icon="['fas', 'spinner']" class="animate-spin" />
                 {{ $t('configure.save') }}
-              </button>
+              </BcButton>
             </div>
           </div>
         </Transition>
@@ -52,6 +52,7 @@
 </template>
 
 <script setup>
+import { BcButton, BcPanel } from '@/components/ui';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useTenantsStore } from '../../stores/tenants';

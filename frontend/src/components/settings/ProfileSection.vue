@@ -1,5 +1,5 @@
 <template>
-  <section class="panel">
+  <BcPanel as="section"  >
     <h2 class="panel-title">{{ $t('settings.profile.title') }}</h2>
     <p class="panel-sub">{{ $t('settings.profile.sub') }}</p>
 
@@ -10,45 +10,49 @@
     <form v-else class="cfg-fields" @submit.prevent="save">
       <div class="cfg-grid">
         <div>
-          <label for="p-first" class="form-field">{{ $t('profile.first_name') }}</label>
-          <input id="p-first" v-model="form.first_name" type="text" class="form-input" autocomplete="given-name" />
+          <Label for="p-first" class="mb-2">{{ $t('profile.first_name') }}</Label>
+          <Input id="p-first" v-model="form.first_name" type="text"  autocomplete="given-name" />
         </div>
         <div>
-          <label for="p-last" class="form-field">{{ $t('profile.last_name') }}</label>
-          <input id="p-last" v-model="form.last_name" type="text" class="form-input" autocomplete="family-name" />
+          <Label for="p-last" class="mb-2">{{ $t('profile.last_name') }}</Label>
+          <Input id="p-last" v-model="form.last_name" type="text"  autocomplete="family-name" />
         </div>
       </div>
       <div>
-        <label for="p-email" class="form-field">{{ $t('profile.email') }}</label>
-        <input id="p-email" :value="authStore.user.email" type="email" class="form-input" disabled />
+        <Label for="p-email" class="mb-2">{{ $t('profile.email') }}</Label>
+        <Input id="p-email" :model-value="authStore.user.email" type="email"  disabled />
         <p class="field-hint">{{ $t('settings.profile.emailHint') }}</p>
       </div>
       <div class="cfg-grid">
         <div>
-          <label for="p-phone" class="form-field">{{ $t('profile.phone_number') }}</label>
-          <input id="p-phone" v-model="form.phone_number" type="tel" class="form-input" autocomplete="tel" />
+          <Label for="p-phone" class="mb-2">{{ $t('profile.phone_number') }}</Label>
+          <Input id="p-phone" v-model="form.phone_number" type="tel"  autocomplete="tel" />
         </div>
         <div>
-          <label for="p-lang" class="form-field">{{ $t('settings.profile.language') }}</label>
-          <select id="p-lang" v-model="form.language" class="form-input">
-            <option value="de">Deutsch</option>
-            <option value="en">English</option>
-            <option value="fr">Français</option>
-          </select>
+          <Label for="p-lang" class="mb-2">{{ $t('settings.profile.language') }}</Label>
+          <NativeSelect id="p-lang" v-model="form.language" >
+            <NativeSelectOption value="de">Deutsch</NativeSelectOption>
+            <NativeSelectOption value="en">English</NativeSelectOption>
+            <NativeSelectOption value="fr">Français</NativeSelectOption>
+          </NativeSelect>
           <p class="field-hint">{{ $t('settings.profile.languageHint') }}</p>
         </div>
       </div>
       <div class="page-actions">
-        <button type="submit" class="btn-action" :disabled="saving">
+        <BcButton variant="primary" type="submit"  :disabled="saving">
           <font-awesome-icon v-if="saving" :icon="['fas', 'spinner']" class="animate-spin" />
           {{ $t('settings.save') }}
-        </button>
+        </BcButton>
       </div>
     </form>
-  </section>
+  </BcPanel>
 </template>
 
 <script setup>
+import { BcButton, BcPanel } from '@/components/ui';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/stores/auth';

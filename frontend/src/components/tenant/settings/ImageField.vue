@@ -7,14 +7,14 @@
         <font-awesome-icon v-else :icon="['fas', 'image']" class="imgf__empty" />
       </div>
       <div class="imgf__actions">
-        <label class="btn-quiet imgf__upload">
+        <Button as-child variant="outline"><label class="imgf__upload">
           <font-awesome-icon :icon="['fas', 'upload']" />
           {{ modelValue ? $t('configure.image.replace') : $t('configure.image.choose') }}
           <input :id="field" type="file" accept="image/*,.svg" class="imgf__file" @change="onFile" />
-        </label>
-        <button v-if="modelValue" type="button" class="btn-quiet" @click="$emit('update:modelValue', null)">
+        </label></Button>
+        <BcButton variant="secondary" v-if="modelValue" type="button"  @click="$emit('update:modelValue', null)">
           {{ $t('configure.image.remove') }}
-        </button>
+        </BcButton>
       </div>
     </div>
     <p v-if="hint" class="field-hint">{{ hint }}</p>
@@ -22,6 +22,8 @@
 </template>
 
 <script setup>
+import { BcButton } from '@/components/ui';
+import { Button } from '@/components/ui/button';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/composables/useToast';
 

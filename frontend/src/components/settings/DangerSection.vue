@@ -1,5 +1,5 @@
 <template>
-  <section class="panel dz">
+  <BcPanel as="section"  class="dz">
     <h2 class="panel-title">{{ $t('settings.danger.title') }}</h2>
     <p class="panel-sub">{{ $t('settings.danger.sub') }}</p>
     <ul class="dz-list">
@@ -10,12 +10,12 @@
 
     <form class="cfg-fields" @submit.prevent="remove">
       <div>
-        <label for="dz-email" class="form-field">{{ $t('settings.danger.typeEmail', { email: authStore.user?.email }) }}</label>
-        <input id="dz-email" v-model="email" type="email" class="form-input" autocomplete="off" />
+        <Label for="dz-email" class="mb-2">{{ $t('settings.danger.typeEmail', { email: authStore.user?.email }) }}</Label>
+        <Input id="dz-email" v-model="email" type="email"  autocomplete="off" />
       </div>
       <div>
-        <label for="dz-pw" class="form-field">{{ $t('profile.security.currentPassword') }}</label>
-        <input id="dz-pw" v-model="password" type="password" class="form-input" autocomplete="current-password" />
+        <Label for="dz-pw" class="mb-2">{{ $t('profile.security.currentPassword') }}</Label>
+        <Input id="dz-pw" v-model="password" type="password"  autocomplete="current-password" />
       </div>
       <div class="page-actions">
         <button type="submit" class="dz-btn" :disabled="!canDelete || deleting">
@@ -24,10 +24,13 @@
         </button>
       </div>
     </form>
-  </section>
+  </BcPanel>
 </template>
 
 <script setup>
+import { BcPanel } from '@/components/ui';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';

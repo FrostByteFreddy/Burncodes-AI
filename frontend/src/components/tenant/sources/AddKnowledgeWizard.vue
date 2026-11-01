@@ -61,13 +61,13 @@
               <!-- Website: address and how much of it -->
               <div v-if="type === 'website'" class="space-y-6">
                 <div>
-                  <label class="field-label">{{ $t('tenant.sources.wizard.urlLabel') }}</label>
+                  <Label class="mb-2">{{ $t('tenant.sources.wizard.urlLabel') }}</Label>
                   <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/30">
                       <font-awesome-icon :icon="['fas', 'link']" />
                     </div>
-                    <input v-model="url" type="text" :placeholder="$t('tenant.sources.wizard.urlPlaceholder')"
-                      class="field-input pl-11" :class="{ 'has-error': !isUrlValid && url }" />
+                    <Input v-model="url" type="text" :placeholder="$t('tenant.sources.wizard.urlPlaceholder')"
+                      class="pl-11" :class="{ 'has-error': !isUrlValid && url }" />
                   </div>
                   <p v-if="!isUrlValid && url" class="text-error text-xs px-1 mt-1.5 flex items-center gap-1">
                     <font-awesome-icon :icon="['fas', 'circle-exclamation']" /> {{ $t('tenant.sources.invalidUrl') }}
@@ -75,7 +75,7 @@
                 </div>
 
                 <div class="space-y-3">
-                  <label class="field-label">{{ $t('tenant.sources.wizard.scope.question') }}</label>
+                  <Label class="mb-2">{{ $t('tenant.sources.wizard.scope.question') }}</Label>
                   <button v-for="scope in scopes" :key="scope.single" type="button" @click="singlePageOnly = scope.single"
                     class="radio-card p-4" :class="{ 'is-selected': singlePageOnly === scope.single }">
                     <div class="text-xl mt-0.5">{{ scope.emoji }}</div>
@@ -142,8 +142,8 @@
                         @keydown.escape="addingExclusion = false; exclusionDraft = ''"
                         :placeholder="$t('tenant.sources.wizard.exclude.placeholder')" />
                     </div>
-                    <button type="button" @click="confirmExclusion" class="btn btn-sm btn-primary rounded-xl px-4">{{ $t('tenant.sources.wizard.exclude.add') }}</button>
-                    <button type="button" @click="addingExclusion = false; exclusionDraft = ''" class="btn btn-sm btn-ghost rounded-xl">{{ $t('tenant.sources.wizard.exclude.cancel') }}</button>
+                    <BcButton variant="primary" size="sm" type="button" @click="confirmExclusion" class="rounded-xl px-4">{{ $t('tenant.sources.wizard.exclude.add') }}</BcButton>
+                    <BcButton variant="quiet" size="sm" type="button" @click="addingExclusion = false; exclusionDraft = ''" class="rounded-xl">{{ $t('tenant.sources.wizard.exclude.cancel') }}</BcButton>
                   </div>
 
                   <button v-if="!addingExclusion" type="button" @click="addExclusion" class="add-row">
@@ -160,7 +160,7 @@
                   @click="crawlMode = mode.value"
                   class="radio-card"
                   :class="{ 'is-selected': crawlMode === mode.value }">
-                  <div class="text-xl leading-none mt-0.5 w-6 flex-shrink-0">{{ mode.emoji }}</div>
+                  <div class="text-xl leading-none mt-0.5 w-6 shrink-0">{{ mode.emoji }}</div>
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2">
                       <span class="text-sm font-bold text-white">{{ mode.label }}</span>
@@ -244,6 +244,9 @@
 </template>
 
 <script setup>
+import { BcButton } from '@/components/ui';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ref, reactive, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import WizardPanel from '../../WizardPanel.vue';
