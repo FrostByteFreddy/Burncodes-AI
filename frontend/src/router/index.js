@@ -69,8 +69,12 @@ const routes = [
   },
 ];
 
+// The app is served under /dashboard/, except the public /chat and /share pages,
+// whose addresses are embedded on customer websites
+const base = window.location.pathname.startsWith(import.meta.env.BASE_URL) ? import.meta.env.BASE_URL : "/";
+
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(base),
   routes,
 });
 

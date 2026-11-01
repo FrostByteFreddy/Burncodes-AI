@@ -61,7 +61,7 @@ def customer_portal(current_user):
         customer_id = response.data[0].get("stripe_customer_id")
         
         # This is the URL to which the user is redirected after they are done managing their billing in the portal.
-        return_url = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip("/") + "/settings/billing"
+        return_url = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip("/") + "/dashboard/settings/billing"
 
         portal_session = stripe.billing_portal.Session.create(
             customer=customer_id,

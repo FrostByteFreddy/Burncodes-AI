@@ -4,6 +4,19 @@ Vue 3.5 (`<script setup>`), Vue Router, Pinia, vue-i18n 9, Tailwind 3 (no
 component plugin), Font Awesome 6 solid, axios. Built by Vite; production is a
 static bundle behind nginx.
 
+## Addresses
+
+The app is built with `base: '/dashboard/'` and served there. `/chat/:id` and
+`/share/:id` keep their root addresses because they are embedded on customer
+sites and shared as links: the same `index.html` answers them, and
+`router/index.js` picks the router base from the current path. `/` is the
+separate landing page (`landing/`, plain HTML without a build step, its own
+container, indexed by search engines). The routing is in `nginx/nginx.conf`,
+which also redirects the dashboard's old addresses (`/login`, `/tenant/…`) and
+`/?onboarding` to `/dashboard/…`. Everything but `/` is `noindex`. Files from
+`public/` are under `/dashboard/`: use `import.meta.env.BASE_URL` in dynamic
+links. Locally: `:5173/dashboard/`, landing on `:8080` (`landing` service).
+
 ## Two looks
 
 - **Login / signup / onboarding**: brand gradient (`components/AuthLayout.vue`,

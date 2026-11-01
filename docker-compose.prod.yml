@@ -112,6 +112,11 @@ services:
         VITE_ENVIRONMENT: production
     restart: always
 
+  landing:
+    build:
+      context: ./landing
+    restart: always
+
   nginx:
     image: nginx:alpine
     restart: always
@@ -124,6 +129,7 @@ services:
     depends_on:
       - backend
       - frontend
+      - landing
 
 volumes:
   app_data:

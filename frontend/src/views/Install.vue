@@ -6,7 +6,7 @@
         <p class="page-lede">{{ $t('pages.install') }}</p>
       </div>
       <div class="page-actions">
-        <a :href="`/preview.html?tenant_id=${tenantId}`" target="_blank" rel="noopener" class="btn-quiet inst-link">
+        <a :href="`${baseUrl}preview.html?tenant_id=${tenantId}`" target="_blank" rel="noopener" class="btn-quiet inst-link">
           <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" /> {{ $t('install.example') }}
         </a>
       </div>
@@ -94,6 +94,7 @@ const tenantsStore = useTenantsStore();
 const { t } = useI18n();
 const { addToast } = useToast();
 
+const baseUrl = import.meta.env.BASE_URL;
 const BUILDERS = ['wordpress', 'wix', 'squarespace', 'webflow', 'other'];
 
 const tenant = computed(() => tenantsStore.currentTenant);
