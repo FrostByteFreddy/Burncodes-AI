@@ -65,13 +65,24 @@
             v-html="processBotMessage(message.html)"
           ></div>
 
-          <!-- Dates in this answer: one link that opens the visitor's own calendar app (the server picks Apple or Google) -->
+          <!-- Dates in this answer: below a separator, one row per calendar with an icon per calendar app -->
           <div v-if="!message.isUser && feedsFor(message).length" class="cal">
-            <a v-for="feed in feedsFor(message)" :key="feed.key" :href="feed.add || feed.webcal"
-              target="_blank" rel="noopener noreferrer" class="cal__link">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4" /></svg>
-              {{ $t('chat.calendar.add', { name: feedLabel(feed) }) }}
-            </a>
+            <div v-for="feed in feedsFor(message)" :key="feed.key" class="cal__row">
+              <span class="cal__name">
+                <font-awesome-icon :icon="['far', 'calendar-plus']" aria-hidden="true" />
+                {{ feedLabel(feed) }}
+              </span>
+              <span class="cal__apps">
+                <a v-for="app in calendarApps(feed)" :key="app.id" :href="app.href" target="_blank" rel="noopener noreferrer"
+                  class="cal__app" :title="app.label" :aria-label="app.label">
+                  <font-awesome-icon :icon="app.icon" />
+                </a>
+                <button type="button" class="cal__app" :title="copiedFeed === feed.key ? $t('chat.calendar.copied') : $t('chat.calendar.copy')"
+                  :aria-label="copiedFeed === feed.key ? $t('chat.calendar.copied') : $t('chat.calendar.copy')" @click="copyFeed(feed)">
+                  <font-awesome-icon :icon="['fas', copiedFeed === feed.key ? 'check' : 'link']" />
+                </button>
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -175,6 +186,22 @@ const props = defineProps({
 // ── Calendar subscriptions ─────────────────────────────────────────────
 const feedsFor = (message) => (message.calendars || []).map((k) => props.calendarFeeds[k]).filter(Boolean);
 const feedLabel = (feed) => (feed.zone ? `${feed.series} (${feed.zone})` : feed.series);
+// Subscriptions (they update themselves): Apple Calendar / desktop Outlook via webcal, Google and Outlook.com on the web
+const calendarApps = (feed) => [
+  { id: 'apple', icon: ['fab', 'apple'], label: t('chat.calendar.apple', { name: feedLabel(feed) }), href: feed.webcal },
+  { id: 'google', icon: ['fab', 'google'], label: t('chat.calendar.google', { name: feedLabel(feed) }),
+    href: `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(feed.webcal)}` },
+  { id: 'outlook', icon: ['fab', 'microsoft'], label: t('chat.calendar.outlook', { name: feedLabel(feed) }),
+    href: `https://outlook.live.com/calendar/0/addfromweb?url=${encodeURIComponent(feed.webcal)}&name=${encodeURIComponent(feedLabel(feed))}` },
+];
+const copiedFeed = ref(null);
+const copyFeed = async (feed) => {
+  try {
+    await navigator.clipboard.writeText(feed.https);
+    copiedFeed.value = feed.key;
+    setTimeout(() => { copiedFeed.value = null; }, 2000);
+  } catch { /* clipboard blocked (e.g. in a third-party iframe): the app icons still work */ }
+};
 
 const emit = defineEmits(["update:userMessage", "sendMessage", "reset", "close", "share"]);
 
@@ -676,12 +703,23 @@ const widgetCssVariables = computed(() => {
     border-bottom-right-radius: 0 !important;
   }
 }
-/* ── Calendar subscription: a link, not a box ─────────────────────── */
-.cal { margin-top: 8px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-.cal__link {
-  display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
-  font-size: 0.875em; font-weight: 600; color: var(--chat-bot-message-text-color);
-  text-decoration: underline; text-underline-offset: 2px; opacity: 0.85;
+/* ── Calendar subscription: a separator, then name + one icon per calendar app ── */
+.cal {
+  margin-top: 10px; padding-top: 8px; display: flex; flex-direction: column; gap: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--chat-bot-message-text-color) 15%, transparent);
 }
-.cal__link:hover, .cal__link:focus-visible { opacity: 1; }
+.cal__row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.cal__name {
+  display: inline-flex; align-items: center; gap: 6px; min-width: 0;
+  font-size: 0.85em; font-weight: 600; color: var(--chat-bot-message-text-color); opacity: 0.85;
+}
+.cal__apps { display: inline-flex; gap: 2px; }
+.cal__app {
+  display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
+  border: none; border-radius: 8px; background: transparent; cursor: pointer;
+  color: var(--chat-bot-message-text-color); opacity: 0.7; font-size: 15px; text-decoration: none;
+}
+.cal__app:hover, .cal__app:focus-visible {
+  opacity: 1; background: color-mix(in srgb, var(--chat-bot-message-text-color) 10%, transparent);
+}
 </style>
