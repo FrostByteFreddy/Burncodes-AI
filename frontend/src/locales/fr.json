@@ -939,7 +939,7 @@
         "starters": "Questions suggérées"
       },
       "labels": {
-        "launcher_background_color": "Couleur du bouton",
+        "launcher_background_color": "Couleur du bouton du widget",
         "footer_background_color": "Fond du pied de page",
         "header_background_color": "Fond de l'en-tête",
         "header_text_color": "Texte de l'en-tête",
@@ -982,9 +982,9 @@
       "share": "Afficher un bouton pour partager la conversation"
     },
     "launcher": {
-      "title": "Bouton de chat",
+      "title": "Widget",
       "sub": "Le bouton rond dans le coin de votre site qui ouvre le chat.",
-      "enabled": "Afficher le bouton de chat sur mon site",
+      "enabled": "Afficher le widget sur mon site",
       "disabledHint": "Le chat est masqué sur votre site. Le code installé peut rester en place.",
       "color": "Couleur",
       "icon": "Icône",
@@ -1000,7 +1000,7 @@
       "states": {
         "start": "Début",
         "conversation": "Conversation",
-        "launcher": "Bouton de chat"
+        "launcher": "Widget"
       },
       "hint": "Survolez une partie du chat et cliquez pour la modifier.",
       "tryHint": "C'est votre vrai chatbot. Il répond avec ce qu'il a appris.",
@@ -1023,13 +1023,20 @@
         "footer": "Pied de page",
         "input": "Champ de saisie",
         "send": "Bouton d'envoi",
-        "launcher": "Bouton de chat"
+        "launcher": "Widget"
       }
     },
     "image": {
       "choose": "Choisir une image",
       "replace": "Remplacer",
       "remove": "Supprimer"
+    },
+    "look": {
+      "title": "Couleurs et police",
+      "sub": "La palette de couleurs et la police du chat. Choisissez où va chaque couleur directement dans l’aperçu."
+    },
+    "personality": {
+      "title": "Personnalité"
     }
   },
   "overview": {

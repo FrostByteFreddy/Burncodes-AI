@@ -939,7 +939,7 @@
         "starters": "Vorgeschlagene Fragen"
       },
       "labels": {
-        "launcher_background_color": "Farbe des Chat-Knopfs",
+        "launcher_background_color": "Farbe des Widget-Knopfs",
         "footer_background_color": "Hintergrund Fusszeile",
         "header_background_color": "Hintergrund Kopfzeile",
         "header_text_color": "Text Kopfzeile",
@@ -982,9 +982,9 @@
       "share": "Knopf zum Teilen des Gesprächs anzeigen"
     },
     "launcher": {
-      "title": "Chat-Knopf",
+      "title": "Widget",
       "sub": "Der runde Knopf in der Ecke Ihrer Website, der den Chat öffnet.",
-      "enabled": "Chat-Knopf auf meiner Website anzeigen",
+      "enabled": "Widget auf meiner Website anzeigen",
       "disabledHint": "Der Chat ist auf Ihrer Website ausgeblendet. Der eingebundene Code kann bleiben.",
       "color": "Farbe",
       "icon": "Symbol",
@@ -1000,7 +1000,7 @@
       "states": {
         "start": "Start",
         "conversation": "Gespräch",
-        "launcher": "Chat-Knopf"
+        "launcher": "Widget"
       },
       "hint": "Fahren Sie mit der Maus über einen Bereich des Chats und klicken Sie darauf, um ihn anzupassen.",
       "tryHint": "Das ist Ihr echter Chatbot. Er antwortet mit seinem aktuellen Wissen.",
@@ -1023,13 +1023,20 @@
         "footer": "Fusszeile",
         "input": "Eingabefeld",
         "send": "Senden-Knopf",
-        "launcher": "Chat-Knopf"
+        "launcher": "Widget"
       }
     },
     "image": {
       "choose": "Bild wählen",
       "replace": "Ersetzen",
       "remove": "Entfernen"
+    },
+    "look": {
+      "title": "Farben & Schrift",
+      "sub": "Die Farbpalette und die Schrift des Chats. Wo welche Farbe hinkommt, legen Sie direkt in der Vorschau fest."
+    },
+    "personality": {
+      "title": "Persönlichkeit"
     }
   },
   "overview": {

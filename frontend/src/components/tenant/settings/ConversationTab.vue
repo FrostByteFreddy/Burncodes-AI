@@ -1,22 +1,35 @@
 <template>
   <div class="cfg-stack">
-    <!-- Basics -->
-    <section class="panel">
-      <h2 class="panel-title">{{ $t('configure.basics.title') }}</h2>
+    <!-- Look: palette and font; the click-to-edit preview covers the rest -->
+    <details class="panel cfg-acc">
+      <summary class="cfg-acc__summary">
+        <span>
+          <span class="panel-title">{{ $t('configure.look.title') }}</span>
+          <span class="panel-sub">{{ $t('configure.look.sub') }}</span>
+        </span>
+        <font-awesome-icon :icon="['fas', 'chevron-down']" class="cfg-acc__chevron" />
+      </summary>
+      <div class="cfg-fields">
+        <PaletteEditor :config="local.widget_config" />
+        <FontPicker :config="local.widget_config" />
+      </div>
+    </details>
+
+    <!-- Personality: name, tone and the texts shown while it thinks -->
+    <details class="panel cfg-acc" open>
+      <summary class="cfg-acc__summary">
+        <span>
+          <span class="panel-title">{{ $t('configure.personality.title') }}</span>
+          <span class="panel-sub">{{ $t('configure.tone.sub') }}</span>
+        </span>
+        <font-awesome-icon :icon="['fas', 'chevron-down']" class="cfg-acc__chevron" />
+      </summary>
       <div class="cfg-fields">
         <div>
           <label for="cfg-name" class="form-field">{{ $t('configure.basics.name') }}</label>
           <input v-model="local.name" id="cfg-name" type="text" required class="form-input" />
           <p class="field-hint">{{ $t('configure.basics.nameHint') }}</p>
         </div>
-      </div>
-    </section>
-
-    <!-- How it talks -->
-    <section class="panel">
-      <h2 class="panel-title">{{ $t('configure.tone.title') }}</h2>
-      <p class="panel-sub">{{ $t('configure.tone.sub') }}</p>
-      <div class="cfg-fields">
         <div class="cfg-tones" role="group" :aria-label="$t('configure.tone.presets')">
           <button
             v-for="key in Object.keys(TONES)"
@@ -42,19 +55,16 @@
           <p class="field-hint">{{ $t('configure.tone.thinkingHint') }}</p>
         </div>
       </div>
-    </section>
-
-    <PaletteEditor :config="local.widget_config" />
-    <FontPicker :config="local.widget_config" />
+    </details>
 
     <!-- Advanced: the raw instruction template -->
-    <details class="panel cfg-advanced">
-      <summary class="cfg-advanced__summary">
+    <details class="panel cfg-acc">
+      <summary class="cfg-acc__summary">
         <span>
           <span class="panel-title">{{ $t('configure.advanced.title') }}</span>
           <span class="panel-sub">{{ $t('configure.advanced.sub') }}</span>
         </span>
-        <font-awesome-icon :icon="['fas', 'chevron-down']" class="cfg-advanced__chevron" />
+        <font-awesome-icon :icon="['fas', 'chevron-down']" class="cfg-acc__chevron" />
       </summary>
       <div class="cfg-fields">
         <p class="cfg-warning">
@@ -118,16 +128,16 @@ const restoreTemplate = () => { local.value.rag_prompt_template = PROMPT_TEMPLAT
 .cfg-tone__name { font-size: 15px; font-weight: 700; color: var(--surface-heading); }
 .cfg-tone__desc { font-size: var(--text-sm); color: var(--surface-muted); line-height: 1.4; }
 
-.cfg-advanced { padding: 0; }
-.cfg-advanced__summary {
+.cfg-acc { padding: 0; }
+.cfg-acc__summary {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 20px 24px; cursor: pointer; list-style: none;
 }
-.cfg-advanced__summary::-webkit-details-marker { display: none; }
-.cfg-advanced__summary > span { display: flex; flex-direction: column; }
-.cfg-advanced__chevron { color: var(--surface-muted); transition: transform var(--t-fast); }
-.cfg-advanced[open] .cfg-advanced__chevron { transform: rotate(180deg); }
-.cfg-advanced > .cfg-fields { padding: 0 24px 24px; margin-top: 0; }
+.cfg-acc__summary::-webkit-details-marker { display: none; }
+.cfg-acc__summary > span { display: flex; flex-direction: column; }
+.cfg-acc__chevron { color: var(--surface-muted); transition: transform var(--t-fast); }
+.cfg-acc[open] .cfg-acc__chevron { transform: rotate(180deg); }
+.cfg-acc > .cfg-fields { padding: 0 24px 24px; margin-top: 0; }
 
 .cfg-warning {
   display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 10px; align-items: baseline;

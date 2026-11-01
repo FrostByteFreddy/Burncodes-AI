@@ -1,7 +1,7 @@
 <template>
-  <section class="panel">
-    <h2 class="panel-title">{{ $t('configure.font.title') }}</h2>
-    <p class="panel-sub">{{ $t('configure.font.sub') }}</p>
+  <section>
+    <h3 class="cfg-subhead">{{ $t('configure.font.title') }}</h3>
+    <p class="field-hint">{{ $t('configure.font.sub') }}</p>
     <div class="fnt" role="radiogroup" :aria-label="$t('configure.font.title')">
       <button
         v-for="(font, key) in CHAT_FONTS"
@@ -34,6 +34,7 @@ const stacks = Object.fromEntries(Object.keys(CHAT_FONTS).map((key) => [key, loa
 </script>
 
 <style scoped>
+.cfg-subhead { font-size: 15px; font-weight: 700; color: var(--surface-heading); }
 .fnt { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 16px; }
 .fnt__opt {
   display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left;
