@@ -966,6 +966,12 @@
       "hex": "Farbwert (Hex)",
       "remove": "Farbe entfernen"
     },
+    "font": {
+      "title": "Schrift",
+      "sub": "Die Schrift im Chatfenster. Sie wird von unserem eigenen Server geladen, nicht von Google.",
+      "system": "Systemschrift",
+      "readable": "Besonders gut lesbar"
+    },
     "header": {
       "title": "Chatfenster",
       "chatTitle": "Titel",

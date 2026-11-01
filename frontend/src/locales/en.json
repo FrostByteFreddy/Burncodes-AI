@@ -966,6 +966,12 @@
       "hex": "Colour value (hex)",
       "remove": "Remove colour"
     },
+    "font": {
+      "title": "Font",
+      "sub": "The font in the chat window. It is loaded from our own server, not from Google.",
+      "system": "System font",
+      "readable": "Especially easy to read"
+    },
     "header": {
       "title": "Chat window",
       "chatTitle": "Title",
