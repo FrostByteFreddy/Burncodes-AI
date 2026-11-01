@@ -633,6 +633,16 @@ const widgetCssVariables = computed(() => {
   color: var(--chat-send-button-text-color);
 }
 
+/* A fixed size: padding plus the icon's width would make them wider than tall */
+.reset-button,
+.close-button,
+.share-button {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  flex-shrink: 0;
+}
+
 .reset-button {
   background-color: var(--chat-reset-button-background-color) !important;
   color: var(--chat-reset-button-icon-color) !important;
