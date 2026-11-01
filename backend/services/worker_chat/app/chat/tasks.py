@@ -388,6 +388,8 @@ _NOT_READY = {
 
 
 _MD_LINK = re.compile(r"\[([^\]]+)\]\((https?://[^)\s]+)\)")
+# also our source links, which carry a tooltip: [text](url "source: title")
+_ANY_LINK = re.compile(r'\[([^\]]+)\]\((https?://[^)\s]+)(?:\s+"[^"]*")?\)')
 
 
 def _known_source_urls(tenant_id: str) -> dict[str, str]:
@@ -523,9 +525,11 @@ def _inline_sources(answer: str, response, known: set[str]) -> tuple[str, set[st
         return answer, set()
     raw = answer.encode("utf-8")
     by_line: dict[int, list[tuple[str, str]]] = {}
-    linked: set[str] = set()
-    # two pages with the same title read as the same link twice: one per link text
-    labels: set[str] = set()
+    # links the answer already has (written by the model, or a bare address made a link) count as
+    # linked: "Wer ist Daniel Alan?" got the same page twice. Two pages with one title: one link text.
+    present = list(_ANY_LINK.finditer(answer))
+    linked: set[str] = {m.group(2) for m in present}
+    labels: set[str] = {_short_title(" ".join(m.group(1).split())) for m in present}
     for s in sorted(supports, key=lambda s: getattr(getattr(s, "segment", None), "end_index", 0) or 0):
         seg = getattr(s, "segment", None)
         if seg is None or (getattr(seg, "part_index", 0) or 0) != 0:
