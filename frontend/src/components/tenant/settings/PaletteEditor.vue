@@ -1,7 +1,7 @@
 <template>
-  <section class="panel">
-    <h2 class="panel-title">{{ $t('configure.colors.title') }}</h2>
-    <p class="panel-sub">{{ $t('configure.colors.sub') }}</p>
+  <section>
+    <h3 class="cfg-subhead">{{ $t('configure.colors.title') }}</h3>
+    <p class="field-hint">{{ $t('configure.colors.sub') }}</p>
     <ul class="pal">
       <li v-for="c in palette" :key="c.id" class="pal__row">
         <label class="pal__swatch" :style="{ backgroundColor: c.value }" :title="$t('configure.colors.pick')">
@@ -81,6 +81,7 @@ function add() {
 </script>
 
 <style scoped>
+.cfg-subhead { font-size: 15px; font-weight: 700; color: var(--surface-heading); }
 .pal { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
 .pal__row { display: grid; grid-template-columns: 40px minmax(0, 1fr) 7.5rem 36px; gap: 8px; align-items: center; }
 .pal__swatch {

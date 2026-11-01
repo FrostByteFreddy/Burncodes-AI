@@ -939,7 +939,7 @@
         "starters": "Suggested questions"
       },
       "labels": {
-        "launcher_background_color": "Button colour",
+        "launcher_background_color": "Widget button colour",
         "footer_background_color": "Footer background",
         "header_background_color": "Header background",
         "header_text_color": "Header text",
@@ -982,9 +982,9 @@
       "share": "Show a button to share the conversation"
     },
     "launcher": {
-      "title": "Chat button",
+      "title": "Widget",
       "sub": "The round button in the corner of your website that opens the chat.",
-      "enabled": "Show the chat button on my website",
+      "enabled": "Show the widget on my website",
       "disabledHint": "The chat is hidden on your website. The installed code can stay in place.",
       "color": "Colour",
       "icon": "Icon",
@@ -1000,7 +1000,7 @@
       "states": {
         "start": "Start",
         "conversation": "Conversation",
-        "launcher": "Chat button"
+        "launcher": "Widget"
       },
       "hint": "Hover over a part of the chat and click it to change it.",
       "tryHint": "This is your real chatbot. It answers from what it has learned.",
@@ -1023,13 +1023,20 @@
         "footer": "Footer",
         "input": "Input field",
         "send": "Send button",
-        "launcher": "Chat button"
+        "launcher": "Widget"
       }
     },
     "image": {
       "choose": "Choose image",
       "replace": "Replace",
       "remove": "Remove"
+    },
+    "look": {
+      "title": "Colours & font",
+      "sub": "The chat’s colour palette and font. Choose where each colour goes directly in the preview."
+    },
+    "personality": {
+      "title": "Personality"
     }
   },
   "overview": {
