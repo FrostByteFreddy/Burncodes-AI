@@ -756,6 +756,19 @@ class TestSourceLinks:
         out, _ = chat._inline_sources(answer, response, {a, b})
         assert out.count("](https://x.ch/kurs/") == 1
 
+    def test_a_page_the_answer_already_links_is_not_linked_again(self):
+        from types import SimpleNamespace as NS
+        chat = TestSystemInstruction._chat()
+        page = "https://www.younity.com/daniel-alan"
+        chunks = [NS(retrieved_context=NS(title="Daniel Alan — Mentor", text="",
+                                          custom_metadata=[NS(key="source_url", string_value=page)]))]
+        answer = f'Er ist Atemtrainer. [Daniel Alan]({page} "source: Daniel Alan")\nEr lebt in Basel.'
+        start = answer.encode().index("Basel".encode())
+        supports = [NS(segment=NS(start_index=start, end_index=start + 5, part_index=0), grounding_chunk_indices=[0])]
+        response = NS(candidates=[NS(grounding_metadata=NS(grounding_chunks=chunks, grounding_supports=supports))])
+        out, linked = chat._inline_sources(answer, response, {page})
+        assert out.count(page) == 1 and page in linked
+
 
     def test_a_line_backed_by_the_home_page_links_the_page_it_names(self):
         from types import SimpleNamespace as NS
