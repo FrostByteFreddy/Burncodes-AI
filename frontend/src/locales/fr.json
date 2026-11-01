@@ -966,6 +966,12 @@
       "hex": "Valeur de la couleur (hex)",
       "remove": "Supprimer la couleur"
     },
+    "font": {
+      "title": "Police",
+      "sub": "La police de la fenêtre de chat. Elle est chargée depuis notre propre serveur, pas depuis Google.",
+      "system": "Police du système",
+      "readable": "Particulièrement lisible"
+    },
     "header": {
       "title": "Fenêtre de chat",
       "chatTitle": "Titre",

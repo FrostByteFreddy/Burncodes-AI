@@ -2,6 +2,7 @@
 // form built from a saved chatbot, and the look taken from its website.
 import { colorOf, contrast } from '../components/tenant/settings/palette';
 import { DEFAULT_AUDIENCE } from './chatbotDefaults';
+import { DEFAULT_FONT } from './chatFonts';
 
 export const defaultWidgetConfig = () => ({
   chatbot_title: '',
@@ -15,6 +16,7 @@ export const defaultWidgetConfig = () => ({
   conversation_starters: [],
   starter_background_color: 'c_primary',
   starter_text_color: 'c_white',
+  font_family: DEFAULT_FONT,
   color_palette: [
     { id: 'c_primary',   name: 'Primary',   value: '#5F6DFF' },
     { id: 'c_secondary', name: 'Secondary', value: '#F3F4F6' },

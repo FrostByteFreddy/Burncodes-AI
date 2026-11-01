@@ -147,6 +147,7 @@
 
 <script setup>
 import { computed, ref, watch, nextTick } from "vue";
+import { loadChatFont } from "@/utils/chatFonts";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
@@ -422,6 +423,7 @@ const widgetCssVariables = computed(() => {
       styles.share_button_icon_color,
       "#1F2937"
     ),
+    "--chat-font": loadChatFont(config.font_family),
     "--chat-border-radius": "32px",
     "--chat-custom-radius": "22px",
   };
@@ -439,6 +441,7 @@ const widgetCssVariables = computed(() => {
   height: 100%;
   /* 16px base prevents iOS Safari from auto-zooming any child input on focus */
   font-size: 16px;
+  font-family: var(--chat-font);
 }
 
 .chat-widget.is-widget {

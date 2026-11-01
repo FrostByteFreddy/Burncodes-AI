@@ -45,6 +45,7 @@
     </section>
 
     <PaletteEditor :config="local.widget_config" />
+    <FontPicker :config="local.widget_config" />
 
     <!-- Advanced: the raw instruction template -->
     <details class="panel cfg-advanced">
@@ -79,6 +80,7 @@
 import { computed } from 'vue';
 import AutoGrowTextarea from '../../AutoGrowTextarea.vue';
 import PaletteEditor from './PaletteEditor.vue';
+import FontPicker from './FontPicker.vue';
 import { PROMPT_TEMPLATE, TONES } from '@/utils/chatbotDefaults';
 
 // Shown literally in the help texts (vue-i18n would read them as parameters)
