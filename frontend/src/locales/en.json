@@ -85,7 +85,11 @@
   },
   "chat": {
     "calendar": {
-      "add": "Add to my calendar: {name}"
+      "apple": "Subscribe to {name} in Apple Calendar or Outlook",
+      "google": "Subscribe to {name} in Google Calendar",
+      "outlook": "Subscribe to {name} in Outlook.com",
+      "copy": "Copy calendar link",
+      "copied": "Copied"
     },
     "locked": {
       "title": "This chatbot is still being tested",

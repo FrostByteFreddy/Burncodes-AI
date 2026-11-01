@@ -85,7 +85,11 @@
   },
   "chat": {
     "calendar": {
-      "add": "Ajouter à mon calendrier : {name}"
+      "apple": "S'abonner à {name} dans Calendrier Apple ou Outlook",
+      "google": "S'abonner à {name} dans Google Agenda",
+      "outlook": "S'abonner à {name} dans Outlook.com",
+      "copy": "Copier le lien du calendrier",
+      "copied": "Copié"
     },
     "locked": {
       "title": "Ce chatbot est encore en test",
