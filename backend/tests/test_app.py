@@ -34,7 +34,8 @@ def test_public_links_use_the_address_the_request_came_in_on(app, monkeypatch):
         from app.tenants.calendar_feed import feed_urls
         urls = feed_urls("t1", "abfall")
     assert urls == {"https": "https://ai.burn.codes/api/calendar/t1/abfall.ics",
-                    "webcal": "webcal://ai.burn.codes/api/calendar/t1/abfall.ics"}
+                    "webcal": "webcal://ai.burn.codes/api/calendar/t1/abfall.ics",
+                    "add": "https://ai.burn.codes/api/calendar/t1/abfall/add"}
 
     monkeypatch.setenv("API_BASE_URL", "https://api.example.ch/")
     with app.test_request_context("/", **after_proxyfix):

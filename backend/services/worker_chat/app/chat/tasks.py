@@ -487,9 +487,21 @@ _SOURCES_MARKER = "[[sources]]"
 _CHIP_TITLE_CHARS = 32
 
 
+def _short_title(title: str) -> str:
+    """A page title as link text: its first part ("find your flow!" of "find your flow! – Das …"), cut at a word."""
+    head = re.split(r"\s+[–—|-]\s+", title, maxsplit=1)[0]
+    if len(head) >= 8:
+        title = head
+    if len(title) <= _CHIP_TITLE_CHARS:
+        return title
+    cut = title[:_CHIP_TITLE_CHARS].rsplit(" ", 1)[0].rstrip(" ,;:–-")
+    return (cut if len(cut) >= 12 else title[:_CHIP_TITLE_CHARS - 1]) + "…"
+
+
 def _chip(title: str, url: str) -> str:
+    """A source link: short text, the full title as tooltip; the chat shows it inline with a small icon."""
     title = " ".join(title.split()).replace("[", "(").replace("]", ")")
-    short = title if len(title) <= _CHIP_TITLE_CHARS else title[:_CHIP_TITLE_CHARS - 1].rstrip() + "…"
+    short = _short_title(title)
     # only the markdown title needs its quotes swapped
     return f'[{short}]({url} "source: {title.replace(chr(34), chr(39))}")'
 
@@ -512,6 +524,8 @@ def _inline_sources(answer: str, response, known: set[str]) -> tuple[str, set[st
     raw = answer.encode("utf-8")
     by_line: dict[int, list[tuple[str, str]]] = {}
     linked: set[str] = set()
+    # two pages with the same title read as the same link twice: one per link text
+    labels: set[str] = set()
     for s in sorted(supports, key=lambda s: getattr(getattr(s, "segment", None), "end_index", 0) or 0):
         seg = getattr(s, "segment", None)
         if seg is None or (getattr(seg, "part_index", 0) or 0) != 0:
@@ -528,7 +542,8 @@ def _inline_sources(answer: str, response, known: set[str]) -> tuple[str, set[st
             # backed only by an overview (the home page): the line's own page, if it names one
             named = _named_page(answer[line_start:line_end], known)
             specific = [named] if named else []
-        pick = next((x for x in (specific or sources) if x[1] not in linked), None)
+        pick = next((x for x in (specific or sources)
+                     if x[1] not in linked and _short_title(" ".join(x[0].split())) not in labels), None)
         if not pick:
             continue
         if answer[line_start:line_end].lstrip().startswith("|"):
@@ -536,6 +551,7 @@ def _inline_sources(answer: str, response, known: set[str]) -> tuple[str, set[st
         if len(by_line.setdefault(line_end, [])) < 2:
             by_line[line_end].append(pick)
             linked.add(pick[1])
+            labels.add(_short_title(" ".join(pick[0].split())))
     for pos in sorted(by_line, reverse=True):
         chips = " ".join(_chip(t, u) for t, u in by_line[pos])
         answer = answer[:pos].rstrip() + " " + chips + answer[pos:]
@@ -543,6 +559,40 @@ def _inline_sources(answer: str, response, known: set[str]) -> tuple[str, set[st
 
 
 _CALENDAR_MARKER = re.compile(r"\s*\[\[calendar:([a-z0-9-]+)\]\]")
+
+# "Wer ist Daniel Alan?" got two calendar buttons under the answer. They're for
+# people asking about dates: when, next, schedule, collection days …
+_DATE_QUESTION = re.compile(
+    r"\b(wann|wenn|termin\w*|datum|daten|kalender\w*|n[aä]chste[nrs]?|naechste[nrs]?|wievielte\w*|zeitplan|"
+    r"abfuhr\w*|\w*abfuhr|sammel\w*|\w*sammlung|ferien|feiertag\w*|"
+    r"when|date[s]?|calendar|schedule|next|upcoming|"
+    r"quand|calendrier|prochaine?s?|horaire\w*)\b", re.IGNORECASE)
+
+
+def _asks_for_dates(question: str) -> bool:
+    """Whether a question is about dates, so calendar buttons fit the answer."""
+    return bool(_DATE_QUESTION.search(question or ""))
+
+
+def _one_button_per_event(answer: str, calendars: dict[str, tuple[str, list[str]]]) -> str:
+    """
+    Two pages describing one event make two series ("Daniel Alan - Power of
+    Breath", "Tagesseminar Daniel Alan: Power of Breath"): the same dates and
+    mostly the same words get one button.
+    """
+    def words(name):
+        return {w for w in re.findall(r"[a-z0-9]{3,}", _fold(name))}
+    kept: list[tuple[list[str], set[str]]] = []
+
+    def keep(m):
+        name, dates = calendars.get(m.group(1), ("", []))
+        w = words(name)
+        for other_dates, other_words in kept:
+            if other_dates == dates and w and other_words and len(w & other_words) / min(len(w), len(other_words)) >= 0.75:
+                return ""
+        kept.append((dates, w))
+        return m.group(0)
+    return _CALENDAR_MARKER.sub(keep, answer)
 
 
 def _fold(text: str) -> str:
@@ -583,9 +633,12 @@ def _ensure_source(answer: str, candidates: list[tuple[str, str]], known: set[st
         return re.sub(r"[^\n]*\[\[sources\]\][^\n]*\n?", "", answer).rstrip()
     if any(m.group(2) in known for m in _MD_LINK.finditer(answer)) or not links:
         return answer
-    # before any calendar markers, which have to stay last
+    # inline at the end of the last paragraph (before any calendar markers, which stay last);
+    # after a table row it would break the table, so there it gets its own line
     body, markers = re.match(r"(.*?)((?:\s*\[\[calendar:[a-z0-9-]+\]\])*)\s*$", answer, re.S).groups()
-    return f"{body.rstrip()}\n\n{' '.join(links[:3])}{markers}"
+    body = body.rstrip()
+    joiner = "\n\n" if body.rsplit("\n", 1)[-1].lstrip().startswith("|") else " "
+    return f"{body}{joiner}{' '.join(links[:2])}{markers}"
 
 
 def _language_rule() -> str:
@@ -692,7 +745,8 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
         system_instruction += "\n\n" + _now_context(now)
         try:
             dates = _dates_context(
-                tenant_id, now.date(), offer_calendars=_calendars_offered(tenant_config), sources_out=date_sources,
+                tenant_id, now.date(), offer_calendars=_calendars_offered(tenant_config) and _asks_for_dates(query),
+                sources_out=date_sources,
                 calendars_out=calendars, asked=asked, names_out=series_names)
             if dates:
                 system_instruction += "\n\n" + dates
@@ -769,7 +823,7 @@ def chat_task(self, tenant_id, query, chat_history_json, conversation_id, user_i
             if contact_card and contact_card.get("maps_url"):
                 known[contact_card["maps_url"]] = ""   # the address's map link is ours, not invented
             ai_message = _keep_known_links(ai_message, known)
-            ai_message = _drop_stray_calendars(ai_message, calendars)
+            ai_message = _one_button_per_event(_drop_stray_calendars(ai_message, calendars), calendars)
             mentioned = [src for name, src in date_sources.items() if name.lower() in ai_message.lower()]
             mentioned += [fact_sources[f["source_id"]] for f in facts
                           if f.get("source_id") in fact_sources and fact_mentioned(f, ai_message)]

@@ -25,6 +25,7 @@ PUBLIC_ENDPOINTS = {
     "chat.unlock_chat",
     "calendar.list_feeds",
     "calendar.get_feed",
+    "calendar.add_to_calendar",
     "chat.create_share_link",
     "chat.get_shared_conversation",
     "tenants.get_public_tenant",
