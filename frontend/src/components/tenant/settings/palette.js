@@ -35,3 +35,25 @@ export function setStyle(cfg, field, colorId) {
   else cfg.component_styles[field] = colorId;
 }
 export const colorOf = (cfg, id) => cfg.color_palette.find((c) => c.id === id)?.value || id;
+
+// Every style setting that points at a palette colour
+const styleFields = (cfg) => [...TOP_LEVEL_STYLES, ...Object.keys(cfg.component_styles || {})];
+
+function rgb(hex) {
+  const n = parseInt((hex || '').replace('#', ''), 16) || 0;
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+// Removes a colour; whatever used it takes the closest remaining one
+export function removeColor(cfg, id) {
+  const gone = cfg.color_palette.find((c) => c.id === id);
+  if (!gone) return;
+  cfg.color_palette = cfg.color_palette.filter((c) => c.id !== id);
+  const [r, g, b] = rgb(gone.value);
+  const nearest = cfg.color_palette.reduce((best, c) => {
+    const [r2, g2, b2] = rgb(c.value);
+    const d = (r - r2) ** 2 + (g - g2) ** 2 + (b - b2) ** 2;
+    return d < best.d ? { id: c.id, d } : best;
+  }, { id: 'c_primary', d: Infinity }).id;
+  for (const f of styleFields(cfg)) if (getStyle(cfg, f) === id) setStyle(cfg, f, nearest);
+}
