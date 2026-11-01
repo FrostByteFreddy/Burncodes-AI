@@ -22,7 +22,7 @@ Gemini learns every page → a chat widget answers with sources, dates and facts
 | change balance, charges, Stripe | `backend/shared/billing/services.py`, `backend/services/api/app/billing/` |
 | change the database | `supabase/migrations/20261024000000_schema.sql` (one idempotent file) |
 | change a dashboard screen | `frontend/src/views/`, `frontend/src/components/tenant/` |
-| change the public landing page | `landing/` (plain HTML/CSS, own container); routing in `nginx/nginx.conf` |
+| change the public landing page | `landing/` (Astro + shadcn-vue; copy in `src/content/`, prices in `src/site.ts`); routing in `nginx/nginx.conf` |
 | change the look | `frontend/src/assets/tokens.css`, `bc.css`, `components/ui/Bc*.vue` |
 | change dashboard text | `frontend/src/locales/{de,en,fr}.json` |
 | deploy / check production | release tag → `.github/workflows/release.yml`; `docker-compose.prod.yml`; see `references/operations.md` |

@@ -1,0 +1,14 @@
+---
+import Base from '@/layouts/Base.astro';
+import { Button } from '@/components/ui/button';
+import { content } from '@/content';
+
+const t = content.de;
+---
+<Base lang="de" title={t.meta.notFound.title} path="/404/" noindex translated={false}>
+  <section class="wrap section">
+    <h1 class="text-5xl font-bold tracking-tight">{t.notFound.h1}</h1>
+    <p class="lede mt-4 text-muted-foreground">{t.notFound.text}</p>
+    <Button as="a" href="/" class="mt-6">{t.notFound.back}</Button>
+  </section>
+</Base>

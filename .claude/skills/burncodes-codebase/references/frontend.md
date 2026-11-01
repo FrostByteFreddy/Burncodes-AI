@@ -10,8 +10,9 @@ The app is built with `base: '/dashboard/'` and served there. `/chat/:id` and
 `/share/:id` keep their root addresses because they are embedded on customer
 sites and shared as links: the same `index.html` answers them, and
 `router/index.js` picks the router base from the current path. `/` is the
-separate landing page (`landing/`, plain HTML without a build step, its own
-container, indexed by search engines). The routing is in `nginx/nginx.conf`,
+separate public website (`landing/`: Astro + shadcn-vue, rendered to static HTML
+in de/fr/en, its own container, indexed by search engines). Copy is in
+`landing/src/content/`, prices and legal details in `landing/src/site.ts`. The routing is in `nginx/nginx.conf`,
 which also redirects the dashboard's old addresses (`/login`, `/tenant/…`) and
 `/?onboarding` to `/dashboard/…`. Everything but `/` is `noindex`. Files from
 `public/` are under `/dashboard/`: use `import.meta.env.BASE_URL` in dynamic

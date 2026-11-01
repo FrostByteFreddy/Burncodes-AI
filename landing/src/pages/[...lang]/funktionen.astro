@@ -1,0 +1,31 @@
+---
+import Base from '@/layouts/Base.astro';
+import PageHero from '@/components/PageHero.astro';
+import { content } from '@/content';
+import { langPaths, type Locale } from '@/site';
+
+export const getStaticPaths = langPaths;
+const lang = Astro.props.lang as Locale;
+const t = content[lang];
+---
+<Base lang={lang} title={t.meta.features.title} description={t.meta.features.description} path="/funktionen/">
+  <PageHero h1={t.features.h1} lede={t.features.lede} />
+  {t.features.groups.map((g, i) => (
+    <section class:list={['section', i % 2 === 0 ? 'bg-background' : 'border-y bg-card']}>
+      <div class="wrap grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-14">
+        <div class="lg:sticky lg:top-24 lg:self-start">
+          <h2 class="h2">{g.title}</h2>
+          <p class="mt-3 text-muted-foreground">{g.text}</p>
+        </div>
+        <dl class="grid gap-x-10 sm:grid-cols-2">
+          {g.items.map(([title, text]) => (
+            <div class="border-t py-4">
+              <dt class="font-bold">{title}</dt>
+              <dd class="mt-1 text-muted-foreground">{text}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  ))}
+</Base>

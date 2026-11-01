@@ -1,0 +1,45 @@
+---
+import Base from '@/layouts/Base.astro';
+import LegalGap from '@/components/LegalGap.astro';
+import { site } from '@/site';
+
+const l = site.legal;
+---
+<Base lang="de" title="Datenschutz | Burncodes AI" path="/datenschutz/" noindex translated={false}>
+  <article class="wrap section max-w-3xl! space-y-8">
+    <div>
+      <h1 class="text-5xl font-bold tracking-tight">Datenschutz</h1>
+      <LegalGap />
+    </div>
+    <section>
+      <h2 class="text-2xl">Verantwortlich</h2>
+      <p class="mt-2 whitespace-pre-line">{[l.company || '[Firma oder Name fehlt]', l.address || '[Adresse fehlt]', l.email || '[E-Mail fehlt]'].join('\n')}</p>
+    </section>
+    <section>
+      <h2 class="text-2xl">Diese Website</h2>
+      <p class="mt-2">Diese Website setzt keine Cookies und nutzt kein Analyse- oder Werbetracking. Schriften und Dateien werden von unserem eigenen Server geladen. Beim Aufruf verarbeitet der Server technisch nötige Angaben wie die IP-Adresse.</p>
+    </section>
+    <section>
+      <h2 class="text-2xl">Der Chatbot auf Websites unserer Kunden</h2>
+      <p class="mt-2">Fragen und Antworten werden gespeichert, damit das Gespräch weitergeführt werden kann und der Kunde es in seiner Auswertung einsehen kann. Für die Antwort werden die Frage und passende Inhalte an die KI von Google (Gemini) übermittelt. Bitte geben Sie im Chat keine vertraulichen Angaben ein.</p>
+      <p class="mt-2">Aufbewahrungsdauer: {l.retention || '[Angabe fehlt]'}</p>
+    </section>
+    <section>
+      <h2 class="text-2xl">Konto und Dashboard</h2>
+      <p class="mt-2">Für ein Konto speichern wir Ihre E-Mail-Adresse, Ihre Angaben im Profil und die Inhalte Ihrer Chatbots. Abgerufen wird das Dashboard über eine Anmeldung, die im Browser gespeichert bleibt.</p>
+    </section>
+    <section>
+      <h2 class="text-2xl">Beteiligte Anbieter</h2>
+      <ul class="mt-2 list-disc space-y-1 pl-5">
+        <li>Google (Gemini): Lesen der Inhalte, Suche und Beantwortung von Fragen</li>
+        <li>Supabase: Datenbank und Anmeldung</li>
+        <li>Stripe: Zahlungsabwicklung</li>
+        <li>Hosting: {l.hosting || '[Anbieter und Standort fehlen]'}</li>
+      </ul>
+    </section>
+    <section>
+      <h2 class="text-2xl">Ihre Rechte</h2>
+      <p class="mt-2">Sie können Auskunft über Ihre Daten verlangen und deren Berichtigung oder Löschung beantragen. Schreiben Sie dazu an die oben genannte Adresse.</p>
+    </section>
+  </article>
+</Base>

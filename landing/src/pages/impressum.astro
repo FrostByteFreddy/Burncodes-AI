@@ -1,0 +1,20 @@
+---
+import Base from '@/layouts/Base.astro';
+import LegalGap from '@/components/LegalGap.astro';
+import { site } from '@/site';
+
+const l = site.legal;
+const complete = Boolean(l.company && l.address && l.email);
+---
+<Base lang="de" title="Impressum | Burncodes AI" path="/impressum/" noindex translated={false}>
+  <article class="wrap section max-w-3xl!">
+    <h1 class="text-5xl font-bold tracking-tight">Impressum</h1>
+    {!complete && <LegalGap />}
+    <dl class="mt-8 space-y-5">
+      <div><dt class="font-bold">Anbieter</dt><dd class="mt-1 whitespace-pre-line">{l.company || '[Firma oder Name fehlt]'}</dd></div>
+      <div><dt class="font-bold">Adresse</dt><dd class="mt-1 whitespace-pre-line">{l.address || '[Adresse fehlt]'}</dd></div>
+      <div><dt class="font-bold">E-Mail</dt><dd class="mt-1">{l.email ? <a class="text-primary underline" href={`mailto:${l.email}`}>{l.email}</a> : '[E-Mail fehlt]'}</dd></div>
+      {l.uid && <div><dt class="font-bold">UID</dt><dd class="mt-1">{l.uid}</dd></div>}
+    </dl>
+  </article>
+</Base>

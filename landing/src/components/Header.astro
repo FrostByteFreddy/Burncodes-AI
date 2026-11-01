@@ -1,0 +1,45 @@
+---
+import { Button } from '@/components/ui/button';
+import MobileNav from '@/components/MobileNav.vue';
+import { content } from '@/content';
+import { LOCALES, localePath, site, type Locale } from '@/site';
+
+interface Props { lang: Locale; path: string; translated: boolean }
+const { lang, path, translated } = Astro.props;
+const t = content[lang];
+const links = [
+  { href: localePath(lang, '/funktionen/'), label: t.nav.features },
+  { href: localePath(lang, '/gemeinden/'), label: t.nav.municipalities },
+  { href: localePath(lang, '/organisationen/'), label: t.nav.organisations },
+  { href: localePath(lang, '/preise/'), label: t.nav.pricing },
+  { href: localePath(lang, '/fragen/'), label: t.nav.faq },
+];
+const languages = LOCALES.map((l) => ({
+  code: l,
+  href: localePath(l, translated ? path : '/'),
+  current: l === lang,
+}));
+const current = localePath(lang, path);
+---
+<header class="sticky top-0 z-40 border-b bg-card/95 backdrop-blur">
+  <div class="wrap flex h-16 items-center gap-6">
+    <a href={localePath(lang)} aria-label="Burncodes AI" class="shrink-0"><img src="/img/logo.svg" alt="" width="58" height="36" class="block" /></a>
+    <nav class="hidden flex-1 items-center gap-1 lg:flex" aria-label={t.nav.menu}>
+      {links.map((l) => (
+        <Button as="a" href={l.href} variant="ghost" size="sm" aria-current={current === l.href ? 'page' : undefined} class={current === l.href ? 'bg-accent text-accent-foreground' : ''}>{l.label}</Button>
+      ))}
+    </nav>
+    <div class="ml-auto flex items-center gap-2">
+      <ul class="hidden items-center text-sm lg:flex" aria-label={t.nav.language}>
+        {languages.map((l) => (
+          <li>
+            <a href={l.href} lang={l.code} hreflang={l.code} aria-current={l.current ? 'true' : undefined} class:list={['rounded px-1.5 py-1 uppercase hover:text-primary', l.current ? 'font-bold text-foreground' : 'text-muted-foreground']}>{l.code}</a>
+          </li>
+        ))}
+      </ul>
+      <Button as="a" href={site.dashboard} variant="outline" size="sm" data-astro-prefetch="false">{t.nav.login}</Button>
+      <Button as="a" href={site.signup} size="sm" class="hidden sm:inline-flex" data-astro-prefetch="false">{t.nav.start}</Button>
+      <MobileNav client:idle links={links} languages={languages} start={t.nav.start} startHref={site.signup} menu={t.nav.menu} language={t.nav.language} />
+    </div>
+  </div>
+</header>

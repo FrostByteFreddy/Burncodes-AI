@@ -1,0 +1,60 @@
+---
+import '@/styles/global.css';
+import Header from '@/components/Header.astro';
+import Footer from '@/components/Footer.astro';
+import { content } from '@/content';
+import { LOCALES, localePath, site, type Locale } from '@/site';
+
+interface Props {
+  lang: Locale;
+  title: string;
+  description?: string;
+  path: string; // without language prefix, e.g. /preise/
+  noindex?: boolean;
+  translated?: boolean; // false: the page exists in German only
+  jsonLd?: object;
+}
+const { lang, title, description = '', path, noindex = false, translated = true, jsonLd } = Astro.props;
+const t = content[lang];
+const canonical = new URL(localePath(lang, path), site.url).href;
+---
+<!doctype html>
+<html lang={t.htmlLang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="canonical" href={canonical} />
+    {translated && !noindex && LOCALES.map((l) => (
+      <link rel="alternate" hreflang={content[l].htmlLang} href={new URL(localePath(l, path), site.url).href} />
+    ))}
+    {translated && !noindex && <link rel="alternate" hreflang="x-default" href={new URL(path, site.url).href} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Burncodes AI" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:image" content={new URL('/img/og.png', site.url).href} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#0a1fab" />
+    <link rel="icon" href="/img/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+    <script is:inline>
+      // Links in Supabase's sign-up and password e-mails may land here; the dashboard finishes the login
+      if (/(access_token|error_description)=/.test(location.hash)) location.replace('/dashboard/' + location.hash);
+    </script>
+  </head>
+  <body class="min-h-dvh flex flex-col">
+    <a href="#inhalt" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-card focus:px-3 focus:py-2">{t.nav.skip}</a>
+    <Header lang={lang} path={path} translated={translated} />
+    <main id="inhalt" class="flex-1"><slot /></main>
+    <Footer lang={lang} />
+  </body>
+</html>

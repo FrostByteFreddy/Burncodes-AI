@@ -1,9 +1,14 @@
-# The public landing page: plain files, no build step, so search engines get the full text
+# The public website: Astro renders every page to plain HTML at build time
+FROM node:24-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
 FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY index.html robots.txt sitemap.xml styles.css /usr/share/nginx/html/
-COPY fonts /usr/share/nginx/html/fonts
-COPY img /usr/share/nginx/html/img
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

@@ -1,0 +1,32 @@
+---
+import { Button } from '@/components/ui/button';
+import PageHero from '@/components/PageHero.astro';
+import { site } from '@/site';
+
+interface Props { a: { h1: string; lede: string; questionsTitle: string; questions: string[]; pointsTitle: string; points: string[][]; cta: string } }
+const { a } = Astro.props;
+---
+<PageHero h1={a.h1} lede={a.lede}>
+  <Button as="a" href={site.signup} size="lg" class="mt-8 h-12 bg-white px-6 text-base font-bold text-indigo-brand hover:bg-accent">{a.cta}</Button>
+</PageHero>
+<section class="section">
+  <div class="wrap">
+    <h2 class="h2">{a.questionsTitle}</h2>
+    <ul class="mt-8 flex flex-wrap gap-3">
+      {a.questions.map((q) => <li class="rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-primary-foreground">{q}</li>)}
+    </ul>
+  </div>
+</section>
+<section class="section border-t bg-card">
+  <div class="wrap">
+    <h2 class="h2">{a.pointsTitle}</h2>
+    <dl class="mt-8 grid gap-x-12 md:grid-cols-2">
+      {a.points.map(([title, text]) => (
+        <div class="border-t py-5">
+          <dt class="text-lg font-bold">{title}</dt>
+          <dd class="mt-1 text-muted-foreground">{text}</dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+</section>
