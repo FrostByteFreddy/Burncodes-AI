@@ -9,7 +9,7 @@ widget or a shareable test page, with links to its sources, verified dates
 
 Live at **https://ai.burn.codes**.
 
-**Stack:** Vue 3 · Tailwind · Flask · Celery · Redis · Supabase (Postgres, Auth, Realtime) · Google Gemini (File Search) · Stripe · Docker Compose · nginx
+**Stack:** Vue 3 · Tailwind 4 · shadcn-vue · Astro · Flask · Celery · Redis · Supabase (Postgres, Auth, Realtime) · Google Gemini (File Search) · Stripe · Docker Compose · nginx
 
 ---
 

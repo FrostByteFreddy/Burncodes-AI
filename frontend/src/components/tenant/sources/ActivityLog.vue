@@ -2,7 +2,7 @@
   <ol v-if="rows.length" ref="listEl" class="alog" :style="{ maxHeight }" aria-live="polite">
     <li v-for="row in rows" :key="row.id" class="alog__row" :class="`alog__row--${row.state}`">
       <span class="alog__icon" aria-hidden="true">
-        <font-awesome-icon v-if="row.state === 'running'" :icon="['fas', 'spinner']" class="animate-spin" />
+        <Spinner v-if="row.state === 'running'" data-icon="inline-start" />
         <font-awesome-icon v-else-if="row.state === 'failed'" :icon="['fas', 'triangle-exclamation']" />
         <font-awesome-icon v-else-if="row.state === 'done'" :icon="['fas', 'check']" />
         <span v-else class="alog__dot"></span>
@@ -15,6 +15,7 @@
 </template>
 
 <script setup>
+import { Spinner } from '@/components/ui/spinner';
 import { computed, nextTick, ref, watch } from 'vue';
 import { useCrawlText } from '@/composables/useCrawl';
 

@@ -25,8 +25,8 @@
         <p class="step-subtext">{{ $t('tenant.fineTune.wizard.triggerDesc') }}</p>
       </div>
 
-      <div>
-        <Label for="rule-trigger" class="mb-2">{{ $t('tenant.fineTune.trigger.label') }}</Label>
+      <Field>
+        <FieldLabel for="rule-trigger">{{ $t('tenant.fineTune.trigger.label') }}</FieldLabel>
         <Input
           id="rule-trigger"
           v-model="trigger"
@@ -35,7 +35,7 @@
           
           style="margin-top:8px;"
           @keydown.enter.prevent="canProceed && step++" />
-      </div>
+      </Field>
 
       <div v-if="trigger.trim()" class="trigger-preview">
         <span class="trigger-preview__label">{{ $t('tenant.fineTune.wizard.triggerPreview') }}</span>
@@ -60,8 +60,8 @@
         <p class="step-subtext">{{ hint }}</p>
       </div>
 
-      <div>
-        <Label for="rule-instruction" class="mb-2">{{ $t('tenant.fineTune.instruction.label') }}</Label>
+      <Field>
+        <FieldLabel for="rule-instruction">{{ $t('tenant.fineTune.instruction.label') }}</FieldLabel>
         <Textarea
           id="rule-instruction"
           v-model="instruction"
@@ -69,7 +69,7 @@
           class="min-h-[110px] resize-y"
           rows="5"
           style="margin-top:8px;" />
-      </div>
+      </Field>
 
       <div class="recap-card">
         <span class="recap-card__label">{{ $t('tenant.fineTune.trigger.label') }}</span>
@@ -80,9 +80,9 @@
 </template>
 
 <script setup>
+import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { ref, computed, watch } from 'vue';
 import WizardPanel from '../../WizardPanel.vue';
 

@@ -2,14 +2,14 @@
   <div class="cfg-page">
     <div v-if="!tenantsStore.currentTenant" class="cfg-layout" aria-busy="true">
       <div class="cfg-stack">
-        <span class="ghost ghost--title" style="width: 160px; height: 28px"></span>
+        <Skeleton class="ghost--title" style="width: 160px; height: 28px" />
         <BcPanel as="section"  v-for="n in 3" :key="n" class="ghost-stack">
-          <span class="ghost ghost--title" style="width: 140px"></span>
-          <span class="ghost" style="height: 40px"></span>
-          <span class="ghost ghost--line" style="width: 60%"></span>
+          <Skeleton class="ghost--title" style="width: 140px" />
+          <Skeleton style="height: 40px" />
+          <Skeleton class="ghost--line" style="width: 60%" />
         </BcPanel>
       </div>
-      <div class="cfg-preview"><span class="ghost" style="height: 100%; border-radius: 20px"></span></div>
+      <div class="cfg-preview"><Skeleton style="height: 100%; border-radius: 20px" /></div>
     </div>
 
     <div v-else class="cfg-layout">
@@ -36,7 +36,7 @@
             <div class="page-actions">
               <BcButton variant="secondary" type="button"  :disabled="saving" @click="load">{{ $t('configure.discard') }}</BcButton>
               <BcButton variant="primary" type="submit"  :disabled="saving">
-                <font-awesome-icon v-if="saving" :icon="['fas', 'spinner']" class="animate-spin" />
+                <Spinner v-if="saving" data-icon="inline-start" />
                 {{ $t('configure.save') }}
               </BcButton>
             </div>
@@ -52,6 +52,8 @@
 </template>
 
 <script setup>
+import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 import { BcButton, BcPanel } from '@/components/ui';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';

@@ -1,13 +1,16 @@
 <template>
-  <div :class="['bc-empty', { 'bc-empty--compact': compact }]">
-    <span v-if="icon" class="bc-empty__icon"><BcIcon :name="icon" /></span>
-    <h3 class="bc-empty__title">{{ title }}</h3>
-    <p v-if="description" class="bc-empty__desc">{{ description }}</p>
-    <div v-if="$slots.action" class="bc-empty__action"><slot name="action" /></div>
-  </div>
+  <Empty :class="{ 'p-4': compact }">
+    <EmptyHeader>
+      <EmptyMedia v-if="icon" variant="icon"><BcIcon :name="icon" /></EmptyMedia>
+      <EmptyTitle>{{ title }}</EmptyTitle>
+      <EmptyDescription v-if="description">{{ description }}</EmptyDescription>
+    </EmptyHeader>
+    <EmptyContent v-if="$slots.action"><slot name="action" /></EmptyContent>
+  </Empty>
 </template>
 
 <script setup>
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from './empty';
 import BcIcon from './BcIcon.vue';
 
 // Always names the next step

@@ -1,8 +1,20 @@
 # Frontend (`frontend/src/`)
 
-Vue 3.5 (`<script setup>`), Vue Router, Pinia, vue-i18n 9, Tailwind 3 (no
-component plugin), Font Awesome 6 solid, axios. Built by Vite; production is a
-static bundle behind nginx.
+Vue 3.5 (`<script setup>`), Vue Router, Pinia, vue-i18n 11, Tailwind 4, shadcn-vue
+(Reka UI, style `reka-nova`, in `components/ui/<name>/`), Font Awesome 7, axios.
+Built by Vite; production is a static bundle behind nginx.
+
+## Components
+
+Screens use the `Bc*` wrappers in `components/ui/` (`BcButton`, `BcPanel`,
+`BcField`, `BcDialog`, ...), which compose shadcn-vue components; use shadcn
+directly for what has no wrapper. Our sizes and tones live in the shadcn files'
+`cva` variants, its colours resolve through `assets/tokens.css` in the `@theme`
+block of `assets/main.css`. See the `shadcn-vue` skill for the rules. Adding with
+the CLI: pipe `yes n` so it doesn't overwrite customised components.
+Global CSS must stay in a layer: unlayered rules outrank every Tailwind utility.
+The chat widget (`components/chat/`) keeps its own CSS variables, since colours
+are per customer.
 
 ## Addresses
 

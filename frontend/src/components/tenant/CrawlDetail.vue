@@ -82,15 +82,13 @@
       </BcPanel>
 
       <!-- What this crawl brought in, page by page (the latest crawl: the website as the bot knows it) -->
-      <BcPanel as="section"  v-if="(job.status === 'COMPLETED' || job.status === 'FAILED') && crawlSources.length" >
-        <h2 class="panel-title">{{ $t('knowledge.content.title') }}</h2>
-        <p class="panel-sub">{{ $t('knowledge.content.sub') }}</p>
+      <BcPanel as="section"  v-if="(job.status === 'COMPLETED' || job.status === 'FAILED') && crawlSources.length"  :title="$t('knowledge.content.title')" :description="$t('knowledge.content.sub')">
         <PageTree :sources="crawlSources" class="crawl-tree" />
       </BcPanel>
 
       <!-- Activity: live while running, history afterwards -->
       <BcPanel as="section"  >
-        <h2 class="panel-title crawl-section-title">{{ $t('knowledge.job.activity') }}</h2>
+        <CardTitle as="h2" class="crawl-section-title">{{ $t('knowledge.job.activity') }}</CardTitle>
         <ActivityLog :entries="log" :max-height="isActive ? '560px' : '360px'" />
       </BcPanel>
     </template>
@@ -108,6 +106,7 @@
 </template>
 
 <script setup>
+import { CardTitle } from '@/components/ui/card';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';

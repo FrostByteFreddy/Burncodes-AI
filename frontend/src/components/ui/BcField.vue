@@ -1,15 +1,14 @@
 <template>
-  <div :class="['bc-field', { 'has-error': error }]">
-    <Label class="bc-field__label" :for="htmlFor || undefined">{{ label }}<span v-if="optional" class="bc-field__opt"> {{ $t('ui.optional') }}</span></Label>
+  <Field :data-invalid="error ? 'true' : undefined">
+    <FieldLabel :for="htmlFor || undefined">{{ label }}<span v-if="optional" class="font-normal text-muted-foreground"> {{ $t('ui.optional') }}</span></FieldLabel>
     <slot />
-    <div v-if="error" class="bc-field__error" :id="htmlFor ? `${htmlFor}-err` : undefined"><BcIcon name="circle-exclamation" />{{ error }}</div>
-    <div v-else-if="hint" class="bc-field__hint" :id="htmlFor ? `${htmlFor}-hint` : undefined">{{ hint }}</div>
-  </div>
+    <FieldError v-if="error" :id="htmlFor ? `${htmlFor}-err` : undefined">{{ error }}</FieldError>
+    <FieldDescription v-else-if="hint" :id="htmlFor ? `${htmlFor}-hint` : undefined">{{ hint }}</FieldDescription>
+  </Field>
 </template>
 
 <script setup>
-import { Label } from './label';
-import BcIcon from './BcIcon.vue';
+import { Field, FieldDescription, FieldError, FieldLabel } from './field';
 
 // One short hint line at most; an error says how to fix it.
 defineProps({ label: { type: String, required: true }, htmlFor: { type: String, default: '' }, hint: { type: String, default: '' }, error: { type: String, default: '' }, optional: Boolean });

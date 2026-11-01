@@ -34,6 +34,24 @@
   --color-accent: var(--interactive-soft);
   --color-accent-foreground: var(--interactive);
   --color-destructive: var(--status-error);
+  --color-destructive-foreground: var(--on-status-error);
+  --color-destructive-soft: var(--status-error-soft);
+  --color-primary-hover: var(--interactive-hover);
+  --color-success: var(--status-ok);
+  --color-success-soft: var(--status-ok-soft);
+  --color-warning: var(--status-warn);
+  --color-warning-soft: var(--status-warn-soft);
+  --color-ai: var(--ai-text);
+  --color-ai-soft: var(--ai-soft);
+  --color-sidebar: var(--surface-1);
+  --color-sidebar-foreground: var(--text-primary);
+  --color-sidebar-primary: var(--interactive);
+  --color-sidebar-primary-foreground: var(--on-interactive);
+  --color-sidebar-accent: var(--interactive-soft);
+  --color-sidebar-accent-foreground: var(--interactive);
+  --color-sidebar-border: var(--border-subtle);
+  --color-sidebar-ring: var(--focus-ring);
+  --radius-2xl: 20px;
   --color-border: var(--border-subtle);
   --color-input: var(--border-strong);
   --color-ring: var(--focus-ring);
@@ -56,9 +74,18 @@
   --color-base-300: #e2e2dc;
   --color-base-content: #15171c;
   --color-info: #0a1fab;
-  --color-success: #1c7a3b;
-  --color-warning: #875200;
   --color-error: #b42318;
+}
+
+/* Some components read these directly (Sonner, Sidebar) */
+:root {
+  --background: var(--surface-0);
+  --popover: var(--surface-1);
+  --popover-foreground: var(--text-primary);
+  --border: var(--border-subtle);
+  --radius: 10px;
+  --sidebar-border: var(--border-subtle);
+  --sidebar-accent: var(--interactive-soft);
 }
 
 @layer base {

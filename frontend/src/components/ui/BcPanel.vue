@@ -1,16 +1,17 @@
 <template>
-  <Card :as="as" :class="['block gap-0 rounded-lg py-0 text-base ring-0 border shadow-none', flush ? 'overflow-hidden' : 'p-6']">
-    <div v-if="title" :class="['flex items-center justify-between gap-4', flush ? 'p-6 pb-4' : 'mb-5']">
-      <CardTitle class="text-lg leading-[26px] font-bold">{{ title }}</CardTitle>
-      <slot name="actions" />
-    </div>
-    <slot />
+  <Card :as="as" :class="{ 'gap-0 py-0': flush }">
+    <CardHeader v-if="title || description || $slots.actions" :class="{ 'py-6': flush }">
+      <CardTitle v-if="title">{{ title }}</CardTitle>
+      <CardDescription v-if="description">{{ description }}</CardDescription>
+      <CardAction v-if="$slots.actions"><slot name="actions" /></CardAction>
+    </CardHeader>
+    <CardContent :class="{ 'px-0': flush }"><slot /></CardContent>
   </Card>
 </template>
 
 <script setup>
-import { Card, CardTitle } from './card';
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from './card';
 
 // One object (figures, a list with a header). Never a panel inside a panel.
-defineProps({ title: { type: String, default: '' }, flush: Boolean, as: { type: String, default: 'div' } });
+defineProps({ title: { type: String, default: '' }, description: { type: String, default: '' }, flush: Boolean, as: { type: String, default: 'div' } });
 </script>

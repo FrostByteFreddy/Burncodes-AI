@@ -21,9 +21,9 @@
           {{ $t(`settings.sections.${s.key}`) }}
         </router-link>
       </nav>
-      <select class="set-select" :value="current" :aria-label="$t('settings.title')" @change="go($event.target.value)">
-        <option v-for="s in SECTIONS" :key="s.key" :value="s.key">{{ $t(`settings.sections.${s.key}`) }}</option>
-      </select>
+      <NativeSelect class="set-select" :model-value="current" :aria-label="$t('settings.title')" @update:model-value="go">
+        <NativeSelectOption v-for="s in SECTIONS" :key="s.key" :value="s.key">{{ $t(`settings.sections.${s.key}`) }}</NativeSelectOption>
+      </NativeSelect>
 
       <div class="set-body">
         <component :is="SECTIONS.find((s) => s.key === current).component" />
@@ -33,6 +33,7 @@
 </template>
 
 <script setup>
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import ProfileSection from '@/components/settings/ProfileSection.vue';

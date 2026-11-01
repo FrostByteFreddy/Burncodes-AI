@@ -6,7 +6,7 @@
         <p class="page-lede">{{ $t('pages.install') }}</p>
       </div>
       <div class="page-actions">
-        <Button as-child variant="outline"><a :href="`${baseUrl}preview.html?tenant_id=${tenantId}`" target="_blank" rel="noopener" class="inst-link">
+        <Button as-child variant="outline" class="h-auto min-h-10 max-w-full shrink whitespace-normal py-2"><a :href="`${baseUrl}preview.html?tenant_id=${tenantId}`" target="_blank" rel="noopener" class="inst-link">
           <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" /> {{ $t('install.example') }}
         </a></Button>
       </div>

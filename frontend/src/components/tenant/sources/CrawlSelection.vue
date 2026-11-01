@@ -73,14 +73,11 @@
                 <font-awesome-icon :icon="['fas', isOpen(row.key) ? 'chevron-down' : 'chevron-right']" />
               </button>
               <span v-else class="cs__chevron-spacer"></span>
-              <input
-                type="checkbox"
-                class="cs__check"
-                :checked="row.state === 'all'"
-                :indeterminate="row.state === 'some'"
+              <Checkbox
+                :model-value="row.state === 'all' ? true : row.state === 'some' ? 'indeterminate' : false"
                 :disabled="saving"
                 :aria-label="row.label"
-                @change="onCheck(row, $event.target.checked)"
+                @update:model-value="onCheck(row, $event === true)"
               />
               <span class="cs__icon" :class="`cs__icon--${row.kind}`"><font-awesome-icon :icon="['fas', ICONS[row.kind]]" /></span>
               <a v-if="row.url" :href="row.url" target="_blank" rel="noopener noreferrer" class="cs__label" :title="row.url">{{ row.label }}</a>
@@ -99,6 +96,7 @@
 </template>
 
 <script setup>
+import { Checkbox } from '@/components/ui/checkbox';
 import { BcButton } from '@/components/ui';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';

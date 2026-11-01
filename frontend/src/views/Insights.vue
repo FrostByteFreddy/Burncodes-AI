@@ -11,25 +11,21 @@
     <BcPanel as="section"  >
       <div class="ins-head">
         <div>
-          <h2 class="panel-title">{{ $t('insights.findings.title') }}</h2>
-          <p class="panel-sub">{{ $t('insights.findings.sub') }}</p>
+          <CardTitle as="h2">{{ $t('insights.findings.title') }}</CardTitle>
+          <CardDescription>{{ $t('insights.findings.sub') }}</CardDescription>
         </div>
-        <div class="ins-seg" role="group" :aria-label="$t('insights.findings.filter')">
-          <button v-for="s in STATUSES" :key="s" type="button" class="ins-seg__btn" :class="{ 'ins-seg__btn--on': status === s }" :aria-pressed="status === s" @click="status = s">
-            {{ $t(`insights.findings.status.${s}`) }}<span v-if="counts[s]" class="ins-seg__count">{{ counts[s] }}</span>
-          </button>
-        </div>
+        <BcSegmentedControl v-model="status" :label="$t('insights.findings.filter')" :options="STATUSES.map((s) => ({ value: s, label: $t(`insights.findings.status.${s}`), count: counts[s] }))" />
       </div>
 
       <ul v-if="loadingFindings && !findings.length" class="ins-findings" aria-busy="true">
         <li v-for="n in 3" :key="n" class="ins-finding">
-          <span class="ghost ghost--pill"></span>
+          <Skeleton class="ghost--pill" />
           <div class="ghost-stack">
-            <span class="ghost ghost--title" :style="{ width: `${70 - n * 8}%` }"></span>
-            <span class="ghost ghost--line" style="width: 80%"></span>
-            <span class="ghost ghost--line" style="width: 55%"></span>
+            <Skeleton class="ghost--title" :style="{ width: `${70 - n * 8}%` }" />
+            <Skeleton class="ghost--line" style="width: 80%" />
+            <Skeleton class="ghost--line" style="width: 55%" />
           </div>
-          <div class="ins-finding__actions"><span class="ghost ghost--btn"></span><span class="ghost ghost--btn" style="width: 70px"></span></div>
+          <div class="ins-finding__actions"><Skeleton class="ghost--btn" /><Skeleton class="ghost--btn" style="width: 70px" /></div>
         </li>
       </ul>
       <div v-else-if="!findings.length" class="ins-empty">
@@ -86,15 +82,15 @@
     <BcPanel as="section"  >
       <div class="ins-head">
         <div>
-          <h2 class="panel-title">{{ $t('insights.conversations.title') }}</h2>
-          <p class="panel-sub">{{ $t('insights.conversations.sub') }}</p>
+          <CardTitle as="h2">{{ $t('insights.conversations.title') }}</CardTitle>
+          <CardDescription>{{ $t('insights.conversations.sub') }}</CardDescription>
         </div>
       </div>
 
       <div v-if="logsLoading && !conversations.length" aria-busy="true">
         <div v-for="n in 5" :key="n" class="ghost-row">
-          <div class="ghost-stack" style="flex: 1"><span class="ghost ghost--line" :style="{ width: `${75 - n * 7}%` }"></span><span class="ghost ghost--line" style="width: 22%; height: 10px"></span></div>
-          <span class="ghost ghost--line" style="width: 90px"></span>
+          <div class="ghost-stack" style="flex: 1"><Skeleton class="ghost--line" :style="{ width: `${75 - n * 7}%` }" /><Skeleton class="ghost--line" style="width: 22%; height: 10px" /></div>
+          <Skeleton class="ghost--line" style="width: 90px" />
         </div>
       </div>
       <p v-else-if="logsError" class="meta">{{ logsError }}</p>
@@ -144,8 +140,10 @@
 </template>
 
 <script setup>
+import { Skeleton } from '@/components/ui/skeleton';
+import { CardDescription, CardTitle } from '@/components/ui/card';
 import { useRoute } from 'vue-router'
-import { BcButton, BcPanel } from '@/components/ui';
+import { BcButton, BcPanel, BcSegmentedControl } from '@/components/ui';
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/api'
@@ -267,11 +265,6 @@ watch(tenantId, (id) => {
 .ins { display: flex; flex-direction: column; gap: 20px; }
 .ins-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
 
-.ins-seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--radius-pill); background: var(--surface-2); }
-.ins-seg__btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: none; border-radius: var(--radius-pill); background: none; cursor: pointer; font: inherit; font-size: var(--text-sm); font-weight: 600; color: var(--surface-muted); }
-.ins-seg__btn:hover { color: var(--surface-heading); }
-.ins-seg__btn--on { background: var(--surface-3); color: var(--surface-heading); }
-.ins-seg__count { font-size: var(--text-xs); padding: 0 6px; border-radius: var(--radius-pill); background: var(--surface-1); }
 
 .ins-empty { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--surface-text); }
 .ins-empty__icon { color: var(--status-success); }

@@ -70,10 +70,10 @@
 
             <!-- Texts -->
             <template v-if="openHit.key === 'header'">
-              <div>
-                <Label for="epv-title" class="mb-2">{{ $t('configure.header.chatTitle') }}</Label>
+              <Field>
+                <FieldLabel for="epv-title">{{ $t('configure.header.chatTitle') }}</FieldLabel>
                 <Input id="epv-title" v-model="config.chatbot_title" type="text"  />
-              </div>
+              </Field>
               <ImageField field="epv-logo" :label="$t('configure.header.logo')" v-model="config.logo" />
             </template>
             <div v-if="openHit.key === 'bot' && state === 'start' && openHit.index === 0">
@@ -110,12 +110,12 @@
 
             <!-- Switches -->
             <template v-if="openHit.key === 'header'">
-              <label class="epv__toggle"><input v-model="config.show_reset_button" type="checkbox" /><span>{{ $t('configure.header.reset') }}</span></label>
-              <label class="epv__toggle"><input v-model="config.show_share_button" type="checkbox" /><span>{{ $t('configure.header.share') }}</span></label>
+              <Field orientation="horizontal" class="w-fit"><Switch v-model="config.show_reset_button" /><span class="text-sm">{{ $t('configure.header.reset') }}</span></Field>
+              <Field orientation="horizontal" class="w-fit"><Switch v-model="config.show_share_button" /><span class="text-sm">{{ $t('configure.header.share') }}</span></Field>
             </template>
             <template v-if="openHit.key === 'launcher'">
               <ImageField field="epv-launcher-icon" :label="$t('configure.launcher.icon')" :hint="$t('configure.launcher.iconHint')" v-model="config.launcher_icon" />
-              <label class="epv__toggle"><input v-model="launcherEnabled" type="checkbox" /><span>{{ $t('configure.launcher.enabled') }}</span></label>
+              <Field orientation="horizontal" class="w-fit"><Switch v-model="launcherEnabled" /><span class="text-sm">{{ $t('configure.launcher.enabled') }}</span></Field>
               <p v-if="!launcherEnabled" class="field-hint field-hint--warn">{{ $t('configure.launcher.disabledHint') }}</p>
             </template>
           </div>
@@ -126,6 +126,8 @@
 </template>
 
 <script setup>
+import { Switch } from '@/components/ui/switch';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -398,20 +400,8 @@ onBeforeUnmount(() => {
 .epv__pop .form-field { font-size: var(--text-sm); }
 .epv__row { display: flex; gap: 6px; align-items: center; }
 
-.epv__toggle { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--text-sm); color: var(--surface-text); }
-.epv__toggle input {
-  appearance: none; flex-shrink: 0; position: relative; cursor: pointer;
-  width: 36px; height: 20px; border-radius: var(--radius-pill); background: var(--surface-3); transition: background var(--t-fast);
-}
-.epv__toggle input::after {
-  content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%;
-  background: var(--surface-heading); transition: transform var(--t-fast);
-}
-.epv__toggle input:checked { background: var(--interactive-strong); }
-.epv__toggle input:checked::after { transform: translateX(16px); }
-.epv__toggle input:focus-visible { box-shadow: var(--focus-ring-shadow); }
 
 @media (prefers-reduced-motion: reduce) {
-  .epv__tag, .epv__toggle input, .epv__toggle input::after { transition: none; }
+  .epv__tag { transition: none; }
 }
 </style>

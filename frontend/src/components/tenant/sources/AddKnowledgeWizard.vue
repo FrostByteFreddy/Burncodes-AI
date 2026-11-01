@@ -28,7 +28,7 @@
                     <font-awesome-icon :icon="['fas', 'globe']" />
                   </div>
                   <div>
-                    <p class="font-bold text-white text-sm">{{ $t('tenant.sources.wizard.typeWebsite') }}</p>
+                    <p class="font-bold text-foreground text-sm">{{ $t('tenant.sources.wizard.typeWebsite') }}</p>
                     <p class="step-subtext mt-1">{{ $t('tenant.sources.wizard.typeWebsiteDesc') }}</p>
                   </div>
                 </button>
@@ -40,7 +40,7 @@
                     <font-awesome-icon :icon="['fas', 'file-lines']" />
                   </div>
                   <div>
-                    <p class="font-bold text-white text-sm">{{ $t('tenant.sources.wizard.typeDocument') }}</p>
+                    <p class="font-bold text-foreground text-sm">{{ $t('tenant.sources.wizard.typeDocument') }}</p>
                     <p class="step-subtext mt-1">{{ $t('tenant.sources.wizard.typeDocumentDesc') }}</p>
                   </div>
                 </button>
@@ -59,9 +59,9 @@
             <!-- Step 1: Configure -->
             <div v-if="step === 1">
               <!-- Website: address and how much of it -->
-              <div v-if="type === 'website'" class="space-y-6">
-                <div>
-                  <Label class="mb-2">{{ $t('tenant.sources.wizard.urlLabel') }}</Label>
+              <div v-if="type === 'website'" class="flex flex-col gap-6">
+                <Field>
+                  <FieldLabel>{{ $t('tenant.sources.wizard.urlLabel') }}</FieldLabel>
                   <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/30">
                       <font-awesome-icon :icon="['fas', 'link']" />
@@ -72,9 +72,9 @@
                   <p v-if="!isUrlValid && url" class="text-error text-xs px-1 mt-1.5 flex items-center gap-1">
                     <font-awesome-icon :icon="['fas', 'circle-exclamation']" /> {{ $t('tenant.sources.invalidUrl') }}
                   </p>
-                </div>
+                </Field>
 
-                <div class="space-y-3">
+                <div class="flex flex-col gap-3">
                   <Label class="mb-2">{{ $t('tenant.sources.wizard.scope.question') }}</Label>
                   <button v-for="scope in scopes" :key="scope.single" type="button" @click="singlePageOnly = scope.single"
                     class="radio-card p-4" :class="{ 'is-selected': singlePageOnly === scope.single }">
@@ -106,12 +106,12 @@
             </div>
 
             <!-- Step 2: Options -->
-            <div v-if="step === 2 && type === 'website'" class="space-y-7">
+            <div v-if="step === 2 && type === 'website'" class="flex flex-col gap-7">
               <template v-if="!singlePageOnly">
-                <section class="space-y-3">
+                <section class="flex flex-col gap-3">
                   <p class="step-heading">{{ $t('tenant.sources.wizard.options.title') }}</p>
                   <label v-for="opt in crawlOptions" :key="opt.key" class="option-row">
-                    <input v-model="options[opt.key]" type="checkbox" class="checkbox checkbox-primary checkbox-sm mt-0.5" />
+                    <Checkbox v-model="options[opt.key]" class="mt-0.5" />
                     <span>
                       <span class="step-heading block">{{ $t(`tenant.sources.wizard.options.${opt.key}`) }}</span>
                       <span class="step-subtext block">{{ $t(`tenant.sources.wizard.options.${opt.key}Desc`) }}</span>
@@ -119,7 +119,7 @@
                   </label>
                 </section>
 
-                <section class="space-y-3">
+                <section class="flex flex-col gap-3">
                   <div>
                     <p class="step-heading">{{ $t('tenant.sources.wizard.exclude.title') }}</p>
                     <p class="step-subtext">{{ $t('tenant.sources.wizard.exclude.desc') }}</p>
@@ -153,7 +153,7 @@
                 </section>
               </template>
 
-              <section class="space-y-2">
+              <section class="flex flex-col gap-2">
                 <p class="step-heading">{{ $t('tenant.sources.wizard.crawlModeLabel') }}</p>
                 <p class="step-subtext">{{ $t('tenant.sources.wizard.crawlModeHint') }}</p>
                 <button v-for="mode in crawlModes" :key="mode.value" type="button"
@@ -163,7 +163,7 @@
                   <div class="text-xl leading-none mt-0.5 w-6 shrink-0">{{ mode.emoji }}</div>
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2">
-                      <span class="text-sm font-bold text-white">{{ mode.label }}</span>
+                      <span class="text-sm font-bold text-foreground">{{ mode.label }}</span>
                       <span v-if="mode.badge"
                         class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
                         :class="mode.badgeClass">{{ mode.badge }}</span>
@@ -244,6 +244,8 @@
 </template>
 
 <script setup>
+import { Checkbox } from '@/components/ui/checkbox';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { BcButton } from '@/components/ui';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

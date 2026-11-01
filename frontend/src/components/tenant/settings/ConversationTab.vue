@@ -9,10 +9,10 @@
         </span>
       </AccordionTrigger>
       <AccordionContent class="px-6 pb-6 text-base">
-      <div class="cfg-fields mt-0!">
+      <FieldGroup>
         <PaletteEditor :config="local.widget_config" />
         <FontPicker :config="local.widget_config" />
-      </div>
+      </FieldGroup>
     </AccordionContent>
     </AccordionItem>
 
@@ -25,12 +25,12 @@
         </span>
       </AccordionTrigger>
       <AccordionContent class="px-6 pb-6 text-base">
-      <div class="cfg-fields mt-0!">
-        <div>
-          <Label for="cfg-name" class="mb-2">{{ $t('configure.basics.name') }}</Label>
+      <FieldGroup>
+        <Field>
+          <FieldLabel for="cfg-name">{{ $t('configure.basics.name') }}</FieldLabel>
           <Input v-model="local.name" id="cfg-name" type="text" required  />
-          <p class="field-hint">{{ $t('configure.basics.nameHint') }}</p>
-        </div>
+          <FieldDescription >{{ $t('configure.basics.nameHint') }}</FieldDescription>
+        </Field>
         <div class="cfg-tones" role="group" :aria-label="$t('configure.tone.presets')">
           <button
             v-for="key in Object.keys(TONES)"
@@ -45,17 +45,17 @@
             <span class="cfg-tone__desc">{{ $t(`configure.tone.${key}Desc`) }}</span>
           </button>
         </div>
-        <div>
-          <Label for="cfg-persona" class="mb-2">{{ $t('configure.tone.persona') }}</Label>
+        <Field>
+          <FieldLabel for="cfg-persona">{{ $t('configure.tone.persona') }}</FieldLabel>
           <AutoGrowTextarea v-model="local.system_persona" id="cfg-persona" rows="4" />
-          <p class="field-hint">{{ $t('configure.tone.personaHint') }}</p>
-        </div>
-        <div>
-          <Label for="cfg-thinking" class="mb-2">{{ $t('configure.tone.thinking') }}</Label>
+          <FieldDescription >{{ $t('configure.tone.personaHint') }}</FieldDescription>
+        </Field>
+        <Field>
+          <FieldLabel for="cfg-thinking">{{ $t('configure.tone.thinking') }}</FieldLabel>
           <AutoGrowTextarea v-model="thinkingMessages" id="cfg-thinking" rows="3" />
-          <p class="field-hint">{{ $t('configure.tone.thinkingHint') }}</p>
-        </div>
-      </div>
+          <FieldDescription >{{ $t('configure.tone.thinkingHint') }}</FieldDescription>
+        </Field>
+      </FieldGroup>
     </AccordionContent>
     </AccordionItem>
 
@@ -68,31 +68,31 @@
         </span>
       </AccordionTrigger>
       <AccordionContent class="px-6 pb-6 text-base">
-      <div class="cfg-fields mt-0!">
+      <FieldGroup>
         <p class="cfg-warning">
           <font-awesome-icon :icon="['fas', 'triangle-exclamation']" />
           <span>{{ $t('configure.advanced.warning', PLACEHOLDERS) }}</span>
         </p>
-        <div>
-          <Label for="cfg-template" class="mb-2">{{ $t('configure.advanced.template') }}</Label>
+        <Field>
+          <FieldLabel for="cfg-template">{{ $t('configure.advanced.template') }}</FieldLabel>
           <AutoGrowTextarea v-model="local.rag_prompt_template" id="cfg-template" rows="6" class="font-mono text-sm" />
           <p v-if="missingPersona" class="field-hint field-hint--warn">{{ $t('configure.advanced.missingPersona', PLACEHOLDERS) }}</p>
-        </div>
+        </Field>
         <div>
           <BcButton variant="secondary" type="button"  :disabled="isDefaultTemplate" @click="restoreTemplate">
             <font-awesome-icon :icon="['fas', 'rotate-left']" /> {{ $t('configure.advanced.restore') }}
           </BcButton>
         </div>
-      </div>
+      </FieldGroup>
     </AccordionContent>
     </AccordionItem>
   </Accordion>
 </template>
 
 <script setup>
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { BcButton } from '@/components/ui';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { computed } from 'vue';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import AutoGrowTextarea from '../../AutoGrowTextarea.vue';

@@ -13,7 +13,7 @@ const props = defineProps({
 <template>
   <div
     data-slot="card-description"
-    :class="cn('text-muted-foreground text-sm', props.class)"
+    :class="cn('text-muted-foreground text-base max-w-(--reading-max)', props.class)"
   >
     <slot />
   </div>

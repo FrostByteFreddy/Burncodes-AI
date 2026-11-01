@@ -3,15 +3,15 @@
     <!-- The dates the chatbot can answer in the next two weeks -->
     <section class="ko-strip" :aria-label="$t('knowledge.overview.stripTitle')">
       <div class="ko-strip__head">
-        <h2 class="panel-title">{{ $t('knowledge.overview.stripTitle') }}</h2>
-        <p class="panel-sub">{{ $t('knowledge.overview.stripSub') }}</p>
+        <CardTitle as="h2">{{ $t('knowledge.overview.stripTitle') }}</CardTitle>
+        <CardDescription>{{ $t('knowledge.overview.stripSub') }}</CardDescription>
       </div>
 
       <ol v-if="loading && !data" class="ko-days" aria-busy="true">
         <li v-for="n in 14" :key="n" class="ko-day">
-          <span class="ghost ghost--line" style="width: 28px; height: 10px"></span>
-          <span class="ghost" style="width: 36px; height: 24px; margin: 6px 0 10px"></span>
-          <span v-if="n % 3 === 1" class="ghost" style="height: 34px"></span>
+          <Skeleton class="ghost--line" style="width: 28px; height: 10px" />
+          <Skeleton style="width: 36px; height: 24px; margin: 6px 0 10px" />
+          <Skeleton v-if="n % 3 === 1" style="height: 34px" />
         </li>
       </ol>
       <p v-else-if="!data?.upcoming?.length" class="ko-strip__empty">
@@ -44,7 +44,7 @@
             <label for="ko-cal" class="ko-cal__title">{{ $t('knowledge.calendars.title') }}</label>
             <p class="meta">{{ $t('knowledge.calendars.sub') }}</p>
           </div>
-          <input id="ko-cal" type="checkbox" role="switch" class="ko-switch" :checked="calendarsOn" :disabled="savingCal" @change="setCalendars($event.target.checked)" />
+          <Switch id="ko-cal" :model-value="calendarsOn" :disabled="savingCal" @update:model-value="setCalendars" />
         </div>
         <p v-if="tenant?.test_protected && calendarsOn" class="meta ko-cal__warn">{{ $t('knowledge.calendars.protected') }}</p>
         <template v-else-if="calendarsOn && feeds.length">
@@ -66,9 +66,7 @@
     </section>
 
     <!-- What the chatbot knows about reaching the organisation, read from the website footer -->
-    <BcPanel as="section"  v-if="contact" class="ko-contact" :aria-label="$t('knowledge.contact.title')">
-      <h2 class="panel-title">{{ $t('knowledge.contact.title') }}</h2>
-      <p class="panel-sub">{{ $t('knowledge.contact.sub') }}</p>
+    <BcPanel as="section"  v-if="contact" class="ko-contact" :aria-label="$t('knowledge.contact.title')" :title="$t('knowledge.contact.title')" :description="$t('knowledge.contact.sub')">
       <div class="ko-contact__grid">
         <div class="ko-contact__col">
           <p v-if="contact.name" class="ko-contact__name">{{ contact.name }}</p>
@@ -91,6 +89,9 @@
 </template>
 
 <script setup>
+import { Switch } from '@/components/ui/switch';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CardDescription, CardTitle } from '@/components/ui/card';
 import { BcPanel } from '@/components/ui';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';

@@ -9,16 +9,14 @@
 
     <div v-if="!tenant" class="ghost-stack" aria-busy="true">
       <BcPanel as="section"  v-for="n in 2" :key="n" class="ghost-stack">
-        <span class="ghost ghost--title" style="width: 160px"></span>
-        <span class="ghost" style="height: 44px"></span>
+        <Skeleton class="ghost--title" style="width: 160px" />
+        <Skeleton style="height: 44px" />
       </BcPanel>
     </div>
 
     <template v-else>
       <!-- The link -->
-      <BcPanel as="section"  >
-        <h2 class="panel-title">{{ $t('testPage.link.title') }}</h2>
-        <p class="panel-sub">{{ $t('testPage.link.sub') }}</p>
+      <BcPanel as="section"   :title="$t('testPage.link.title')" :description="$t('testPage.link.sub')">
         <div class="tp-link">
           <code class="tp-link__url">{{ url }}</code>
           <div class="page-actions">
@@ -45,25 +43,25 @@
         <div class="tp-switch-row">
           <div>
             <label for="tp-protect" class="panel-title tp-label">{{ $t('testPage.password.title') }}</label>
-            <p class="panel-sub">{{ $t('testPage.password.sub') }}</p>
+            <CardDescription>{{ $t('testPage.password.sub') }}</CardDescription>
           </div>
-          <input id="tp-protect" type="checkbox" role="switch" class="ov-switch tp-switch" :checked="protectOn" :disabled="saving" @change="toggle($event.target.checked)" />
+          <Switch id="tp-protect" :model-value="protectOn" :disabled="saving" @update:model-value="toggle" />
         </div>
 
         <form v-if="editing" class="cfg-fields" @submit.prevent="savePassword">
-          <div>
-            <Label for="tp-pw" class="mb-2">{{ tenant.test_protected ? $t('testPage.password.new') : $t('testPage.password.label') }}</Label>
+          <Field>
+            <FieldLabel for="tp-pw">{{ tenant.test_protected ? $t('testPage.password.new') : $t('testPage.password.label') }}</FieldLabel>
             <div class="tp-pw">
               <Input id="tp-pw" ref="pwInput" v-model="newPassword" :type="showPassword ? 'text' : 'password'"  minlength="6" autocomplete="new-password" />
               <BcButton variant="secondary" type="button"  :aria-pressed="showPassword" @click="showPassword = !showPassword">
                 <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" /> {{ showPassword ? $t('testPage.password.hide') : $t('testPage.password.show') }}
               </BcButton>
             </div>
-            <p class="field-hint" :class="{ 'field-hint--warn': newPassword && newPassword.length < 6 }">{{ $t('testPage.password.hint') }}</p>
-          </div>
+            <FieldDescription  :class="{ 'field-hint--warn': newPassword && newPassword.length < 6 }">{{ $t('testPage.password.hint') }}</FieldDescription>
+          </Field>
           <div class="page-actions">
             <BcButton variant="primary" type="submit"  :disabled="saving || newPassword.length < 6">
-              <font-awesome-icon v-if="saving" :icon="['fas', 'spinner']" class="animate-spin" /> {{ $t('testPage.password.save') }}
+              <Spinner v-if="saving" data-icon="inline-start" /> {{ $t('testPage.password.save') }}
             </BcButton>
             <BcButton variant="secondary" type="button"  :disabled="saving" @click="cancelEdit">{{ $t('testPage.password.cancel') }}</BcButton>
           </div>
@@ -85,10 +83,14 @@
 </template>
 
 <script setup>
+import { Switch } from '@/components/ui/switch';
+import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CardDescription } from '@/components/ui/card';
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { BcButton, BcPanel } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { computed, nextTick, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';

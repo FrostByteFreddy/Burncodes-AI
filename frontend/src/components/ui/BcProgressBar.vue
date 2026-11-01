@@ -16,8 +16,8 @@ import { formatNumber } from '@/utils/format';
 
 const TONES = {
   interactive: '*:data-[slot=progress-indicator]:bg-primary',
-  ai: '*:data-[slot=progress-indicator]:bg-[var(--ai)]',
-  ok: '*:data-[slot=progress-indicator]:bg-[var(--status-ok)]',
+  ai: '*:data-[slot=progress-indicator]:bg-ai',
+  ok: '*:data-[slot=progress-indicator]:bg-success',
 };
 
 // Honest progress: real counts, never a fake spinner. tone: interactive · ai (learning) · ok

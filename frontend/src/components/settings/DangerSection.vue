@@ -1,7 +1,5 @@
 <template>
-  <BcPanel as="section"  class="dz">
-    <h2 class="panel-title">{{ $t('settings.danger.title') }}</h2>
-    <p class="panel-sub">{{ $t('settings.danger.sub') }}</p>
+  <BcPanel as="section"  class="dz" :title="$t('settings.danger.title')" :description="$t('settings.danger.sub')">
     <ul class="dz-list">
       <li>{{ $t('settings.danger.chatbots') }}</li>
       <li>{{ $t('settings.danger.balance') }}</li>
@@ -9,14 +7,14 @@
     </ul>
 
     <form class="cfg-fields" @submit.prevent="remove">
-      <div>
-        <Label for="dz-email" class="mb-2">{{ $t('settings.danger.typeEmail', { email: authStore.user?.email }) }}</Label>
+      <Field>
+        <FieldLabel for="dz-email">{{ $t('settings.danger.typeEmail', { email: authStore.user?.email }) }}</FieldLabel>
         <Input id="dz-email" v-model="email" type="email"  autocomplete="off" />
-      </div>
-      <div>
-        <Label for="dz-pw" class="mb-2">{{ $t('profile.security.currentPassword') }}</Label>
+      </Field>
+      <Field>
+        <FieldLabel for="dz-pw">{{ $t('profile.security.currentPassword') }}</FieldLabel>
         <Input id="dz-pw" v-model="password" type="password"  autocomplete="current-password" />
-      </div>
+      </Field>
       <div class="page-actions">
         <button type="submit" class="dz-btn" :disabled="!canDelete || deleting">
           <font-awesome-icon :icon="deleting ? ['fas', 'spinner'] : ['fas', 'trash-alt']" :class="{ 'animate-spin': deleting }" />
@@ -28,9 +26,9 @@
 </template>
 
 <script setup>
+import { Field, FieldLabel } from '@/components/ui/field';
 import { BcPanel } from '@/components/ui';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';

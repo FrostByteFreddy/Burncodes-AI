@@ -2,7 +2,7 @@
   <AlertDialog :open="open" @update:open="(o) => { if (!o && !loading) $emit('cancel'); }">
     <AlertDialogContent class="max-w-lg! gap-4 p-6 text-base">
       <AlertDialogHeader class="flex-row items-center gap-3 place-items-center text-left">
-        <span v-if="icon" :class="['grid size-10 shrink-0 place-items-center rounded-full', tone === 'danger' ? 'bg-[var(--status-error-soft)] text-destructive' : 'bg-accent text-accent-foreground']"><BcIcon :name="icon" /></span>
+        <span v-if="icon" :class="['grid size-10 shrink-0 place-items-center rounded-full', tone === 'danger' ? 'bg-destructive-soft text-destructive' : 'bg-accent text-accent-foreground']"><BcIcon :name="icon" /></span>
         <AlertDialogTitle class="text-xl font-bold">{{ title }}</AlertDialogTitle>
       </AlertDialogHeader>
       <AlertDialogDescription as="div" class="text-base text-foreground"><slot /></AlertDialogDescription>

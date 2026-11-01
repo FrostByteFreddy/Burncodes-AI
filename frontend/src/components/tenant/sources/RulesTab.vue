@@ -4,7 +4,7 @@
       <div v-for="(rule, index) in rules" :key="index"
         class="rule-card"
         :class="{ 'is-editing': rule.isEditing }">
-        <div class="grow space-y-4">
+        <div class="grow flex flex-col gap-4">
           <input v-model="rule.trigger" type="text" :id="`trigger-${index}`"
             :placeholder="$t('tenant.fineTune.trigger.placeholder')"
             :disabled="!rule.isEditing"

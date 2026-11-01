@@ -8,6 +8,7 @@ import "@fontsource/atkinson-hyperlegible-mono/400.css";
 import "@fontsource/atkinson-hyperlegible-mono/500.css";
 import "./assets/main.css";
 import "highlight.js/styles/github-dark.css";
+import "vue-sonner/style.css";
 
 import { createApp } from "vue";
 import { createPinia } from "pinia";

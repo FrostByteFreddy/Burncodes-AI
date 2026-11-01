@@ -11,12 +11,12 @@ export const alertVariants = cva(
     variants: {
       variant: {
         default: "bg-card text-card-foreground",
-        info: "border-transparent bg-[var(--interactive-soft)] text-foreground *:[svg]:text-[var(--interactive)]",
-        success: "border-transparent bg-[var(--status-ok-soft)] text-foreground *:[svg]:text-[var(--status-ok)]",
-        warning: "border-transparent bg-[var(--status-warn-soft)] text-foreground *:[svg]:text-[var(--status-warn)]",
-        error: "border-transparent bg-[var(--status-error-soft)] text-foreground *:[svg]:text-[var(--status-error)]",
-        ai: "border-transparent bg-[var(--ai-soft)] text-foreground *:[svg]:text-[var(--ai-text)]",
-        tip: "border-transparent bg-[var(--surface-2)] text-foreground *:[svg]:text-[var(--text-secondary)]",
+        info: "border-transparent bg-accent text-foreground *:[svg]:text-primary",
+        success: "border-transparent bg-success-soft text-foreground *:[svg]:text-success",
+        warning: "border-transparent bg-warning-soft text-foreground *:[svg]:text-warning",
+        error: "border-transparent bg-destructive-soft text-foreground *:[svg]:text-destructive",
+        ai: "border-transparent bg-ai-soft text-foreground *:[svg]:text-ai",
+        tip: "border-transparent bg-muted text-foreground *:[svg]:text-muted-foreground",
         destructive:
           "text-destructive bg-card *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
       },

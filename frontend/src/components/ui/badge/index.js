@@ -8,12 +8,12 @@ export const badgeVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
-        ok: "bg-[var(--status-ok-soft)] text-[var(--status-ok)]",
-        warn: "bg-[var(--status-warn-soft)] text-[var(--status-warn)]",
-        error: "bg-[var(--status-error-soft)] text-[var(--status-error)]",
-        neutral: "bg-[var(--surface-2)] text-[var(--text-secondary)]",
-        interactive: "bg-[var(--interactive-soft)] text-[var(--interactive)]",
-        ai: "bg-[var(--ai-soft)] text-[var(--ai-text)]",
+        ok: "bg-success-soft text-success",
+        warn: "bg-warning-soft text-warning",
+        error: "bg-destructive-soft text-destructive",
+        neutral: "bg-muted text-muted-foreground",
+        interactive: "bg-accent text-accent-foreground",
+        ai: "bg-ai-soft text-ai",
         secondary:
           "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
         destructive:

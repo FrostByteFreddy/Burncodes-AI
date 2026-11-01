@@ -111,7 +111,7 @@
 
       <div v-if="isThinking" class="flex justify-start">
         <div
-          class="max-w-xl lg:max-w-2xl px-5 py-3 shadow-md flex items-center space-x-2 bot-message"
+          class="max-w-xl lg:max-w-2xl px-5 py-3 shadow-md flex items-center flex gap-2 bot-message"
         >
           <font-awesome-icon
             :icon="['fas', 'spinner']"

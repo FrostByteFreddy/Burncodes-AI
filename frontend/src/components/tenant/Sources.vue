@@ -34,9 +34,9 @@
 
       <div v-if="!jobsLoaded" aria-busy="true">
         <div v-for="n in 2" :key="n" class="ghost-row">
-          <span class="ghost ghost--pill"></span>
-          <div class="ghost-stack" style="flex: 1"><span class="ghost ghost--line" style="width: 55%"></span><span class="ghost ghost--line" style="width: 30%; height: 10px"></span></div>
-          <span class="ghost ghost--btn" style="width: 76px"></span>
+          <Skeleton class="ghost--pill" />
+          <div class="ghost-stack" style="flex: 1"><Skeleton class="ghost--line" style="width: 55%" /><Skeleton class="ghost--line" style="width: 30%; height: 10px" /></div>
+          <Skeleton class="ghost--btn" style="width: 76px" />
         </div>
       </div>
       <template v-else-if="shownJobs.length">
@@ -129,6 +129,7 @@
 </template>
 
 <script setup>
+import { Skeleton } from '@/components/ui/skeleton';
 import { BcButton } from '@/components/ui';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
