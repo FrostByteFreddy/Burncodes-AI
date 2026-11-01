@@ -911,7 +911,7 @@
     },
     "colors": {
       "title": "Couleurs",
-      "sub": "Vos couleurs de marque. Cliquez sur une couleur pour la modifier.",
+      "sub": "Vos couleurs de marque. Modifiez une valeur ici et elle change partout où la couleur est utilisée.",
       "name": "Nom de la couleur",
       "add": "Ajouter une couleur",
       "newColor": "Nouvelle couleur",
@@ -961,7 +961,10 @@
         "send_button_text_color": "Icône d'envoi",
         "starter_background_color": "Fond du bouton",
         "starter_text_color": "Texte du bouton"
-      }
+      },
+      "pick": "Choisir la couleur",
+      "hex": "Valeur de la couleur (hex)",
+      "remove": "Supprimer la couleur"
     },
     "header": {
       "title": "Fenêtre de chat",

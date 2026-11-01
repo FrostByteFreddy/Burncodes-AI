@@ -911,7 +911,7 @@
     },
     "colors": {
       "title": "Colours",
-      "sub": "Your brand colours. Click a colour to change it.",
+      "sub": "Your brand colours. Change a value here and it changes everywhere the colour is used.",
       "name": "Colour name",
       "add": "Add colour",
       "newColor": "New colour",
@@ -961,7 +961,10 @@
         "send_button_text_color": "Send icon",
         "starter_background_color": "Button background",
         "starter_text_color": "Button text"
-      }
+      },
+      "pick": "Pick colour",
+      "hex": "Colour value (hex)",
+      "remove": "Remove colour"
     },
     "header": {
       "title": "Chat window",
