@@ -65,21 +65,13 @@
             v-html="processBotMessage(message.html)"
           ></div>
 
-          <!-- Dates in this answer can go straight into the visitor's own calendar -->
+          <!-- Dates in this answer: one link that opens the visitor's own calendar app (the server picks Apple or Google) -->
           <div v-if="!message.isUser && feedsFor(message).length" class="cal">
-            <div v-for="feed in feedsFor(message)" :key="feed.key" class="cal__item">
-              <button type="button" class="cal__btn" :aria-expanded="openFeed === `${index}-${feed.key}`" @click="toggleFeed(`${index}-${feed.key}`)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4" /></svg>
-                {{ $t('chat.calendar.add', { name: feedLabel(feed) }) }}
-              </button>
-              <div v-if="openFeed === `${index}-${feed.key}`" class="cal__menu">
-                <a :href="feed.webcal" class="cal__opt">{{ $t('chat.calendar.apple') }}</a>
-                <a :href="`https://calendar.google.com/calendar/render?cid=${encodeURIComponent(feed.webcal)}`" target="_blank" rel="noopener noreferrer" class="cal__opt">{{ $t('chat.calendar.google') }}</a>
-                <button type="button" class="cal__opt" @click="copyFeed(feed)">{{ copiedFeed === feed.key ? $t('chat.calendar.copied') : $t('chat.calendar.copy') }}</button>
-                <!-- a span: the bubble forces its text colour on every <p> -->
-                <span class="cal__hint">{{ $t('chat.calendar.hint') }}</span>
-              </div>
-            </div>
+            <a v-for="feed in feedsFor(message)" :key="feed.key" :href="feed.add || feed.webcal"
+              target="_blank" rel="noopener noreferrer" class="cal__link">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4" /></svg>
+              {{ $t('chat.calendar.add', { name: feedLabel(feed) }) }}
+            </a>
           </div>
         </div>
       </div>
@@ -181,18 +173,8 @@ const props = defineProps({
 });
 
 // ── Calendar subscriptions ─────────────────────────────────────────────
-const openFeed = ref(null);
-const copiedFeed = ref(null);
 const feedsFor = (message) => (message.calendars || []).map((k) => props.calendarFeeds[k]).filter(Boolean);
 const feedLabel = (feed) => (feed.zone ? `${feed.series} (${feed.zone})` : feed.series);
-const toggleFeed = (id) => { openFeed.value = openFeed.value === id ? null : id; };
-const copyFeed = async (feed) => {
-  try {
-    await navigator.clipboard.writeText(feed.https);
-    copiedFeed.value = feed.key;
-    setTimeout(() => { copiedFeed.value = null; }, 2000);
-  } catch { /* the link is also in the Apple/Outlook option */ }
-};
 
 const emit = defineEmits(["update:userMessage", "sendMessage", "reset", "close", "share"]);
 
@@ -523,27 +505,19 @@ const widgetCssVariables = computed(() => {
   font-weight: 600;
 }
 
-/* where a statement comes from: small, quiet, right after it */
+/* where a statement comes from: an inline link with a small icon, no box */
 .bot-message-prose :deep(a.src-chip) {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  max-width: 100%;
-  margin-left: 2px;
-  padding: 0 7px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--chat-bot-message-text-color) 22%, transparent);
-  font-size: 0.75em;
+  font-size: 0.85em;
   font-weight: 500;
-  line-height: 1.6;
-  text-decoration: none;
-  vertical-align: 0.1em;
-  white-space: nowrap;
-  opacity: 0.8;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  opacity: 0.75;
+  white-space: normal;
 }
-.bot-message-prose :deep(a.src-chip)::after { content: "↗"; font-size: 0.9em; }
+.bot-message-prose :deep(a.src-chip)::before { content: "↗\00a0"; text-decoration: none; display: inline-block; }
 .bot-message-prose :deep(a.src-chip:hover),
-.bot-message-prose :deep(a.src-chip:focus-visible) { opacity: 1; border-color: currentColor; }
+.bot-message-prose :deep(a.src-chip:focus-visible) { opacity: 1; }
 
 .bot-message-prose :deep(a:hover) {
   opacity: 0.8;
@@ -702,24 +676,12 @@ const widgetCssVariables = computed(() => {
     border-bottom-right-radius: 0 !important;
   }
 }
-/* ── Calendar subscription ─────────────────────────────────────────── */
-.cal { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
-.cal__btn {
-  display: inline-flex; align-items: center; gap: 8px; max-width: 100%;
-  padding: 7px 12px; border-radius: 999px; cursor: pointer; font: inherit; font-size: 14px; font-weight: 600;
-  background: transparent; color: var(--chat-bot-message-text-color);
-  border: 1.5px solid currentColor; opacity: 0.9;
+/* ── Calendar subscription: a link, not a box ─────────────────────── */
+.cal { margin-top: 8px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.cal__link {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
+  font-size: 0.875em; font-weight: 600; color: var(--chat-bot-message-text-color);
+  text-decoration: underline; text-underline-offset: 2px; opacity: 0.85;
 }
-.cal__btn:hover { opacity: 1; }
-.cal__menu {
-  margin-top: 6px; padding: 8px; border-radius: 12px; display: flex; flex-direction: column; gap: 2px;
-  background: #FFFFFF; color: #1F2937; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
-}
-.cal__opt {
-  display: block; text-align: left; padding: 8px 10px; border-radius: 8px; border: none; background: none;
-  font: inherit; font-size: 14px; font-weight: 600; color: #1F2937; text-decoration: none; cursor: pointer;
-}
-.cal__opt:hover { background: #F3F4F6; }
-/* inside a bot bubble, whose text colour would otherwise win */
-.cal__menu .cal__hint { display: block; margin: 4px 10px 2px; font-size: 12px; color: #4B5563; line-height: 1.4; }
+.cal__link:hover, .cal__link:focus-visible { opacity: 1; }
 </style>

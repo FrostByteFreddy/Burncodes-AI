@@ -85,12 +85,7 @@
   },
   "chat": {
     "calendar": {
-      "add": "Add to my calendar: {name}",
-      "apple": "Apple Calendar or Outlook",
-      "google": "Google Calendar",
-      "copy": "Copy calendar link",
-      "copied": "Link copied",
-      "hint": "Your calendar updates by itself when dates change. To remove it, delete or unsubscribe the calendar in your calendar app."
+      "add": "Add to my calendar: {name}"
     },
     "locked": {
       "title": "This chatbot is still being tested",

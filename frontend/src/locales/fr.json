@@ -85,12 +85,7 @@
   },
   "chat": {
     "calendar": {
-      "add": "Ajouter à mon calendrier : {name}",
-      "apple": "Calendrier Apple ou Outlook",
-      "google": "Google Agenda",
-      "copy": "Copier le lien du calendrier",
-      "copied": "Lien copié",
-      "hint": "Votre calendrier se met à jour tout seul quand les dates changent. Pour le retirer, supprimez ou désabonnez le calendrier dans votre application."
+      "add": "Ajouter à mon calendrier : {name}"
     },
     "locked": {
       "title": "Ce chatbot est encore en test",

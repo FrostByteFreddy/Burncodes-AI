@@ -10,7 +10,9 @@ an empty calendar, which clears the dates from every subscriber.
 import hashlib
 from datetime import date, timedelta
 
-from flask import Blueprint, Response, jsonify, request
+from urllib.parse import quote
+
+from flask import Blueprint, Response, jsonify, redirect, request
 
 from app import limiter
 from app.database.supabase_client import fetch_all, supabase
@@ -51,7 +53,32 @@ def _events(tenant_id):
 def feed_urls(tenant_id, key: str) -> dict:
     https = f"{_api_base()}/api/calendar/{tenant_id}/{key}.ics"
     webcal = "webcal://" + https.split("://", 1)[1]
-    return {"https": https, "webcal": webcal}
+    # the one link the chat shows: opens the visitor's own calendar app (see add_to_calendar)
+    add = f"{_api_base()}/api/calendar/{tenant_id}/{key}/add"
+    return {"https": https, "webcal": webcal, "add": add}
+
+
+_APPLE = ("iphone", "ipad", "ipod", "macintosh", "mac os x")
+
+
+def calendar_app_url(user_agent: str, webcal: str) -> str:
+    """
+    Where "In meinen Kalender" leads: Apple devices subscribe in their Calendar
+    app (webcal://), everything else (Android, Windows, Linux) in Google
+    Calendar, which syncs to the phone. Both stay up to date by themselves.
+    """
+    ua = (user_agent or "").lower()
+    if any(a in ua for a in _APPLE) and "android" not in ua:
+        return webcal
+    return f"https://calendar.google.com/calendar/render?cid={quote(webcal, safe='')}"
+
+
+@calendar_bp.route('/<uuid:tenant_id>/<string:keys>/add', methods=['GET'])
+@limiter.limit("60 per minute")
+def add_to_calendar(tenant_id, keys):
+    """One link for every device: redirects to the calendar app that fits it."""
+    webcal = feed_urls(tenant_id, keys)["webcal"]
+    return redirect(calendar_app_url(request.headers.get('User-Agent', ''), webcal), code=302)
 
 
 @calendar_bp.route('/<uuid:tenant_id>', methods=['GET'])

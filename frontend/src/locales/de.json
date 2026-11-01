@@ -85,12 +85,7 @@
   },
   "chat": {
     "calendar": {
-      "add": "{name} in meinen Kalender",
-      "apple": "Apple Kalender oder Outlook",
-      "google": "Google Kalender",
-      "copy": "Kalender-Link kopieren",
-      "copied": "Link kopiert",
-      "hint": "Der Kalender aktualisiert sich von selbst, wenn sich Termine ändern. Zum Entfernen löschen oder kündigen Sie das Abo in Ihrer Kalender-App."
+      "add": "{name} in meinen Kalender"
     },
     "locked": {
       "title": "Dieser Chatbot wird noch getestet",
