@@ -41,6 +41,7 @@
 /* ---------- Layout ---------- */
 .bc-pagehead { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); margin-bottom: var(--space-8); flex-wrap: wrap; }
 .bc-pagehead__eyebrow { font-size: 14px; line-height: 20px; color: var(--text-tertiary); margin-bottom: var(--space-1); }
+.bc-pagehead__eyebrow a { text-decoration: underline; text-underline-offset: 2px; }
 .bc-pagehead__titlerow { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
 .bc-pagehead__title { margin: 0; font-size: clamp(2rem, 3vw, 2.5rem); line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; }
 .bc-pagehead__lede { margin: var(--space-2) 0 0; font-size: 18px; line-height: 28px; color: var(--text-secondary); max-width: var(--reading-max); }

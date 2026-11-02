@@ -35,6 +35,44 @@ def _norm(text: str | None) -> str:
     return " ".join(text.split()).casefold()
 
 
+def parse_time(value) -> str | None:
+    """"19:00", "19.30", "9 Uhr", "19:00:00" -> "HH:MM"; None when there is no real time."""
+    m = re.match(r"^\s*(\d{1,2})(?:[:.h](\d{2}))?(?::\d{2})?(?:\s*(?:uhr|h))?\s*$", str(value or ""), re.I)
+    if not m:
+        return None
+    hour, minute = int(m[1]), int(m[2] or 0)
+    if hour > 23 or minute > 59:
+        return None
+    return f"{hour:02d}:{minute:02d}"
+
+
+def event_times(e: dict) -> tuple[str | None, str | None]:
+    """
+    (start, end) of an event. Midnight is what a model writes for "no time", and
+    nothing we show starts then, so it counts as no time. No start, no end.
+    """
+    start = parse_time(e.get("start_time"))
+    if not start or start == "00:00":
+        return None, None
+    return start, parse_time(e.get("end_time"))
+
+
+def time_label(e: dict) -> str:
+    """ "19:00-21:00", "19:00" or "". """
+    start, end = event_times(e)
+    return f"{start}-{end}" if start and end else start or ""
+
+
+def event_matches(e: dict, query: str) -> bool:
+    """Every word of the search appears in the name, zone, notes or date (2026-11-05 or 5.11.2026)."""
+    day = str(e.get("event_date") or "")[:10]
+    y, m, d = (day.split("-") + ["", "", ""])[:3]
+    swiss = f"{d}.{m}.{y} {d.lstrip('0')}.{m.lstrip('0')}.{y}"
+    plain = lambda text: "".join(c for c in unicodedata.normalize("NFKD", _norm(text)) if not unicodedata.combining(c))
+    text = plain(f"{e.get('series')} {e.get('zone')} {e.get('notes')} {day} {swiss}")
+    return all(word in text for word in plain(query).split())
+
+
 def event_key(e: dict) -> tuple[str, str, str]:
     """Same name, same zone, same day: one date, whichever page it was read from."""
     return _norm(e.get("series")), _norm(e.get("zone")), str(e.get("event_date") or "")[:10]
@@ -62,11 +100,15 @@ def dedupe_events(rows: list[dict], rank=None) -> list[dict]:
             merged = dict(r)
             merged["is_exception"] = bool(r.get("is_exception") or kept.get("is_exception"))
             merged["notes"] = max((r.get("notes") or "", kept.get("notes") or ""), key=len)
+            if not event_times(merged)[0]:
+                merged["start_time"], merged["end_time"] = kept.get("start_time"), kept.get("end_time")
             best[key] = merged
         else:
             kept["is_exception"] = bool(kept.get("is_exception") or r.get("is_exception"))
             if len(r.get("notes") or "") > len(kept.get("notes") or ""):
                 kept["notes"] = r["notes"]
+            if not event_times(kept)[0]:
+                kept["start_time"], kept["end_time"] = r.get("start_time"), r.get("end_time")
     return [best[k] for k in order]
 
 
@@ -100,9 +142,34 @@ def _fold(line: str) -> str:
     return "\r\n ".join(parts)
 
 
+TIMEZONE = "Europe/Zurich"
+# Times are local as printed; calendar apps need the rules to place them
+_VTIMEZONE = [
+    "BEGIN:VTIMEZONE", f"TZID:{TIMEZONE}",
+    "BEGIN:DAYLIGHT", "TZOFFSETFROM:+0100", "TZOFFSETTO:+0200", "TZNAME:CEST",
+    "DTSTART:19700329T020000", "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU", "END:DAYLIGHT",
+    "BEGIN:STANDARD", "TZOFFSETFROM:+0200", "TZOFFSETTO:+0100", "TZNAME:CET",
+    "DTSTART:19701025T030000", "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU", "END:STANDARD",
+    "END:VTIMEZONE",
+]
+
+
+def _when(day: date, start: str | None, end: str | None) -> tuple[list[str], str]:
+    """DTSTART/DTEND lines and the reminder: all-day, or at the printed time."""
+    if not start:
+        # all-day events start at midnight: 18:00 the evening before
+        return [f"DTSTART;VALUE=DATE:{day.strftime('%Y%m%d')}",
+                f"DTEND;VALUE=DATE:{(day + timedelta(days=1)).strftime('%Y%m%d')}"], "-PT6H"
+    stamp = lambda d, t: f"{d.strftime('%Y%m%d')}T{t.replace(':', '')}00"
+    lines = [f"DTSTART;TZID={TIMEZONE}:{stamp(day, start)}"]
+    if end:  # no printed end: none invented. An end before the start runs past midnight.
+        lines.append(f"DTEND;TZID={TIMEZONE}:{stamp(day + timedelta(days=1) if end <= start else day, end)}")
+    return lines, "-PT1H"
+
+
 def build_ics(*, tenant_id: str, title: str, description: str, events: list[dict], sources: dict, now: datetime | None = None) -> str:
     """
-    events: tenant_events rows (series, zone, event_date, is_exception, notes, source_id).
+    events: tenant_events rows (series, zone, event_date, start_time, end_time, is_exception, notes, source_id).
     sources: source_id -> {"title", "url"} for "where this comes from".
     """
     now = now or datetime.now(timezone.utc)
@@ -119,8 +186,11 @@ def build_ics(*, tenant_id: str, title: str, description: str, events: list[dict
         "REFRESH-INTERVAL;VALUE=DURATION:PT6H",
         "X-PUBLISHED-TTL:PT6H",
     ]
+    if any(event_times(e)[0] for e in events):
+        lines += _VTIMEZONE
     for e in events:
         day = date.fromisoformat(e["event_date"])
+        when, reminder = _when(day, *event_times(e))
         label = f"{e['series']} ({e['zone']})" if e.get("zone") else e["series"]
         uid = hashlib.sha1(f"{tenant_id}|{e['series']}|{e.get('zone') or ''}|{day.isoformat()}".encode()).hexdigest()
         notes = [n for n in [e.get("notes")] if n]
@@ -133,16 +203,14 @@ def build_ics(*, tenant_id: str, title: str, description: str, events: list[dict
             "BEGIN:VEVENT",
             f"UID:{uid}@burncodes-ai",
             f"DTSTAMP:{stamp}",
-            f"DTSTART;VALUE=DATE:{day.strftime('%Y%m%d')}",
-            f"DTEND;VALUE=DATE:{(day + timedelta(days=1)).strftime('%Y%m%d')}",
+            *when,
             f"SUMMARY:{_escape(label)}",
             *([f"DESCRIPTION:{_escape(chr(10).join(notes))}"] if notes else []),
             "TRANSP:TRANSPARENT",
-            # reminder at 18:00 the evening before (all-day events start at midnight)
             "BEGIN:VALARM",
             "ACTION:DISPLAY",
             f"DESCRIPTION:{_escape(label)}",
-            "TRIGGER:-PT6H",
+            f"TRIGGER:{reminder}",
             "END:VALARM",
             "END:VEVENT",
         ]

@@ -566,9 +566,7 @@
       "copied": "Kopiert",
       "on": "Kalender-Abos eingeschaltet",
       "off": "Kalender-Abos ausgeschaltet. Bereits abonnierte Kalender werden bei der nächsten Aktualisierung geleert.",
-      "count": "{n} Kalender | {n} Kalender",
-      "show": "Anzeigen",
-      "hide": "Ausblenden"
+      "count": "{n} Kalender | {n} Kalender"
     },
     "recrawl": {
       "onHint": "Prüft alle {n} Tage auf Änderungen.",
@@ -591,7 +589,9 @@
       "ended": "{series}: Die veröffentlichten Termine endeten am {date}.",
       "endedHint": "Ihr Chatbot kann deshalb keine nächsten Termine nennen. Veröffentlichen Sie den neuen Kalender und lesen Sie die Website erneut ein.",
       "summary": "{sources} Quellen, {chunks} gelernte Abschnitte. Zuletzt eingelesen am {date}.",
-      "summaryNever": "Noch nichts gelernt."
+      "summaryNever": "Noch nichts gelernt.",
+      "showAll": "Alle {n} anzeigen",
+      "allDates": "Alle Termine im Monatskalender"
     },
     "stats": {
       "pages": "Seiten",
@@ -830,6 +830,30 @@
         "title": "Gründlich",
         "desc": "Liest Tabellen, Kalender und lange PDFs am zuverlässigsten. Empfohlen für Gemeinden."
       }
+    },
+    "month": {
+      "title": "Monatskalender",
+      "lede": "Alle Termine, die Ihr Chatbot gelernt hat. Prüfen Sie sie hier gegen die Originalseite.",
+      "prev": "Vorheriger Monat",
+      "next": "Nächster Monat",
+      "today": "Heute",
+      "filter": "Kalender wählen",
+      "all": "Alle Kalender ({n})",
+      "more": "+{n} weitere",
+      "noneInMonth": "In diesem Monat sind keine Termine bekannt.",
+      "none": "Ihr Chatbot kennt noch keine Termine. Sie erscheinen hier, sobald er Seiten mit Daten gelernt hat.",
+      "jump": "Zu {month}",
+      "legend": "Verschobener Termin",
+      "allDay": "Ganztägig",
+      "source": "Gelesen auf: {page}",
+      "loadFailed": "Der Kalender konnte nicht geladen werden.",
+      "pickMonth": "Monat wählen",
+      "search": "Termine durchsuchen",
+      "results": "{n} Treffer für «{q}» | {n} Treffer für «{q}»",
+      "resultsCapped": "Die ersten {shown} von {n} Treffern für «{q}». Suchen Sie genauer, um alle zu sehen.",
+      "noResults": "Keine Termine zu «{q}» gefunden.",
+      "showInCalendar": "Im Kalender zeigen",
+      "closeDay": "Tagesdetails schliessen"
     }
   },
   "pages": {

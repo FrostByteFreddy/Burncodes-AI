@@ -23,7 +23,7 @@ from app.database.supabase_client import supabase
 from app.gemini_store.service import GeminiStoreService
 from app.knowledge import jobs
 from app.ai_models import DEFAULT_LEARNING_MODEL, LEARNING_MODELS, count_tokens, learning_model_key
-from app.knowledge.calendar import dedupe_events, source_rank
+from app.knowledge.calendar import dedupe_events, event_times, source_rank
 from app.knowledge.markdown import estimate_tokens, normalize_markdown, pdf_text
 from app.knowledge.pdf_crosscheck import crosscheck_schedules
 from app.knowledge.understanding import (
@@ -228,19 +228,22 @@ def _store_facts_and_events(tenant_id: str, source_id: int, result: dict, url: s
         for d in series.get("dates") or []:
             iso = _parse_date(d.get("date", ""))
             if iso:
+                start, end = event_times(d)
                 events.append({
                     "tenant_id": tenant_id, "source_id": source_id,
                     "series": series.get("name") or "", "zone": series.get("zone") or "",
                     "event_date": iso, "is_exception": bool(d.get("is_exception")),
-                    "notes": series.get("notes") or "",
+                    "notes": series.get("notes") or "", "start_time": start, "end_time": end,
                 })
     for e in result.get("single_events") or []:
+        start, end = event_times(e)
         for d in e.get("dates") or []:
             iso = _parse_date(d)
             if iso:
                 events.append({
                     "tenant_id": tenant_id, "source_id": source_id, "series": e.get("name") or "",
                     "zone": "", "event_date": iso, "is_exception": False, "notes": e.get("notes") or "",
+                    "start_time": start, "end_time": end,
                 })
     # One row per event however many pages name it (unique in the database):
     # a known event gains this page; the most specific page is the one cited.

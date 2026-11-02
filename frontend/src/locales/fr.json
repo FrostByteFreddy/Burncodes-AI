@@ -566,9 +566,7 @@
       "copied": "Copié",
       "on": "Calendriers activés",
       "off": "Calendriers désactivés. Les calendriers abonnés se vident à la prochaine mise à jour.",
-      "count": "{n} agenda | {n} agendas",
-      "show": "Afficher",
-      "hide": "Masquer"
+      "count": "{n} agenda | {n} agendas"
     },
     "recrawl": {
       "onHint": "Vérifie les changements tous les {n} jours.",
@@ -591,7 +589,9 @@
       "ended": "{series} : les dates publiées se sont terminées le {date}.",
       "endedHint": "Votre chatbot ne peut pas dire quand aura lieu le prochain. Publiez le nouveau calendrier et relancez le crawl.",
       "summary": "{sources} sources, {chunks} sections indexées. Dernier crawl le {date}.",
-      "summaryNever": "Rien n’a encore été appris."
+      "summaryNever": "Rien n’a encore été appris.",
+      "showAll": "Tout afficher ({n})",
+      "allDates": "Toutes les dates dans le calendrier mensuel"
     },
     "stats": {
       "pages": "Pages",
@@ -830,6 +830,30 @@
         "title": "Approfondi",
         "desc": "Lit les tableaux, calendriers et longs PDF de la manière la plus fiable. Recommandé pour les communes."
       }
+    },
+    "month": {
+      "title": "Calendrier mensuel",
+      "lede": "Toutes les dates apprises par votre chatbot. Vérifiez-les ici par rapport à la page d’origine.",
+      "prev": "Mois précédent",
+      "next": "Mois suivant",
+      "today": "Aujourd’hui",
+      "filter": "Choisir un calendrier",
+      "all": "Tous les calendriers ({n})",
+      "more": "+{n} de plus",
+      "noneInMonth": "Aucune date connue pour ce mois.",
+      "none": "Votre chatbot ne connaît encore aucune date. Elles apparaissent ici dès qu’il a appris des pages qui en contiennent.",
+      "jump": "Aller à {month}",
+      "legend": "Date déplacée",
+      "allDay": "Toute la journée",
+      "source": "Lu sur : {page}",
+      "loadFailed": "Le calendrier n’a pas pu être chargé.",
+      "pickMonth": "Choisir un mois",
+      "search": "Rechercher des dates",
+      "results": "{n} résultat pour « {q} » | {n} résultats pour « {q} »",
+      "resultsCapped": "Les {shown} premiers des {n} résultats pour « {q} ». Précisez la recherche pour tous les voir.",
+      "noResults": "Aucune date trouvée pour « {q} ».",
+      "showInCalendar": "Afficher dans le calendrier",
+      "closeDay": "Fermer le détail du jour"
     }
   },
   "pages": {

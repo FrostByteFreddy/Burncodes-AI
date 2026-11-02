@@ -27,7 +27,7 @@ from app.billing.services import BillingService
 from app.logging_config import error_logger
 from app.prompts import FINE_TUNE_RULE_PROMPT
 from app.ai_models import CHAT_GEMINI_MODEL, CHAT_THINKING_LEVEL, billable_tokens
-from app.knowledge.calendar import dedupe_events, source_rank
+from app.knowledge.calendar import dedupe_events, source_rank, time_label
 from app.knowledge.contact import contact_context
 from app.knowledge.facts import fact_mentioned, facts_context, relevant_facts
 from app.knowledge.names import fold, mentioned
@@ -168,7 +168,7 @@ def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, s
     lines = []
     rows = fetch_all(lambda: (
         supabase.table("tenant_events")
-        .select("series, zone, event_date, is_exception, notes, source_id")
+        .select("series, zone, event_date, start_time, end_time, is_exception, notes, source_id")
         .eq("tenant_id", str(tenant_id))
         .gte("event_date", (today - timedelta(days=400)).isoformat())
         .lte("event_date", (today + timedelta(days=400)).isoformat())
@@ -195,7 +195,8 @@ def _dates_context(tenant_id: str, today: date, offer_calendars: bool = False, s
             "notes": r.get("notes") or "", "source_id": r.get("source_id")})
         d = date.fromisoformat(r["event_date"])
         if d >= today:
-            day = f"{_WEEKDAY[d.weekday()]} {d.isoformat()}" + (" (exception)" if r["is_exception"] else "")
+            at = time_label(r)
+            day = f"{_WEEKDAY[d.weekday()]} {d.isoformat()}" + (f" {at}" if at else "") + (" (exception)" if r["is_exception"] else "")
             if len(entry["upcoming"]) < _UPCOMING_PER_SERIES and day not in entry["upcoming"]:
                 entry["upcoming"].append(day)
                 entry["first"] = entry["first"] or d

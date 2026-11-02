@@ -103,3 +103,11 @@ German is Swiss: "ss" not "ß", «» quotes, informal where the product speaks t
 end users. Write for non-technical customers (municipal staff): no developer
 terms in the UI. Check after changes: every `t('…')` key exists in all locales,
 and `npx vite build` passes.
+
+## Month calendar
+
+`components/tenant/MonthCalendar.vue` (route `TenantCalendar`, `sources/calendar`) is where people
+check every learned date: month picker, search over all dates, calendar filter, day details under the
+week. Its state is in the address (`?month`, `?day`, `?cal`, `?q`), so Wissen links straight to a day.
+API: `GET /tenants/:id/knowledge/calendar`. Times (`tenant_events.start_time/end_time`) are as printed
+on the page; none printed means all day, and the feed then writes an all-day entry.

@@ -5,6 +5,9 @@
       <div class="ko-strip__head">
         <CardTitle as="h2">{{ $t('knowledge.overview.stripTitle') }}</CardTitle>
         <CardDescription>{{ $t('knowledge.overview.stripSub') }}</CardDescription>
+        <router-link :to="{ name: 'TenantCalendar', params: { tenantId } }" class="ko-strip__month">
+          <font-awesome-icon :icon="['fas', 'calendar-days']" />{{ $t('knowledge.overview.allDates') }}
+        </router-link>
       </div>
 
       <ol v-if="loading && !data" class="ko-days" aria-busy="true">
@@ -28,14 +31,19 @@
           <p class="ko-day__weekday">{{ day.weekday }}</p>
           <p class="ko-day__date"><span class="ko-day__num">{{ day.num }}</span><span class="ko-day__month">{{ day.month }}</span></p>
           <ul v-if="day.events.length" class="ko-day__events">
-            <li v-for="(e, i) in day.events" :key="i" class="ko-event" :class="{ 'ko-event--moved': e.is_exception }">
+            <li v-for="(e, i) in day.events.slice(0, MAX_PER_DAY)" :key="i" class="ko-event" :class="{ 'ko-event--moved': e.is_exception }">
+              <span v-if="e.start_time" class="ko-event__time">{{ timeOf(e) }}</span>
               <span class="ko-event__series">{{ e.series }}</span>
               <span v-if="e.zone" class="ko-event__zone">{{ e.zone }}</span>
               <span v-if="e.is_exception" class="ko-event__moved">{{ $t('knowledge.overview.moved') }}</span>
             </li>
+            <li v-if="day.events.length > MAX_PER_DAY">
+              <router-link :to="{ name: 'TenantCalendar', params: { tenantId }, query: { month: day.iso.slice(0, 7), day: day.iso } }" class="ko-day__all">{{ $t('knowledge.overview.showAll', { n: day.events.length }) }}</router-link>
+            </li>
           </ul>
         </li>
       </ol>
+
 
       <!-- The same dates as calendars residents can subscribe to -->
       <div class="ko-cal">
@@ -47,21 +55,7 @@
           <Switch id="ko-cal" :model-value="calendarsOn" :disabled="savingCal" @update:model-value="setCalendars" />
         </div>
         <p v-if="tenant?.test_protected && calendarsOn" class="meta ko-cal__warn">{{ $t('knowledge.calendars.protected') }}</p>
-        <template v-else-if="calendarsOn && feeds.length">
-          <button type="button" class="ko-cal__more" :aria-expanded="showFeeds" @click="showFeeds = !showFeeds">
-            {{ $t('knowledge.calendars.count', { n: feeds.length }, feeds.length) }}
-            <span class="ko-cal__more-action">{{ showFeeds ? $t('knowledge.calendars.hide') : $t('knowledge.calendars.show') }}</span>
-          </button>
-          <ul v-if="showFeeds" class="ko-cal__list">
-            <li v-for="f in feeds" :key="f.key" class="ko-cal__feed">
-              <span class="ko-cal__name">{{ f.zone ? `${f.series} (${f.zone})` : f.series }}</span>
-              <span class="meta">{{ $t('knowledge.calendars.dates', { n: f.count }, f.count) }}</span>
-              <button type="button" class="ko-cal__copy" :title="$t('knowledge.calendars.copy')" :aria-label="`${$t('knowledge.calendars.copy')}: ${f.series}`" @click="copyFeed(f)">
-                <font-awesome-icon :icon="['fas', copied === f.key ? 'check' : 'link']" />
-              </button>
-            </li>
-          </ul>
-        </template>
+        <p v-else-if="calendarsOn && feeds.length" class="meta ko-cal__count">{{ $t('knowledge.calendars.count', { n: feeds.length }, feeds.length) }}</p>
       </div>
     </section>
 
@@ -107,6 +101,9 @@ const props = defineProps({
 const { t, locale } = useI18n();
 
 const data = ref(null);
+
+// A busy day shows this many; the rest are in the calendar
+const MAX_PER_DAY = 3;
 const loading = ref(false);
 
 const load = async () => {
@@ -139,7 +136,7 @@ const days = computed(() => {
       weekday: d.toLocaleDateString(locale.value, { weekday: 'short' }),
       num: d.getDate(),
       month: d.toLocaleDateString(locale.value, { month: 'short' }),
-      events: byDay.get(iso) || [],
+      events: [...(byDay.get(iso) || [])].sort((a, b) => Number(!!b.is_exception) - Number(!!a.is_exception)),
     };
   });
 });
@@ -152,8 +149,6 @@ const tenant = computed(() => tenantsStore.currentTenant);
 const calendarsOn = computed(() => tenant.value?.calendar_feeds !== false);
 const feeds = ref([]);
 const savingCal = ref(false);
-const copied = ref(null);
-const showFeeds = ref(false);
 
 // read from the website footer on each crawl
 const contact = computed(() => tenant.value?.contact_card || null);
@@ -178,14 +173,8 @@ const setCalendars = async (on) => {
   } catch { addToast(t('tenant.settings.actions.saveFailed'), 'error'); }
   finally { savingCal.value = false; }
 };
-const copyFeed = async (f) => {
-  try {
-    await navigator.clipboard.writeText(f.https);
-    copied.value = f.key;
-    setTimeout(() => { copied.value = null; }, 2000);
-  } catch { addToast(t('testPage.link.copyFailed'), 'error'); }
-};
 
+const timeOf = (e) => (e.end_time ? `${e.start_time.slice(0, 5)} – ${e.end_time.slice(0, 5)}` : e.start_time.slice(0, 5));
 const fmtDay = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(locale.value, { day: 'numeric', month: 'long', year: 'numeric' });
 
 defineExpose({ reload: load });
@@ -202,6 +191,9 @@ defineExpose({ reload: load });
   border: 1px solid var(--surface-3);
 }
 .ko-strip__head { margin-bottom: 16px; }
+.ko-strip__month { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 14px; font-weight: 600; color: var(--interactive); text-decoration: none; }
+.ko-strip__month:hover { text-decoration: underline; }
+.ko-event__time { font-size: var(--text-xs); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--surface-heading); }
 .ko-strip__empty { font-size: 16px; color: var(--surface-muted); max-width: var(--measure); }
 
 /* Two weeks as two rows of seven days — the shape of a printed collection calendar */
@@ -234,6 +226,8 @@ defineExpose({ reload: load });
 .ko-day__month { font-size: var(--text-xs); color: var(--surface-muted); }
 
 .ko-day__events { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ko-day__all { display: inline-block; padding: 4px 0; text-decoration: none; font-size: 14px; font-weight: 600; color: var(--interactive); text-align: left; }
+.ko-day__all:hover { text-decoration: underline; }
 .ko-event {
   display: flex; flex-direction: column; gap: 2px;
   padding: 8px 8px;
@@ -250,15 +244,7 @@ defineExpose({ reload: load });
 .ko-cal__row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .ko-cal__title { font-size: 16px; font-weight: 700; color: var(--surface-heading); cursor: pointer; }
 .ko-cal__warn { margin-top: 8px; color: var(--status-warning); }
-.ko-cal__list { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; max-width: 560px; }
-.ko-cal__feed { display: grid; grid-template-columns: minmax(0, 1fr) auto 32px; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--surface-3); font-size: var(--text-sm); }
-.ko-cal__feed:first-child { border-top: none; }
-.ko-cal__name { font-size: var(--text-sm); font-weight: 700; color: var(--surface-heading); }
-.ko-cal__copy { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: var(--radius-md); background: none; color: var(--surface-muted); cursor: pointer; }
-.ko-cal__copy:hover { color: var(--interactive); background: var(--surface-3); }
-.ko-cal__more { margin-top: 8px; background: none; border: none; padding: 0; cursor: pointer; font-size: var(--text-sm); color: var(--surface-text); }
-.ko-cal__more-action { margin-left: 8px; font-weight: 600; color: var(--interactive); }
-.ko-cal__more:hover .ko-cal__more-action { text-decoration: underline; }
+.ko-cal__count { margin-top: 8px; }
 
 /* ── Needs you ───────────────────────────────────────────────────── */
 

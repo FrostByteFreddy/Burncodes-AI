@@ -566,9 +566,7 @@
       "copied": "Copied",
       "on": "Calendars switched on",
       "off": "Calendars switched off. Subscribers' calendars empty out on their next update.",
-      "count": "{n} calendar | {n} calendars",
-      "show": "Show",
-      "hide": "Hide"
+      "count": "{n} calendar | {n} calendars"
     },
     "recrawl": {
       "onHint": "Checks for changes every {n} days.",
@@ -591,7 +589,9 @@
       "ended": "{series}: the published dates ended on {date}.",
       "endedHint": "Your chatbot can’t say when the next one is. Publish the new calendar and re-crawl.",
       "summary": "{sources} sources, {chunks} indexed sections. Last crawl {date}.",
-      "summaryNever": "Nothing learned yet."
+      "summaryNever": "Nothing learned yet.",
+      "showAll": "Show all {n}",
+      "allDates": "All dates in the month calendar"
     },
     "stats": {
       "pages": "Pages",
@@ -830,6 +830,30 @@
         "title": "Thorough",
         "desc": "Reads tables, calendars and long PDFs most reliably. Recommended for municipalities."
       }
+    },
+    "month": {
+      "title": "Month calendar",
+      "lede": "Every date your chatbot has learned. Check them here against the original page.",
+      "prev": "Previous month",
+      "next": "Next month",
+      "today": "Today",
+      "filter": "Choose a calendar",
+      "all": "All calendars ({n})",
+      "more": "+{n} more",
+      "noneInMonth": "No dates known for this month.",
+      "none": "Your chatbot doesn’t know any dates yet. They appear here once it has learned pages with dates.",
+      "jump": "Go to {month}",
+      "legend": "Moved date",
+      "allDay": "All day",
+      "source": "Read on: {page}",
+      "loadFailed": "The calendar could not be loaded.",
+      "pickMonth": "Choose a month",
+      "search": "Search dates",
+      "results": "{n} result for “{q}” | {n} results for “{q}”",
+      "resultsCapped": "The first {shown} of {n} results for “{q}”. Search more precisely to see them all.",
+      "noResults": "No dates found for “{q}”.",
+      "showInCalendar": "Show in calendar",
+      "closeDay": "Close day details"
     }
   },
   "pages": {
