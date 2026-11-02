@@ -131,7 +131,12 @@ const selected = computed({
   get: () => route.query.cal || '',
   set: (cal) => setQuery({ cal: cal || undefined }),
 });
-const goTo = (ym) => setQuery({ month: ym === thisMonth ? undefined : ym, day: undefined });
+// Picking a month means looking at that month, so it also ends a search
+const goTo = (ym) => {
+  clearTimeout(typing);
+  search.value = '';
+  setQuery({ month: ym === thisMonth ? undefined : ym, day: undefined, q: undefined });
+};
 const step = (by) => {
   const [y, m] = month.value.split('-').map(Number);
   goTo(isoOf(new Date(y, m - 1 + by, 1)).slice(0, 7));
@@ -208,8 +213,9 @@ const calendarOptions = computed(() => [
 
 // Every month with dates, and always the one on screen and the current one
 const monthOptions = computed(() => {
+  // The same months whatever calendar is picked; only the counts follow the filter
   const counts = activeSeries.value?.months || summary.value?.months || {};
-  return [...new Set([...Object.keys(counts), month.value, thisMonth])].sort().map((m) => ({
+  return [...new Set([...Object.keys(summary.value?.months || {}), month.value, thisMonth])].sort().map((m) => ({
     value: m,
     label: counts[m] ? `${monthLabel(m)} (${counts[m]})` : monthLabel(m),
   }));

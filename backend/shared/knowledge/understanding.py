@@ -93,7 +93,10 @@ _SCHEDULES = {
 }
 _EVENTS = {
     "type": "array",
-    "description": "One-off dated events (e.g. Christbaumabfuhr, Repair Café). Expand date ranges to every day.",
+    "description": "One-off dated events (e.g. Christbaumabfuhr, Repair Café). A range that runs every day (a festival, "
+                   "school holidays) is expanded to every day. A period in which something happens only now and then "
+                   "(a full-moon dinner offered from June to October) is not: list only the dates printed, else none, "
+                   "and put the period in notes.",
     "items": {
         "type": "object",
         "properties": {
