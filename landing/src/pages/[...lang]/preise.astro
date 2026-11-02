@@ -99,7 +99,7 @@ const rows = [
     <div class="wrap grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
       <div>
         <h2 class="h2">{p.faqTitle}</h2>
-        <Button as="a" href={site.signup} class="mt-5">{p.cta}</Button>
+        <Button as="a" href={site.signup} size="lg" class="mt-6">{p.cta}</Button>
       </div>
       <Faq client:visible items={costFaq} />
     </div>
