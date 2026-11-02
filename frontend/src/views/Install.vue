@@ -126,7 +126,7 @@ const mailto = computed(() => {
 .inst-link { text-decoration: none; }
 
 .inst-note { display: flex; gap: 8px; align-items: baseline; font-size: var(--text-sm); color: var(--surface-text); padding: 12px 16px; border-radius: var(--radius-lg); background: var(--surface-1); border: 1px solid var(--surface-3); }
-.inst-note--warn { color: var(--status-warning); border-color: rgba(242, 178, 76, 0.4); }
+.inst-note--warn { color: var(--status-warning); border-color: var(--status-warn); }
 .inst-note a { color: inherit; font-weight: 600; }
 
 /* Steps: a real sequence, so numbered */
@@ -145,7 +145,7 @@ const mailto = computed(() => {
 
 .inst-code { margin-top: 8px; border-radius: var(--radius-lg); background: var(--surface-0); border: 1px solid var(--surface-3); overflow: hidden; }
 .inst-code pre { margin: 0; padding: 16px; overflow-x: auto; font-size: 14px; line-height: 1.6; color: var(--surface-heading); }
-.inst-code code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; word-break: break-all; }
+.inst-code code { font-family: var(--font-mono); white-space: pre-wrap; word-break: break-all; }
 .inst-code__copy { margin: 0 16px 16px; }
 
 .inst-builders { margin-top: 8px; display: flex; flex-direction: column; border: 1px solid var(--surface-3); border-radius: var(--radius-lg); overflow: hidden; }

@@ -11,7 +11,7 @@
           {{ name }}<span v-if="i < progress.step" class="bc-sr"> {{ $t('ui.doneSr') }}</span>
         </li>
       </ol>
-      <p class="onb-brand__compact">{{ $t('ui.stepOf', { n: progress.step + 1, total: STEPS.length }) }} · <strong>{{ stepNames[progress.step] }}</strong></p>
+      <p class="onb-brand__compact">{{ $t('ui.stepOf', { n: progress.step + 1, total: STEPS.length }) }}, <strong>{{ stepNames[progress.step] }}</strong></p>
       <button type="button" class="onb-later" @click="leave">{{ $t('onboarding.later') }}</button>
     </aside>
 
@@ -401,12 +401,12 @@ function leave() {
 
 <style scoped>
 /* Brand panel and work surface sit in one centred column, as in the dashboard;
-   only the gradient behind the panel runs out to the left edge of the screen */
+   only the colour behind the panel runs out to the left edge of the screen */
 .onb { --onb-max: var(--shell-max); --onb-panel: 320px; position: relative; min-height: 100dvh; background: var(--surface-1); }
 .onb::before {
   content: ''; position: absolute; top: 0; bottom: 0; left: 0;
   width: calc(max(0px, (100% - var(--onb-max)) / 2) + var(--onb-panel));
-  background: linear-gradient(160deg, var(--brand-indigo) 0%, var(--brand-violet) 45%, var(--brand-magenta) 100%);
+  background: var(--brand-indigo);
 }
 .onb-inner {
   position: relative; max-width: var(--onb-max); margin: 0 auto; min-height: 100dvh;
@@ -489,12 +489,12 @@ function leave() {
   .onb-preview { position: static; height: 560px; margin-top: var(--space-8); }
 }
 @media (max-width: 900px) {
-  /* the brand panel becomes a gradient top bar */
+  /* the brand panel becomes a top bar */
   .onb::before { display: none; }
   .onb-inner { grid-template-columns: minmax(0, 1fr); }
   .onb-brand {
     position: sticky; top: 0; height: auto; z-index: var(--z-sticky);
-    background: linear-gradient(160deg, var(--brand-indigo) 0%, var(--brand-violet) 45%, var(--brand-magenta) 100%);
+    background: var(--brand-indigo);
     flex-direction: row; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-4);
   }
   .onb-brand__logo { height: 28px; }

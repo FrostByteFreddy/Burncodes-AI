@@ -24,7 +24,7 @@
             <span class="mt-name">{{ tenant.name }}</span>
             <span class="mt-meta">
               {{ $t('manageTenants.sources', { n: formatNumber(sourceCount(tenant)) }, sourceCount(tenant)) }}
-              · {{ $t(`configure.basics.audiences.${tenant.audience || 'municipality'}`) }}
+             , {{ $t(`configure.basics.audiences.${tenant.audience || 'municipality'}`) }}
             </span>
           </router-link>
           <BcStatusBadge :status="tenant.is_active === false ? 'off' : 'on'" size="sm" />

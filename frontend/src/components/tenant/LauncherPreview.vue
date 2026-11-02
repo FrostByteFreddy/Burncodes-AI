@@ -48,7 +48,7 @@ defineProps({
   },
   backgroundColor: {
     type: String,
-    default: "#A855F7",
+    default: "#0A1FAB",
   },
 });
 </script>

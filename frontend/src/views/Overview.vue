@@ -84,7 +84,7 @@
                 <BcStatusBadge :status="CRAWL_STATUS[data.last_crawl.status] || 'stopped'" size="sm" />
               </div>
               <p class="ov-muted">
-                {{ fmtDateTime(data.last_crawl.finished_at || data.last_crawl.created_at) }}<template v-if="data.last_crawl.counts"> · {{ $t('overview.knowledge.crawlCounts', { learned: data.last_crawl.counts.learned || 0, unchanged: data.last_crawl.counts.unchanged || 0 }) }}</template>
+                {{ fmtDateTime(data.last_crawl.finished_at || data.last_crawl.created_at) }}<template v-if="data.last_crawl.counts">, {{ $t('overview.knowledge.crawlCounts', { learned: data.last_crawl.counts.learned || 0, unchanged: data.last_crawl.counts.unchanged || 0 }) }}</template>
               </p>
             </template>
             <p v-else class="ov-muted">{{ $t('overview.knowledge.noCrawl') }}</p>

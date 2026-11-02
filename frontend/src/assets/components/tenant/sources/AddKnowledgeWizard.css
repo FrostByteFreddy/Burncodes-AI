@@ -20,8 +20,8 @@
 
 .radio-card.is-selected {
   border-color: var(--brand-indigo);
-  background: rgba(10, 31, 171, 0.08);
-  box-shadow: 0 0 0 1px rgba(10, 31, 171, 0.25);
+  background: var(--interactive-soft);
+  box-shadow: 0 0 0 1px var(--interactive);
 }
 
 .radio-card__dot {
@@ -66,7 +66,7 @@
   border: 1px solid var(--surface-3);
   color: var(--surface-muted);
   font-size: 11px;
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono);
   padding: 4px 8px;
   border-radius: var(--radius-md);
 }
@@ -136,7 +136,7 @@
   padding-left: 1.5rem;
   height: 36px;
   font-size: 14px;
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono);
   background: var(--surface-2);
   border: 1px solid var(--brand-indigo);
   border-radius: var(--radius-md);
@@ -146,7 +146,7 @@
 }
 
 .path-input-row input:focus {
-  box-shadow: 0 0 0 3px rgba(10, 31, 171, 0.15);
+  box-shadow: 0 0 0 3px var(--interactive);
 }
 
 /* ── Confirm summary card ────────────────────────────────────────────── */
@@ -186,7 +186,7 @@
   text-align: right;
   word-break: break-all;
 }
-.confirm-item__value--mono { font-family: monospace; font-size: 12px; }
+.confirm-item__value--mono { font-family: var(--font-mono); font-size: 12px; }
 
 /* Exclusion list — subtle inline items */
 .confirm-exclusions {
@@ -197,7 +197,7 @@
 }
 
 .confirm-exclusion {
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--surface-muted);
   font-weight: 500;

@@ -58,9 +58,9 @@
       "confirm": "Delete chatbot"
     },
     "toast": {
-      "createSuccess": "Chatbot created successfully!",
+      "createSuccess": "Chatbot created.",
       "createError": "Failed to create chatbot.",
-      "deleteSuccess": "Chatbot deleted successfully!",
+      "deleteSuccess": "Chatbot deleted.",
       "deleteError": "Failed to delete chatbot."
     },
     "guided": "Start the guided setup"
@@ -104,7 +104,7 @@
     "reset": "Reset conversation",
     "close": "Close chat",
     "share": "Share conversation",
-    "shareCopied": "Link copied to clipboard!",
+    "shareCopied": "Link copied to clipboard.",
     "shareError": "Could not create share link",
     "sharedViewNotice": "You are viewing a shared conversation",
     "sharedExpired": "This share link has expired",
@@ -281,12 +281,12 @@
         "save": "Save",
         "saving": "Saving...",
         "saveChanges": "Save Changes",
-        "savedSuccess": "Settings saved successfully!",
+        "savedSuccess": "Settings saved.",
         "saveFailed": "Failed to save settings.",
         "imageRemoved": "Image removed.",
-        "imageUpdated": "Image updated!",
+        "imageUpdated": "Image updated.",
         "readFailed": "Failed to read file. Please try a different image.",
-        "scriptCopied": "Script copied to clipboard!",
+        "scriptCopied": "Script copied to clipboard.",
         "copyFailed": "Failed to copy script."
       },
       "defaults": {
@@ -328,14 +328,14 @@
         "confirm": "Delete"
       },
       "actions": {
-        "crawlStarted": "Crawling job started successfully!",
+        "crawlStarted": "Crawling job started.",
         "crawlFailed": "Failed to start crawl:",
-        "uploadSuccess": "File uploaded successfully!",
+        "uploadSuccess": "File uploaded.",
         "uploadFailed": "File upload failed:",
-        "deleteSuccess": "Source deleted successfully!",
+        "deleteSuccess": "Source deleted.",
         "deleteFailed": "Failed to delete source:",
         "crawlCompleted": "Crawl job completed! Refreshing sources...",
-        "scanCompleted": "Scan complete — review the estimate and start learning.",
+        "scanCompleted": "Scan complete. Review the estimate and start learning.",
         "fetchFailed": "Failed to fetch crawling activity."
       },
       "tabs": {
@@ -426,7 +426,7 @@
       "actions": {
         "cancel": "Cancel",
         "add": "Add Rule",
-        "saveSuccess": "Fine-tuning rules saved successfully!",
+        "saveSuccess": "Fine-tuning rules saved.",
         "saveFailed": "Failed to save fine-tuning rules."
       },
       "wizard": {
@@ -487,7 +487,7 @@
     "save_changes": "Save Changes",
     "saving": "Saving",
     "saved": "Saved",
-    "success": "Profile updated successfully!",
+    "success": "Profile updated.",
     "error": "Failed to update profile.",
     "security": {
       "currentPassword": "Current Password",
@@ -496,7 +496,7 @@
       "updatePassword": "Update Password",
       "updating": "Updating",
       "passwordMismatch": "New passwords do not match.",
-      "success": "Password changed successfully!",
+      "success": "Password changed.",
       "error": "Failed to change password."
     }
   },
@@ -586,7 +586,7 @@
       "stripTitle": "Dates your chatbot knows",
       "stripSub": "Verified dates from your documents for the next 14 days. Visitors asking “when is the next…” get these answers.",
       "noneUpcoming": "No dates in the next two weeks. When your documents contain calendars, they show up here.",
-      "noneUpcomingEnded": "No upcoming dates — the calendars your chatbot knows have ended. See below.",
+      "noneUpcomingEnded": "No upcoming dates. The calendars your chatbot knows have ended. See below.",
       "moved": "moved",
       "ended": "{series}: the published dates ended on {date}.",
       "endedHint": "Your chatbot can’t say when the next one is. Publish the new calendar and re-crawl.",
@@ -603,7 +603,7 @@
     "crawls": {
       "title": "Crawls",
       "sub": "Websites we read for your chatbot",
-      "empty": "No crawls yet — add a website to get started.",
+      "empty": "No crawls yet. Add a website to get started.",
       "showAll": "Show all ({n})",
       "showLess": "Show less"
     },
@@ -657,7 +657,7 @@
       "activity": "Activity",
       "toReview": "{n} to review",
       "started": "Started {date}",
-      "scheduled": "Automatic re-crawl · {date}",
+      "scheduled": "Automatic re-crawl, {date}",
       "singlePage": "This page only",
       "stop": "Stop",
       "discard": "Discard",
@@ -688,8 +688,8 @@
       "pages": "{n} pages",
       "title": "Scan complete",
       "body": "Gemini will read {n} new or changed sources, split them into sections and note important facts and dates. Unchanged pages are skipped for free.",
-      "nothing": "Nothing changed since the last crawl — nothing to learn.",
-      "learn": "Learn now · approx. CHF {cost}",
+      "nothing": "Nothing changed since the last crawl. Nothing to learn.",
+      "learn": "Learn now, approx. CHF {cost}",
       "new": "new",
       "changed": "changed",
       "unchanged": "unchanged",
@@ -699,8 +699,8 @@
       "refused": "refused",
       "unsupported": "unsupported",
       "balanceLow": "Balance too low: CHF {balance} available, about CHF {cost} needed.",
-      "started": "Learning started — you’ll see each source here as it’s done.",
-      "preparing": "Scan complete. Sorting out what isn't worth learning and calculating the cost — this takes about a minute on large websites.",
+      "started": "Learning started. You’ll see each source here as it’s done.",
+      "preparing": "Scan complete. Sorting out what isn't worth learning and calculating the cost. This takes about a minute on large websites.",
       "duplicate": "duplicate",
       "rate_limited": "website busy",
       "noneSelected": "Nothing is selected to learn. Tick at least one page or file below.",
@@ -727,7 +727,7 @@
       "expired": "Ended {date}",
       "until": "Until {date}",
       "noDates": "No dates were found in this crawl.",
-      "noReview": "Nothing to review — all good.",
+      "noReview": "Nothing to review. All good.",
       "unreachable": "Not read: {list}",
       "codes": {
         "empty": "{n} without content",
@@ -743,15 +743,15 @@
       "title": "Activity",
       "job_started": "Crawl started",
       "scan": "Scanning {page}",
-      "scanned": "{page} — {outcome}",
+      "scanned": "{page}: {outcome}",
       "links_found": "{count} new links on {page}",
       "sitemap_read": "Sitemap read: {count} more pages",
-      "scan_done": "Scan complete: {n} sources to learn · approx. CHF {cost}",
+      "scan_done": "Scan complete: {n} sources to learn, approx. CHF {cost}",
       "learn_start": "Gemini is learning {n} sources",
       "learn_source": "Gemini is reading {page}",
-      "learned": "Learned {page}: {sections} sections · {facts} facts · {dates} dates",
+      "learned": "Learned {page}: {sections} sections, {facts} facts, {dates} dates",
       "learn_failed": "Could not learn {page}: {reason}",
-      "job_done": "Done: {n} learned · CHF {cost}",
+      "job_done": "Done: {n} learned, CHF {cost}",
       "empty": "Waiting for activity…",
       "triage_start": "Sorting out what isn't worth learning",
       "triage": "{n} sources set aside as not worth learning",
@@ -1086,7 +1086,7 @@
       "new": "new",
       "same": "no change",
       "vsPrevious": "Compared with the previous period",
-      "spentSplit3": "Answers CHF {chat} · Learning CHF {learning} · Reviews CHF {reviews}"
+      "spentSplit3": "Answers CHF {chat}, Learning CHF {learning}, Reviews CHF {reviews}"
     },
     "knowledge": {
       "title": "Knowledge",
@@ -1417,7 +1417,7 @@
       "starting": "Starting …",
       "pagesRead": "{done} of {total} pages read",
       "estimating": "Working out what learning costs …",
-      "estimate": "Learn {n} pages and documents · about CHF {cost}",
+      "estimate": "Learn {n} pages and documents, about CHF {cost}",
       "nothing": "We found nothing worth learning on this website.",
       "balance": "Your balance: CHF {balance}",
       "balanceShort": "Learning costs approx. {cost}, your balance is {balance}. Top it up, then check again.",

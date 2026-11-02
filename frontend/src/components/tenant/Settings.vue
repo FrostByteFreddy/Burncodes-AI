@@ -140,7 +140,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload)
   margin-top: 20px; padding: 16px 16px 16px 20px;
   border-radius: var(--radius-lg);
   background: var(--surface-2); border: 1px solid var(--interactive-strong);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-3);
 }
 .cfg-savebar p { font-size: 16px; font-weight: 600; color: var(--surface-heading); }
 .cfg-bar-enter-active, .cfg-bar-leave-active { transition: opacity var(--t-fast), transform var(--t-fast); }

@@ -278,7 +278,7 @@ watch(tenantId, (id) => {
 .ins-finding:first-child { border-top: none; padding-top: 0; }
 .ins-kind { justify-self: start; white-space: nowrap; margin-top: 2px; padding: 4px 8px; border-radius: var(--radius-pill); font-size: var(--text-xs); font-weight: 700; background: var(--surface-2); color: var(--surface-text); }
 .ins-kind--unanswered { background: var(--interactive-soft); color: var(--interactive); }
-.ins-kind--wrong { background: var(--status-error-soft, rgba(255, 107, 107, 0.12)); color: var(--status-error); }
+.ins-kind--wrong { background: var(--status-error-soft, var(--status-error)); color: var(--status-error); }
 .ins-kind--pushback { background: var(--status-warning-soft); color: var(--status-warning); }
 .ins-kind--unclear { background: var(--surface-2); color: var(--surface-text); }
 .ins-finding__body { min-width: 0; display: flex; flex-direction: column; gap: 4px; max-width: var(--measure); }

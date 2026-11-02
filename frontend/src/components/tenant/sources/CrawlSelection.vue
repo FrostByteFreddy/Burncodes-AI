@@ -352,7 +352,7 @@ const onCheck = (row, checked) => (row.folder && row.hasChildren ? setFolder(row
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 11px; background: var(--surface-3); color: var(--surface-muted);
 }
-.cs__icon--file { background: rgba(255, 32, 149, 0.12); color: var(--brand-magenta); }
+.cs__icon--file { background: var(--ai-soft); color: var(--ai-text); }
 .cs__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; text-decoration: none; }
 a.cs__label:hover { color: var(--interactive); text-decoration: underline; }
 .cs__count { flex-shrink: 0; font-size: 11px; padding: 1px 8px; border-radius: var(--radius-pill); background: var(--surface-3); color: var(--surface-muted); }

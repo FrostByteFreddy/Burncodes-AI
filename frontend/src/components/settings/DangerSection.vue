@@ -63,7 +63,7 @@ const remove = async () => {
 </script>
 
 <style scoped>
-.dz { border-color: rgba(255, 107, 107, 0.45); }
+.dz { border-color: var(--status-error); }
 .dz-list { margin: 12px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; font-size: var(--text-sm); color: var(--surface-text); max-width: var(--measure); }
 .dz-btn {
   display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: var(--radius-md);

@@ -225,7 +225,7 @@ const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString(locale.value, {
 .pt__row:not(.pt__row--head):hover { background: var(--surface-2); }
 .pt__row--head {
   min-height: 36px; background: var(--surface-2);
-  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--surface-muted);
+  font-size: 14px; font-weight: 600; color: var(--surface-muted);
 }
 .pt__row--host { font-weight: 600; color: var(--surface-heading); }
 
@@ -243,8 +243,8 @@ const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString(locale.value, {
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 12px; background: var(--surface-3); color: var(--surface-muted);
 }
-.pt__icon--host { background: rgba(10, 31, 171, 0.18); color: var(--brand-cyan); }
-.pt__icon--file { background: rgba(255, 32, 149, 0.12); color: var(--brand-magenta); }
+.pt__icon--host { background: var(--interactive-soft); color: var(--interactive); }
+.pt__icon--file { background: var(--ai-soft); color: var(--ai-text); }
 .pt__icon--page { color: var(--surface-text); }
 .pt__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pt__count {
@@ -255,8 +255,8 @@ const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString(locale.value, {
   flex-shrink: 0; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-pill);
   background: var(--surface-3); color: var(--surface-muted);
 }
-.pt__status--error, .pt__status--unsupported { background: rgba(245, 158, 11, 0.12); color: var(--status-warning); }
-.pt__status--processing, .pt__status--queued { background: rgba(10, 31, 171, 0.2); color: var(--brand-cyan); }
+.pt__status--error, .pt__status--unsupported { background: var(--status-warn-soft); color: var(--status-warning); }
+.pt__status--processing, .pt__status--queued { background: var(--interactive-soft); color: var(--interactive); }
 
 .pt__col { text-align: right; color: var(--surface-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .pt__open-cell { display: flex; justify-content: center; }
@@ -265,7 +265,7 @@ const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString(locale.value, {
   display: inline-flex; align-items: center; justify-content: center;
   color: var(--surface-muted); font-size: 12px; transition: color var(--t-fast), background var(--t-fast);
 }
-.pt__open:hover { color: var(--brand-cyan); background: var(--surface-3); }
+.pt__open:hover { color: var(--interactive); background: var(--surface-3); }
 .pt__empty { padding: 16px; font-size: 14px; color: var(--surface-muted); }
 
 @media (max-width: 760px) {

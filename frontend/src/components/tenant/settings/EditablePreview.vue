@@ -340,7 +340,7 @@ onBeforeUnmount(() => {
 .epv__stage { position: relative; flex: 1; min-height: 0; }
 .epv__widget, .epv__site {
   height: 100%; border-radius: 20px; overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-3);
 }
 
 /* Mock website for the chat button */
@@ -365,7 +365,7 @@ onBeforeUnmount(() => {
 .epv__hit--round { border-radius: 50%; }
 .epv__hit:hover, .epv__hit:focus-visible, .epv__hit--open {
   outline: 2px dashed var(--interactive-strong); outline-offset: 2px;
-  background: rgba(95, 109, 255, 0.08);
+  background: var(--interactive-soft);
 }
 .epv__tag {
   position: absolute; left: 0; bottom: calc(100% + 6px); white-space: nowrap;
@@ -393,7 +393,7 @@ onBeforeUnmount(() => {
   max-height: calc(100% - 16px); overflow-y: auto;
   padding: 16px; border-radius: var(--radius-lg);
   background: var(--surface-1); border: 1px solid var(--surface-3);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-3);
 }
 .epv__pop-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: -4px -6px -4px 0; }
 .epv__pop-head h3 { font-size: 15px; font-weight: 700; color: var(--surface-heading); }

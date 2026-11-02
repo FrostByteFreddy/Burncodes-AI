@@ -14,7 +14,7 @@ import { Spinner } from './spinner';
 import BcIcon from './BcIcon.vue';
 
 // The app's names for shadcn's button variants
-const VARIANTS = { primary: 'default', secondary: 'outline', quiet: 'ghost' };
+const VARIANTS = { primary: 'default', brand: 'default', secondary: 'outline', quiet: 'ghost' };
 const SIZES = { md: 'default' };
 
 // primary: the one main action · secondary · quiet · destructive (inside a confirmation) · destructive-quiet

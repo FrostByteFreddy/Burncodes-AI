@@ -230,7 +230,7 @@ const getStarterStyle = () => {
   const palette = props.config.color_palette || [];
   const find = (id) => palette.find(c => c.id === id)?.value;
   return {
-    backgroundColor: find(props.config.starter_background_color) || props.config.starter_background_color || '#A855F7',
+    backgroundColor: find(props.config.starter_background_color) || props.config.starter_background_color || '#0A1FAB',
     color:           find(props.config.starter_text_color)        || props.config.starter_text_color        || '#FFFFFF',
   };
 };
@@ -375,7 +375,7 @@ const widgetCssVariables = computed(() => {
     "--chat-header-text-color": findColor(styles.header_text_color, "#1F2937"),
     "--chat-user-message-background-color": findColor(
       styles.user_message_background_color,
-      "#A855F7"
+      "#0A1FAB"
     ),
     "--chat-user-message-text-color": findColor(
       styles.user_message_text_color,
@@ -391,7 +391,7 @@ const widgetCssVariables = computed(() => {
     ),
     "--chat-send-button-background-color": findColor(
       styles.send_button_background_color,
-      "#A855F7"
+      "#0A1FAB"
     ),
     "--chat-send-button-text-color": findColor(
       styles.send_button_text_color,

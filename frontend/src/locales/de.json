@@ -58,9 +58,9 @@
       "confirm": "Chatbot löschen"
     },
     "toast": {
-      "createSuccess": "Chatbot erfolgreich erstellt!",
+      "createSuccess": "Chatbot erstellt.",
       "createError": "Fehler beim Erstellen des Chatbots.",
-      "deleteSuccess": "Chatbot erfolgreich gelöscht!",
+      "deleteSuccess": "Chatbot gelöscht.",
       "deleteError": "Fehler beim Löschen des Chatbots."
     },
     "guided": "Geführte Einrichtung starten"
@@ -104,7 +104,7 @@
     "reset": "Gespräch zurücksetzen",
     "close": "Chat schließen",
     "share": "Gespräch teilen",
-    "shareCopied": "Link in die Zwischenablage kopiert!",
+    "shareCopied": "Link in die Zwischenablage kopiert.",
     "shareError": "Freigabe-Link konnte nicht erstellt werden",
     "sharedViewNotice": "Du siehst ein geteiltes Gespräch",
     "sharedExpired": "Dieser Freigabe-Link ist abgelaufen",
@@ -281,12 +281,12 @@
         "saving": "Speichern...",
         "save": "Speichern",
         "saveChanges": "Änderungen speichern",
-        "savedSuccess": "Einstellungen erfolgreich gespeichert!",
+        "savedSuccess": "Einstellungen gespeichert.",
         "saveFailed": "Fehler beim Speichern der Einstellungen.",
         "imageRemoved": "Bild entfernt.",
-        "imageUpdated": "Bild aktualisiert!",
+        "imageUpdated": "Bild aktualisiert.",
         "readFailed": "Fehler beim Lesen der Datei. Bitte versuchen Sie ein anderes Bild.",
-        "scriptCopied": "Skript in die Zwischenablage kopiert!",
+        "scriptCopied": "Skript in die Zwischenablage kopiert.",
         "copyFailed": "Fehler beim Kopieren des Skripts."
       },
       "defaults": {
@@ -330,12 +330,12 @@
       "actions": {
         "crawlStarted": "Die Website wird eingelesen.",
         "crawlFailed": "Das Einlesen konnte nicht gestartet werden:",
-        "uploadSuccess": "Datei erfolgreich hochgeladen!",
+        "uploadSuccess": "Datei hochgeladen.",
         "uploadFailed": "Fehler beim Hochladen der Datei:",
-        "deleteSuccess": "Quelle erfolgreich gelöscht!",
+        "deleteSuccess": "Quelle gelöscht.",
         "deleteFailed": "Fehler beim Löschen der Quelle:",
         "crawlCompleted": "Einlesen abgeschlossen. Die Quellen werden aktualisiert …",
-        "scanCompleted": "Scan abgeschlossen — Schätzung prüfen und Lernen starten.",
+        "scanCompleted": "Scan abgeschlossen. Schätzung prüfen und Lernen starten.",
         "fetchFailed": "Die Aktivität konnte nicht geladen werden."
       },
       "tabs": {
@@ -426,7 +426,7 @@
       "actions": {
         "cancel": "Abbrechen",
         "add": "Regel hinzufügen",
-        "saveSuccess": "Feinabstimmungsregeln erfolgreich gespeichert!",
+        "saveSuccess": "Feinabstimmungsregeln gespeichert.",
         "saveFailed": "Fehler beim Speichern der Feinabstimmungsregeln."
       },
       "wizard": {
@@ -487,7 +487,7 @@
     "save_changes": "Änderungen speichern",
     "saving": "Speichern",
     "saved": "Gespeichert",
-    "success": "Profil erfolgreich aktualisiert!",
+    "success": "Profil aktualisiert.",
     "error": "Fehler beim Aktualisieren des Profils.",
     "security": {
       "currentPassword": "Aktuelles Passwort",
@@ -496,7 +496,7 @@
       "updatePassword": "Passwort aktualisieren",
       "updating": "Aktualisiere",
       "passwordMismatch": "Die neuen Passwörter stimmen nicht überein.",
-      "success": "Passwort erfolgreich geändert!",
+      "success": "Passwort geändert.",
       "error": "Fehler beim Ändern des Passworts."
     }
   },
@@ -586,7 +586,7 @@
       "stripTitle": "Termine, die Ihr Chatbot kennt",
       "stripSub": "Geprüfte Termine aus Ihren Dokumenten für die nächsten 14 Tage. Auf Fragen wie «Wann ist die nächste …?» antwortet der Chatbot damit.",
       "noneUpcoming": "Keine Termine in den nächsten zwei Wochen. Enthalten Ihre Dokumente Kalender, erscheinen sie hier.",
-      "noneUpcomingEnded": "Keine kommenden Termine — die Kalender, die Ihr Chatbot kennt, sind abgelaufen. Siehe unten.",
+      "noneUpcomingEnded": "Keine kommenden Termine. Die Kalender, die Ihr Chatbot kennt, sind abgelaufen. Siehe unten.",
       "moved": "verschoben",
       "ended": "{series}: Die veröffentlichten Termine endeten am {date}.",
       "endedHint": "Ihr Chatbot kann deshalb keine nächsten Termine nennen. Veröffentlichen Sie den neuen Kalender und lesen Sie die Website erneut ein.",
@@ -603,7 +603,7 @@
     "crawls": {
       "title": "Durchläufe",
       "sub": "Websites, die wir für Ihren Chatbot lesen",
-      "empty": "Noch keine Durchläufe – fügen Sie eine Website hinzu.",
+      "empty": "Noch keine Durchläufe. Fügen Sie eine Website hinzu.",
       "showAll": "Alle anzeigen ({n})",
       "showLess": "Weniger anzeigen"
     },
@@ -688,8 +688,8 @@
       "pages": "{n} Seiten",
       "title": "Scan abgeschlossen",
       "body": "Gemini liest {n} neue oder geänderte Quellen, teilt sie in Abschnitte und notiert wichtige Fakten und Termine. Unveränderte Seiten werden kostenlos übersprungen.",
-      "nothing": "Seit dem letzten Durchlauf hat sich nichts geändert – es gibt nichts Neues zu lernen.",
-      "learn": "Jetzt lernen · ca. CHF {cost}",
+      "nothing": "Seit dem letzten Durchlauf hat sich nichts geändert. Es gibt nichts Neues zu lernen.",
+      "learn": "Jetzt lernen, ca. CHF {cost}",
       "new": "neu",
       "changed": "geändert",
       "unchanged": "unverändert",
@@ -699,8 +699,8 @@
       "refused": "abgelehnt",
       "unsupported": "nicht unterstützt",
       "balanceLow": "Guthaben zu tief: CHF {balance} verfügbar, ca. CHF {cost} benötigt.",
-      "started": "Lernen gestartet — jede Quelle erscheint hier, sobald sie fertig ist.",
-      "preparing": "Scan abgeschlossen. Wir sortieren aus, was sich nicht zu lernen lohnt, und berechnen die Kosten – bei grossen Websites dauert das etwa eine Minute.",
+      "started": "Lernen gestartet. Jede Quelle erscheint hier, sobald sie fertig ist.",
+      "preparing": "Scan abgeschlossen. Wir sortieren aus, was sich nicht zu lernen lohnt, und berechnen die Kosten. Bei grossen Websites dauert das etwa eine Minute.",
       "duplicate": "Duplikat",
       "rate_limited": "Website ausgelastet",
       "noneSelected": "Es ist nichts zum Lernen ausgewählt. Setzen Sie unten bei mindestens einer Seite oder Datei einen Haken.",
@@ -727,7 +727,7 @@
       "expired": "Beendet {date}",
       "until": "Bis {date}",
       "noDates": "In diesem Durchlauf wurden keine Termine gefunden.",
-      "noReview": "Nichts zu prüfen — alles in Ordnung.",
+      "noReview": "Nichts zu prüfen. Alles in Ordnung.",
       "unreachable": "Nicht gelesen: {list}",
       "codes": {
         "empty": "{n} ohne Inhalt",
@@ -743,15 +743,15 @@
       "title": "Aktivität",
       "job_started": "Durchlauf gestartet",
       "scan": "Scanne {page}",
-      "scanned": "{page} — {outcome}",
+      "scanned": "{page}: {outcome}",
       "links_found": "{count} neue Links auf {page}",
       "sitemap_read": "Sitemap gelesen: {count} weitere Seiten",
-      "scan_done": "Scan abgeschlossen: {n} Quellen zu lernen · ca. CHF {cost}",
+      "scan_done": "Scan abgeschlossen: {n} Quellen zu lernen, ca. CHF {cost}",
       "learn_start": "Gemini lernt {n} Quellen",
       "learn_source": "Gemini liest {page}",
-      "learned": "{page} gelernt: {sections} Abschnitte · {facts} Fakten · {dates} Termine",
+      "learned": "{page} gelernt: {sections} Abschnitte, {facts} Fakten, {dates} Termine",
       "learn_failed": "{page} konnte nicht gelernt werden: {reason}",
-      "job_done": "Fertig: {n} gelernt · CHF {cost}",
+      "job_done": "Fertig: {n} gelernt, CHF {cost}",
       "empty": "Warte auf Aktivität…",
       "triage_start": "Sortiert aus, was sich nicht zu lernen lohnt",
       "triage": "{n} Quellen als nicht lernenswert aussortiert",
@@ -837,7 +837,7 @@
     "overview": "Status, Nutzung und Wissensstand Ihres Chatbots auf einen Blick.",
     "configureTitle": "Anpassen",
     "chatbots": "Jeder Chatbot beantwortet Fragen aus der Website und den Dokumenten einer Organisation.",
-    "insights": "Wo Ihr Chatbot nicht weiterhelfen konnte – und alle Gespräche im Überblick.",
+    "insights": "Wo Ihr Chatbot nicht weiterhelfen konnte, und alle Gespräche im Überblick.",
     "subscription": "Ihr Guthaben bezahlt Chat-Antworten und das Lernen neuer Inhalte.",
     "profile": "Ihr Name, Ihr Passwort und Ihr Konto.",
     "knowledgeTitle": "Wissen",
@@ -1086,7 +1086,7 @@
       "new": "neu",
       "same": "unverändert",
       "vsPrevious": "Im Vergleich zum vorherigen Zeitraum",
-      "spentSplit3": "Antworten CHF {chat} · Lernen CHF {learning} · Prüfungen CHF {reviews}"
+      "spentSplit3": "Antworten CHF {chat}, Lernen CHF {learning}, Prüfungen CHF {reviews}"
     },
     "knowledge": {
       "title": "Wissen",
@@ -1115,7 +1115,7 @@
       "addAnswer": "Antwort hinzufügen",
       "answerSaved": "Antwort gespeichert. Ihr Chatbot verwendet sie ab sofort.",
       "title": "Zu prüfen",
-      "sub": "Fragen, die Ihr Chatbot nicht gut beantworten konnte – gefunden durch die Prüfung abgeschlossener Gespräche.",
+      "sub": "Fragen, die Ihr Chatbot nicht gut beantworten konnte, gefunden durch die Prüfung abgeschlossener Gespräche.",
       "filter": "Anzeigen",
       "status": {
         "open": "Offen",
@@ -1225,7 +1225,7 @@
     "danger": {
       "title": "Konto löschen",
       "sub": "Das kann nicht rückgängig gemacht werden. Beim Löschen Ihres Kontos werden entfernt:",
-      "chatbots": "alle Chatbots samt Wissen und Gesprächen – sie verschwinden sofort von allen Websites",
+      "chatbots": "alle Chatbots samt Wissen und Gesprächen; sie verschwinden sofort von allen Websites",
       "balance": "Ihr restliches Guthaben (es wird nicht zurückerstattet)",
       "subscription": "eine allfällige monatliche Aufladung (sie wird gekündigt)",
       "typeEmail": "Geben Sie {email} zur Bestätigung ein",
@@ -1417,7 +1417,7 @@
       "starting": "Wird gestartet …",
       "pagesRead": "{done} von {total} Seiten gelesen",
       "estimating": "Wir berechnen, was das Lernen kostet …",
-      "estimate": "{n} Seiten und Dokumente lernen · ca. CHF {cost}",
+      "estimate": "{n} Seiten und Dokumente lernen, ca. CHF {cost}",
       "nothing": "Auf dieser Website haben wir nichts gefunden, das sich zu lernen lohnt.",
       "balance": "Ihr Guthaben: CHF {balance}",
       "balanceShort": "Das Lernen kostet ca. {cost}, Ihr Guthaben beträgt {balance}. Laden Sie es auf und prüfen Sie dann nochmals.",

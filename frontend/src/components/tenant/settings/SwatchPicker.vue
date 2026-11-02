@@ -41,7 +41,7 @@ const checkColor = (hex) => readableOn(hex);
 .swp__dot {
   width: 32px; height: 32px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.18); cursor: pointer; font-size: 12px;
+  border: 1px solid var(--border-strong); cursor: pointer; font-size: 12px;
   transition: transform var(--t-fast);
 }
 .swp__dot:hover { transform: scale(1.08); }

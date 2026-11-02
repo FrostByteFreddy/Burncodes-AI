@@ -79,8 +79,8 @@
             <p class="kfile__name" :title="source.summary || fileName(source)">{{ source.title && source.title !== fileName(source) ? source.title : fileName(source) }}</p>
             <p class="kfile__meta">
               {{ fileExt(source).toUpperCase() }}
-              <template v-if="source.indexed_chunks != null"> · {{ source.indexed_chunks }} {{ $t('knowledge.tree.chunks') }}</template>
-              · <span :class="`kfile__status kfile__status--${source.status.toLowerCase()}`">{{ $t(`knowledge.tree.status.${source.status}`) }}</span>
+              <template v-if="source.indexed_chunks != null">, {{ source.indexed_chunks }} {{ $t('knowledge.tree.chunks') }}</template>
+             , <span :class="`kfile__status kfile__status--${source.status.toLowerCase()}`">{{ $t(`knowledge.tree.status.${source.status}`) }}</span>
             </p>
           </div>
           <button @click="confirmDelete(source)" class="kfile__delete" :title="$t('tenant.sources.deleteModal.confirm')" :aria-label="$t('tenant.sources.deleteModal.confirm')">
@@ -337,14 +337,14 @@ const handleDelete = async () => {
 .kfile__icon {
   width: 36px; height: 36px; flex-shrink: 0; border-radius: var(--radius-md);
   display: flex; align-items: center; justify-content: center;
-  background: rgba(255, 32, 149, 0.12); color: var(--brand-magenta); font-size: 16px;
+  background: var(--ai-soft); color: var(--ai-text); font-size: 16px;
 }
 .kfile__info { flex: 1; min-width: 0; }
 .kfile__name { font-size: 14px; font-weight: 600; color: var(--surface-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kfile__meta { font-size: 11px; color: var(--surface-muted); margin-top: 2px; }
 .kfile__status--completed { color: var(--status-success); }
 .kfile__status--error, .kfile__status--unsupported { color: var(--status-warning); }
-.kfile__status--processing, .kfile__status--queued { color: var(--brand-cyan); }
+.kfile__status--processing, .kfile__status--queued { color: var(--interactive); }
 .kfile__delete {
   width: 30px; height: 30px; flex-shrink: 0; border: none; background: none; border-radius: var(--radius-md);
   color: var(--surface-muted); cursor: pointer; opacity: 0; transition: opacity var(--t-fast), color var(--t-fast);

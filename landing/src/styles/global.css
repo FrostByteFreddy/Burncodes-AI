@@ -16,6 +16,9 @@
     --color-indigo-deep: var(--brand-indigo-deep);
     --color-cyan-brand: var(--brand-cyan);
     --color-magenta-brand: var(--brand-magenta);
+    --color-on-brand-muted: var(--on-brand-muted);
+    --color-warning: var(--warning);
+    --color-warning-soft: var(--warning-soft);
     --font-heading: var(--font-sans);
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
@@ -63,6 +66,9 @@
     --brand-indigo-deep: #071685;
     --brand-cyan: #50d3fc;
     --brand-magenta: #ff2095;
+    --on-brand-muted: #d5daff;
+    --warning: #5c3800;
+    --warning-soft: #fff2d4;
 
     --background: #f5f5f2;
     --foreground: #15171c;

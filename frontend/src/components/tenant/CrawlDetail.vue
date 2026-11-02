@@ -10,7 +10,7 @@
 
     <template v-else>
       <BcPageHeader :title="displayUrl(job.start_url)"
-        :lede="(job.trigger === 'scheduled' ? $t('knowledge.job.scheduled', { date: fmtDateTime(job.created_at) }) : $t('knowledge.job.started', { date: fmtDateTime(job.created_at) })) + (job.single_page_only ? ` · ${$t('knowledge.job.singlePage')}` : '')">
+        :lede="(job.trigger === 'scheduled' ? $t('knowledge.job.scheduled', { date: fmtDateTime(job.created_at) }) : $t('knowledge.job.started', { date: fmtDateTime(job.created_at) })) + (job.single_page_only ? `, ${$t('knowledge.job.singlePage')}` : '')">
         <template #eyebrow>
           <router-link :to="{ name: 'TenantSources', params: { tenantId } }">{{ $t('pages.knowledgeTitle') }}</router-link> › {{ $t('knowledge.crawls.title') }}
         </template>

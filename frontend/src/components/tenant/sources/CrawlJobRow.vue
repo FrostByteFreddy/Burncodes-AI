@@ -5,7 +5,7 @@
     <div class="cjr__main">
       <router-link :to="detailRoute" class="cjr__title">{{ displayUrl(job.start_url) }}</router-link>
       <p class="cjr__meta">
-        {{ fmtDateTime(job.created_at) }}<template v-if="job.single_page_only"> · {{ $t('knowledge.job.singlePage') }}</template><template v-if="job.trigger === 'scheduled'"> · {{ $t('knowledge.job.autoShort') }}</template>
+        {{ fmtDateTime(job.created_at) }}<template v-if="job.single_page_only">, {{ $t('knowledge.job.singlePage') }}</template><template v-if="job.trigger === 'scheduled'">, {{ $t('knowledge.job.autoShort') }}</template>
       </p>
 
       <!-- Reading: which page, not how many (the total isn't known until the end) -->

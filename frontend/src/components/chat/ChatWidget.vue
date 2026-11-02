@@ -155,7 +155,7 @@ const launcherBgColor = computed(() => {
   const styles  = resolvedConfig.value.component_styles || {};
   const palette = resolvedConfig.value.color_palette    || [];
   const colorId = styles.launcher_background_color;
-  return palette.find(c => c.id === colorId)?.value || colorId || '#A855F7';
+  return palette.find(c => c.id === colorId)?.value || colorId || '#0A1FAB';
 });
 
 const { addToast } = useToast();
@@ -475,7 +475,7 @@ onUnmounted(() => {
 .chat-lock__card p { font-size: 14px; color: #4B5563; margin: 0; line-height: 1.45; }
 .chat-lock__label { font-size: 14px; font-weight: 600; margin-top: 6px; }
 .chat-lock__input { padding: 10px 12px; border: 1px solid #D1D5DB; border-radius: 8px; font-size: 16px; background: #fff; color: #111827; }
-.chat-lock__input:focus { outline: 2px solid #5F6DFF; outline-offset: 1px; }
+.chat-lock__input:focus { outline: 2px solid #0A1FAB; outline-offset: 1px; }
 .chat-lock__error { color: #B91C1C !important; }
 .chat-lock__btn { padding: 10px 14px; border: none; border-radius: 8px; background: #1F2937; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
 .chat-lock__btn:disabled { opacity: 0.45; cursor: not-allowed; }

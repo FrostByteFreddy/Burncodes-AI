@@ -133,9 +133,9 @@
 
   <script>
     var hintLabels = {
-      de: '👆 Hier klicken, um den Chat zu öffnen!',
-      fr: '👆 Cliquez ici pour ouvrir le chat !',
-      en: '👆 Click here to open your chat!',
+      de: 'Hier klicken, um den Chat zu öffnen',
+      fr: 'Cliquez ici pour ouvrir le chat',
+      en: 'Click here to open your chat',
     };
 
     function getHintLabel() {
@@ -164,7 +164,7 @@
 
       if (!tid) {
         placeholder.innerHTML =
-          '<div class="error">⚠️ No <code>tenant_id</code> in the URL.<br>' +
+          '<div class="error">No <code>tenant_id</code> in the URL.<br>' +
           'Use <code>?tenant_id=YOUR_ID</code></div>';
         return;
       }
@@ -195,7 +195,7 @@
 
       script.onerror = () => {
         placeholder.innerHTML =
-          '<div class="error">⚠️ Could not load widget.js.<br>' +
+          '<div class="error">Could not load widget.js.<br>' +
           'Check that the API is running and <code>tenant_id</code> is correct.</div>';
       };
 

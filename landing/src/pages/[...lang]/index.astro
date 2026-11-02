@@ -34,10 +34,10 @@ const jsonLd = {
         <h1 class="text-5xl leading-[1.02] font-bold tracking-tight sm:text-6xl xl:text-7xl">{h.h1}</h1>
         <p class="lede mt-6 max-w-xl">{h.lede}</p>
         <div class="mt-8 flex flex-wrap items-center gap-3">
-          <Button as="a" href={site.signup} size="lg" class="h-12 bg-white px-6 text-base font-bold text-indigo-brand hover:bg-accent">{h.cta}</Button>
+          <Button as="a" href={site.signup} size="lg" variant="inverse" class="h-12 px-6 text-base">{h.cta}</Button>
           <Button as="a" href={localePath(lang, '/funktionen/')} size="lg" variant="ghost" class="h-12 px-4 text-base text-white hover:bg-white/10 hover:text-white">{h.secondary}<ArrowRight /></Button>
         </div>
-        <p class="mt-4 text-sm text-[#d5daff]">{h.ctaNote}</p>
+        <p class="mt-4 text-sm text-on-brand-muted">{h.ctaNote}</p>
       </div>
       <div class="-mb-24 text-foreground">
         <DemoChat client:visible tabs={t.demo.tabs} label={t.demo.label} pick={t.demo.pick} calendar={t.demo.calendar} />

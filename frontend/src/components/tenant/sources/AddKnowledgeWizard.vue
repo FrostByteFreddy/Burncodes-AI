@@ -99,7 +99,7 @@
                     <p class="file-drop__name" :class="{ 'file-drop__name--active': selectedFile }">
                       {{ selectedFile ? selectedFile.name : $t('tenant.sources.wizard.chooseFile') }}
                     </p>
-                    <p class="step-subtext" style="margin-top:4px;">PDF · TXT · CSV</p>
+                    <p class="step-subtext" style="margin-top:4px;">PDF, TXT, CSV</p>
                   </div>
                 </label>
               </div>
@@ -165,7 +165,7 @@
                     <div class="flex items-center gap-2">
                       <span class="text-sm font-bold text-foreground">{{ mode.label }}</span>
                       <span v-if="mode.badge"
-                        class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                        class="text-xs font-semibold px-2 py-0.5 rounded-full"
                         :class="mode.badgeClass">{{ mode.badge }}</span>
                     </div>
                     <p class="step-subtext mt-0.5">{{ mode.desc }}</p>
@@ -395,7 +395,7 @@ const submit = async () => {
   color: var(--surface-muted);
   transition: background var(--t-fast), color var(--t-fast);
 }
-.type-icon--active { background: rgba(10,31,171,0.15); color: var(--brand-indigo); }
+.type-icon--active { background: var(--interactive-soft); color: var(--brand-indigo); }
 
 /* ── Info box ────────────────────────────────────────────────────── */
 .info-box {
@@ -423,8 +423,8 @@ const submit = async () => {
   cursor: pointer;
   transition: border-color var(--t-fast), background var(--t-fast);
 }
-.file-drop:hover       { border-color: var(--brand-indigo); background: rgba(10,31,171,0.04); }
-.file-drop--active     { border-color: var(--brand-indigo); background: rgba(10,31,171,0.06); }
+.file-drop:hover       { border-color: var(--brand-indigo); background: var(--interactive-soft); }
+.file-drop--active     { border-color: var(--brand-indigo); background: var(--interactive-soft); }
 .file-drop__icon {
   width: 52px; height: 52px; border-radius: var(--radius-lg);
   display: flex; align-items: center; justify-content: center;
@@ -432,7 +432,7 @@ const submit = async () => {
   transition: background var(--t-fast), color var(--t-fast);
 }
 .file-drop:hover .file-drop__icon,
-.file-drop__icon--active { background: rgba(10,31,171,0.15); color: var(--brand-indigo); }
+.file-drop__icon--active { background: var(--interactive-soft); color: var(--brand-indigo); }
 .file-drop__name        { font-size: 14px; font-weight: 600; color: var(--surface-muted); }
 .file-drop__name--active { color: var(--brand-indigo); }
 </style>

@@ -1,12 +1,4 @@
-/* ── Shared modal button classes ─────────────────────────── */
-.modal-btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 8px 20px; font-size: 14px; font-weight: 600;
-  border: none; border-radius: var(--radius-md);
-  cursor: pointer; transition: opacity var(--t-fast), background var(--t-fast);
-}
-.modal-btn--primary { background: var(--gradient-brand); color: white; }
-.modal-btn--primary:hover { opacity: 0.9; }
+
 
 /* ── Rule cards ───────────────────────────────────────────── */
 
@@ -21,7 +13,7 @@
 }
 
 .rule-card:hover {
-  border-color: rgba(10, 31, 171, 0.35);
+  border-color: var(--interactive);
   box-shadow: var(--shadow-glow);
 }
 

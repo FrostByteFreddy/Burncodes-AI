@@ -7,7 +7,7 @@ interface Props { a: { h1: string; lede: string; questionsTitle: string; questio
 const { a } = Astro.props;
 ---
 <PageHero h1={a.h1} lede={a.lede}>
-  <Button as="a" href={site.signup} size="lg" class="mt-8 h-12 bg-white px-6 text-base font-bold text-indigo-brand hover:bg-accent">{a.cta}</Button>
+  <Button as="a" href={site.signup} size="lg" variant="inverse" class="mt-8 h-12 px-6 text-base">{a.cta}</Button>
 </PageHero>
 <section class="section">
   <div class="wrap">
