@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from app import limiter
 from app.database.supabase_client import fetch_all, supabase
 from app.auth.decorators import token_required
 from app.models.database import SourceType
@@ -86,6 +87,7 @@ def get_sources(current_user, tenant_id):
         return jsonify({"error": "Failed to retrieve sources"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/sources/upload', methods=['POST'])
+@limiter.limit("60 per minute")  # stores a file and starts learning
 @token_required
 def upload_source(current_user, tenant_id):
     tenant_id_str = str(tenant_id)
@@ -134,6 +136,7 @@ def upload_source(current_user, tenant_id):
         return jsonify({"error": "Failed to process file"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/sources/crawl', methods=['POST'])
+@limiter.limit("10 per minute")  # starts a crawl
 @token_required
 def crawl_sources(current_user, tenant_id):
     try:
@@ -164,6 +167,7 @@ def crawl_sources(current_user, tenant_id):
         return jsonify({"error": "Failed to process URLs"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/sources/discover', methods=['POST'])
+@limiter.limit("10 per minute")  # fetches an address we're given
 @token_required
 def discover_links(current_user, tenant_id):
     try:
@@ -331,6 +335,7 @@ SEARCH_LIMIT = 200
 
 
 @sources_bp.route('/<uuid:tenant_id>/knowledge/calendar', methods=['GET'])
+@limiter.limit("60 per minute")  # reads up to 20,000 dates for a search
 @token_required
 def get_knowledge_calendar(current_user, tenant_id):
     """

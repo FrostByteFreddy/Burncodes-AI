@@ -155,3 +155,12 @@ Data checks (via a local container, production DB):
 `./_prod_smoke.sh [base url]` checks that the website, dashboard, chat, old
 addresses and API each answer with the right app. The release workflow runs it;
 `CURL_OPTS=-k` lets it run against a self-signed test setup.
+
+### Limits and caching
+
+- Edge (`nginx/nginx.conf`): per address 30 requests/s with bursts, 100 connections, 5 requests/s on
+  the public chat. Over the limit means 429.
+- Flask (`app/__init__.py`, `chat/guard.py`, per route): Redis-backed limits per user or address, plus
+  a cap per chatbot on chat, so rotating addresses can only cost one customer so much.
+- Caching: hashed files (`/_astro/`, `/dashboard/assets/`) a year, other static files a day (website
+  images 7 days), HTML revalidated each time, calendar feeds 15 minutes with ETag. API answers aren't cached.
