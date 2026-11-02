@@ -13,28 +13,6 @@ const en: typeof de = {
     faq: { title: 'Frequently asked questions | Burncodes AI', description: 'Answers to common questions about Burncodes AI: setup, costs, languages, keeping answers up to date and adding it to your website.' },
     notFound: { title: 'Page not found | Burncodes AI', description: '' },
   },
-  demo: {
-    label: 'Example',
-    pick: 'Pick a question',
-    calendar: 'Subscribe in your calendar',
-    tabs: [
-      { key: 'municipality', label: 'Municipality', title: 'Municipality of Sampleton', items: [
-        { q: 'when is the next paper colection?', a: 'The next paper collection is on <strong>Tuesday, 17 November</strong>. Put your bundled paper at the roadside by 7 am.', source: 'Waste calendar', calendar: 'Paper collection' },
-        { q: 'How much is a parking permit?', a: 'A residents’ parking permit costs <strong>CHF 40 per month</strong> or CHF 400 per year. You can apply at the counter or online.', source: 'Fees and permits' },
-        { q: 'Quand le bureau communal est-il ouvert ?', a: 'Le bureau communal est ouvert du <strong>lundi au vendredi, de 8 h à 11 h 30</strong>, et le jeudi jusqu’à 18 h.', source: 'Opening hours' },
-      ] },
-      { key: 'club', label: 'Club', title: 'Sampleton Gymnastics Club', items: [
-        { q: 'Is there a trial session for children?', a: 'Yes. Children aged 6 and over can join <strong>twice for free</strong>, on Wednesdays at 5 pm in the village gym.', source: 'Children’s gymnastics' },
-        { q: 'How much is the membership fee?', a: 'The annual fee is <strong>CHF 120 for adults</strong> and CHF 60 for children and young people.', source: 'Membership' },
-        { q: 'When is the next tournament?', a: 'The autumn tournament is on <strong>Saturday, 21 November</strong>, starting at 9 am.', source: 'Events', calendar: 'Autumn tournament' },
-      ] },
-      { key: 'company', label: 'Company', title: 'Sample Bikes Ltd', items: [
-        { q: 'Can I bring my e-bike in for a service?', a: 'Yes, without an appointment from <strong>Tuesday to Saturday</strong>. The annual service starts at CHF 149 and usually takes two days.', source: 'Workshop' },
-        { q: 'wie lange ist die garantie?', a: 'Neue Velos haben <strong>2 Jahre Garantie</strong>, auf den Rahmen 5 Jahre.', source: 'Warranty' },
-        { q: 'Do you deliver to my home?', a: 'Yes. In the region, delivery is <strong>free from CHF 500</strong> and CHF 49 otherwise.', source: 'Delivery' },
-      ] },
-    ],
-  },
   home: {
     stats: [
       { value: 'CHF 0', label: 'base fee' },
@@ -49,7 +27,7 @@ const en: typeof de = {
     trustAnswer: 'I couldn’t find anything about that on the website. The municipal office will be glad to help: 044 000 00 00, Monday to Friday.',
     pdfQ: 'what if it’s on page 14 of a pdf?',
     pdfTitle: 'Finds what’s buried in documents too.',
-    pdfText: 'It reads your pages and PDFs, and also checks calendar dates against the grid in the document. Anyone asking about a date can subscribe to the calendar right away.',
+    pdfText: 'It reads your pages and PDFs, and also checks calendar dates against the grid in the document. You can check every date yourself in the month calendar, and anyone asking about one can subscribe right away.',
     insightsQ: 'how do i know what people ask?',
     insightsTitle: 'You see what your website is missing.',
     insightsText: 'Read the conversations. If you switch it on, Burncodes AI reviews them automatically and lists what stayed open, with a suggestion for what to add.',
@@ -108,6 +86,7 @@ const en: typeof de = {
       { title: 'Knowledge', text: 'The chatbot knows what is on your website and stays up to date.', items: [
         ['Read your website', 'It follows the links from your address and can also read the sitemap. Reading is free.'],
         ['PDFs and documents', 'Documents are read too. Calendar dates from PDFs are also checked against the grid in the PDF.'],
+        ['Check every date yourself', 'The month calendar shows every date it learned, with its time. Search for an event and compare it directly with the original page.'],
         ['Leave out what isn’t needed', 'Old minutes and outdated versions are recognised. You can exclude entire folders and addresses yourself.'],
         ['Automatically up to date', 'Your website is re-read on a schedule. Only changes are learned, without asking up to a cost limit.'],
       ] },
@@ -117,7 +96,7 @@ const en: typeof de = {
         ['Forgiving of typos', 'Misspelled names and terms are recognised.'],
         ['Knows today’s date', 'For “next week” or “tomorrow” it works with the right day and names upcoming dates.'],
         ['Honest about gaps', 'If something isn’t in its documents, it says so and points to your contact details.'],
-        ['Subscribe to dates', 'When asked about dates, it offers the right calendar for Apple, Google and Outlook.'],
+        ['Subscribe to dates', 'When asked about dates, it offers the right calendar for Apple, Google and Outlook, with the time wherever one is printed.'],
       ] },
       { title: 'Look and voice', text: 'It looks like part of your website and sounds the way you want.', items: [
         ['Right in the preview', 'Click a part of the chat window and adjust it.'],

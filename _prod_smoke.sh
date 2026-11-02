@@ -24,7 +24,7 @@ expect() {
 expect /            200 'data-site="burncodes"'
 expect /preise/     200 'data-site="burncodes"'
 expect /fr/         200 'lang="fr"'
-expect /robots.txt  200 'Sitemap'
+expect /robots.txt  200 'Disallow: /'
 # Dashboard and the pages customers embed or share
 expect /dashboard/       200 'id="app"'
 expect /dashboard/login  200 'id="app"'

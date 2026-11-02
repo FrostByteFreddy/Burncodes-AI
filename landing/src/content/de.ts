@@ -11,28 +11,6 @@ export default {
     faq: { title: 'Häufige Fragen | Burncodes AI', description: 'Antworten auf häufige Fragen zu Burncodes AI: Einrichtung, Kosten, Sprachen, Aktualität der Antworten und Einbau auf Ihrer Website.' },
     notFound: { title: 'Seite nicht gefunden | Burncodes AI', description: '' },
   },
-  demo: {
-    label: 'Beispiel',
-    pick: 'Wählen Sie eine Frage',
-    calendar: 'Im Kalender abonnieren',
-    tabs: [
-      { key: 'municipality', label: 'Gemeinde', title: 'Gemeinde Musterhausen', items: [
-        { q: 'wann ist die nächste papiersamlung?', a: 'Die nächste Papiersammlung ist am <strong>Dienstag, 17. November</strong>. Stellen Sie das Papier gebündelt bis 7 Uhr an den Strassenrand.', source: 'Abfallkalender', calendar: 'Papiersammlung' },
-        { q: 'Was kostet eine Parkkarte?', a: 'Eine Anwohner-Parkkarte kostet <strong>CHF 40 pro Monat</strong> oder CHF 400 pro Jahr. Sie beantragen sie am Schalter oder online.', source: 'Gebühren und Bewilligungen' },
-        { q: "Quand le bureau communal est-il ouvert ?", a: 'Le bureau communal est ouvert du <strong>lundi au vendredi, de 8 h à 11 h 30</strong>, et le jeudi jusqu’à 18 h.', source: 'Öffnungszeiten' },
-      ] },
-      { key: 'club', label: 'Verein', title: 'Turnverein Musterhausen', items: [
-        { q: 'Gibt es ein Probetraining für Kinder?', a: 'Ja. Kinder ab 6 Jahren können <strong>zweimal gratis</strong> mittrainieren, jeweils mittwochs um 17 Uhr in der Turnhalle Dorf.', source: 'Kinderturnen' },
-        { q: 'Wie hoch ist der Mitgliederbeitrag?', a: 'Der Jahresbeitrag beträgt <strong>CHF 120 für Erwachsene</strong> und CHF 60 für Kinder und Jugendliche.', source: 'Mitgliedschaft' },
-        { q: 'Wann ist das nächste Turnier?', a: 'Das Herbstturnier findet am <strong>Samstag, 21. November</strong> ab 9 Uhr statt.', source: 'Anlässe', calendar: 'Herbstturnier' },
-      ] },
-      { key: 'company', label: 'Unternehmen', title: 'Muster Velos AG', items: [
-        { q: 'Kann ich mein E-Bike zum Service bringen?', a: 'Ja, ohne Termin von <strong>Dienstag bis Samstag</strong>. Der Jahresservice kostet ab CHF 149 und dauert meist zwei Tage.', source: 'Werkstatt' },
-        { q: 'how long is the warranty?', a: 'New bikes come with a <strong>2-year warranty</strong>, and 5 years on the frame.', source: 'Garantie' },
-        { q: 'Liefert ihr auch nach Hause?', a: 'Ja. In der Region liefern wir ab einem Einkauf von <strong>CHF 500 kostenlos</strong>, sonst für CHF 49.', source: 'Lieferung' },
-      ] },
-    ],
-  },
   home: {
     stats: [
       { value: 'CHF 0', label: 'Grundgebühr' },
@@ -47,7 +25,7 @@ export default {
     trustAnswer: 'Dazu habe ich auf der Website nichts gefunden. Die Gemeindeverwaltung hilft Ihnen gerne weiter: 044 000 00 00, Montag bis Freitag.',
     pdfQ: 'und wenn es im pdf auf seite 14 steht?',
     pdfTitle: 'Findet auch, was in Dokumenten steckt.',
-    pdfText: 'Er liest Ihre Seiten und PDFs. Kalenderdaten prüft er zusätzlich gegen das Raster im Dokument. Wer nach einem Datum fragt, kann den Kalender gleich abonnieren.',
+    pdfText: 'Er liest Ihre Seiten und PDFs. Kalenderdaten prüft er zusätzlich gegen das Raster im Dokument. Im Monatskalender prüfen Sie jedes Datum selbst, und wer danach fragt, kann den Kalender gleich abonnieren.',
     insightsQ: 'woher weiss ich, was die leute fragen?',
     insightsTitle: 'Sie sehen, was auf Ihrer Website fehlt.',
     insightsText: 'Lesen Sie die Gespräche nach. Auf Wunsch prüft Burncodes AI sie automatisch und listet auf, was offenblieb, mit einem Vorschlag, was zu ergänzen wäre.',
@@ -106,6 +84,7 @@ export default {
       { title: 'Wissen', text: 'Der Chatbot kennt, was auf Ihrer Website steht, und bleibt auf dem Laufenden.', items: [
         ['Website einlesen', 'Er folgt den Links ab Ihrer Adresse und liest auf Wunsch auch die Sitemap. Das Einlesen ist kostenlos.'],
         ['PDFs und Dokumente', 'Auch Dokumente werden gelesen. Kalenderdaten aus PDFs werden zusätzlich gegen das Raster im PDF geprüft.'],
+        ['Jedes Datum selbst prüfen', 'Der Monatskalender zeigt alle gelernten Termine mit Uhrzeit. Suchen Sie einen Anlass und vergleichen Sie ihn direkt mit der Originalseite.'],
         ['Unnötiges auslassen', 'Alte Protokolle und überholte Versionen werden erkannt. Ganze Ordner und Adressen können Sie selbst ausschliessen.'],
         ['Automatisch aktuell', 'Nach Zeitplan wird Ihre Website neu gelesen. Gelernt wird nur, was sich geändert hat, und bis zu einer Kostengrenze ohne Rückfrage.'],
       ] },
@@ -115,7 +94,7 @@ export default {
         ['Fehlertolerant', 'Falsch geschriebene Namen und Begriffe werden erkannt.'],
         ['Kennt das heutige Datum', 'Bei «nächste Woche» oder «morgen» rechnet er mit dem richtigen Tag und nennt kommende Termine.'],
         ['Ehrlich bei Lücken', 'Steht etwas nicht in seinen Unterlagen, sagt er das und verweist auf Ihre Kontaktangaben.'],
-        ['Termine abonnieren', 'Bei Fragen nach Daten bietet er den passenden Kalender für Apple, Google und Outlook an.'],
+        ['Termine abonnieren', 'Bei Fragen nach Daten bietet er den passenden Kalender für Apple, Google und Outlook an, mit Uhrzeit, wo eine angegeben ist.'],
       ] },
       { title: 'Aussehen und Stimme', text: 'Er sieht aus wie ein Teil Ihrer Website und klingt, wie Sie es möchten.', items: [
         ['Direkt in der Vorschau', 'Klicken Sie im Chatfenster auf einen Bereich und passen Sie ihn an.'],

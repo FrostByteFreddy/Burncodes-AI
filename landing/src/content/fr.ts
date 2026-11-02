@@ -13,28 +13,6 @@ const fr: typeof de = {
     faq: { title: 'Questions fréquentes | Burncodes AI', description: 'Réponses aux questions fréquentes sur Burncodes AI : mise en place, coûts, langues, actualité des réponses et intégration à votre site.' },
     notFound: { title: 'Page introuvable | Burncodes AI', description: '' },
   },
-  demo: {
-    label: 'Exemple',
-    pick: 'Choisissez une question',
-    calendar: 'S’abonner dans le calendrier',
-    tabs: [
-      { key: 'municipality', label: 'Commune', title: 'Commune de Modèleville', items: [
-        { q: 'quand est le prochain ramasage du papier ?', a: 'Le prochain ramassage du papier a lieu le <strong>mardi 17 novembre</strong>. Déposez le papier ficelé en bord de route avant 7 h.', source: 'Calendrier des déchets', calendar: 'Ramassage du papier' },
-        { q: 'Combien coûte une carte de stationnement ?', a: 'Une carte de stationnement pour résidents coûte <strong>CHF 40 par mois</strong> ou CHF 400 par an. Vous pouvez la demander au guichet ou en ligne.', source: 'Émoluments et autorisations' },
-        { q: 'Wann hat die Gemeindeverwaltung offen?', a: 'Die Verwaltung ist <strong>Montag bis Freitag von 8 bis 11.30 Uhr</strong> offen, am Donnerstag bis 18 Uhr.', source: 'Horaires' },
-      ] },
-      { key: 'club', label: 'Association', title: 'Société de gymnastique de Modèleville', items: [
-        { q: 'Y a-t-il un essai pour les enfants ?', a: 'Oui. Dès 6 ans, les enfants peuvent participer <strong>deux fois gratuitement</strong>, le mercredi à 17 h à la salle du village.', source: 'Gymnastique enfants' },
-        { q: 'Quel est le montant de la cotisation ?', a: 'La cotisation annuelle est de <strong>CHF 120 pour les adultes</strong> et de CHF 60 pour les enfants et les jeunes.', source: 'Adhésion' },
-        { q: 'Quand a lieu le prochain tournoi ?', a: 'Le tournoi d’automne a lieu le <strong>samedi 21 novembre</strong> dès 9 h.', source: 'Manifestations', calendar: 'Tournoi d’automne' },
-      ] },
-      { key: 'company', label: 'Entreprise', title: 'Vélos Modèle SA', items: [
-        { q: 'Puis-je apporter mon vélo électrique pour un service ?', a: 'Oui, sans rendez-vous du <strong>mardi au samedi</strong>. Le service annuel coûte dès CHF 149 et prend généralement deux jours.', source: 'Atelier' },
-        { q: 'how long is the warranty?', a: 'New bikes come with a <strong>2-year warranty</strong>, and 5 years on the frame.', source: 'Garantie' },
-        { q: 'Livrez-vous à domicile ?', a: 'Oui. Dans la région, la livraison est <strong>gratuite dès CHF 500</strong>, sinon elle coûte CHF 49.', source: 'Livraison' },
-      ] },
-    ],
-  },
   home: {
     stats: [
       { value: 'CHF 0', label: 'de frais de base' },
@@ -49,7 +27,7 @@ const fr: typeof de = {
     trustAnswer: 'Je n’ai rien trouvé à ce sujet sur le site. L’administration communale vous renseignera volontiers : 044 000 00 00, du lundi au vendredi.',
     pdfQ: 'et si c’est à la page 14 d’un pdf ?',
     pdfTitle: 'Trouve aussi ce qui se cache dans les documents.',
-    pdfText: 'Il lit vos pages et vos PDF, et vérifie les dates des calendriers par rapport à la grille du document. Qui demande une date peut s’abonner au calendrier aussitôt.',
+    pdfText: 'Il lit vos pages et vos PDF, et vérifie les dates des calendriers par rapport à la grille du document. Vous vérifiez chaque date vous-même dans le calendrier mensuel, et qui en demande une peut s’abonner aussitôt.',
     insightsQ: 'comment savoir ce que les gens demandent ?',
     insightsTitle: 'Vous voyez ce qui manque sur votre site.',
     insightsText: 'Relisez les conversations. Si vous l’activez, Burncodes AI les contrôle automatiquement et liste ce qui est resté ouvert, avec une proposition de complément.',
@@ -108,6 +86,7 @@ const fr: typeof de = {
       { title: 'Connaissances', text: 'Le chatbot connaît le contenu de votre site et reste à jour.', items: [
         ['Lire votre site', 'Il suit les liens depuis votre adresse et peut aussi lire le sitemap. La lecture est gratuite.'],
         ['PDF et documents', 'Les documents sont lus eux aussi. Les dates des calendriers PDF sont en outre vérifiées par rapport à la grille du document.'],
+        ['Vérifier chaque date vous-même', 'Le calendrier mensuel montre toutes les dates apprises, avec leur heure. Cherchez un événement et comparez-le directement à la page d’origine.'],
         ['Laisser de côté l’inutile', 'Les anciens procès-verbaux et les versions dépassées sont reconnus. Vous pouvez aussi exclure des dossiers et des adresses.'],
         ['Automatiquement à jour', 'Votre site est relu selon un calendrier. Seules les modifications sont apprises, sans confirmation jusqu’à une limite de coût.'],
       ] },
@@ -117,7 +96,7 @@ const fr: typeof de = {
         ['Tolère les fautes', 'Les noms et les termes mal orthographiés sont reconnus.'],
         ['Connaît la date du jour', 'Pour « la semaine prochaine » ou « demain », il compte avec le bon jour et indique les dates à venir.'],
         ['Honnête sur ses lacunes', 'Si une information manque dans ses documents, il le dit et renvoie à vos coordonnées.'],
-        ['S’abonner aux dates', 'Quand on lui demande une date, il propose le calendrier adapté pour Apple, Google et Outlook.'],
+        ['S’abonner aux dates', 'Quand on lui demande une date, il propose le calendrier adapté pour Apple, Google et Outlook, avec l’heure lorsqu’elle est indiquée.'],
       ] },
       { title: 'Apparence et ton', text: 'Il s’intègre à votre site et s’exprime comme vous le souhaitez.', items: [
         ['Directement dans l’aperçu', 'Cliquez sur une partie de la fenêtre de chat et adaptez-la.'],

@@ -1,4 +1,3 @@
+# Not open for discovery yet: please stay out, all of you.
 User-agent: *
-Allow: /
-
-Sitemap: https://ai.burn.codes/sitemap-index.xml
+Disallow: /
