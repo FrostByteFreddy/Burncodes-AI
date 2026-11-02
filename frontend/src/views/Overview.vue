@@ -29,7 +29,7 @@
       <!-- Usage and money in the period -->
       <BcSection :title="$t('overview.usage.title', { n: data.days })">
         <template #actions>
-          <router-link :to="{ name: 'TenantInsights', params: { tenantId } }" class="bc-btn bc-btn--quiet bc-btn--sm">{{ $t('overview.usage.more') }}</router-link>
+          <Button as-child variant="ghost" size="sm"><router-link :to="{ name: 'TenantInsights', params: { tenantId } }" >{{ $t('overview.usage.more') }}</router-link></Button>
         </template>
         <BcPanel>
           <div class="ov-figures">
@@ -68,7 +68,7 @@
         <!-- Knowledge -->
         <BcPanel :title="$t('overview.knowledge.title')">
           <template #actions>
-            <router-link :to="{ name: 'TenantSources', params: { tenantId } }" class="bc-btn bc-btn--quiet bc-btn--sm">{{ $t('overview.knowledge.more') }}</router-link>
+            <Button as-child variant="ghost" size="sm"><router-link :to="{ name: 'TenantSources', params: { tenantId } }" >{{ $t('overview.knowledge.more') }}</router-link></Button>
           </template>
           <div class="ov-facts">
             <BcKeyFigure size="sm" :label="$t('overview.knowledge.pages')" :value="formatNumber(data.knowledge.pages)" />
@@ -84,7 +84,7 @@
                 <BcStatusBadge :status="CRAWL_STATUS[data.last_crawl.status] || 'stopped'" size="sm" />
               </div>
               <p class="ov-muted">
-                {{ fmtDateTime(data.last_crawl.finished_at || data.last_crawl.created_at) }}<template v-if="data.last_crawl.counts"> · {{ $t('overview.knowledge.crawlCounts', { learned: data.last_crawl.counts.learned || 0, unchanged: data.last_crawl.counts.unchanged || 0 }) }}</template>
+                {{ fmtDateTime(data.last_crawl.finished_at || data.last_crawl.created_at) }}<template v-if="data.last_crawl.counts">, {{ $t('overview.knowledge.crawlCounts', { learned: data.last_crawl.counts.learned || 0, unchanged: data.last_crawl.counts.unchanged || 0 }) }}</template>
               </p>
             </template>
             <p v-else class="ov-muted">{{ $t('overview.knowledge.noCrawl') }}</p>
@@ -94,11 +94,11 @@
         <!-- Latest questions -->
         <BcPanel :title="$t('overview.latest.title')">
           <template #actions>
-            <router-link :to="{ name: 'TenantInsights', params: { tenantId } }" class="bc-btn bc-btn--quiet bc-btn--sm">{{ $t('overview.latest.more') }}</router-link>
+            <Button as-child variant="ghost" size="sm"><router-link :to="{ name: 'TenantInsights', params: { tenantId } }" >{{ $t('overview.latest.more') }}</router-link></Button>
           </template>
           <BcNotice v-if="data.usage.open_findings" tone="warning" :title="$t('overview.latest.findings', { n: data.usage.open_findings }, data.usage.open_findings)">
             <template #actions>
-              <router-link :to="{ name: 'TenantInsights', params: { tenantId } }" class="bc-btn bc-btn--secondary bc-btn--sm">{{ $t('overview.usage.more') }}</router-link>
+              <Button as-child variant="outline" size="sm"><router-link :to="{ name: 'TenantInsights', params: { tenantId } }" >{{ $t('overview.usage.more') }}</router-link></Button>
             </template>
           </BcNotice>
           <ol v-if="data.usage.latest.length" class="ov-questions">
@@ -124,6 +124,7 @@
 </template>
 
 <script setup>
+import { Button } from '@/components/ui/button';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';
@@ -202,7 +203,7 @@ const isNew = (now, before) => !before && now > 0;
 .ov-figures { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-6); }
 .ov-topup { font-size: 14px; font-weight: 600; }
 .ov-chart { margin-top: var(--space-8); }
-.ov-chart__axis { display: flex; justify-content: space-between; font-size: 13px; line-height: 16px; color: var(--text-tertiary); }
+.ov-chart__axis { display: flex; justify-content: space-between; font-size: 14px; line-height: 16px; color: var(--text-tertiary); }
 .ov-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); align-items: start; }
 .ov-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5) var(--space-6); }
 .ov-crawl { margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--border-subtle); }
@@ -214,7 +215,10 @@ const isNew = (now, before) => !before && now > 0;
 .ov-questions li { padding: var(--space-3) 0; border-top: 1px solid var(--border-subtle); }
 .ov-questions li:first-child { border-top: none; padding-top: 0; }
 
-@media (max-width: 1000px) {
+@media (max-width: 560px) {
+  .ov-figures { grid-template-columns: minmax(0, 1fr); }
+}
+@media (min-width: 561px) and (max-width: 1000px) {
   .ov-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ov-grid { grid-template-columns: minmax(0, 1fr); }
 }

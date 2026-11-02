@@ -39,6 +39,8 @@ limiter = Limiter(
     key_func=_rate_limit_key,
     storage_uri=os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0'),
     default_limits=["3000 per hour", "300 per minute"],
+    # Redis gone: count in memory instead of failing every request
+    in_memory_fallback_enabled=True,
 )
 
 class CustomJSONEncoder(json.JSONEncoder):

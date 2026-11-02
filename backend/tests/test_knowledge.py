@@ -610,7 +610,56 @@ class TestCalendar:
         assert all(len(line.encode()) <= 75 for line in a.split("\r\n"))
 
 
+    def test_ics_places_printed_times_and_invents_none(self):
+        from datetime import datetime, timezone
+        from app.knowledge.calendar import build_ics
+        day = {"series": "Markt", "zone": "", "is_exception": False, "notes": "", "source_id": None}
+        events = [{**day, "event_date": "2026-11-03", "start_time": "19:00:00", "end_time": "21:30:00"},
+                  {**day, "event_date": "2026-11-04", "start_time": "19:00", "end_time": None},
+                  {**day, "event_date": "2026-11-05", "start_time": "22:00", "end_time": "01:00"},
+                  {**day, "event_date": "2026-11-06", "start_time": None, "end_time": None}]
+        ics = build_ics(tenant_id="t", title="M", description="d", events=events, sources={},
+                        now=datetime(2026, 1, 1, tzinfo=timezone.utc))
+        assert "BEGIN:VTIMEZONE" in ics and "TZID:Europe/Zurich" in ics
+        assert "DTSTART;TZID=Europe/Zurich:20261103T190000" in ics and "DTEND;TZID=Europe/Zurich:20261103T213000" in ics
+        assert "DTEND;TZID=Europe/Zurich:20261106T010000" in ics   # past midnight
+        assert ics.count("DTEND;TZID") == 2                        # no printed end, none invented
+        assert "DTSTART;VALUE=DATE:20261106" in ics
+        assert ics.count("TRIGGER:-PT1H") == 3 and ics.count("TRIGGER:-PT6H") == 1
+        # all-day only: no timezone block
+        allday = build_ics(tenant_id="t", title="M", description="d", events=events[3:], sources={})
+        assert "VTIMEZONE" not in allday
+
+    def test_times_are_read_as_printed_and_midnight_means_none(self):
+        from app.knowledge.calendar import event_times, parse_time, time_label
+        assert [parse_time(v) for v in ("19:00", "9.30", "19 Uhr", "19:00:00", "8h", "25:00", "abends", "", None)] == \
+            ["19:00", "09:30", "19:00", "19:00", "08:00", None, None, None, None]
+        assert event_times({"start_time": "00:00", "end_time": "01:00"}) == (None, None)
+        assert event_times({"start_time": "", "end_time": "21:00"}) == (None, None)
+        assert time_label({"start_time": "19:00:00", "end_time": "21:00:00"}) == "19:00-21:00"
+        assert time_label({}) == ""
+
+
+class TestEventSearch:
+    def test_every_word_counts_and_accents_and_case_dont(self):
+        from app.knowledge.calendar import event_matches
+        e = {"series": "Repair Café", "zone": "Zone 1", "notes": "Im Gemeindesaal", "event_date": "2026-11-05"}
+        for q in ("repair cafe", "CAFÉ zone", "gemeindesaal", "2026-11", "5.11.2026", "05.11.2026"):
+            assert event_matches(e, q), q
+        for q in ("repair papier", "6.11.2026"):
+            assert not event_matches(e, q), q
+        assert event_matches({"series": "X", "zone": None, "notes": None, "event_date": "2026-11-05"}, "x")
+
+
 class TestEventDedupe:
+    def test_a_time_from_any_page_survives_the_merge(self):
+        from app.knowledge.calendar import dedupe_events
+        base = {"series": "Markt", "zone": "", "event_date": "2026-11-06", "is_exception": False, "notes": ""}
+        rows = [{**base, "source_id": 1}, {**base, "source_id": 2, "start_time": "19:00", "end_time": "21:00"}]
+        assert dedupe_events(rows)[0]["start_time"] == "19:00"
+        ranked = dedupe_events(rows[::-1], lambda r: 1 if r["source_id"] == 1 else 0)[0]
+        assert ranked["source_id"] == 1 and ranked["end_time"] == "21:00"
+
     def test_the_same_event_from_several_pages_counts_once_named_after_its_own_page(self):
         from app.knowledge.calendar import dedupe_events, source_rank
         sources = {1: {"title": "Startseite Gemeinde Brittnau", "source_location": "https://www.brittnau.ch"},

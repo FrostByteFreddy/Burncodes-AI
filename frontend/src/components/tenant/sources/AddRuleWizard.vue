@@ -25,18 +25,17 @@
         <p class="step-subtext">{{ $t('tenant.fineTune.wizard.triggerDesc') }}</p>
       </div>
 
-      <div>
-        <label for="rule-trigger" class="field-label">{{ $t('tenant.fineTune.trigger.label') }}</label>
-        <input
+      <Field>
+        <FieldLabel for="rule-trigger">{{ $t('tenant.fineTune.trigger.label') }}</FieldLabel>
+        <Input
           id="rule-trigger"
           v-model="trigger"
           type="text"
           :placeholder="$t('tenant.fineTune.wizard.triggerExample')"
-          class="field-input"
+          
           style="margin-top:8px;"
-          @keydown.enter.prevent="canProceed && step++"
-        />
-      </div>
+          @keydown.enter.prevent="canProceed && step++" />
+      </Field>
 
       <div v-if="trigger.trim()" class="trigger-preview">
         <span class="trigger-preview__label">{{ $t('tenant.fineTune.wizard.triggerPreview') }}</span>
@@ -61,17 +60,16 @@
         <p class="step-subtext">{{ hint }}</p>
       </div>
 
-      <div>
-        <label for="rule-instruction" class="field-label">{{ $t('tenant.fineTune.instruction.label') }}</label>
-        <textarea
+      <Field>
+        <FieldLabel for="rule-instruction">{{ $t('tenant.fineTune.instruction.label') }}</FieldLabel>
+        <Textarea
           id="rule-instruction"
           v-model="instruction"
           :placeholder="$t('tenant.fineTune.wizard.actionExample')"
-          class="field-input field-input--textarea"
+          class="min-h-[110px] resize-y"
           rows="5"
-          style="margin-top:8px;"
-        ></textarea>
-      </div>
+          style="margin-top:8px;" />
+      </Field>
 
       <div class="recap-card">
         <span class="recap-card__label">{{ $t('tenant.fineTune.trigger.label') }}</span>
@@ -82,6 +80,9 @@
 </template>
 
 <script setup>
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { ref, computed, watch } from 'vue';
 import WizardPanel from '../../WizardPanel.vue';
 
@@ -124,91 +125,67 @@ const submit = () => {
   color: var(--surface-heading);
   line-height: 1.3;
 }
-.step-subtext { font-size: 13px; color: var(--surface-muted); line-height: 1.5; }
+.step-subtext { font-size: 14px; color: var(--surface-muted); line-height: 1.5; }
 
 .info-box {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: flex-start;
-  padding: 14px;
+  padding: 16px;
   background: var(--surface-2);
   border: 1px solid var(--surface-3);
   border-radius: var(--radius-md);
 }
-.info-box--accent { border-color: rgba(255,32,149,0.2); background: rgba(255,32,149,0.05); }
+.info-box--accent { border-color: var(--ai-text); background: var(--ai-soft); }
 .info-box__icon { color: var(--brand-indigo); flex-shrink: 0; margin-top: 2px; }
-.info-box__icon--accent { color: var(--brand-magenta); }
+.info-box__icon--accent { color: var(--ai-text); }
 
 .field-label {
   display: block;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: var(--surface-muted);
 }
-.field-input {
-  width: 100%;
-  padding: 10px 14px;
-  background: var(--surface-2);
-  border: 1px solid var(--surface-3);
-  border-radius: var(--radius-md);
-  color: var(--surface-text);
-  font-size: 14px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color var(--t-fast), box-shadow var(--t-fast);
-  box-sizing: border-box;
-}
-.field-input:focus {
-  border-color: var(--brand-indigo);
-  box-shadow: 0 0 0 3px rgba(10,31,171,0.15);
-}
-.field-input--textarea { resize: vertical; min-height: 110px; line-height: 1.5; }
 
 .trigger-preview {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .trigger-preview__label {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--surface-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   white-space: nowrap;
 }
 .trigger-chip {
   display: inline-block;
-  padding: 4px 14px;
-  background: rgba(10,31,171,0.12);
-  border: 1px solid rgba(10,31,171,0.25);
+  padding: 4px 16px;
+  background: var(--interactive-soft);
+  border: 1px solid var(--interactive);
   color: var(--brand-indigo);
   border-radius: var(--radius-pill);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
 }
 
 .recap-card {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 12px 16px;
   background: var(--surface-2);
   border: 1px solid var(--surface-3);
   border-radius: var(--radius-md);
 }
 .recap-card__label {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: var(--surface-muted);
   flex-shrink: 0;
 }
 .recap-card__value {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--brand-indigo);
   font-weight: 500;
 }

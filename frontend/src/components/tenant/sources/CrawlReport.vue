@@ -162,30 +162,30 @@ const fmtDay = (iso) => (iso
   border-radius: var(--radius-pill); background: var(--surface-2);
 }
 .crep__tab {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 14px; border: none; border-radius: var(--radius-pill);
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border: none; border-radius: var(--radius-pill);
   background: none; color: var(--surface-muted);
   font-size: var(--text-sm); font-weight: 600; cursor: pointer;
   transition: background var(--t-fast), color var(--t-fast);
 }
 .crep__tab:hover { color: var(--surface-heading); }
-.crep__tab--active { background: var(--interactive-strong); color: #fff; }
+.crep__tab--active { background: var(--interactive-strong); color: var(--on-interactive); }
 .crep__tab-count {
-  font-size: var(--text-xs); font-weight: 700; padding: 0 6px; border-radius: var(--radius-pill);
+  font-size: var(--text-xs); font-weight: 700; padding: 0 8px; border-radius: var(--radius-pill);
   background: var(--surface-3); color: var(--surface-text);
 }
-.crep__tab--active .crep__tab-count { background: rgba(255, 255, 255, 0.2); color: #fff; }
+.crep__tab--active .crep__tab-count { background: var(--interactive-soft); color: var(--interactive); }
 .crep__tab-count--warn { background: var(--status-warning-soft); color: var(--status-warning); }
 
-.crep__panel { display: flex; flex-direction: column; gap: 14px; }
+.crep__panel { display: flex; flex-direction: column; gap: 16px; }
 
 /* Counts read as one line of figures, label after the number */
 .crep__stats { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 0; }
-.crep__stat { display: flex; flex-direction: row-reverse; align-items: baseline; gap: 6px; }
+.crep__stat { display: flex; flex-direction: row-reverse; align-items: baseline; gap: 8px; }
 .crep__stat dt { font-size: var(--text-sm); color: var(--surface-muted); }
 .crep__stat dd { margin: 0; font-size: var(--text-lg); font-weight: 700; color: var(--surface-heading); }
 
-.crep__h { font-size: 15px; font-weight: 700; color: var(--surface-heading); margin-top: 4px; }
+.crep__h { font-size: 16px; font-weight: 700; color: var(--surface-heading); margin-top: 4px; }
 .crep__list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .crep__item { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px; align-items: baseline; }
 .crep__item-body { min-width: 0; }
@@ -194,22 +194,22 @@ const fmtDay = (iso) => (iso
 .crep__level--mid { color: var(--surface-muted); }
 
 .crep__link, .crep__doc {
-  color: var(--surface-heading); font-size: 15px; font-weight: 600; text-decoration: none; overflow-wrap: anywhere;
+  color: var(--surface-heading); font-size: 16px; font-weight: 600; text-decoration: none; overflow-wrap: anywhere;
 }
 .crep__link:hover, .crep__doc:hover { color: var(--interactive); text-decoration: underline; }
-.crep__link-icon { font-size: 10px; margin-left: 6px; opacity: 0.5; }
+.crep__link-icon { font-size: 10px; margin-left: 8px; opacity: 0.5; }
 .crep__muted { font-size: var(--text-sm); color: var(--surface-muted); line-height: var(--leading-body); margin-top: 2px; max-width: var(--measure); }
 .crep__unreachable { margin-top: 4px; }
 
 .crep__group { display: flex; flex-direction: column; gap: 8px; }
 .crep__group + .crep__group { margin-top: 8px; }
 .crep__doc { display: inline-flex; align-items: center; gap: 8px; }
-.crep__doc-icon { color: var(--surface-muted); font-size: 13px; }
+.crep__doc-icon { color: var(--surface-muted); font-size: 14px; }
 
 .crep__table { border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--surface-3); }
 .crep__tr {
   display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) 64px; gap: 12px;
-  padding: 10px 14px; font-size: var(--text-sm); color: var(--surface-text);
+  padding: 8px 16px; font-size: var(--text-sm); color: var(--surface-text);
   border-top: 1px solid var(--surface-3);
 }
 .crep__tr:first-child { border-top: none; }
@@ -218,7 +218,7 @@ const fmtDay = (iso) => (iso
 .crep__series { font-weight: 600; overflow-wrap: anywhere; }
 .crep__tr--expired .crep__series { font-weight: 500; }
 .crep__zone {
-  margin-left: 8px; font-size: var(--text-xs); font-weight: 600; padding: 1px 7px;
+  margin-left: 8px; font-size: var(--text-xs); font-weight: 600; padding: 1px 8px;
   border-radius: var(--radius-pill); background: var(--surface-2); color: var(--surface-text);
 }
 .crep__num { text-align: right; }
@@ -228,6 +228,6 @@ const fmtDay = (iso) => (iso
 @media (max-width: 640px) {
   .crep__tabs { align-self: stretch; overflow-x: auto; }
   .crep__item { grid-template-columns: minmax(0, 1fr); gap: 2px; }
-  .crep__tr { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px; padding: 8px 10px; }
+  .crep__tr { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px; padding: 8px 8px; }
 }
 </style>

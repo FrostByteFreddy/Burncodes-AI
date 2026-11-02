@@ -1,0 +1,12 @@
+---
+// A real dashboard screen from src/assets/product/<lang>/
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import type { Locale } from '@/site';
+
+interface Props { lang: Locale; name: string; alt: string; width?: number; widths?: number[]; sizes?: string; class?: string; eager?: boolean }
+const { lang, name, alt, width = 1440, widths = [720, 1080, 1440, 2160], sizes = '(min-width: 1200px) 72rem, 100vw', class: cls, eager = false } = Astro.props;
+const shots = import.meta.glob<{ default: ImageMetadata }>('/src/assets/product/*/*.png', { eager: true });
+const img = shots[`/src/assets/product/${lang}/${name}.png`].default;
+---
+<Image src={img} alt={alt} width={width} widths={widths} sizes={sizes} format="webp" quality={82} loading={eager ? 'eager' : 'lazy'} class:list={['block h-auto w-full', cls]} />

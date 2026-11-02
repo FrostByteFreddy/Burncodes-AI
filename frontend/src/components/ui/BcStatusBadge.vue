@@ -1,12 +1,13 @@
 <template>
-  <span :class="['bc-badge', `bc-badge--${meta.tone}`, { 'bc-badge--sm': size === 'sm' }]">
+  <Badge :variant="meta.tone" :class="{ 'text-xs': size === 'sm' }">
     <span :class="['bc-dot', { 'bc-dot--pulse': meta.pulse }]" aria-hidden="true"></span>
     {{ label || $t(`ui.status.${known ? status : 'off'}`) }}
-  </span>
+  </Badge>
 </template>
 
 <script setup>
 import { computed } from 'vue';
+import { Badge } from './badge';
 
 // Crawl states (scanning … stopped), chatbot states (on, off, hidden) and review states (warn, error)
 const STATUS = {

@@ -1,0 +1,29 @@
+---
+import Base from '@/layouts/Base.astro';
+import PageHero from '@/components/PageHero.astro';
+import Faq from '@/components/Faq.vue';
+import { content } from '@/content';
+import { langPaths, type Locale } from '@/site';
+
+export const getStaticPaths = langPaths;
+const lang = Astro.props.lang as Locale;
+const t = content[lang];
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: t.faq.groups.flatMap((g) => g.items).map(([q, a]) => ({
+    '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
+};
+---
+<Base lang={lang} title={t.meta.faq.title} description={t.meta.faq.description} path="/fragen/" jsonLd={jsonLd}>
+  <PageHero h1={t.faq.h1} lede={t.faq.lede} />
+  <div class="wrap section space-y-14">
+    {t.faq.groups.map((g) => (
+      <section class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-14">
+        <h2 class="h2">{g.title}</h2>
+        <Faq client:visible items={g.items} />
+      </section>
+    ))}
+  </div>
+</Base>

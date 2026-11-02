@@ -7,25 +7,23 @@
         <label class="pal__swatch" :style="{ backgroundColor: c.value }" :title="$t('configure.colors.pick')">
           <input type="color" :value="c.value" :aria-label="`${nameOf(c)}: ${$t('configure.colors.pick')}`" @input="setValue(c, $event.target.value)" />
         </label>
-        <input
+        <Input
           v-if="isBase(c)"
-          class="form-input pal__name"
-          :value="nameOf(c)"
+          class="pal__name"
+          :model-value="nameOf(c)"
           :aria-label="$t('configure.colors.name')"
           readonly
-          tabindex="-1"
-        />
-        <input v-else v-model="c.name" class="form-input pal__name" :aria-label="$t('configure.colors.name')" />
-        <input
-          class="form-input form-input--mono pal__hex"
+          tabindex="-1" />
+        <Input v-else v-model="c.name" class="pal__name" :aria-label="$t('configure.colors.name')" />
+        <Input
+          class="pal__hex font-mono text-sm"
           :class="{ 'pal__hex--bad': drafts[c.id] !== undefined && !parseHex(drafts[c.id]) }"
-          :value="drafts[c.id] ?? c.value"
+          :model-value="drafts[c.id] ?? c.value"
           :aria-label="`${nameOf(c)}: ${$t('configure.colors.hex')}`"
           maxlength="7"
           spellcheck="false"
           @input="typeHex(c, $event.target.value)"
-          @blur="delete drafts[c.id]"
-        />
+          @blur="delete drafts[c.id]" />
         <button
           v-if="!isBase(c)"
           type="button"
@@ -39,13 +37,15 @@
         <span v-else class="pal__spacer" aria-hidden="true"></span>
       </li>
     </ul>
-    <button type="button" class="btn-quiet pal__add" @click="add">
+    <BcButton variant="secondary" type="button" class="pal__add" @click="add">
       <font-awesome-icon :icon="['fas', 'plus']" /> {{ $t('configure.colors.add') }}
-    </button>
+    </BcButton>
   </section>
 </template>
 
 <script setup>
+import { BcButton } from '@/components/ui';
+import { Input } from '@/components/ui/input';
 import { computed, reactive } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { v4 as uuidv4 } from 'uuid';
@@ -81,7 +81,7 @@ function add() {
 </script>
 
 <style scoped>
-.cfg-subhead { font-size: 15px; font-weight: 700; color: var(--surface-heading); }
+.cfg-subhead { font-size: 16px; font-weight: 700; color: var(--surface-heading); }
 .pal { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
 .pal__row { display: grid; grid-template-columns: 40px minmax(0, 1fr) 7.5rem 36px; gap: 8px; align-items: center; }
 .pal__swatch {

@@ -53,7 +53,7 @@
             :aria-expanded="openId === hit.id"
             @click.stop="toggle(hit)"
           >
-            <span class="epv__tag" :class="{ 'epv__tag--below': hit.tagBelow }">{{ $t(`configure.edit.parts.${hit.key}`) }}</span>
+            <span class="epv__tag" :class="{ 'epv__tag--below': hit.tagBelow, 'epv__tag--end': hit.tagEnd }">{{ $t(`configure.edit.parts.${hit.key}`) }}</span>
           </button>
 
           <button v-if="addButton" type="button" class="epv__add" :style="addButton" @click.stop="addQuestion">
@@ -70,20 +70,20 @@
 
             <!-- Texts -->
             <template v-if="openHit.key === 'header'">
-              <div>
-                <label for="epv-title" class="form-field">{{ $t('configure.header.chatTitle') }}</label>
-                <input id="epv-title" v-model="config.chatbot_title" type="text" class="form-input" />
-              </div>
+              <Field>
+                <FieldLabel for="epv-title">{{ $t('configure.header.chatTitle') }}</FieldLabel>
+                <Input id="epv-title" v-model="config.chatbot_title" type="text"  />
+              </Field>
               <ImageField field="epv-logo" :label="$t('configure.header.logo')" v-model="config.logo" />
             </template>
             <div v-if="openHit.key === 'bot' && state === 'start' && openHit.index === 0">
-              <label for="epv-intro" class="form-field">{{ $t('configure.welcome.intro') }}</label>
-              <AutoGrowTextarea id="epv-intro" v-model="form.intro_message" rows="3" class="form-input" />
+              <Label for="epv-intro" class="mb-2">{{ $t('configure.welcome.intro') }}</Label>
+              <AutoGrowTextarea id="epv-intro" v-model="form.intro_message" rows="3" />
             </div>
             <div v-if="openHit.key === 'starter' && starters[openHit.index]">
-              <label for="epv-question" class="form-field">{{ $t('configure.edit.question') }}</label>
+              <Label for="epv-question" class="mb-2">{{ $t('configure.edit.question') }}</Label>
               <div class="epv__row">
-                <input id="epv-question" ref="questionInput" v-model="starters[openHit.index].label" type="text" class="form-input" />
+                <Input id="epv-question" ref="questionInput" v-model="starters[openHit.index].label" type="text"  />
                 <button type="button" class="cfg-icon-btn" :aria-label="$t('configure.edit.removeQuestion')" @click="removeQuestion(openHit.index)">
                   <font-awesome-icon :icon="['fas', 'trash-alt']" />
                 </button>
@@ -91,8 +91,8 @@
               <p class="field-hint">{{ $t('configure.edit.startersShared') }}</p>
             </div>
             <div v-if="openHit.key === 'input'">
-              <label for="epv-placeholder" class="form-field">{{ $t('configure.welcome.placeholder') }}</label>
-              <input id="epv-placeholder" v-model="config.input_placeholder" type="text" class="form-input" />
+              <Label for="epv-placeholder" class="mb-2">{{ $t('configure.welcome.placeholder') }}</Label>
+              <Input id="epv-placeholder" v-model="config.input_placeholder" type="text"  />
             </div>
 
             <!-- Colours -->
@@ -110,12 +110,12 @@
 
             <!-- Switches -->
             <template v-if="openHit.key === 'header'">
-              <label class="epv__toggle"><input v-model="config.show_reset_button" type="checkbox" /><span>{{ $t('configure.header.reset') }}</span></label>
-              <label class="epv__toggle"><input v-model="config.show_share_button" type="checkbox" /><span>{{ $t('configure.header.share') }}</span></label>
+              <Field orientation="horizontal" class="w-fit"><Switch v-model="config.show_reset_button" /><span class="text-sm">{{ $t('configure.header.reset') }}</span></Field>
+              <Field orientation="horizontal" class="w-fit"><Switch v-model="config.show_share_button" /><span class="text-sm">{{ $t('configure.header.share') }}</span></Field>
             </template>
             <template v-if="openHit.key === 'launcher'">
               <ImageField field="epv-launcher-icon" :label="$t('configure.launcher.icon')" :hint="$t('configure.launcher.iconHint')" v-model="config.launcher_icon" />
-              <label class="epv__toggle"><input v-model="launcherEnabled" type="checkbox" /><span>{{ $t('configure.launcher.enabled') }}</span></label>
+              <Field orientation="horizontal" class="w-fit"><Switch v-model="launcherEnabled" /><span class="text-sm">{{ $t('configure.launcher.enabled') }}</span></Field>
               <p v-if="!launcherEnabled" class="field-hint field-hint--warn">{{ $t('configure.launcher.disabledHint') }}</p>
             </template>
           </div>
@@ -126,6 +126,10 @@
 </template>
 
 <script setup>
+import { Switch } from '@/components/ui/switch';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { v4 as uuidv4 } from 'uuid';
@@ -202,6 +206,7 @@ function measure() {
       next.push({
         ...part, index, id: `${part.key}-${index}`, rect: p, area: p.width * p.height,
         tagBelow: p.top < 28,
+        tagEnd: p.left > box.width / 2,
         style: { left: `${p.left}px`, top: `${p.top}px`, width: `${p.width}px`, height: `${p.height}px` },
       });
     });
@@ -335,7 +340,7 @@ onBeforeUnmount(() => {
 .epv__stage { position: relative; flex: 1; min-height: 0; }
 .epv__widget, .epv__site {
   height: 100%; border-radius: 20px; overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-3);
 }
 
 /* Mock website for the chat button */
@@ -359,8 +364,10 @@ onBeforeUnmount(() => {
 }
 .epv__hit--round { border-radius: 50%; }
 .epv__hit:hover, .epv__hit:focus-visible, .epv__hit--open {
+  /* Only a frame: the part stays visible while it's being edited. The light
+     ring keeps the frame readable on a header in the same colour. */
   outline: 2px dashed var(--interactive-strong); outline-offset: 2px;
-  background: rgba(95, 109, 255, 0.08);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
 }
 .epv__tag {
   position: absolute; left: 0; bottom: calc(100% + 6px); white-space: nowrap;
@@ -369,6 +376,7 @@ onBeforeUnmount(() => {
   opacity: 0; pointer-events: none; transition: opacity var(--t-fast);
 }
 .epv__tag--below { bottom: auto; top: calc(100% + 6px); }
+.epv__tag--end { left: auto; right: 0; }
 .epv__hit:hover > .epv__tag, .epv__hit:focus-visible > .epv__tag { opacity: 1; }
 .epv__hit--open > .epv__tag { opacity: 0; }
 
@@ -376,8 +384,8 @@ onBeforeUnmount(() => {
   position: absolute; pointer-events: auto; z-index: 100;
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 14px; border-radius: var(--radius-pill); cursor: pointer;
-  background: rgba(255, 255, 255, 0.85); border: 2px dashed var(--interactive-strong);
-  color: var(--interactive-strong); font: inherit; font-size: var(--text-sm); font-weight: 700;
+  background: rgba(255, 255, 255, 0.85); border: 2px dashed var(--brand-indigo);
+  color: var(--brand-indigo); font: inherit; font-size: var(--text-sm); font-weight: 700;
 }
 .epv__add:hover { background: #fff; }
 
@@ -387,27 +395,15 @@ onBeforeUnmount(() => {
   max-height: calc(100% - 16px); overflow-y: auto;
   padding: 16px; border-radius: var(--radius-lg);
   background: var(--surface-1); border: 1px solid var(--surface-3);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-3);
 }
 .epv__pop-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: -4px -6px -4px 0; }
 .epv__pop-head h3 { font-size: 15px; font-weight: 700; color: var(--surface-heading); }
 .epv__pop .form-field { font-size: var(--text-sm); }
 .epv__row { display: flex; gap: 6px; align-items: center; }
 
-.epv__toggle { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--text-sm); color: var(--surface-text); }
-.epv__toggle input {
-  appearance: none; flex-shrink: 0; position: relative; cursor: pointer;
-  width: 36px; height: 20px; border-radius: var(--radius-pill); background: var(--surface-3); transition: background var(--t-fast);
-}
-.epv__toggle input::after {
-  content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%;
-  background: var(--surface-heading); transition: transform var(--t-fast);
-}
-.epv__toggle input:checked { background: var(--interactive-strong); }
-.epv__toggle input:checked::after { transform: translateX(16px); }
-.epv__toggle input:focus-visible { box-shadow: var(--focus-ring-shadow); }
 
 @media (prefers-reduced-motion: reduce) {
-  .epv__tag, .epv__toggle input, .epv__toggle input::after { transition: none; }
+  .epv__tag { transition: none; }
 }
 </style>

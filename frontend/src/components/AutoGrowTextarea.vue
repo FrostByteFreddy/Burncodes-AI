@@ -3,7 +3,7 @@
     ref="textarea"
     :value="modelValue"
     @input="handleInput"
-    class="resize-none overflow-hidden"
+    class="resize-none overflow-hidden border-input focus-visible:border-ring focus-visible:ring-ring/50 rounded-lg border bg-card px-3 py-2 text-base transition-colors focus-visible:ring-3 flex min-h-16 w-full outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
     :rows="props.rows"
     :placeholder="props.placeholder"
   ></textarea>

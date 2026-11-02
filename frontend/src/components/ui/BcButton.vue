@@ -1,15 +1,21 @@
 <template>
-  <button :type="type" :class="['bc-btn', `bc-btn--${variant}`, `bc-btn--${size}`, { 'bc-btn--block': block, 'is-loading': loading }]"
+  <Button :type="type" :variant="VARIANTS[variant] || variant" :size="SIZES[size] || size" :class="{ 'w-full': block }"
     :disabled="disabled || loading" :aria-busy="loading ? 'true' : undefined">
-    <span v-if="loading" class="bc-spinner" aria-hidden="true"></span>
-    <BcIcon v-else-if="icon" :name="icon" />
+    <Spinner v-if="loading" data-icon="inline-start" />
+    <BcIcon v-else-if="icon" :name="icon" data-icon="inline-start" />
     <span><slot /></span>
-    <BcIcon v-if="iconRight && !loading" :name="iconRight" />
-  </button>
+    <BcIcon v-if="iconRight && !loading" :name="iconRight" data-icon="inline-end" />
+  </Button>
 </template>
 
 <script setup>
+import { Button } from './button';
+import { Spinner } from './spinner';
 import BcIcon from './BcIcon.vue';
+
+// The app's names for shadcn's button variants
+const VARIANTS = { primary: 'default', brand: 'default', secondary: 'outline', quiet: 'ghost' };
+const SIZES = { md: 'default' };
 
 // primary: the one main action · secondary · quiet · destructive (inside a confirmation) · destructive-quiet
 defineProps({

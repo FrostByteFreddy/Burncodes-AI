@@ -9,7 +9,7 @@ widget or a shareable test page, with links to its sources, verified dates
 
 Live at **https://ai.burn.codes**.
 
-**Stack:** Vue 3 · Tailwind · Flask · Celery · Redis · Supabase (Postgres, Auth, Realtime) · Google Gemini (File Search) · Stripe · Docker Compose · nginx
+**Stack:** Vue 3 · Tailwind 4 · shadcn-vue · Astro · Flask · Celery · Redis · Supabase (Postgres, Auth, Realtime) · Google Gemini (File Search) · Stripe · Docker Compose · nginx
 
 ---
 
@@ -54,7 +54,8 @@ Live at **https://ai.burn.codes**.
 | `celery_worker_fast` | `backend/services/worker_fast` | Learns sources, uploads, the watchdog scheduler, re-crawls, conversation reviews |
 | `celery_worker_chat` | `backend/services/worker_chat` | Answers chat messages |
 | `celery_beat` | `backend/services/beat` | Triggers the periodic tasks |
-| `frontend` | `frontend/` | Dashboard, chat page, widget iframe |
+| `frontend` | `frontend/` | Dashboard at `/dashboard/`; chat page and widget iframe at `/chat/`, shared chats at `/share/` |
+| `landing` | `landing/` | Public website at `/` |
 
 Code used by several services lives in `backend/shared/` (knowledge pipeline,
 Gemini store, billing, auth, database client, AI model settings, URL guard). It
@@ -209,5 +210,6 @@ frontend/src/
   locales/                 de / en / fr
 supabase/migrations/       database schema (one idempotent file)
 docs/design/               design brief the design system was made from
-nginx/                     production proxy config
+landing/                   public website at / (Astro + shadcn-vue, static HTML in de/fr/en, own container)
+nginx/                     production proxy config: / landing, /dashboard/ app, /chat and /share public pages, /api/
 ```

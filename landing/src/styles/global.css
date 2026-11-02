@@ -1,0 +1,136 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+
+@import "@fontsource/atkinson-hyperlegible-next/400.css";
+@import "@fontsource/atkinson-hyperlegible-next/600.css";
+@import "@fontsource/atkinson-hyperlegible-next/700.css";
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "./shadcn.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-sans: "Atkinson Hyperlegible Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --color-indigo-brand: var(--brand-indigo);
+    --color-indigo-deep: var(--brand-indigo-deep);
+    --color-cyan-brand: var(--brand-cyan);
+    --color-magenta-brand: var(--brand-magenta);
+    --color-on-brand-muted: var(--on-brand-muted);
+    --color-warning: var(--warning);
+    --color-warning-soft: var(--warning-soft);
+    --font-heading: var(--font-sans);
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+    /* Brand values from the dashboard's frontend/src/assets/tokens.css */
+    --brand-indigo: #0a1fab;
+    --brand-indigo-deep: #071685;
+    --brand-cyan: #50d3fc;
+    --brand-magenta: #ff2095;
+    --on-brand-muted: #d5daff;
+    --warning: #5c3800;
+    --warning-soft: #fff2d4;
+
+    --background: #f6f7fb;
+    --foreground: #15171c;
+    --card: #ffffff;
+    --card-foreground: #15171c;
+    --popover: #ffffff;
+    --popover-foreground: #15171c;
+    --primary: #0a1fab;
+    --primary-foreground: #ffffff;
+    --secondary: #eef0f7;
+    --secondary-foreground: #15171c;
+    --muted: #eef0f7;
+    --muted-foreground: #565b65;
+    --accent: #e9ebfb;
+    --accent-foreground: #0a1fab;
+    --destructive: #b42318;
+    --border: #e3e6f0;
+    --input: #d3d7e4;
+    --ring: #0a1fab;
+    --chart-1: #0a1fab;
+    --chart-2: #1d86b0;
+    --chart-3: #b9bdc4;
+    --chart-4: #474c56;
+    --chart-5: #15171c;
+    --radius: 0.625rem;
+    --sidebar: #ffffff;
+    --sidebar-foreground: #15171c;
+    --sidebar-primary: #0a1fab;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #e9ebfb;
+    --sidebar-accent-foreground: #0a1fab;
+    --sidebar-border: #e3e6f0;
+    --sidebar-ring: #0a1fab;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    @apply font-sans;
+    }
+}
+
+@layer base {
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body { font-size: 1.0625rem; line-height: 1.6; }
+  h1, h2, h3 { text-wrap: balance; font-weight: 700; }
+  p { text-wrap: pretty; }
+  :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+}
+
+@layer utilities {
+  .wrap { width: min(72rem, 100% - 2.5rem); margin-inline: auto; }
+  .measure { max-width: 38rem; }
+  .section { padding-block: clamp(3.5rem, 8vw, 6rem); }
+  .h2 { font-size: clamp(1.875rem, 4vw, 2.625rem); line-height: 1.12; letter-spacing: -0.015em; }
+  .lede { font-size: clamp(1.125rem, 2vw, 1.3125rem); line-height: 1.5; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, ::before, ::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

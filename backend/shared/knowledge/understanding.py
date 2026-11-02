@@ -19,6 +19,7 @@ from google import genai
 from google.genai import types
 
 from app.ai_models import INDEXING_GEMINI_MODEL, billable_tokens
+from app.knowledge.calendar import time_label
 from app.knowledge.markdown import number_lines, slice_lines
 from app.logging_config import error_logger
 
@@ -58,6 +59,10 @@ _FACTS = {
         "required": ["kind", "label", "value", "valid_from", "valid_to"],
     },
 }
+_TIME = ("When it starts as HH:MM (24h), also if one time is printed for all its dates. "
+         "'' if no start time is printed: it then counts as all day. Never guess one. "
+         "A deadline ('bereitstellen bis 7 Uhr') is not a start time: it goes in notes.")
+_END_TIME = "When it ends as HH:MM (24h), '' if no end time is printed. Never guess one."
 _SCHEDULES = {
     "type": "array",
     "description": "Recurring date series printed as a calendar, table or list (e.g. waste collection per zone). "
@@ -68,7 +73,7 @@ _SCHEDULES = {
             "name": {"type": "string", "description": "e.g. 'Hauskehricht und Sperrgut'"},
             "zone": {"type": "string", "description": "Zone/area if the series is area-specific, else ''"},
             "regular_weekday": {"type": "string", "description": "Weekday printed for the series (in the document's language), else ''"},
-            "notes": {"type": "string", "description": "Times, meeting points, conditions"},
+            "notes": {"type": "string", "description": "Deadlines, meeting points, conditions"},
             "dates": {
                 "type": "array",
                 "items": {
@@ -76,8 +81,10 @@ _SCHEDULES = {
                     "properties": {
                         "date": {"type": "string", "description": "ISO YYYY-MM-DD"},
                         "is_exception": {"type": "boolean", "description": "Marked as an exception (e.g. printed in red, footnote)"},
+                        "start_time": {"type": "string", "description": _TIME},
+                        "end_time": {"type": "string", "description": _END_TIME},
                     },
-                    "required": ["date", "is_exception"],
+                    "required": ["date", "is_exception", "start_time", "end_time"],
                 },
             },
         },
@@ -86,15 +93,20 @@ _SCHEDULES = {
 }
 _EVENTS = {
     "type": "array",
-    "description": "One-off dated events (e.g. Christbaumabfuhr, Repair Café). Expand date ranges to every day.",
+    "description": "One-off dated events (e.g. Christbaumabfuhr, Repair Café). A range that runs every day (a festival, "
+                   "school holidays) is expanded to every day. A period in which something happens only now and then "
+                   "(a full-moon dinner offered from June to October) is not: list only the dates printed, else none, "
+                   "and put the period in notes.",
     "items": {
         "type": "object",
         "properties": {
             "name": {"type": "string"},
             "dates": {"type": "array", "items": {"type": "string", "description": "ISO YYYY-MM-DD"}},
+            "start_time": {"type": "string", "description": _TIME},
+            "end_time": {"type": "string", "description": _END_TIME},
             "notes": {"type": "string"},
         },
-        "required": ["name", "dates", "notes"],
+        "required": ["name", "dates", "start_time", "end_time", "notes"],
     },
 }
 
@@ -167,7 +179,7 @@ Tasks:
 2. Summarise the content and rate its importance for answering visitors' questions
    (100 = essential everyday information such as opening hours, prices and fees, dates, deadlines, what is offered;
    0 = no useful information). Overview pages that only list links score low.
-3. Extract facts and dates exactly as printed. Never invent or infer dates.
+3. Extract facts and dates exactly as printed. Never invent or infer dates or times.
    For calendars read row by row: a date belongs to the row (series/zone) and column (month) it is printed in.
 4. Warnings: only when a visitor would plausibly ask about it AND the chatbot would answer wrongly
    or not at all. Usually there are none. Allowed kinds:
@@ -303,6 +315,10 @@ def validate_schedule(series: dict) -> list[str]:
     return problems
 
 
+def _spaced(text: str) -> str:
+    return f" {text}" if text else ""
+
+
 def section_documents(result: dict, url: str) -> list[tuple[str, str]]:
     """
     Builds the (display_name, text) documents to index for one source. Each
@@ -330,11 +346,11 @@ def section_documents(result: dict, url: str) -> list[tuple[str, str]]:
             continue  # unvalidated dates are not indexed as facts
         label = " ".join(p for p in (s.get("name"), s.get("zone")) if p)
         dates = ", ".join(
-            d["date"] + (" (Ausnahme)" if d.get("is_exception") else "") for d in s.get("dates") or []
+            d["date"] + _spaced(time_label(d)) + (" (Ausnahme)" if d.get("is_exception") else "") for d in s.get("dates") or []
         )
         lines.append(f"- {label}{' — ' + s['notes'] if s.get('notes') else ''}: {dates}")
     for e in result.get("single_events") or []:
-        lines.append(f"- {e.get('name')}: {', '.join(e.get('dates') or [])}{' — ' + e['notes'] if e.get('notes') else ''}")
+        lines.append(f"- {e.get('name')}: {', '.join(e.get('dates') or [])}{_spaced(time_label(e))}{' — ' + e['notes'] if e.get('notes') else ''}")
     if lines:
         docs.append((f"{title} — Fakten und Termine"[:500], f"# {title}\n## Fakten und Termine\nQuelle: {url}\n\n" + "\n".join(lines)))
     return docs

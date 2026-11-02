@@ -1,7 +1,7 @@
 <template>
-  <div class="chat-page">
+  <main class="chat-page">
     <ChatWidget :share-id="shareId" />
-  </div>
+  </main>
 </template>
 
 <script setup>

@@ -6,16 +6,18 @@
   >
     <header class="chat-header">
       <div class="w-1/4 flex items-center">
-        <button
+        <Button
+          variant="ghost"
+          size="icon-sm"
           v-if="config.show_share_button"
           @click="$emit('share')"
           :disabled="!hasUserMessages"
-          class="share-button btn btn-secondary btn-xs btn-square rounded-custom aspect-square"
-          :class="{ 'opacity-40 cursor-not-allowed': !hasUserMessages }"
-          :title="hasUserMessages ? $t('chat.share') : ''"
+          class="share-button rounded-full"
+          :title="$t('chat.share')"
+          :aria-label="$t('chat.share')"
         >
           <font-awesome-icon :icon="['fas', 'share-nodes']" />
-        </button>
+        </Button>
       </div>
       <h1
         class="text-md font-bold text-center w-1/2 flex items-center justify-center"
@@ -24,26 +26,32 @@
         <span>{{ config.chatbot_title }}</span>
       </h1>
       <div class="w-1/4 flex justify-end items-center gap-2">
-        <button
+        <Button
+          variant="ghost"
+          size="icon-sm"
           v-if="config.show_reset_button && !isSharedView"
           @click="$emit('reset')"
-          class="reset-button btn btn-secondary btn-xs btn-square rounded-custom aspect-square"
+          class="reset-button rounded-full"
           :title="$t('chat.reset')"
+          :aria-label="$t('chat.reset')"
         >
           <font-awesome-icon :icon="['fas', 'arrows-rotate']" />
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
           v-if="!isSharedView"
           @click="$emit('close')"
-          class="close-button btn btn-secondary btn-xs btn-square rounded-custom aspect-square"
+          class="close-button rounded-full"
           :title="$t('chat.close')"
+          :aria-label="$t('chat.close')"
         >
           <font-awesome-icon :icon="['fas', 'xmark']" />
-        </button>
+        </Button>
       </div>
     </header>
 
-    <main class="chat-main" :class="{ 'chat-main--rounded-bottom': isSharedView }" ref="chatContainer">
+    <div class="chat-main" :class="{ 'chat-main--rounded-bottom': isSharedView }" ref="chatContainer">
       <div
         v-for="(message, index) in chatHistory"
         :key="index"
@@ -106,7 +114,7 @@
 
       <div v-if="isThinking" class="flex justify-start">
         <div
-          class="max-w-xl lg:max-w-2xl px-5 py-3 shadow-md flex items-center space-x-2 bot-message"
+          class="max-w-xl lg:max-w-2xl px-5 py-3 shadow-md flex items-center flex gap-2 bot-message"
         >
           <font-awesome-icon
             :icon="['fas', 'spinner']"
@@ -119,7 +127,7 @@
           </Transition>
         </div>
       </div>
-    </main>
+    </div>
 
     <footer v-if="!isSharedView" class="chat-footer">
       <div class="chat-input-row">
@@ -129,17 +137,20 @@
           @input="onInput"
           @keyup.enter.exact.prevent="$emit('sendMessage')"
           :placeholder="config.input_placeholder || $t('chat.inputPlaceholder')"
-          class="chat-input outline-none border px-4 py-3 rounded-custom"
+          class="chat-input outline-hidden border px-4 py-3 rounded-custom"
           rows="1"
           style="resize: none; overflow-y: hidden"
         ></textarea>
-        <button
+        <Button
+          variant="ghost"
           @click="$emit('sendMessage')"
           :disabled="!userMessage.trim() || isThinking"
-          class="send-button font-bold btn-secondary btn-square rounded-custom aspect-square chat-send-btn"
+          class="send-button chat-send-btn disabled:opacity-100"
+          :title="$t('chat.send')"
+          :aria-label="$t('chat.send')"
         >
           <font-awesome-icon :icon="['fas', 'paper-plane']" />
-        </button>
+        </Button>
       </div>
     </footer>
   </div>
@@ -147,6 +158,7 @@
 
 <script setup>
 import { computed, ref, watch, nextTick } from "vue";
+import { Button } from "@/components/ui/button";
 import { loadChatFont } from "@/utils/chatFonts";
 import { useI18n } from "vue-i18n";
 
@@ -218,7 +230,7 @@ const getStarterStyle = () => {
   const palette = props.config.color_palette || [];
   const find = (id) => palette.find(c => c.id === id)?.value;
   return {
-    backgroundColor: find(props.config.starter_background_color) || props.config.starter_background_color || '#A855F7',
+    backgroundColor: find(props.config.starter_background_color) || props.config.starter_background_color || '#0A1FAB',
     color:           find(props.config.starter_text_color)        || props.config.starter_text_color        || '#FFFFFF',
   };
 };
@@ -363,7 +375,7 @@ const widgetCssVariables = computed(() => {
     "--chat-header-text-color": findColor(styles.header_text_color, "#1F2937"),
     "--chat-user-message-background-color": findColor(
       styles.user_message_background_color,
-      "#A855F7"
+      "#0A1FAB"
     ),
     "--chat-user-message-text-color": findColor(
       styles.user_message_text_color,
@@ -379,7 +391,7 @@ const widgetCssVariables = computed(() => {
     ),
     "--chat-send-button-background-color": findColor(
       styles.send_button_background_color,
-      "#A855F7"
+      "#0A1FAB"
     ),
     "--chat-send-button-text-color": findColor(
       styles.send_button_text_color,
@@ -607,8 +619,9 @@ const widgetCssVariables = computed(() => {
 }
 
 .chat-send-btn {
-  background-color: var(--chat-send-button-background-color);
-  color: var(--chat-send-button-text-color);
+  border-radius: var(--chat-custom-radius);
+  background-color: var(--chat-send-button-background-color) !important;
+  color: var(--chat-send-button-text-color) !important;
   /* Overlay on the right side of the textarea */
   position: absolute;
   right: 0rem;
@@ -637,10 +650,8 @@ const widgetCssVariables = computed(() => {
 .reset-button,
 .close-button,
 .share-button {
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
   flex-shrink: 0;
+  font-size: 0.75rem;
 }
 
 .reset-button {
@@ -651,6 +662,13 @@ const widgetCssVariables = computed(() => {
 .close-button {
   background-color: var(--chat-close-button-background-color) !important;
   color: var(--chat-close-button-icon-color) !important;
+}
+
+.reset-button:hover,
+.close-button:hover,
+.share-button:hover:not(:disabled),
+.chat-send-btn:hover:not(:disabled) {
+  filter: brightness(1.15);
 }
 
 .share-button {

@@ -1,0 +1,6 @@
+---
+// What a visitor really types, above the section that answers it
+interface Props { class?: string }
+const { class: cls } = Astro.props;
+---
+<p class:list={['w-fit rounded-2xl rounded-bl-sm bg-accent px-4 py-2 font-semibold text-accent-foreground', cls]}><slot /></p>

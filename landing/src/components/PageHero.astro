@@ -1,0 +1,11 @@
+---
+interface Props { h1: string; lede: string }
+const { h1, lede } = Astro.props;
+---
+<section class="bg-indigo-brand text-white">
+  <div class="wrap pt-10 pb-16 md:pt-16 md:pb-24">
+    <h1 class="max-w-5xl text-[clamp(2.75rem,6.4vw,5.5rem)] leading-[0.98] font-bold tracking-[-0.03em]">{h1}</h1>
+    <p class="lede mt-6 max-w-2xl">{lede}</p>
+    <slot />
+  </div>
+</section>

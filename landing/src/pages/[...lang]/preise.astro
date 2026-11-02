@@ -1,0 +1,107 @@
+---
+import { Check } from '@lucide/vue';
+import Base from '@/layouts/Base.astro';
+import PageHero from '@/components/PageHero.astro';
+import PriceCalc from '@/components/PriceCalc.vue';
+import Faq from '@/components/Faq.vue';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { content } from '@/content';
+import { langPaths, site, type Locale } from '@/site';
+
+export const getStaticPaths = langPaths;
+const lang = Astro.props.lang as Locale;
+const t = content[lang];
+const p = t.pricing;
+const r = site.price.rates;
+const costFaq = t.faq.groups[2].items;
+const money = (n: number) => n.toFixed(2);
+const rows = [
+  [p.rates.answer, r.answer.input, r.answer.output],
+  [p.rates.lite, r.learnLite.input, r.learnLite.output],
+  [p.rates.argon, r.learnArgon.input, r.learnArgon.output],
+  [p.rates.argonFrom, r.learnArgonFromDec.input, r.learnArgonFromDec.output],
+  [p.rates.embed, r.embed, null],
+] as const;
+---
+<Base lang={lang} title={t.meta.pricing.title} description={t.meta.pricing.description} path="/preise/">
+  <PageHero h1={p.h1} lede={p.lede} />
+
+  <section class="section">
+    <div class="wrap grid gap-5 md:grid-cols-2">
+      <Card>
+        <CardHeader><CardTitle class="text-2xl font-bold">{p.freeTitle}</CardTitle></CardHeader>
+        <CardContent>
+          <ul class="space-y-2.5">
+            {p.free.map((f) => <li class="flex gap-2"><Check class="mt-1 size-5 shrink-0 text-primary" aria-hidden="true" />{f}</li>)}
+          </ul>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader><CardTitle class="text-2xl font-bold">{p.paidTitle}</CardTitle></CardHeader>
+        <CardContent>
+          <dl class="divide-y">
+            {p.paid.map(([name, figure, note]) => (
+              <div class="flex flex-wrap items-baseline justify-between gap-x-4 py-3 first:pt-0">
+                <dt class="font-bold">{name}</dt>
+                <dd class="text-right"><span class="font-bold text-primary">{figure}</span><span class="block text-sm text-muted-foreground">{note}</span></dd>
+              </div>
+            ))}
+          </dl>
+        </CardContent>
+      </Card>
+    </div>
+  </section>
+
+  <section class="section border-y bg-card">
+    <div class="wrap grid gap-12 lg:grid-cols-2 lg:gap-14">
+      <PriceCalc client:visible title={p.calcTitle} label={p.calcLabel} result={p.calcResult} note={p.calcNote} rappen={site.price.answerRappen} locale={t.htmlLang} />
+      <div class="space-y-10">
+        <div>
+          <h2 class="h2">{p.learnTitle}</h2>
+          <p class="mt-4 text-muted-foreground">{p.learnText}</p>
+        </div>
+        <div>
+          <h2 class="h2">{p.topUpTitle}</h2>
+          <ul class="mt-4 space-y-2.5">
+            {p.topUp.map((f) => <li class="flex gap-2"><Check class="mt-1 size-5 shrink-0 text-primary" aria-hidden="true" />{f}</li>)}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">{p.ratesTitle}</h2>
+      <p class="measure mt-3 text-muted-foreground">{p.ratesIntro}</p>
+      <div class="mt-6 rounded-2xl border bg-card p-2">
+        <Table>
+          <TableHeader>
+            <TableRow>{p.ratesHead.map((h, i) => <TableHead class={i ? 'text-right' : ''}>{h}</TableHead>)}</TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map(([name, input, output]) => (
+              <TableRow>
+                <TableCell class="whitespace-normal">{name}</TableCell>
+                <TableCell class="text-right tabular-nums">{money(input)}</TableCell>
+                <TableCell class="text-right tabular-nums">{output === null ? '–' : money(output)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section border-t bg-card">
+    <div class="wrap grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+      <div>
+        <h2 class="h2">{p.faqTitle}</h2>
+        <Button as="a" href={site.signup} size="lg" class="mt-6">{p.cta}</Button>
+      </div>
+      <Faq client:visible items={costFaq} />
+    </div>
+  </section>
+</Base>

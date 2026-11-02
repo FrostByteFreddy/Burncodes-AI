@@ -11,7 +11,7 @@
           {{ name }}<span v-if="i < progress.step" class="bc-sr"> {{ $t('ui.doneSr') }}</span>
         </li>
       </ol>
-      <p class="onb-brand__compact">{{ $t('ui.stepOf', { n: progress.step + 1, total: STEPS.length }) }} · <strong>{{ stepNames[progress.step] }}</strong></p>
+      <p class="onb-brand__compact">{{ $t('ui.stepOf', { n: progress.step + 1, total: STEPS.length }) }}, <strong>{{ stepNames[progress.step] }}</strong></p>
       <button type="button" class="onb-later" @click="leave">{{ $t('onboarding.later') }}</button>
     </aside>
 
@@ -96,7 +96,7 @@
                   <BcButton v-if="!balanceShort" variant="primary" size="lg" block :loading="confirming" @click="startLearning">
                     {{ $t('onboarding.learning.start', { cost: formatCHF(cost) }) }}
                   </BcButton>
-                  <a :href="crawlHref" target="_blank" rel="noopener" class="bc-btn bc-btn--quiet bc-btn--md bc-btn--block">{{ $t('onboarding.learning.choose') }}</a>
+                  <Button as-child variant="ghost"><a :href="crawlHref" target="_blank" rel="noopener" >{{ $t('onboarding.learning.choose') }}</a></Button>
                 </div>
               </div>
             </BcPanel>
@@ -104,7 +104,7 @@
             <BcNotice v-if="estimate.to_learn && balanceShort" tone="warning" :title="$t('onboarding.learning.balanceShortTitle')">
               {{ $t('onboarding.learning.balanceShort', { cost: formatCHF(cost), balance: formatCHF(billing.balance) }) }}
               <template #actions>
-                <a :href="billingHref" target="_blank" rel="noopener" class="bc-btn bc-btn--primary bc-btn--sm">{{ $t('onboarding.learning.topUp') }}</a>
+                <Button as-child variant="default" size="sm"><a :href="billingHref" target="_blank" rel="noopener" >{{ $t('onboarding.learning.topUp') }}</a></Button>
                 <BcButton variant="quiet" size="sm" @click="billing.fetchBalance()">{{ $t('onboarding.learning.recheck') }}</BcButton>
               </template>
             </BcNotice>
@@ -114,7 +114,7 @@
             :detail="$t('onboarding.learning.learning')" />
           <BcNotice v-else-if="job.status === 'COMPLETED'" tone="success" :title="$t('onboarding.learning.done')" />
           <BcNotice v-else tone="warning" :title="$t('onboarding.learning.stopped')">
-            <template #actions><a :href="crawlHref" target="_blank" rel="noopener" class="bc-btn bc-btn--secondary bc-btn--sm">{{ $t('onboarding.learning.details') }}</a></template>
+            <template #actions><Button as-child variant="outline" size="sm"><a :href="crawlHref" target="_blank" rel="noopener" >{{ $t('onboarding.learning.details') }}</a></Button></template>
           </BcNotice>
         </div>
 
@@ -157,6 +157,7 @@
 </template>
 
 <script setup>
+import { Button } from '@/components/ui/button';
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -400,12 +401,12 @@ function leave() {
 
 <style scoped>
 /* Brand panel and work surface sit in one centred column, as in the dashboard;
-   only the gradient behind the panel runs out to the left edge of the screen */
+   only the colour behind the panel runs out to the left edge of the screen */
 .onb { --onb-max: var(--shell-max); --onb-panel: 320px; position: relative; min-height: 100dvh; background: var(--surface-1); }
 .onb::before {
   content: ''; position: absolute; top: 0; bottom: 0; left: 0;
   width: calc(max(0px, (100% - var(--onb-max)) / 2) + var(--onb-panel));
-  background: linear-gradient(160deg, var(--brand-indigo) 0%, var(--brand-violet) 45%, var(--brand-magenta) 100%);
+  background: var(--brand-indigo);
 }
 .onb-inner {
   position: relative; max-width: var(--onb-max); margin: 0 auto; min-height: 100dvh;
@@ -428,7 +429,7 @@ function leave() {
 .onb-steps li.is-current { background: rgba(255, 255, 255, 0.16); color: #fff; }
 .onb-steps__num {
   width: 26px; height: 26px; flex: none; border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center; font-size: 13px;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 14px;
   border: 1.5px solid rgba(255, 255, 255, 0.6);
 }
 .is-current .onb-steps__num { background: #fff; color: var(--brand-indigo); border-color: #fff; }
@@ -488,12 +489,12 @@ function leave() {
   .onb-preview { position: static; height: 560px; margin-top: var(--space-8); }
 }
 @media (max-width: 900px) {
-  /* the brand panel becomes a gradient top bar */
+  /* the brand panel becomes a top bar */
   .onb::before { display: none; }
   .onb-inner { grid-template-columns: minmax(0, 1fr); }
   .onb-brand {
     position: sticky; top: 0; height: auto; z-index: var(--z-sticky);
-    background: linear-gradient(160deg, var(--brand-indigo) 0%, var(--brand-violet) 45%, var(--brand-magenta) 100%);
+    background: var(--brand-indigo);
     flex-direction: row; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-4);
   }
   .onb-brand__logo { height: 28px; }

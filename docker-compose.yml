@@ -123,6 +123,18 @@ services:
     networks:
       - app_network
 
+  # The public website on http://localhost:8080; the dashboard is on :5173/dashboard/
+  landing:
+    image: node:24-alpine
+    working_dir: /app
+    volumes:
+      - ./landing:/app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "8080:4321"
+    networks:
+      - app_network
+
 networks:
   app_network:
     driver: bridge

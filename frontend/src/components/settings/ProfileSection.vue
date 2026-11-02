@@ -1,54 +1,58 @@
 <template>
-  <section class="panel">
-    <h2 class="panel-title">{{ $t('settings.profile.title') }}</h2>
-    <p class="panel-sub">{{ $t('settings.profile.sub') }}</p>
+  <BcPanel as="section"   :title="$t('settings.profile.title')" :description="$t('settings.profile.sub')">
 
     <div v-if="!authStore.user" class="cfg-fields ghost-stack" aria-busy="true">
-      <span v-for="n in 4" :key="n" class="ghost" style="height: 40px"></span>
+      <Skeleton v-for="n in 4" :key="n" style="height: 40px" />
     </div>
 
     <form v-else class="cfg-fields" @submit.prevent="save">
       <div class="cfg-grid">
-        <div>
-          <label for="p-first" class="form-field">{{ $t('profile.first_name') }}</label>
-          <input id="p-first" v-model="form.first_name" type="text" class="form-input" autocomplete="given-name" />
-        </div>
-        <div>
-          <label for="p-last" class="form-field">{{ $t('profile.last_name') }}</label>
-          <input id="p-last" v-model="form.last_name" type="text" class="form-input" autocomplete="family-name" />
-        </div>
+        <Field>
+          <FieldLabel for="p-first">{{ $t('profile.first_name') }}</FieldLabel>
+          <Input id="p-first" v-model="form.first_name" type="text"  autocomplete="given-name" />
+        </Field>
+        <Field>
+          <FieldLabel for="p-last">{{ $t('profile.last_name') }}</FieldLabel>
+          <Input id="p-last" v-model="form.last_name" type="text"  autocomplete="family-name" />
+        </Field>
       </div>
-      <div>
-        <label for="p-email" class="form-field">{{ $t('profile.email') }}</label>
-        <input id="p-email" :value="authStore.user.email" type="email" class="form-input" disabled />
-        <p class="field-hint">{{ $t('settings.profile.emailHint') }}</p>
-      </div>
+      <Field>
+        <FieldLabel for="p-email">{{ $t('profile.email') }}</FieldLabel>
+        <Input id="p-email" :model-value="authStore.user.email" type="email"  disabled />
+        <FieldDescription >{{ $t('settings.profile.emailHint') }}</FieldDescription>
+      </Field>
       <div class="cfg-grid">
-        <div>
-          <label for="p-phone" class="form-field">{{ $t('profile.phone_number') }}</label>
-          <input id="p-phone" v-model="form.phone_number" type="tel" class="form-input" autocomplete="tel" />
-        </div>
-        <div>
-          <label for="p-lang" class="form-field">{{ $t('settings.profile.language') }}</label>
-          <select id="p-lang" v-model="form.language" class="form-input">
-            <option value="de">Deutsch</option>
-            <option value="en">English</option>
-            <option value="fr">Français</option>
-          </select>
-          <p class="field-hint">{{ $t('settings.profile.languageHint') }}</p>
-        </div>
+        <Field>
+          <FieldLabel for="p-phone">{{ $t('profile.phone_number') }}</FieldLabel>
+          <Input id="p-phone" v-model="form.phone_number" type="tel"  autocomplete="tel" />
+        </Field>
+        <Field>
+          <FieldLabel for="p-lang">{{ $t('settings.profile.language') }}</FieldLabel>
+          <NativeSelect id="p-lang" v-model="form.language" >
+            <NativeSelectOption value="de">Deutsch</NativeSelectOption>
+            <NativeSelectOption value="en">English</NativeSelectOption>
+            <NativeSelectOption value="fr">Français</NativeSelectOption>
+          </NativeSelect>
+          <FieldDescription >{{ $t('settings.profile.languageHint') }}</FieldDescription>
+        </Field>
       </div>
       <div class="page-actions">
-        <button type="submit" class="btn-action" :disabled="saving">
-          <font-awesome-icon v-if="saving" :icon="['fas', 'spinner']" class="animate-spin" />
+        <BcButton variant="primary" type="submit"  :disabled="saving">
+          <Spinner v-if="saving" data-icon="inline-start" />
           {{ $t('settings.save') }}
-        </button>
+        </BcButton>
       </div>
     </form>
-  </section>
+  </BcPanel>
 </template>
 
 <script setup>
+import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
+import { BcButton, BcPanel } from '@/components/ui';
+import { Input } from '@/components/ui/input';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/stores/auth';

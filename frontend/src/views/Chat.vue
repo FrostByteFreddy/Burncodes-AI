@@ -1,7 +1,7 @@
 <template>
-  <div class="chat-page">
+  <main class="chat-page">
     <ChatWidget :tenant-id="tenantId" :is-widget="true" />
-  </div>
+  </main>
 </template>
 
 <script setup>

@@ -68,6 +68,9 @@ jobs:
           echo "::error::https://ai.burn.codes/api/health didn't answer within 5 minutes"
           exit 1
 
+      - name: Check website, dashboard and chat are served by the right app
+        run: ./_prod_smoke.sh https://ai.burn.codes
+
   release:
     needs: deploy
     runs-on: ubuntu-latest

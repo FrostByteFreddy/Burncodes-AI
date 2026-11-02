@@ -6,15 +6,14 @@
     </div>
     <div class="bc-switchrow__ctl">
       <span v-if="stateText" class="bc-switchrow__state">{{ model ? (onText || $t('ui.on')) : (offText || $t('ui.off')) }}</span>
-      <button :id="sid" type="button" role="switch" :aria-checked="model ? 'true' : 'false'" :aria-labelledby="`${sid}-l`"
-        :class="['bc-switch', { 'is-on': model }]" :disabled="disabled" @click="toggle"><span class="bc-switch__knob"></span></button>
+      <Switch :id="sid" :model-value="model" :aria-labelledby="`${sid}-l`" :disabled="disabled" @update:model-value="toggle" />
     </div>
   </div>
-  <button v-else :id="sid" type="button" role="switch" :aria-checked="model ? 'true' : 'false'" :aria-label="ariaLabel"
-    :class="['bc-switch', { 'is-on': model }]" :disabled="disabled" @click="toggle"><span class="bc-switch__knob"></span></button>
+  <Switch v-else :id="sid" :model-value="model" :aria-label="ariaLabel" :disabled="disabled" @update:model-value="toggle" />
 </template>
 
 <script setup>
+import { Switch } from './switch';
 import { useFieldId } from './useFieldId';
 
 defineProps({
@@ -24,5 +23,5 @@ defineProps({
 const model = defineModel({ type: Boolean, default: false });
 const emit = defineEmits(['change']);
 const sid = useFieldId('sw');
-const toggle = () => { model.value = !model.value; emit('change', model.value); };
+const toggle = (value) => { model.value = value; emit('change', value); };
 </script>

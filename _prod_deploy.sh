@@ -26,7 +26,10 @@ rsync -avz \
   --exclude 'backend/venv' \
   --exclude 'backend/__pycache__' \
   --exclude 'frontend/dist' \
+  --exclude 'landing/dist' \
+  --exclude 'landing/.astro' \
   --exclude '.env.*' \
+  --exclude 'claude-design-system-prompt' \
   ./ "$SERVER:$APP_DIR"
 
 echo "✅ Code synced successfully."

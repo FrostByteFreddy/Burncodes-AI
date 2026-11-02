@@ -5,7 +5,7 @@
     <div class="cjr__main">
       <router-link :to="detailRoute" class="cjr__title">{{ displayUrl(job.start_url) }}</router-link>
       <p class="cjr__meta">
-        {{ fmtDateTime(job.created_at) }}<template v-if="job.single_page_only"> · {{ $t('knowledge.job.singlePage') }}</template><template v-if="job.trigger === 'scheduled'"> · {{ $t('knowledge.job.autoShort') }}</template>
+        {{ fmtDateTime(job.created_at) }}<template v-if="job.single_page_only">, {{ $t('knowledge.job.singlePage') }}</template><template v-if="job.trigger === 'scheduled'">, {{ $t('knowledge.job.autoShort') }}</template>
       </p>
 
       <!-- Reading: which page, not how many (the total isn't known until the end) -->
@@ -28,12 +28,13 @@
         {{ $t('knowledge.estimate.learn', { cost: fmtChf(job.estimate.cost_chf) }) }}
       </BcButton>
       <BcButton v-if="job.status === 'FAILED'" variant="secondary" size="sm" icon="play" :loading="busy" @click="onResume">{{ $t('knowledge.job.resume') }}</BcButton>
-      <router-link :to="detailRoute" class="bc-btn bc-btn--quiet bc-btn--sm">{{ $t('knowledge.job.details') }}</router-link>
+      <Button as-child variant="ghost" size="sm"><router-link :to="detailRoute" >{{ $t('knowledge.job.details') }}</router-link></Button>
     </div>
   </li>
 </template>
 
 <script setup>
+import { Button } from '@/components/ui/button';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { isPreparing, learnProgress, useCrawlActions, useCrawlText } from '@/composables/useCrawl';

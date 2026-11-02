@@ -3,8 +3,8 @@
   width: 100%;
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  padding: 14px;
+  gap: 16px;
+  padding: 16px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--surface-3);
   background: var(--surface-2);
@@ -20,8 +20,8 @@
 
 .radio-card.is-selected {
   border-color: var(--brand-indigo);
-  background: rgba(10, 31, 171, 0.08);
-  box-shadow: 0 0 0 1px rgba(10, 31, 171, 0.25);
+  background: var(--interactive-soft);
+  box-shadow: 0 0 0 1px var(--interactive);
 }
 
 .radio-card__dot {
@@ -57,53 +57,17 @@
   opacity: 1;
 }
 
-/* ── Field label ─────────────────────────────────────────────────────── */
-.field-label {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--surface-muted);
-  margin-bottom: 8px;
-}
-
-/* ── Standard text input ─────────────────────────────────────────────── */
-.field-input {
-  width: 100%;
-  background: var(--surface-2);
-  border: 1px solid var(--surface-3);
-  border-radius: var(--radius-md);
-  color: var(--surface-text);
-  font-size: 14px;
-  font-weight: 500;
-  height: 44px;
-  padding: 0 14px;
-  outline: none;
-  transition: border-color var(--t-fast), box-shadow var(--t-fast);
-}
-
-.field-input:focus {
-  border-color: var(--brand-indigo);
-  box-shadow: 0 0 0 3px rgba(10, 31, 171, 0.15);
-}
-
-.field-input.has-error {
-  border-color: var(--status-error);
-  background: rgba(255, 68, 68, 0.05);
-}
-
 /* ── Path exclusion chip ─────────────────────────────────────────────── */
 .path-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   background: var(--surface-2);
   border: 1px solid var(--surface-3);
   color: var(--surface-muted);
   font-size: 11px;
-  font-family: ui-monospace, monospace;
-  padding: 4px 10px;
+  font-family: var(--font-mono);
+  padding: 4px 8px;
   border-radius: var(--radius-md);
 }
 
@@ -138,7 +102,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--surface-muted);
   background: none;
   border: none;
@@ -171,8 +135,8 @@
   flex: 1;
   padding-left: 1.5rem;
   height: 36px;
-  font-size: 13px;
-  font-family: ui-monospace, monospace;
+  font-size: 14px;
+  font-family: var(--font-mono);
   background: var(--surface-2);
   border: 1px solid var(--brand-indigo);
   border-radius: var(--radius-md);
@@ -182,7 +146,7 @@
 }
 
 .path-input-row input:focus {
-  box-shadow: 0 0 0 3px rgba(10, 31, 171, 0.15);
+  box-shadow: 0 0 0 3px var(--interactive);
 }
 
 /* ── Confirm summary card ────────────────────────────────────────────── */
@@ -197,10 +161,10 @@
   display: grid;
   grid-template-columns: 28px 1fr auto;
   align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
+  gap: 8px;
+  padding: 16px 16px;
   border-bottom: 1px solid var(--surface-3);
-  font-size: 13px;
+  font-size: 14px;
 }
 .confirm-item:last-child { border-bottom: none; }
 
@@ -222,7 +186,7 @@
   text-align: right;
   word-break: break-all;
 }
-.confirm-item__value--mono { font-family: monospace; font-size: 12px; }
+.confirm-item__value--mono { font-family: var(--font-mono); font-size: 12px; }
 
 /* Exclusion list — subtle inline items */
 .confirm-exclusions {
@@ -233,14 +197,14 @@
 }
 
 .confirm-exclusion {
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--surface-muted);
   font-weight: 500;
 }
 
 /* ── Progress bar ────────────────────────────────────────────────────── */
-.wizard-progress { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.wizard-progress { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 
 .wizard-progress__dot {
   height: 4px;

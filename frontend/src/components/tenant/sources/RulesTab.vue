@@ -4,7 +4,7 @@
       <div v-for="(rule, index) in rules" :key="index"
         class="rule-card"
         :class="{ 'is-editing': rule.isEditing }">
-        <div class="flex-grow space-y-4">
+        <div class="grow flex flex-col gap-4">
           <input v-model="rule.trigger" type="text" :id="`trigger-${index}`"
             :placeholder="$t('tenant.fineTune.trigger.placeholder')"
             :disabled="!rule.isEditing"
@@ -18,20 +18,20 @@
         </div>
         <div class="rule-card__actions">
           <template v-if="rule.isEditing">
-            <button type="button" @click="saveEditedRule(rule)" class="btn btn-ghost btn-xs text-success">
+            <BcButton variant="quiet" size="sm" type="button" @click="saveEditedRule(rule)" class="text-success">
               <font-awesome-icon :icon="['fas', 'check']" class="h-4 w-4" />
-            </button>
-            <button type="button" @click="cancelEditing(index)" class="btn btn-ghost btn-xs">
+            </BcButton>
+            <BcButton variant="quiet" size="sm" type="button" @click="cancelEditing(index)">
               <font-awesome-icon :icon="['fas', 'xmark']" class="h-4 w-4" />
-            </button>
+            </BcButton>
           </template>
           <template v-else>
-            <button type="button" @click="startEditing(rule)" class="btn btn-ghost btn-xs">
+            <BcButton variant="quiet" size="sm" type="button" @click="startEditing(rule)">
               <font-awesome-icon :icon="['fas', 'pen']" class="h-4 w-4" />
-            </button>
-            <button type="button" @click="removeRule(index)" class="btn btn-ghost btn-xs text-error">
+            </BcButton>
+            <BcButton variant="quiet" size="sm" type="button" @click="removeRule(index)" class="text-error">
               <font-awesome-icon :icon="['fas', 'trash']" class="h-4 w-4" />
-            </button>
+            </BcButton>
           </template>
         </div>
       </div>
@@ -48,6 +48,7 @@
 </template>
 
 <script setup>
+import { BcButton } from '@/components/ui';
 import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '../../../composables/useToast';

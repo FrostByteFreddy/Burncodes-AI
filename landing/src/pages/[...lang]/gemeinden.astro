@@ -1,0 +1,13 @@
+---
+import Base from '@/layouts/Base.astro';
+import AudiencePage from '@/components/AudiencePage.astro';
+import { content } from '@/content';
+import { langPaths, type Locale } from '@/site';
+
+export const getStaticPaths = langPaths;
+const lang = Astro.props.lang as Locale;
+const t = content[lang];
+---
+<Base lang={lang} title={t.meta.municipalities.title} description={t.meta.municipalities.description} path="/gemeinden/">
+  <AudiencePage a={t.audiences.municipalities} lang={lang} sample={t.home.sample} />
+</Base>

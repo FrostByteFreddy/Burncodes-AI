@@ -8,26 +8,24 @@
     </div>
 
     <div v-if="!tenant" class="ghost-stack" aria-busy="true">
-      <section v-for="n in 2" :key="n" class="panel ghost-stack">
-        <span class="ghost ghost--title" style="width: 160px"></span>
-        <span class="ghost" style="height: 44px"></span>
-      </section>
+      <BcPanel as="section"  v-for="n in 2" :key="n" class="ghost-stack">
+        <Skeleton class="ghost--title" style="width: 160px" />
+        <Skeleton style="height: 44px" />
+      </BcPanel>
     </div>
 
     <template v-else>
       <!-- The link -->
-      <section class="panel">
-        <h2 class="panel-title">{{ $t('testPage.link.title') }}</h2>
-        <p class="panel-sub">{{ $t('testPage.link.sub') }}</p>
+      <BcPanel as="section"   :title="$t('testPage.link.title')" :description="$t('testPage.link.sub')">
         <div class="tp-link">
           <code class="tp-link__url">{{ url }}</code>
           <div class="page-actions">
-            <button type="button" class="btn-quiet" @click="copy">
+            <BcButton variant="secondary" type="button"  @click="copy">
               <font-awesome-icon :icon="['fas', copied ? 'check' : 'copy']" /> {{ copied ? $t('testPage.link.copied') : $t('testPage.link.copy') }}
-            </button>
-            <a :href="url" target="_blank" rel="noopener" class="btn-action tp-open">
+            </BcButton>
+            <Button as-child variant="default"><a :href="url" target="_blank" rel="noopener" class="tp-open">
               <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" /> {{ $t('testPage.link.open') }}
-            </a>
+            </a></Button>
           </div>
         </div>
         <p v-if="tenant.is_active === false" class="tp-note tp-note--warn">
@@ -38,40 +36,40 @@
           <font-awesome-icon :icon="['fas', 'lock']" />
           <span>{{ $t('testPage.link.protected') }}</span>
         </p>
-      </section>
+      </BcPanel>
 
       <!-- Password while in development -->
-      <section class="panel">
+      <BcPanel as="section"  >
         <div class="tp-switch-row">
           <div>
             <label for="tp-protect" class="panel-title tp-label">{{ $t('testPage.password.title') }}</label>
-            <p class="panel-sub">{{ $t('testPage.password.sub') }}</p>
+            <CardDescription>{{ $t('testPage.password.sub') }}</CardDescription>
           </div>
-          <input id="tp-protect" type="checkbox" role="switch" class="ov-switch tp-switch" :checked="protectOn" :disabled="saving" @change="toggle($event.target.checked)" />
+          <Switch id="tp-protect" :model-value="protectOn" :disabled="saving" @update:model-value="toggle" />
         </div>
 
         <form v-if="editing" class="cfg-fields" @submit.prevent="savePassword">
-          <div>
-            <label for="tp-pw" class="form-field">{{ tenant.test_protected ? $t('testPage.password.new') : $t('testPage.password.label') }}</label>
+          <Field>
+            <FieldLabel for="tp-pw">{{ tenant.test_protected ? $t('testPage.password.new') : $t('testPage.password.label') }}</FieldLabel>
             <div class="tp-pw">
-              <input id="tp-pw" ref="pwInput" v-model="newPassword" :type="showPassword ? 'text' : 'password'" class="form-input" minlength="6" autocomplete="new-password" />
-              <button type="button" class="btn-quiet" :aria-pressed="showPassword" @click="showPassword = !showPassword">
+              <Input id="tp-pw" ref="pwInput" v-model="newPassword" :type="showPassword ? 'text' : 'password'"  minlength="6" autocomplete="new-password" />
+              <BcButton variant="secondary" type="button"  :aria-pressed="showPassword" @click="showPassword = !showPassword">
                 <font-awesome-icon :icon="['fas', showPassword ? 'eye-slash' : 'eye']" /> {{ showPassword ? $t('testPage.password.hide') : $t('testPage.password.show') }}
-              </button>
+              </BcButton>
             </div>
-            <p class="field-hint" :class="{ 'field-hint--warn': newPassword && newPassword.length < 6 }">{{ $t('testPage.password.hint') }}</p>
-          </div>
+            <FieldDescription  :class="{ 'field-hint--warn': newPassword && newPassword.length < 6 }">{{ $t('testPage.password.hint') }}</FieldDescription>
+          </Field>
           <div class="page-actions">
-            <button type="submit" class="btn-action" :disabled="saving || newPassword.length < 6">
-              <font-awesome-icon v-if="saving" :icon="['fas', 'spinner']" class="animate-spin" /> {{ $t('testPage.password.save') }}
-            </button>
-            <button type="button" class="btn-quiet" :disabled="saving" @click="cancelEdit">{{ $t('testPage.password.cancel') }}</button>
+            <BcButton variant="primary" type="submit"  :disabled="saving || newPassword.length < 6">
+              <Spinner v-if="saving" data-icon="inline-start" /> {{ $t('testPage.password.save') }}
+            </BcButton>
+            <BcButton variant="secondary" type="button"  :disabled="saving" @click="cancelEdit">{{ $t('testPage.password.cancel') }}</BcButton>
           </div>
         </form>
 
         <div v-else-if="tenant.test_protected" class="tp-set">
           <p><font-awesome-icon :icon="['fas', 'check']" class="tp-set__ok" /> {{ $t('testPage.password.isSet') }}</p>
-          <button type="button" class="btn-quiet" @click="startEdit">{{ $t('testPage.password.change') }}</button>
+          <BcButton variant="secondary" type="button"  @click="startEdit">{{ $t('testPage.password.change') }}</BcButton>
         </div>
 
         <ul class="tp-notes">
@@ -79,12 +77,20 @@
           <li>{{ $t('testPage.password.shareNote') }}</li>
           <li>{{ $t('testPage.password.previewNote') }}</li>
         </ul>
-      </section>
+      </BcPanel>
     </template>
   </div>
 </template>
 
 <script setup>
+import { Switch } from '@/components/ui/switch';
+import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CardDescription } from '@/components/ui/card';
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
+import { BcButton, BcPanel } from '@/components/ui';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { computed, nextTick, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import apiClient from '@/utils/api';
@@ -149,9 +155,9 @@ const savePassword = () => save(newPassword.value, t('testPage.password.saved'))
 .tp { display: flex; flex-direction: column; gap: 20px; }
 
 .tp-link { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 16px; padding: 12px 12px 12px 16px; border-radius: var(--radius-lg); background: var(--surface-2); border: 1px solid var(--surface-3); }
-.tp-link__url { flex: 1; min-width: 240px; font-family: inherit; font-size: 15px; font-weight: 600; color: var(--surface-heading); overflow-wrap: anywhere; }
+.tp-link__url { flex: 1; min-width: 240px; font-family: inherit; font-size: 16px; font-weight: 600; color: var(--surface-heading); overflow-wrap: anywhere; }
 .tp-open { text-decoration: none; }
-.tp-note { display: flex; gap: 10px; align-items: baseline; margin-top: 14px; font-size: var(--text-sm); color: var(--surface-text); }
+.tp-note { display: flex; gap: 8px; align-items: baseline; margin-top: 16px; font-size: var(--text-sm); color: var(--surface-text); }
 .tp-note svg { color: var(--surface-muted); }
 .tp-note--warn, .tp-note--warn svg { color: var(--status-warning); }
 .tp-note a { color: inherit; font-weight: 600; }
@@ -161,10 +167,10 @@ const savePassword = () => save(newPassword.value, t('testPage.password.saved'))
 /* switch look shared with the Overview page */
 
 .tp-pw { display: flex; gap: 8px; align-items: center; }
-.tp-pw .form-input { flex: 1; max-width: 360px; }
-.tp-set { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 16px; padding: 12px 16px; border-radius: var(--radius-lg); background: var(--surface-2); font-size: 15px; color: var(--surface-heading); }
-.tp-set__ok { color: var(--status-success); margin-right: 6px; }
-.tp-notes { margin: 18px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); }
+.tp-pw [data-slot=input] { flex: 1; max-width: 360px; }
+.tp-set { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 16px; padding: 12px 16px; border-radius: var(--radius-lg); background: var(--surface-2); font-size: 16px; color: var(--surface-heading); }
+.tp-set__ok { color: var(--status-success); margin-right: 8px; }
+.tp-notes { margin: 16px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 8px; font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); }
 
 @media (prefers-reduced-motion: reduce) { .ov-switch, .ov-switch::after { transition: none; } }
 </style>

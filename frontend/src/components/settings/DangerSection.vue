@@ -1,7 +1,5 @@
 <template>
-  <section class="panel dz">
-    <h2 class="panel-title">{{ $t('settings.danger.title') }}</h2>
-    <p class="panel-sub">{{ $t('settings.danger.sub') }}</p>
+  <BcPanel as="section"  class="dz" :title="$t('settings.danger.title')" :description="$t('settings.danger.sub')">
     <ul class="dz-list">
       <li>{{ $t('settings.danger.chatbots') }}</li>
       <li>{{ $t('settings.danger.balance') }}</li>
@@ -9,14 +7,14 @@
     </ul>
 
     <form class="cfg-fields" @submit.prevent="remove">
-      <div>
-        <label for="dz-email" class="form-field">{{ $t('settings.danger.typeEmail', { email: authStore.user?.email }) }}</label>
-        <input id="dz-email" v-model="email" type="email" class="form-input" autocomplete="off" />
-      </div>
-      <div>
-        <label for="dz-pw" class="form-field">{{ $t('profile.security.currentPassword') }}</label>
-        <input id="dz-pw" v-model="password" type="password" class="form-input" autocomplete="current-password" />
-      </div>
+      <Field>
+        <FieldLabel for="dz-email">{{ $t('settings.danger.typeEmail', { email: authStore.user?.email }) }}</FieldLabel>
+        <Input id="dz-email" v-model="email" type="email"  autocomplete="off" />
+      </Field>
+      <Field>
+        <FieldLabel for="dz-pw">{{ $t('profile.security.currentPassword') }}</FieldLabel>
+        <Input id="dz-pw" v-model="password" type="password"  autocomplete="current-password" />
+      </Field>
       <div class="page-actions">
         <button type="submit" class="dz-btn" :disabled="!canDelete || deleting">
           <font-awesome-icon :icon="deleting ? ['fas', 'spinner'] : ['fas', 'trash-alt']" :class="{ 'animate-spin': deleting }" />
@@ -24,10 +22,13 @@
         </button>
       </div>
     </form>
-  </section>
+  </BcPanel>
 </template>
 
 <script setup>
+import { Field, FieldLabel } from '@/components/ui/field';
+import { BcPanel } from '@/components/ui';
+import { Input } from '@/components/ui/input';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -62,11 +63,11 @@ const remove = async () => {
 </script>
 
 <style scoped>
-.dz { border-color: rgba(255, 107, 107, 0.45); }
-.dz-list { margin: 12px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: var(--text-sm); color: var(--surface-text); max-width: var(--measure); }
+.dz { border-color: var(--status-error); }
+.dz-list { margin: 12px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; font-size: var(--text-sm); color: var(--surface-text); max-width: var(--measure); }
 .dz-btn {
-  display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: var(--radius-md);
-  border: none; background: var(--status-error); color: #fff; font: inherit; font-weight: 700; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: var(--radius-md);
+  border: none; background: var(--status-error); color: var(--on-status-error); font: inherit; font-weight: 700; cursor: pointer;
 }
 .dz-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>

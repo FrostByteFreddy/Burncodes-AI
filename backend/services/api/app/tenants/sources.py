@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from app import limiter
 from app.database.supabase_client import fetch_all, supabase
 from app.auth.decorators import token_required
 from app.models.database import SourceType
@@ -86,6 +87,7 @@ def get_sources(current_user, tenant_id):
         return jsonify({"error": "Failed to retrieve sources"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/sources/upload', methods=['POST'])
+@limiter.limit("60 per minute")  # stores a file and starts learning
 @token_required
 def upload_source(current_user, tenant_id):
     tenant_id_str = str(tenant_id)
@@ -134,6 +136,7 @@ def upload_source(current_user, tenant_id):
         return jsonify({"error": "Failed to process file"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/sources/crawl', methods=['POST'])
+@limiter.limit("10 per minute")  # starts a crawl
 @token_required
 def crawl_sources(current_user, tenant_id):
     try:
@@ -164,6 +167,7 @@ def crawl_sources(current_user, tenant_id):
         return jsonify({"error": "Failed to process URLs"}), 500
 
 @sources_bp.route('/<uuid:tenant_id>/sources/discover', methods=['POST'])
+@limiter.limit("10 per minute")  # fetches an address we're given
 @token_required
 def discover_links(current_user, tenant_id):
     try:
@@ -327,6 +331,79 @@ def get_crawling_job_progress(current_user, tenant_id, job_id):
         error_logger.error(f"Error getting job progress for job {job_id}: {e}", extra={'user_id': current_user.id}, exc_info=True)
         return jsonify({"error": "Failed to retrieve job progress"}), 500
 
+SEARCH_LIMIT = 200
+
+
+@sources_bp.route('/<uuid:tenant_id>/knowledge/calendar', methods=['GET'])
+@limiter.limit("60 per minute")  # reads up to 20,000 dates for a search
+@token_required
+def get_knowledge_calendar(current_user, tenant_id):
+    """
+    One month of everything the bot was taught, past or future, each date with
+    the page it was read from, so a person can check them against the original.
+    ?summary=1 adds what the view needs once: the calendars and the months with dates.
+    ?q=... searches all dates instead.
+    """
+    try:
+        import calendar as month_days
+        from datetime import date
+        from app.knowledge.calendar import calendar_key, dedupe_events, event_matches
+        tenant_id_str = str(tenant_id)
+        tenant_check = supabase.table('tenants').select("id").eq('id', tenant_id_str).eq('user_id', current_user.id).limit(1).execute()
+        if not tenant_check.data:
+            return jsonify({"error": "Tenant not found or access denied"}), 404
+        def with_pages(rows):
+            ids = list({e['source_id'] for e in rows if e.get('source_id')})
+            pages = {}
+            for i in range(0, len(ids), 200):
+                for p in supabase.table('tenant_sources').select("id, title, source_location").in_('id', ids[i:i + 200]).execute().data or []:
+                    pages[p['id']] = {"title": p.get('title') or p['source_location'], "url": p['source_location']}
+            return [{**e, "key": calendar_key(e['series'], e['zone']), "source": pages.get(e.get('source_id'))} for e in rows]
+
+        columns = "event_date, start_time, end_time, series, zone, is_exception, notes, source_id"
+        query = (request.args.get('q') or '').strip()[:100]
+        if query:
+            hits = [e for e in dedupe_events(fetch_all(lambda: (
+                supabase.table('tenant_events').select(columns).eq('tenant_id', tenant_id_str).order('event_date').order('id')
+            ), max_rows=20_000)) if event_matches(e, query)]
+            # What's coming first, soonest on top; then what has been, latest on top
+            today = date.today().isoformat()
+            hits = [e for e in hits if e['event_date'] >= today] + [e for e in reversed(hits) if e['event_date'] < today]
+            return jsonify({"q": query, "total": len(hits), "results": with_pages(hits[:SEARCH_LIMIT])}), 200
+
+        try:
+            year, month = (int(p) for p in (request.args.get('month') or '').split('-'))
+            first = date(year, month, 1)
+        except ValueError:
+            first = date.today().replace(day=1)
+        last = first.replace(day=month_days.monthrange(first.year, first.month)[1])
+        events = dedupe_events(fetch_all(lambda: (
+            supabase.table('tenant_events').select(columns).eq('tenant_id', tenant_id_str)
+            .gte('event_date', first.isoformat()).lte('event_date', last.isoformat())
+            .order('event_date').order('id')
+        )))
+        out = {"month": first.strftime('%Y-%m'), "events": with_pages(events)}
+        if request.args.get('summary'):
+            everything = dedupe_events(fetch_all(lambda: (
+                supabase.table('tenant_events').select("series, zone, event_date")
+                .eq('tenant_id', tenant_id_str).order('event_date').order('id')
+            ), max_rows=20_000))
+            series, months = {}, {}
+            for e in everything:
+                key = calendar_key(e['series'], e['zone'])
+                entry = series.setdefault(key, {"key": key, "series": e['series'], "zone": e['zone'], "count": 0, "months": {}})
+                entry["count"] += 1
+                m = e['event_date'][:7]
+                entry["months"][m] = entry["months"].get(m, 0) + 1
+                months[m] = months.get(m, 0) + 1
+            out["series"] = sorted(series.values(), key=lambda s: (s['series'].casefold(), s['zone'].casefold()))
+            out["months"] = months
+        return jsonify(out), 200
+    except Exception as e:
+        error_logger.error(f"Error building knowledge calendar for {tenant_id}: {e}", extra={'user_id': current_user.id})
+        return jsonify({"error": "Failed to load calendar"}), 500
+
+
 @sources_bp.route('/<uuid:tenant_id>/knowledge/overview', methods=['GET'])
 @token_required
 def get_knowledge_overview(current_user, tenant_id):
@@ -347,7 +424,7 @@ def get_knowledge_overview(current_user, tenant_id):
         today = date.today()
         events = (
             supabase.table('tenant_events')
-            .select("event_date, series, zone, is_exception, notes, source_id")
+            .select("event_date, start_time, end_time, series, zone, is_exception, notes, source_id")
             .eq('tenant_id', tenant_id_str)
             .gte('event_date', today.isoformat())
             .lte('event_date', (today + timedelta(days=days - 1)).isoformat())

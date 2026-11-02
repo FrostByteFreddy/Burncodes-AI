@@ -10,15 +10,15 @@
 
     <template v-else>
       <BcPageHeader :title="displayUrl(job.start_url)"
-        :lede="(job.trigger === 'scheduled' ? $t('knowledge.job.scheduled', { date: fmtDateTime(job.created_at) }) : $t('knowledge.job.started', { date: fmtDateTime(job.created_at) })) + (job.single_page_only ? ` · ${$t('knowledge.job.singlePage')}` : '')">
+        :lede="(job.trigger === 'scheduled' ? $t('knowledge.job.scheduled', { date: fmtDateTime(job.created_at) }) : $t('knowledge.job.started', { date: fmtDateTime(job.created_at) })) + (job.single_page_only ? `, ${$t('knowledge.job.singlePage')}` : '')">
         <template #eyebrow>
           <router-link :to="{ name: 'TenantSources', params: { tenantId } }">{{ $t('pages.knowledgeTitle') }}</router-link> › {{ $t('knowledge.crawls.title') }}
         </template>
         <template #status><BcStatusBadge :status="badge" /></template>
         <template #actions>
-          <a :href="job.start_url" target="_blank" rel="noopener noreferrer" class="bc-btn bc-btn--quiet bc-btn--md">
+          <Button as-child variant="ghost"><a :href="job.start_url" target="_blank" rel="noopener noreferrer" >
             <BcIcon name="arrow-up-right-from-square" />{{ $t('knowledge.job.openSite') }}
-          </a>
+          </a></Button>
           <BcButton v-if="job.status === 'IN_PROGRESS' || job.status === 'INDEXING'" variant="secondary" icon="stop" :disabled="busy" @click="onStop">{{ $t('knowledge.job.stop') }}</BcButton>
           <BcButton v-if="job.status === 'FAILED'" variant="primary" icon="play" :loading="busy" @click="onResume">{{ $t('knowledge.job.resume') }}</BcButton>
           <BcButton v-if="!isActive" variant="destructive-quiet" icon="trash" @click="askDelete = true">{{ $t('knowledge.job.delete') }}</BcButton>
@@ -58,7 +58,7 @@
         <BcNotice v-if="estimate.to_learn && balanceShort" tone="warning" :title="$t('onboarding.learning.balanceShortTitle')">
           {{ $t('onboarding.learning.balanceShort', { cost: formatCHF(cost), balance: formatCHF(balance) }) }}
           <template #actions>
-            <router-link :to="{ name: 'AccountSettings', params: { section: 'billing' } }" class="bc-btn bc-btn--primary bc-btn--sm">{{ $t('onboarding.learning.topUp') }}</router-link>
+            <Button as-child variant="default" size="sm"><router-link :to="{ name: 'AccountSettings', params: { section: 'billing' } }" >{{ $t('onboarding.learning.topUp') }}</router-link></Button>
             <BcButton variant="quiet" size="sm" @click="billing.fetchBalance()">{{ $t('onboarding.learning.recheck') }}</BcButton>
           </template>
         </BcNotice>
@@ -77,22 +77,20 @@
       </BcPanel>
 
       <!-- Done: the report -->
-      <section v-if="job.status === 'COMPLETED' && job.report" class="panel">
+      <BcPanel as="section"  v-if="job.status === 'COMPLETED' && job.report" >
         <CrawlReport :report="job.report" />
-      </section>
+      </BcPanel>
 
       <!-- What this crawl brought in, page by page (the latest crawl: the website as the bot knows it) -->
-      <section v-if="(job.status === 'COMPLETED' || job.status === 'FAILED') && crawlSources.length" class="panel">
-        <h2 class="panel-title">{{ $t('knowledge.content.title') }}</h2>
-        <p class="panel-sub">{{ $t('knowledge.content.sub') }}</p>
+      <BcPanel as="section"  v-if="(job.status === 'COMPLETED' || job.status === 'FAILED') && crawlSources.length"  :title="$t('knowledge.content.title')" :description="$t('knowledge.content.sub')">
         <PageTree :sources="crawlSources" class="crawl-tree" />
-      </section>
+      </BcPanel>
 
       <!-- Activity: live while running, history afterwards -->
-      <section class="panel">
-        <h2 class="panel-title crawl-section-title">{{ $t('knowledge.job.activity') }}</h2>
+      <BcPanel as="section"  >
+        <CardTitle as="h2" class="crawl-section-title">{{ $t('knowledge.job.activity') }}</CardTitle>
         <ActivityLog :entries="log" :max-height="isActive ? '560px' : '360px'" />
-      </section>
+      </BcPanel>
     </template>
 
     <ConfirmationModal
@@ -108,6 +106,8 @@
 </template>
 
 <script setup>
+import { Button } from '@/components/ui/button';
+import { CardTitle } from '@/components/ui/card';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -124,10 +124,7 @@ import ConfirmationModal from '../ConfirmationModal.vue';
 import { useBillingStore } from '@/stores/billing';
 import { useToast } from '@/composables/useToast';
 import { useLearningModels } from '@/composables/useLearningModels';
-import {
-  BcActivityLogRow, BcButton, BcIcon, BcKeyFigure, BcMoney, BcNotice, BcPageHeader, BcPanel, BcProgressBar, BcRadioCards,
-  BcSkeleton, BcStatusBadge,
-} from '@/components/ui';
+import { BcActivityLogRow, BcButton, BcIcon, BcKeyFigure, BcMoney, BcNotice, BcPageHeader, BcPanel, BcProgressBar, BcRadioCards, BcSkeleton, BcStatusBadge } from '@/components/ui';
 import { formatCHF, formatNumber } from '@/utils/format';
 
 const props = defineProps({

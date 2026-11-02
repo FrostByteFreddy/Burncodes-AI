@@ -1,44 +1,45 @@
 <template>
-  <section class="panel">
-    <h2 class="panel-title">{{ $t('settings.security.passwordTitle') }}</h2>
+  <BcPanel as="section"   :title="$t('settings.security.passwordTitle')">
     <form class="cfg-fields" @submit.prevent="changePassword">
-      <div>
-        <label for="s-current" class="form-field">{{ $t('profile.security.currentPassword') }}</label>
-        <input id="s-current" v-model="pw.current" type="password" class="form-input" autocomplete="current-password" required />
-      </div>
+      <Field>
+        <FieldLabel for="s-current">{{ $t('profile.security.currentPassword') }}</FieldLabel>
+        <Input id="s-current" v-model="pw.current" type="password"  autocomplete="current-password" required />
+      </Field>
       <div class="cfg-grid">
-        <div>
-          <label for="s-new" class="form-field">{{ $t('profile.security.newPassword') }}</label>
-          <input id="s-new" v-model="pw.next" type="password" class="form-input" autocomplete="new-password" minlength="8" required />
-          <p class="field-hint">{{ $t('settings.security.passwordHint') }}</p>
-        </div>
-        <div>
-          <label for="s-confirm" class="form-field">{{ $t('profile.security.confirmPassword') }}</label>
-          <input id="s-confirm" v-model="pw.confirm" type="password" class="form-input" autocomplete="new-password" minlength="8" required />
+        <Field>
+          <FieldLabel for="s-new">{{ $t('profile.security.newPassword') }}</FieldLabel>
+          <Input id="s-new" v-model="pw.next" type="password"  autocomplete="new-password" minlength="8" required />
+          <FieldDescription >{{ $t('settings.security.passwordHint') }}</FieldDescription>
+        </Field>
+        <Field>
+          <FieldLabel for="s-confirm">{{ $t('profile.security.confirmPassword') }}</FieldLabel>
+          <Input id="s-confirm" v-model="pw.confirm" type="password"  autocomplete="new-password" minlength="8" required />
           <p v-if="pw.confirm && pw.confirm !== pw.next" class="field-hint field-hint--warn">{{ $t('profile.security.passwordMismatch') }}</p>
-        </div>
+        </Field>
       </div>
       <div class="page-actions">
-        <button type="submit" class="btn-action" :disabled="savingPw || pw.confirm !== pw.next">
-          <font-awesome-icon v-if="savingPw" :icon="['fas', 'spinner']" class="animate-spin" />
+        <BcButton variant="primary" type="submit"  :disabled="savingPw || pw.confirm !== pw.next">
+          <Spinner v-if="savingPw" data-icon="inline-start" />
           {{ $t('profile.security.updatePassword') }}
-        </button>
+        </BcButton>
       </div>
     </form>
-  </section>
+  </BcPanel>
 
-  <section class="panel">
-    <h2 class="panel-title">{{ $t('settings.security.sessionsTitle') }}</h2>
-    <p class="panel-sub">{{ $t('settings.security.sessionsSub') }}</p>
+  <BcPanel as="section"   :title="$t('settings.security.sessionsTitle')" :description="$t('settings.security.sessionsSub')">
     <div class="page-actions" style="margin-top: 16px">
-      <button type="button" class="btn-quiet" :disabled="signingOut" @click="signOutEverywhere">
+      <BcButton variant="secondary" type="button"  :disabled="signingOut" @click="signOutEverywhere">
         <font-awesome-icon :icon="['fas', 'right-from-bracket']" /> {{ $t('settings.security.signOutAll') }}
-      </button>
+      </BcButton>
     </div>
-  </section>
+  </BcPanel>
 </template>
 
 <script setup>
+import { Spinner } from '@/components/ui/spinner';
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
+import { BcButton, BcPanel } from '@/components/ui';
+import { Input } from '@/components/ui/input';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';

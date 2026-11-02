@@ -23,6 +23,7 @@ const routes = [
       { path: "", redirect: { name: "TenantOverview" } },
       { path: "overview",  name: "TenantOverview",  component: () => import("../views/Overview.vue") },
       { path: "sources",   name: "TenantSources",   component: () => import("../components/tenant/Sources.vue") },
+      { path: "sources/calendar", name: "TenantCalendar", component: () => import("../components/tenant/MonthCalendar.vue") },
       { path: "sources/crawls/:jobId(\\d+)", name: "TenantCrawl", component: () => import("../components/tenant/CrawlDetail.vue"), props: true },
       { path: "configure", name: "TenantConfigure", component: () => import("../components/tenant/Settings.vue") },
       { path: "insights",  name: "TenantInsights",  component: () => import("../views/Insights.vue") },
@@ -69,8 +70,12 @@ const routes = [
   },
 ];
 
+// The app is served under /dashboard/, except the public /chat and /share pages,
+// whose addresses are embedded on customer websites
+const base = window.location.pathname.startsWith(import.meta.env.BASE_URL) ? import.meta.env.BASE_URL : "/";
+
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(base),
   routes,
 });
 

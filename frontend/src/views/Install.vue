@@ -6,9 +6,9 @@
         <p class="page-lede">{{ $t('pages.install') }}</p>
       </div>
       <div class="page-actions">
-        <a :href="`/preview.html?tenant_id=${tenantId}`" target="_blank" rel="noopener" class="btn-quiet inst-link">
+        <Button as-child variant="outline"><a :href="`${baseUrl}preview.html?tenant_id=${tenantId}`" target="_blank" rel="noopener" class="inst-link">
           <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" /> {{ $t('install.example') }}
-        </a>
+        </a></Button>
       </div>
     </div>
 
@@ -27,7 +27,7 @@
     </p>
 
     <!-- The three steps -->
-    <section class="panel">
+    <BcPanel as="section"  >
       <ol class="inst-steps">
         <li class="inst-step">
           <span class="inst-step__num">1</span>
@@ -36,9 +36,9 @@
             <p class="inst-step__text">{{ $t('install.step1.text') }}</p>
             <div class="inst-code">
               <pre><code>{{ snippet }}</code></pre>
-              <button type="button" class="btn-action inst-code__copy" @click="copy(snippet)">
+              <BcButton variant="primary" type="button" class="inst-code__copy" @click="copy(snippet)">
                 <font-awesome-icon :icon="['fas', copied ? 'check' : 'copy']" /> {{ copied ? $t('install.copied') : $t('install.copy') }}
-              </button>
+              </BcButton>
             </div>
           </div>
         </li>
@@ -61,9 +61,9 @@
 
             <div class="inst-delegate">
               <p>{{ $t('install.delegate.text') }}</p>
-              <a :href="mailto" class="btn-quiet inst-link">
+              <Button as-child variant="outline"><a :href="mailto" class="inst-link">
                 <font-awesome-icon :icon="['fas', 'envelope']" /> {{ $t('install.delegate.button') }}
-              </a>
+              </a></Button>
             </div>
           </div>
         </li>
@@ -80,11 +80,13 @@
           </div>
         </li>
       </ol>
-    </section>
+    </BcPanel>
   </div>
 </template>
 
 <script setup>
+import { BcButton, BcPanel } from '@/components/ui';
+import { Button } from '@/components/ui/button';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useTenantsStore } from '../stores/tenants';
@@ -94,6 +96,7 @@ const tenantsStore = useTenantsStore();
 const { t } = useI18n();
 const { addToast } = useToast();
 
+const baseUrl = import.meta.env.BASE_URL;
 const BUILDERS = ['wordpress', 'wix', 'squarespace', 'webflow', 'other'];
 
 const tenant = computed(() => tenantsStore.currentTenant);
@@ -122,8 +125,8 @@ const mailto = computed(() => {
 .ins-page { display: flex; flex-direction: column; gap: 20px; }
 .inst-link { text-decoration: none; }
 
-.inst-note { display: flex; gap: 10px; align-items: baseline; font-size: var(--text-sm); color: var(--surface-text); padding: 12px 16px; border-radius: var(--radius-lg); background: var(--surface-1); border: 1px solid var(--surface-3); }
-.inst-note--warn { color: var(--status-warning); border-color: rgba(242, 178, 76, 0.4); }
+.inst-note { display: flex; gap: 8px; align-items: baseline; font-size: var(--text-sm); color: var(--surface-text); padding: 12px 16px; border-radius: var(--radius-lg); background: var(--surface-1); border: 1px solid var(--surface-3); }
+.inst-note--warn { color: var(--status-warning); border-color: var(--status-warn); }
 .inst-note a { color: inherit; font-weight: 600; }
 
 /* Steps: a real sequence, so numbered */
@@ -137,27 +140,27 @@ const mailto = computed(() => {
   background: var(--interactive-soft); color: var(--interactive); font-weight: 800;
 }
 .inst-step__body { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-.inst-step__title { font-size: var(--text-lg); font-weight: 700; color: var(--surface-heading); margin-top: 3px; }
-.inst-step__text { font-size: 15px; color: var(--surface-text); max-width: var(--measure); line-height: var(--leading-body); }
+.inst-step__title { font-size: var(--text-lg); font-weight: 700; color: var(--surface-heading); margin-top: 4px; }
+.inst-step__text { font-size: 16px; color: var(--surface-text); max-width: var(--measure); line-height: var(--leading-body); }
 
 .inst-code { margin-top: 8px; border-radius: var(--radius-lg); background: var(--surface-0); border: 1px solid var(--surface-3); overflow: hidden; }
-.inst-code pre { margin: 0; padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.6; color: var(--surface-heading); }
-.inst-code code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; word-break: break-all; }
+.inst-code pre { margin: 0; padding: 16px; overflow-x: auto; font-size: 14px; line-height: 1.6; color: var(--surface-heading); }
+.inst-code code { font-family: var(--font-mono); white-space: pre-wrap; word-break: break-all; }
 .inst-code__copy { margin: 0 16px 16px; }
 
 .inst-builders { margin-top: 8px; display: flex; flex-direction: column; border: 1px solid var(--surface-3); border-radius: var(--radius-lg); overflow: hidden; }
 .inst-builder + .inst-builder { border-top: 1px solid var(--surface-3); }
-.inst-builder summary { display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer; list-style: none; font-size: 15px; font-weight: 600; color: var(--surface-heading); }
+.inst-builder summary { display: flex; align-items: center; gap: 8px; padding: 12px 16px; cursor: pointer; list-style: none; font-size: 16px; font-weight: 600; color: var(--surface-heading); }
 .inst-builder summary::-webkit-details-marker { display: none; }
 .inst-builder summary:hover { background: var(--surface-2); }
 .inst-builder__chevron { font-size: 11px; color: var(--surface-muted); transition: transform var(--t-fast); }
 .inst-builder[open] .inst-builder__chevron { transform: rotate(90deg); }
-.inst-builder p { padding: 0 16px 14px 37px; font-size: var(--text-sm); color: var(--surface-text); line-height: var(--leading-body); max-width: var(--measure); }
+.inst-builder p { padding: 0 16px 16px 37px; font-size: var(--text-sm); color: var(--surface-text); line-height: var(--leading-body); max-width: var(--measure); }
 
-.inst-delegate { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 8px; padding: 14px 16px; border-radius: var(--radius-lg); background: var(--surface-2); }
+.inst-delegate { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 8px; padding: 16px 16px; border-radius: var(--radius-lg); background: var(--surface-2); }
 .inst-delegate p { font-size: var(--text-sm); color: var(--surface-text); flex: 1; min-width: 220px; }
 
-.inst-checks { margin: 4px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); }
+.inst-checks { margin: 4px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 8px; font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); }
 
 @media (prefers-reduced-motion: reduce) { .inst-builder__chevron { transition: none; } }
 </style>

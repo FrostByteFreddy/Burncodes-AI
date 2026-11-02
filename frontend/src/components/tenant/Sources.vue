@@ -8,10 +8,10 @@
         <p class="ksummary">{{ summary }}</p>
       </div>
       <div class="page-actions">
-        <button class="btn-action" @click="wizardOpen = true">
+        <BcButton variant="primary"  @click="wizardOpen = true">
           <font-awesome-icon :icon="['fas', 'plus']" />
           {{ $t('tenant.sources.wizard.addKnowledge') }}
-        </button>
+        </BcButton>
       </div>
     </div>
 
@@ -34,9 +34,9 @@
 
       <div v-if="!jobsLoaded" aria-busy="true">
         <div v-for="n in 2" :key="n" class="ghost-row">
-          <span class="ghost ghost--pill"></span>
-          <div class="ghost-stack" style="flex: 1"><span class="ghost ghost--line" style="width: 55%"></span><span class="ghost ghost--line" style="width: 30%; height: 10px"></span></div>
-          <span class="ghost ghost--btn" style="width: 76px"></span>
+          <Skeleton class="ghost--pill" />
+          <div class="ghost-stack" style="flex: 1"><Skeleton class="ghost--line" style="width: 55%" /><Skeleton class="ghost--line" style="width: 30%; height: 10px" /></div>
+          <Skeleton class="ghost--btn" style="width: 76px" />
         </div>
       </div>
       <template v-else-if="shownJobs.length">
@@ -66,10 +66,10 @@
             <p class="knowledge-panel__sub">{{ $t('knowledge.files.sub') }}</p>
           </div>
         </div>
-        <button @click="wizardOpen = true" class="btn-quiet">
+        <BcButton variant="secondary" @click="wizardOpen = true">
           <font-awesome-icon :icon="['fas', 'arrow-up-from-bracket']" />
           {{ $t('knowledge.files.upload') }}
-        </button>
+        </BcButton>
       </div>
 
       <div v-if="fileSources.length" class="kfiles">
@@ -79,8 +79,8 @@
             <p class="kfile__name" :title="source.summary || fileName(source)">{{ source.title && source.title !== fileName(source) ? source.title : fileName(source) }}</p>
             <p class="kfile__meta">
               {{ fileExt(source).toUpperCase() }}
-              <template v-if="source.indexed_chunks != null"> · {{ source.indexed_chunks }} {{ $t('knowledge.tree.chunks') }}</template>
-              · <span :class="`kfile__status kfile__status--${source.status.toLowerCase()}`">{{ $t(`knowledge.tree.status.${source.status}`) }}</span>
+              <template v-if="source.indexed_chunks != null">, {{ source.indexed_chunks }} {{ $t('knowledge.tree.chunks') }}</template>
+             , <span :class="`kfile__status kfile__status--${source.status.toLowerCase()}`">{{ $t(`knowledge.tree.status.${source.status}`) }}</span>
             </p>
           </div>
           <button @click="confirmDelete(source)" class="kfile__delete" :title="$t('tenant.sources.deleteModal.confirm')" :aria-label="$t('tenant.sources.deleteModal.confirm')">
@@ -100,10 +100,10 @@
             <p class="knowledge-panel__sub">{{ $t('knowledge.rules.sub') }}</p>
           </div>
         </div>
-        <button @click="rulesTabRef?.openModal()" class="btn-quiet">
+        <BcButton variant="secondary" @click="rulesTabRef?.openModal()">
           <font-awesome-icon :icon="['fas', 'plus']" />
           {{ $t('knowledge.rules.add') }}
-        </button>
+        </BcButton>
       </div>
       <RulesTab ref="rulesTabRef" />
     </section>
@@ -129,6 +129,8 @@
 </template>
 
 <script setup>
+import { Skeleton } from '@/components/ui/skeleton';
+import { BcButton } from '@/components/ui';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useTenantsStore } from '../../stores/tenants';
@@ -314,35 +316,35 @@ const handleDelete = async () => {
 </script>
 
 <style scoped>
-.ksummary { margin-top: 10px; font-size: var(--text-sm); color: var(--surface-text); }
+.ksummary { margin-top: 8px; font-size: var(--text-sm); color: var(--surface-text); }
 
 .kjobs { list-style: none; padding: 0; margin: 0; }
 .krecrawl__hint { margin: -6px 0 12px; font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); }
 .krecrawl__hint a { color: var(--interactive); font-weight: 600; }
 .kjobs__more {
-  align-self: center; padding: 6px 14px; border-radius: var(--radius-pill);
+  align-self: center; padding: 8px 16px; border-radius: var(--radius-pill);
   border: 1px solid var(--surface-3); background: none; cursor: pointer;
   font-size: 12px; font-weight: 600; color: var(--surface-muted);
 }
 .kjobs__more:hover { color: var(--surface-heading); border-color: var(--surface-muted); }
-.kempty { font-size: 13px; color: var(--surface-muted); padding: 8px 0; }
+.kempty { font-size: 14px; color: var(--surface-muted); padding: 8px 0; }
 
-.kfiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.kfiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
 .kfile {
-  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 12px; padding: 12px 16px;
   border-radius: var(--radius-lg); background: var(--surface-2);
 }
 .kfile__icon {
   width: 36px; height: 36px; flex-shrink: 0; border-radius: var(--radius-md);
   display: flex; align-items: center; justify-content: center;
-  background: rgba(255, 32, 149, 0.12); color: var(--brand-magenta); font-size: 15px;
+  background: var(--ai-soft); color: var(--ai-text); font-size: 16px;
 }
 .kfile__info { flex: 1; min-width: 0; }
-.kfile__name { font-size: 13px; font-weight: 600; color: var(--surface-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kfile__name { font-size: 14px; font-weight: 600; color: var(--surface-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kfile__meta { font-size: 11px; color: var(--surface-muted); margin-top: 2px; }
 .kfile__status--completed { color: var(--status-success); }
 .kfile__status--error, .kfile__status--unsupported { color: var(--status-warning); }
-.kfile__status--processing, .kfile__status--queued { color: var(--brand-cyan); }
+.kfile__status--processing, .kfile__status--queued { color: var(--interactive); }
 .kfile__delete {
   width: 30px; height: 30px; flex-shrink: 0; border: none; background: none; border-radius: var(--radius-md);
   color: var(--surface-muted); cursor: pointer; opacity: 0; transition: opacity var(--t-fast), color var(--t-fast);

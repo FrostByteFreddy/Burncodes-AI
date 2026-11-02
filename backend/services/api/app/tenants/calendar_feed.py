@@ -43,7 +43,7 @@ def _offered(tenant) -> bool:
 def _events(tenant_id):
     return fetch_all(lambda: (
         supabase.table('tenant_events')
-        .select("series, zone, event_date, is_exception, notes, source_id, created_at")
+        .select("series, zone, event_date, start_time, end_time, is_exception, notes, source_id, created_at")
         .eq('tenant_id', str(tenant_id))
         .gte('event_date', (date.today() - timedelta(days=PAST_DAYS)).isoformat())
         .order('event_date').order('id')

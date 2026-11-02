@@ -1,8 +1,34 @@
 # Frontend (`frontend/src/`)
 
-Vue 3.5 (`<script setup>`), Vue Router, Pinia, vue-i18n 9, Tailwind 3 (no
-component plugin), Font Awesome 6 solid, axios. Built by Vite; production is a
-static bundle behind nginx.
+Vue 3.5 (`<script setup>`), Vue Router, Pinia, vue-i18n 11, Tailwind 4, shadcn-vue
+(Reka UI, style `reka-nova`, in `components/ui/<name>/`), Font Awesome 7, axios.
+Built by Vite; production is a static bundle behind nginx.
+
+## Components
+
+Screens use the `Bc*` wrappers in `components/ui/` (`BcButton`, `BcPanel`,
+`BcField`, `BcDialog`, ...), which compose shadcn-vue components; use shadcn
+directly for what has no wrapper. Our sizes and tones live in the shadcn files'
+`cva` variants, its colours resolve through `assets/tokens.css` in the `@theme`
+block of `assets/main.css`. See the `shadcn-vue` skill for the rules. Adding with
+the CLI: pipe `yes n` so it doesn't overwrite customised components.
+Global CSS must stay in a layer: unlayered rules outrank every Tailwind utility.
+The chat widget (`components/chat/`) keeps its own CSS variables, since colours
+are per customer.
+
+## Addresses
+
+The app is built with `base: '/dashboard/'` and served there. `/chat/:id` and
+`/share/:id` keep their root addresses because they are embedded on customer
+sites and shared as links: the same `index.html` answers them, and
+`router/index.js` picks the router base from the current path. `/` is the
+separate public website (`landing/`: Astro + shadcn-vue, rendered to static HTML
+in de/fr/en, its own container, indexed by search engines). Copy is in
+`landing/src/content/`, prices and legal details in `landing/src/site.ts`. The routing is in `nginx/nginx.conf`,
+which also redirects the dashboard's old addresses (`/login`, `/tenant/…`) and
+`/?onboarding` to `/dashboard/…`. Everything but `/` is `noindex`. Files from
+`public/` are under `/dashboard/`: use `import.meta.env.BASE_URL` in dynamic
+links. Locally: `:5173/dashboard/`, landing on `:8080` (`landing` service).
 
 ## Two looks
 
@@ -77,3 +103,11 @@ German is Swiss: "ss" not "ß", «» quotes, informal where the product speaks t
 end users. Write for non-technical customers (municipal staff): no developer
 terms in the UI. Check after changes: every `t('…')` key exists in all locales,
 and `npx vite build` passes.
+
+## Month calendar
+
+`components/tenant/MonthCalendar.vue` (route `TenantCalendar`, `sources/calendar`) is where people
+check every learned date: month picker, search over all dates, calendar filter, day details under the
+week. Its state is in the address (`?month`, `?day`, `?cal`, `?q`), so Wissen links straight to a day.
+API: `GET /tenants/:id/knowledge/calendar`. Times (`tenant_events.start_time/end_time`) are as printed
+on the page; none printed means all day, and the feed then writes an all-day entry.

@@ -1,84 +1,117 @@
 <template>
-  <nav class="bc-sidebar" :aria-label="$t('sidebar.mainNav')">
-    <router-link to="/manage-tenants" class="bc-sidebar__logo"><img src="/logo.svg" alt="Burncodes AI" /></router-link>
+  <Sidebar :collapsible="isMobile ? 'offcanvas' : 'none'" role="navigation" :aria-label="$t('sidebar.mainNav')"
+    :class="isMobile ? '' : 'sticky top-0 h-svh'">
+    <SidebarHeader class="gap-3 p-3">
+      <router-link to="/manage-tenants" class="px-2 pt-2 pb-1"><img src="/logo_white.svg" alt="Burncodes AI" class="h-9 w-auto" /></router-link>
 
-    <!-- Chatbot switcher -->
-    <div ref="switcherRef" class="bc-switcher">
-      <button type="button" class="bc-switcher__btn" aria-haspopup="listbox" :aria-expanded="switcherOpen ? 'true' : 'false'" @click="switcherOpen = !switcherOpen">
-        <span :class="['bc-switcher__dot', isOn(activeTenant) ? 'is-on' : 'is-off']" aria-hidden="true"></span>
-        <span class="bc-switcher__text">
-          <span class="bc-switcher__name">{{ activeTenant?.name ?? $t('sidebar.selectTenant') }}</span>
-          <span v-if="activeTenant" class="bc-switcher__state">{{ isOn(activeTenant) ? $t('ui.status.on') : $t('ui.status.off') }}</span>
+      <!-- Chatbot switcher -->
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <SidebarMenuButton size="lg" class="border border-sidebar-border bg-white/10">
+            <span :class="cn('size-2.5 shrink-0 rounded-full', isOn(activeTenant) ? 'bg-[#7ee2a8]' : 'bg-white/50')" aria-hidden="true"></span>
+            <span class="grid min-w-0 flex-1 leading-tight">
+              <span class="truncate font-bold">{{ activeTenant?.name ?? $t('sidebar.selectTenant') }}</span>
+              <span v-if="activeTenant" class="truncate text-sm font-normal text-sidebar-foreground/80">{{ isOn(activeTenant) ? $t('ui.status.on') : $t('ui.status.off') }}</span>
+            </span>
+            <BcIcon name="chevron-down" />
+          </SidebarMenuButton>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" class="w-(--reka-dropdown-menu-trigger-width) min-w-56">
+          <DropdownMenuGroup>
+            <DropdownMenuItem v-for="t in tenantsStore.tenants" :key="t.id" @select="selectTenant(t)">
+              <span :class="cn('size-2.5 shrink-0 rounded-full', isOn(t) ? 'bg-success' : 'bg-muted-foreground')" aria-hidden="true"></span>
+              <span class="flex-1 truncate">{{ t.name }}</span>
+              <BcIcon v-if="t.id === activeTenant?.id" name="check" />
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <DropdownMenuItem @select="newTenant"><BcIcon name="plus" />{{ $t('manageTenants.newTenant') }}</DropdownMenuItem>
+            <DropdownMenuItem as-child><router-link to="/manage-tenants" @click="closeMobile"><BcIcon name="list" />{{ $t('ui.allBots') }}</router-link></DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </SidebarHeader>
+
+    <SidebarContent>
+      <SidebarGroup v-if="activeTenant">
+        <SidebarGroupLabel>{{ $t('sidebar.workspace') }}</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem v-for="item in NAV" :key="item.route">
+              <SidebarMenuButton as-child :is-active="isActive({ name: item.route, params: { tenantId: activeTenant.id } })">
+                <router-link :to="{ name: item.route, params: { tenantId: activeTenant.id } }" @click="closeMobile">
+                  <BcIcon :name="item.icon" /><span>{{ $t(item.label) }}</span>
+                </router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child :is-active="isActive({ name: 'TenantTestPage', params: { tenantId: activeTenant.id } })">
+                <router-link :to="{ name: 'TenantTestPage', params: { tenantId: activeTenant.id } }" @click="closeMobile">
+                  <BcIcon name="arrow-up-right-from-square" />
+                  <span>{{ $t('sidebar.chatbot') }}</span>
+                  <BcIcon v-if="activeTenant.test_protected" name="lock" :label="$t('testPage.link.protected')" />
+                </router-link>
+              </SidebarMenuButton>
+              <SidebarMenuAction :title="linkCopied ? $t('sidebar.linkCopied') : $t('sidebar.copyLink')" :aria-label="linkCopied ? $t('sidebar.linkCopied') : $t('sidebar.copyLink')" @click="copyLink">
+                <BcIcon :name="linkCopied ? 'check' : 'link'" />
+              </SidebarMenuAction>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      <SidebarGroup>
+        <SidebarGroupLabel>{{ $t('sidebar.account') }}</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child :is-active="route.name === 'ManageTenants'">
+                <router-link to="/manage-tenants" @click="closeMobile"><BcIcon name="layer-group" /><span>{{ $t('sidebar.manageTenants') }}</span></router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </SidebarContent>
+
+    <SidebarSeparator class="mx-3" />
+    <SidebarFooter class="p-3">
+      <div class="flex items-center gap-3 px-2 py-2">
+        <Avatar><AvatarFallback class="bg-white/20 font-semibold text-white">{{ initials }}</AvatarFallback></Avatar>
+        <span class="grid min-w-0 leading-tight">
+          <span class="truncate font-semibold">{{ userName }}</span>
+          <span class="truncate text-sm text-sidebar-foreground/80">{{ authStore.user?.email }}</span>
         </span>
-        <BcIcon name="chevron-down" class="bc-switcher__chev" />
-      </button>
-      <div v-if="switcherOpen" class="bc-popover bc-switcher__menu" role="listbox">
-        <div v-for="t in tenantsStore.tenants" :key="t.id" role="option" tabindex="0" :aria-selected="t.id === activeTenant?.id ? 'true' : 'false'"
-          :class="['bc-switcher__opt', { 'is-current': t.id === activeTenant?.id }]" @click="selectTenant(t)" @keydown.enter="selectTenant(t)">
-          <span :class="['bc-switcher__dot', isOn(t) ? 'is-on' : 'is-off']" aria-hidden="true"></span>
-          <span>{{ t.name }}</span>
-          <BcIcon v-if="t.id === activeTenant?.id" name="check" />
-        </div>
-        <div class="bc-switcher__sep"></div>
-        <div class="bc-switcher__opt" role="option" tabindex="0" @click="newTenant" @keydown.enter="newTenant">
-          <BcIcon name="plus" />{{ $t('manageTenants.newTenant') }}
-        </div>
-        <router-link to="/manage-tenants" class="bc-switcher__opt" role="option" @click="switcherOpen = false">
-          <BcIcon name="list" />{{ $t('ui.allBots') }}
-        </router-link>
       </div>
-    </div>
-
-    <template v-if="activeTenant">
-      <div class="bc-nav__section">{{ $t('sidebar.workspace') }}</div>
-      <router-link v-for="item in NAV" :key="item.route" :to="{ name: item.route, params: { tenantId: activeTenant.id } }"
-        class="bc-nav__item" active-class="is-active" @click="$emit('navigate')">
-        <BcIcon :name="item.icon" class="bc-nav__icon" />
-        <span class="bc-nav__label">{{ $t(item.label) }}</span>
-      </router-link>
-      <div class="bc-nav__row">
-        <router-link :to="{ name: 'TenantTestPage', params: { tenantId: activeTenant.id } }" class="bc-nav__item" active-class="is-active" @click="$emit('navigate')">
-          <BcIcon name="arrow-up-right-from-square" class="bc-nav__icon" />
-          <span class="bc-nav__label">{{ $t('sidebar.chatbot') }}</span>
-          <BcIcon v-if="activeTenant.test_protected" name="lock" :label="$t('testPage.link.protected')" />
-        </router-link>
-        <BcIconButton icon="link" size="sm" :label="linkCopied ? $t('sidebar.linkCopied') : $t('sidebar.copyLink')" @click="copyLink" />
-      </div>
-    </template>
-
-    <div class="bc-nav__section">{{ $t('sidebar.account') }}</div>
-    <router-link to="/manage-tenants" class="bc-nav__item" active-class="is-active" @click="$emit('navigate')">
-      <BcIcon name="layer-group" class="bc-nav__icon" />
-      <span class="bc-nav__label">{{ $t('sidebar.manageTenants') }}</span>
-    </router-link>
-
-    <div class="bc-sidebar__spacer"></div>
-    <div class="bc-sidebar__user">
-      <span class="bc-avatar" aria-hidden="true">{{ initials }}</span>
-      <span class="bc-sidebar__who">
-        <span class="bc-sidebar__name">{{ userName }}</span>
-        <span class="bc-sidebar__email">{{ authStore.user?.email }}</span>
-      </span>
-    </div>
-    <router-link :to="{ name: 'AccountSettings', params: { section: 'profile' } }" :class="['bc-nav__item', { 'is-active': route.name === 'AccountSettings' }]" @click="$emit('navigate')">
-      <BcIcon name="gear" class="bc-nav__icon" />
-      <span class="bc-nav__label">{{ $t('sidebar.settings') }}</span>
-    </router-link>
-    <a href="#" class="bc-nav__item" @click.prevent="handleLogout">
-      <BcIcon name="arrow-right-from-bracket" class="bc-nav__icon" />
-      <span class="bc-nav__label">{{ $t('sidebar.logout') }}</span>
-    </a>
-  </nav>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton as-child :is-active="route.name === 'AccountSettings'">
+            <router-link :to="{ name: 'AccountSettings', params: { section: 'profile' } }" @click="closeMobile"><BcIcon name="gear" /><span>{{ $t('sidebar.settings') }}</span></router-link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton @click="handleLogout"><BcIcon name="arrow-right-from-bracket" /><span>{{ $t('sidebar.logout') }}</span></SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarFooter>
+  </Sidebar>
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useTenantsStore } from '../stores/tenants';
 import { useAuthStore } from '../stores/auth';
-import { BcIcon, BcIconButton } from './ui';
+import { cn } from '@/lib/utils';
+import { BcIcon } from './ui';
+import { Avatar, AvatarFallback } from './ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuAction, SidebarMenuButton, SidebarMenuItem, SidebarSeparator, useSidebar } from './ui/sidebar';
 
-const emit = defineEmits(['newTenant', 'navigate']);
+const emit = defineEmits(['newTenant']);
+const { isMobile, setOpenMobile } = useSidebar();
+const closeMobile = () => setOpenMobile(false);
 
 // The design system's fixed icon per area
 const NAV = [
@@ -105,17 +138,16 @@ const userName = computed(() => {
 });
 const initials = computed(() => userName.value.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase() || '?');
 
+// The current area stays marked on its sub-pages (a crawl under Wissen)
+const isActive = (to) => route.path.startsWith(router.resolve(to).path);
+
 // ── Switcher ────────────────────────────────────────────────────────
-const switcherOpen = ref(false);
-const switcherRef = ref(null);
 const selectTenant = (t) => {
-  switcherOpen.value = false;
   tenantsStore.selectTenant(t);
   router.push({ name: 'TenantOverview', params: { tenantId: t.id } });
-  emit('navigate');
+  closeMobile();
 };
-const newTenant = () => { switcherOpen.value = false; emit('newTenant'); };
-const onOutside = (e) => { if (switcherRef.value && !switcherRef.value.contains(e.target)) switcherOpen.value = false; };
+const newTenant = () => { closeMobile(); emit('newTenant'); };
 
 // ── Public test page link ───────────────────────────────────────────
 const linkCopied = ref(false);
@@ -132,11 +164,7 @@ const handleLogout = async () => {
   router.push('/login');
 };
 
-onMounted(() => {
-  tenantsStore.fetchTenants();
-  document.addEventListener('click', onOutside);
-});
-onUnmounted(() => document.removeEventListener('click', onOutside));
+onMounted(() => tenantsStore.fetchTenants());
 
 // The address names the chatbot; with only one, it's the one
 watch(

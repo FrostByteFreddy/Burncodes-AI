@@ -2,14 +2,14 @@
   <div class="cfg-page">
     <div v-if="!tenantsStore.currentTenant" class="cfg-layout" aria-busy="true">
       <div class="cfg-stack">
-        <span class="ghost ghost--title" style="width: 160px; height: 28px"></span>
-        <section v-for="n in 3" :key="n" class="panel ghost-stack">
-          <span class="ghost ghost--title" style="width: 140px"></span>
-          <span class="ghost" style="height: 40px"></span>
-          <span class="ghost ghost--line" style="width: 60%"></span>
-        </section>
+        <Skeleton class="ghost--title" style="width: 160px; height: 28px" />
+        <BcPanel as="section"  v-for="n in 3" :key="n" class="ghost-stack">
+          <Skeleton class="ghost--title" style="width: 140px" />
+          <Skeleton style="height: 40px" />
+          <Skeleton class="ghost--line" style="width: 60%" />
+        </BcPanel>
       </div>
-      <div class="cfg-preview"><span class="ghost" style="height: 100%; border-radius: 20px"></span></div>
+      <div class="cfg-preview"><Skeleton style="height: 100%; border-radius: 20px" /></div>
     </div>
 
     <div v-else class="cfg-layout">
@@ -20,10 +20,10 @@
             <p class="page-lede">{{ $t('pages.configure') }}</p>
           </div>
           <div class="page-actions">
-            <button type="button" class="btn-quiet" :disabled="matching" @click="matchWebsite">
+            <BcButton variant="secondary" type="button"  :disabled="matching" @click="matchWebsite">
               <font-awesome-icon :icon="matching ? ['fas', 'spinner'] : ['fas', 'wand-magic-sparkles']" :class="{ 'animate-spin': matching }" />
               {{ $t('configure.branding.button') }}
-            </button>
+            </BcButton>
           </div>
         </div>
 
@@ -34,11 +34,11 @@
           <div v-if="dirty" class="cfg-savebar" role="status">
             <p>{{ $t('configure.unsaved') }}</p>
             <div class="page-actions">
-              <button type="button" class="btn-quiet" :disabled="saving" @click="load">{{ $t('configure.discard') }}</button>
-              <button type="submit" class="btn-action" :disabled="saving">
-                <font-awesome-icon v-if="saving" :icon="['fas', 'spinner']" class="animate-spin" />
+              <BcButton variant="secondary" type="button"  :disabled="saving" @click="load">{{ $t('configure.discard') }}</BcButton>
+              <BcButton variant="primary" type="submit"  :disabled="saving">
+                <Spinner v-if="saving" data-icon="inline-start" />
                 {{ $t('configure.save') }}
-              </button>
+              </BcButton>
             </div>
           </div>
         </Transition>
@@ -52,6 +52,9 @@
 </template>
 
 <script setup>
+import { Spinner } from '@/components/ui/spinner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { BcButton, BcPanel } from '@/components/ui';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useTenantsStore } from '../../stores/tenants';
@@ -134,12 +137,12 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload)
 .cfg-savebar {
   position: sticky; bottom: 32px; z-index: 20;
   display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-  margin-top: 20px; padding: 14px 16px 14px 20px;
+  margin-top: 20px; padding: 16px 16px 16px 20px;
   border-radius: var(--radius-lg);
   background: var(--surface-2); border: 1px solid var(--interactive-strong);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-3);
 }
-.cfg-savebar p { font-size: 15px; font-weight: 600; color: var(--surface-heading); }
+.cfg-savebar p { font-size: 16px; font-weight: 600; color: var(--surface-heading); }
 .cfg-bar-enter-active, .cfg-bar-leave-active { transition: opacity var(--t-fast), transform var(--t-fast); }
 .cfg-bar-enter-from, .cfg-bar-leave-to { opacity: 0; transform: translateY(8px); }
 

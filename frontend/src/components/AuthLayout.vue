@@ -1,6 +1,6 @@
 <template>
   <div class="auth">
-    <!-- Brand panel: the one place in the app where the logo's gradient fills a surface -->
+    <!-- Brand panel: flat indigo, as on the website; only the logo has the gradient -->
     <aside class="auth-brand">
       <div class="auth-brand__noise"></div>
       <img src="/logo_white.svg" alt="Burncodes AI" class="auth-brand__logo" />
@@ -29,7 +29,7 @@ defineProps({ tagline: { type: String, required: true } });
 .auth-brand {
   position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between;
   padding: var(--space-12); color: #fff;
-  background: linear-gradient(135deg, var(--brand-indigo) 0%, var(--brand-violet) 40%, var(--brand-magenta) 100%);
+  background: var(--brand-indigo);
 }
 .auth-brand__noise {
   position: absolute; inset: 0; opacity: 0.03; pointer-events: none;

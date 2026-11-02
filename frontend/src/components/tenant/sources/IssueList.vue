@@ -51,18 +51,18 @@ const detail = (it) => {
 </script>
 
 <style scoped>
-.il { display: flex; flex-direction: column; gap: 22px; }
-.il__group { display: flex; flex-direction: column; gap: 6px; }
-.il__title { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; color: var(--surface-heading); }
+.il { display: flex; flex-direction: column; gap: 24px; }
+.il__group { display: flex; flex-direction: column; gap: 8px; }
+.il__title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: var(--surface-heading); }
 .il__icon { width: 16px; color: var(--status-warning); }
 .il__count { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: var(--radius-pill); background: var(--status-warning-soft); color: var(--status-warning); }
-.il__hint { font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); padding-left: 26px; }
-.il__list { list-style: none; padding: 0 0 0 26px; margin: 4px 0 0; display: flex; flex-direction: column; }
-.il__item { display: flex; flex-wrap: wrap; gap: 2px 10px; padding: 7px 0; border-top: 1px solid var(--surface-3); font-size: var(--text-sm); }
+.il__hint { font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); padding-left: 24px; }
+.il__list { list-style: none; padding: 0 0 0 24px; margin: 4px 0 0; display: flex; flex-direction: column; }
+.il__item { display: flex; flex-wrap: wrap; gap: 2px 8px; padding: 8px 0; border-top: 1px solid var(--surface-3); font-size: var(--text-sm); }
 .il__item:first-child { border-top: none; }
 .il__doc { color: var(--surface-heading); font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
 .il__doc:hover { color: var(--interactive); text-decoration: underline; }
 .il__detail { color: var(--surface-text); overflow-wrap: anywhere; }
-.il__more { align-self: flex-start; margin-left: 26px; background: none; border: none; padding: 0; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--interactive); }
+.il__more { align-self: flex-start; margin-left: 24px; background: none; border: none; padding: 0; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--interactive); }
 .il__more:hover { text-decoration: underline; }
 </style>

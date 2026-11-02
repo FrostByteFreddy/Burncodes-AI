@@ -28,7 +28,7 @@
                     <font-awesome-icon :icon="['fas', 'globe']" />
                   </div>
                   <div>
-                    <p class="font-bold text-white text-sm">{{ $t('tenant.sources.wizard.typeWebsite') }}</p>
+                    <p class="font-bold text-foreground text-sm">{{ $t('tenant.sources.wizard.typeWebsite') }}</p>
                     <p class="step-subtext mt-1">{{ $t('tenant.sources.wizard.typeWebsiteDesc') }}</p>
                   </div>
                 </button>
@@ -40,7 +40,7 @@
                     <font-awesome-icon :icon="['fas', 'file-lines']" />
                   </div>
                   <div>
-                    <p class="font-bold text-white text-sm">{{ $t('tenant.sources.wizard.typeDocument') }}</p>
+                    <p class="font-bold text-foreground text-sm">{{ $t('tenant.sources.wizard.typeDocument') }}</p>
                     <p class="step-subtext mt-1">{{ $t('tenant.sources.wizard.typeDocumentDesc') }}</p>
                   </div>
                 </button>
@@ -59,26 +59,26 @@
             <!-- Step 1: Configure -->
             <div v-if="step === 1">
               <!-- Website: address and how much of it -->
-              <div v-if="type === 'website'" class="space-y-6">
-                <div>
-                  <label class="field-label">{{ $t('tenant.sources.wizard.urlLabel') }}</label>
+              <div v-if="type === 'website'" class="flex flex-col gap-6">
+                <Field>
+                  <FieldLabel>{{ $t('tenant.sources.wizard.urlLabel') }}</FieldLabel>
                   <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/30">
                       <font-awesome-icon :icon="['fas', 'link']" />
                     </div>
-                    <input v-model="url" type="text" :placeholder="$t('tenant.sources.wizard.urlPlaceholder')"
-                      class="field-input pl-11" :class="{ 'has-error': !isUrlValid && url }" />
+                    <Input v-model="url" type="text" :placeholder="$t('tenant.sources.wizard.urlPlaceholder')"
+                      class="pl-11" :class="{ 'has-error': !isUrlValid && url }" />
                   </div>
                   <p v-if="!isUrlValid && url" class="text-error text-xs px-1 mt-1.5 flex items-center gap-1">
                     <font-awesome-icon :icon="['fas', 'circle-exclamation']" /> {{ $t('tenant.sources.invalidUrl') }}
                   </p>
-                </div>
+                </Field>
 
-                <div class="space-y-3">
-                  <label class="field-label">{{ $t('tenant.sources.wizard.scope.question') }}</label>
+                <div class="flex flex-col gap-3">
+                  <Label class="mb-2">{{ $t('tenant.sources.wizard.scope.question') }}</Label>
                   <button v-for="scope in scopes" :key="scope.single" type="button" @click="singlePageOnly = scope.single"
                     class="radio-card p-4" :class="{ 'is-selected': singlePageOnly === scope.single }">
-                    <div class="text-xl mt-0.5">{{ scope.emoji }}</div>
+                    <div class="text-xl mt-0.5"><font-awesome-icon :icon="['fas', scope.icon]" /></div>
                     <div class="flex-1">
                       <p class="step-heading">{{ scope.title }}</p>
                       <p class="step-subtext">{{ scope.desc }}</p>
@@ -99,19 +99,19 @@
                     <p class="file-drop__name" :class="{ 'file-drop__name--active': selectedFile }">
                       {{ selectedFile ? selectedFile.name : $t('tenant.sources.wizard.chooseFile') }}
                     </p>
-                    <p class="step-subtext" style="margin-top:4px;">PDF · TXT · CSV</p>
+                    <p class="step-subtext" style="margin-top:4px;">PDF, TXT, CSV</p>
                   </div>
                 </label>
               </div>
             </div>
 
             <!-- Step 2: Options -->
-            <div v-if="step === 2 && type === 'website'" class="space-y-7">
+            <div v-if="step === 2 && type === 'website'" class="flex flex-col gap-7">
               <template v-if="!singlePageOnly">
-                <section class="space-y-3">
+                <section class="flex flex-col gap-3">
                   <p class="step-heading">{{ $t('tenant.sources.wizard.options.title') }}</p>
                   <label v-for="opt in crawlOptions" :key="opt.key" class="option-row">
-                    <input v-model="options[opt.key]" type="checkbox" class="checkbox checkbox-primary checkbox-sm mt-0.5" />
+                    <Checkbox v-model="options[opt.key]" class="mt-0.5" />
                     <span>
                       <span class="step-heading block">{{ $t(`tenant.sources.wizard.options.${opt.key}`) }}</span>
                       <span class="step-subtext block">{{ $t(`tenant.sources.wizard.options.${opt.key}Desc`) }}</span>
@@ -119,7 +119,7 @@
                   </label>
                 </section>
 
-                <section class="space-y-3">
+                <section class="flex flex-col gap-3">
                   <div>
                     <p class="step-heading">{{ $t('tenant.sources.wizard.exclude.title') }}</p>
                     <p class="step-subtext">{{ $t('tenant.sources.wizard.exclude.desc') }}</p>
@@ -142,8 +142,8 @@
                         @keydown.escape="addingExclusion = false; exclusionDraft = ''"
                         :placeholder="$t('tenant.sources.wizard.exclude.placeholder')" />
                     </div>
-                    <button type="button" @click="confirmExclusion" class="btn btn-sm btn-primary rounded-xl px-4">{{ $t('tenant.sources.wizard.exclude.add') }}</button>
-                    <button type="button" @click="addingExclusion = false; exclusionDraft = ''" class="btn btn-sm btn-ghost rounded-xl">{{ $t('tenant.sources.wizard.exclude.cancel') }}</button>
+                    <BcButton variant="primary" size="sm" type="button" @click="confirmExclusion" class="rounded-xl px-4">{{ $t('tenant.sources.wizard.exclude.add') }}</BcButton>
+                    <BcButton variant="quiet" size="sm" type="button" @click="addingExclusion = false; exclusionDraft = ''" class="rounded-xl">{{ $t('tenant.sources.wizard.exclude.cancel') }}</BcButton>
                   </div>
 
                   <button v-if="!addingExclusion" type="button" @click="addExclusion" class="add-row">
@@ -153,19 +153,19 @@
                 </section>
               </template>
 
-              <section class="space-y-2">
+              <section class="flex flex-col gap-2">
                 <p class="step-heading">{{ $t('tenant.sources.wizard.crawlModeLabel') }}</p>
                 <p class="step-subtext">{{ $t('tenant.sources.wizard.crawlModeHint') }}</p>
                 <button v-for="mode in crawlModes" :key="mode.value" type="button"
                   @click="crawlMode = mode.value"
                   class="radio-card"
                   :class="{ 'is-selected': crawlMode === mode.value }">
-                  <div class="text-xl leading-none mt-0.5 w-6 flex-shrink-0">{{ mode.emoji }}</div>
+                  <div class="text-xl leading-none mt-0.5 w-6 shrink-0"><font-awesome-icon :icon="['fas', mode.icon]" /></div>
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2">
-                      <span class="text-sm font-bold text-white">{{ mode.label }}</span>
+                      <span class="text-sm font-bold text-foreground">{{ mode.label }}</span>
                       <span v-if="mode.badge"
-                        class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                        class="text-xs font-semibold px-2 py-0.5 rounded-full"
                         :class="mode.badgeClass">{{ mode.badge }}</span>
                     </div>
                     <p class="step-subtext mt-0.5">{{ mode.desc }}</p>
@@ -244,6 +244,11 @@
 </template>
 
 <script setup>
+import { Checkbox } from '@/components/ui/checkbox';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { BcButton } from '@/components/ui';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ref, reactive, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import WizardPanel from '../../WizardPanel.vue';
@@ -265,13 +270,13 @@ const type = ref(null); // 'website' | 'document'
 const lastStep = computed(() => (type.value === 'website' ? 3 : 2));
 
 const scopes = computed(() => [
-  { single: false, emoji: '🌐', title: t('tenant.sources.wizard.scope.fullTitle'), desc: t('tenant.sources.wizard.scope.fullDesc') },
-  { single: true,  emoji: '📄', title: t('tenant.sources.wizard.singlePageLabel'), desc: t('tenant.sources.wizard.scope.singleDesc') },
+  { single: false, icon: 'globe', title: t('tenant.sources.wizard.scope.fullTitle'), desc: t('tenant.sources.wizard.scope.fullDesc') },
+  { single: true,  icon: 'file', title: t('tenant.sources.wizard.singlePageLabel'), desc: t('tenant.sources.wizard.scope.singleDesc') },
 ]);
 
 const crawlModes = computed(() => [
-  { value: 'soup',       emoji: '⚡', label: t('tenant.sources.wizard.modeSoup'),       desc: t('tenant.sources.wizard.modeSoupDesc'),      badge: t('tenant.sources.wizard.modeSoupBadge'),       badgeClass: 'bg-success/15 text-success' },
-  { value: 'playwright', emoji: '🌐', label: t('tenant.sources.wizard.modePlaywright'), desc: t('tenant.sources.wizard.modePlaywrightDesc'), badge: t('tenant.sources.wizard.modePlaywrightBadge'), badgeClass: 'bg-warning/15 text-warning'  },
+  { value: 'soup',       icon: 'bolt', label: t('tenant.sources.wizard.modeSoup'),       desc: t('tenant.sources.wizard.modeSoupDesc'),      badge: t('tenant.sources.wizard.modeSoupBadge'),       badgeClass: 'bg-success/15 text-success' },
+  { value: 'playwright', icon: 'globe', label: t('tenant.sources.wizard.modePlaywright'), desc: t('tenant.sources.wizard.modePlaywrightDesc'), badge: t('tenant.sources.wizard.modePlaywrightBadge'), badgeClass: 'bg-warning/15 text-warning'  },
 ]);
 const url = ref('');
 const crawlMode = ref('soup');
@@ -376,7 +381,7 @@ const submit = async () => {
 /* ── Option rows ─────────────────────────────────────────────────── */
 .option-row {
   display: flex; align-items: flex-start; gap: 12px; cursor: pointer;
-  padding: 12px 14px; border-radius: var(--radius-md);
+  padding: 12px 16px; border-radius: var(--radius-md);
   background: var(--surface-2); border: 1px solid var(--surface-3);
 }
 
@@ -390,12 +395,12 @@ const submit = async () => {
   color: var(--surface-muted);
   transition: background var(--t-fast), color var(--t-fast);
 }
-.type-icon--active { background: rgba(10,31,171,0.15); color: var(--brand-indigo); }
+.type-icon--active { background: var(--interactive-soft); color: var(--brand-indigo); }
 
 /* ── Info box ────────────────────────────────────────────────────── */
 .info-box {
-  display: flex; gap: 10px; align-items: flex-start;
-  padding: 14px;
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 16px;
   background: var(--surface-2);
   border: 1px solid var(--surface-3);
   border-radius: var(--radius-md);
@@ -406,20 +411,20 @@ const submit = async () => {
 /* ── Field icon ──────────────────────────────────────────────────── */
 .field-icon {
   position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-  padding-left: 14px; pointer-events: none; color: var(--surface-muted);
+  padding-left: 16px; pointer-events: none; color: var(--surface-muted);
 }
 
 /* ── File drop zone ──────────────────────────────────────────────── */
 .file-drop {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 14px; padding: 36px 20px;
+  gap: 16px; padding: 36px 20px;
   border-radius: var(--radius-lg);
   border: 1.5px dashed var(--surface-3);
   cursor: pointer;
   transition: border-color var(--t-fast), background var(--t-fast);
 }
-.file-drop:hover       { border-color: var(--brand-indigo); background: rgba(10,31,171,0.04); }
-.file-drop--active     { border-color: var(--brand-indigo); background: rgba(10,31,171,0.06); }
+.file-drop:hover       { border-color: var(--brand-indigo); background: var(--interactive-soft); }
+.file-drop--active     { border-color: var(--brand-indigo); background: var(--interactive-soft); }
 .file-drop__icon {
   width: 52px; height: 52px; border-radius: var(--radius-lg);
   display: flex; align-items: center; justify-content: center;
@@ -427,8 +432,8 @@ const submit = async () => {
   transition: background var(--t-fast), color var(--t-fast);
 }
 .file-drop:hover .file-drop__icon,
-.file-drop__icon--active { background: rgba(10,31,171,0.15); color: var(--brand-indigo); }
-.file-drop__name        { font-size: 13px; font-weight: 600; color: var(--surface-muted); }
+.file-drop__icon--active { background: var(--interactive-soft); color: var(--brand-indigo); }
+.file-drop__name        { font-size: 14px; font-weight: 600; color: var(--surface-muted); }
 .file-drop__name--active { color: var(--brand-indigo); }
 </style>
 

@@ -1,17 +1,16 @@
 <template>
-  <div :class="['bc-notice', `bc-notice--${tone}`]" :role="tone === 'error' || tone === 'warning' ? 'alert' : undefined">
-    <BcIcon :name="icon || ICONS[tone]" class="bc-notice__icon" />
-    <div class="bc-notice__body">
-      <div v-if="heading" class="bc-notice__title">{{ heading }}</div>
-      <div v-if="$slots.default" class="bc-notice__text"><slot /></div>
-      <div v-if="$slots.actions" class="bc-notice__actions"><slot name="actions" /></div>
-    </div>
-  </div>
+  <Alert :variant="tone" :role="tone === 'error' || tone === 'warning' ? 'alert' : undefined">
+    <BcIcon :name="icon || ICONS[tone]" />
+    <AlertTitle v-if="heading" class="text-base font-bold">{{ heading }}</AlertTitle>
+    <AlertDescription v-if="$slots.default" class="col-start-2 text-base text-foreground"><slot /></AlertDescription>
+    <div v-if="$slots.actions" class="col-start-2 mt-3 flex flex-wrap gap-3"><slot name="actions" /></div>
+  </Alert>
 </template>
 
 <script setup>
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { Alert, AlertDescription, AlertTitle } from './alert';
 import BcIcon from './BcIcon.vue';
 
 const ICONS = { info: 'circle-info', success: 'circle-check', warning: 'triangle-exclamation', error: 'circle-exclamation', ai: 'brain', tip: 'lightbulb' };
