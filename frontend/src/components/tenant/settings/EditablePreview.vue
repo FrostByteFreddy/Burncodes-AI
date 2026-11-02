@@ -364,8 +364,10 @@ onBeforeUnmount(() => {
 }
 .epv__hit--round { border-radius: 50%; }
 .epv__hit:hover, .epv__hit:focus-visible, .epv__hit--open {
+  /* Only a frame: the part stays visible while it's being edited. The light
+     ring keeps the frame readable on a header in the same colour. */
   outline: 2px dashed var(--interactive-strong); outline-offset: 2px;
-  background: var(--interactive-soft);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
 }
 .epv__tag {
   position: absolute; left: 0; bottom: calc(100% + 6px); white-space: nowrap;
