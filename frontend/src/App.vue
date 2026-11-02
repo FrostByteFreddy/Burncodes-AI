@@ -4,9 +4,9 @@
     <SidebarProvider v-if="layout === 'default'" :style="{ '--sidebar-width': '272px' }" class="mx-auto max-w-(--shell-max)">
       <AppSidebar @new-tenant="showCreateModal = true" />
       <SidebarInset class="min-w-0 bg-background">
-        <header class="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-card px-3 min-[1101px]:hidden">
-          <SidebarTrigger :aria-label="$t('ui.menu')" />
-          <router-link to="/manage-tenants"><img src="/logo.svg" alt="Burncodes AI" class="h-7" /></router-link>
+        <header class="sticky top-0 z-10 flex h-14 items-center gap-3 bg-sidebar px-3 text-sidebar-foreground min-[1101px]:hidden">
+          <SidebarTrigger :aria-label="$t('ui.menu')" class="text-white hover:bg-white/15 hover:text-white" />
+          <router-link to="/manage-tenants"><img src="/logo_white.svg" alt="Burncodes AI" class="h-7" /></router-link>
         </header>
         <div class="p-6 min-[1101px]:p-10">
           <div class="mx-auto max-w-(--content-max)"><router-view /></div>

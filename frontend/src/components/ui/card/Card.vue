@@ -19,7 +19,7 @@ const props = defineProps({
     :data-size="size"
     :class="
       cn(
-        'bg-card text-card-foreground gap-5 rounded-lg border py-6 text-base group/card flex flex-col',
+        'bg-card text-card-foreground gap-5 rounded-xl border py-6 text-base group/card flex flex-col',
         props.class,
       )
     "

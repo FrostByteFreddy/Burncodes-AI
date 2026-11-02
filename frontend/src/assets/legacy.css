@@ -7,7 +7,7 @@
 /* Page header, as .bc-pagehead */
 .page-head {
   display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap;
-  padding-bottom: var(--space-6); margin-bottom: var(--space-8); border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-8);
 }
 .page-title { font-size: 28px; line-height: 36px; font-weight: 700; letter-spacing: -0.005em; color: var(--text-primary); }
 .page-lede { margin-top: var(--space-1); font-size: 18px; line-height: 28px; color: var(--text-secondary); max-width: var(--reading-max); }

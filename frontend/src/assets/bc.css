@@ -39,11 +39,11 @@
 .bc-balance.is-low .bc-icon, .bc-balance.is-low .bc-balance__value, .bc-balance.is-low .bc-balance__label { color: var(--status-warn); }
 .bc-balance.is-low .bc-balance__action { background: var(--interactive); color: var(--on-interactive); }
 /* ---------- Layout ---------- */
-.bc-pagehead { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); padding-bottom: var(--space-6); margin-bottom: var(--space-8); border-bottom: 1px solid var(--border-subtle); flex-wrap: wrap; }
+.bc-pagehead { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); margin-bottom: var(--space-8); flex-wrap: wrap; }
 .bc-pagehead__eyebrow { font-size: 14px; line-height: 20px; color: var(--text-tertiary); margin-bottom: var(--space-1); }
 .bc-pagehead__titlerow { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
-.bc-pagehead__title { margin: 0; font-size: 28px; line-height: 36px; font-weight: 700; letter-spacing: -0.005em; }
-.bc-pagehead__lede { margin: var(--space-1) 0 0; font-size: 18px; line-height: 28px; color: var(--text-secondary); max-width: var(--reading-max); }
+.bc-pagehead__title { margin: 0; font-size: clamp(2rem, 3vw, 2.5rem); line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; }
+.bc-pagehead__lede { margin: var(--space-2) 0 0; font-size: 18px; line-height: 28px; color: var(--text-secondary); max-width: var(--reading-max); }
 .bc-pagehead__actions { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; }
 .bc-section { display: flex; flex-direction: column; gap: var(--space-4); }
 .bc-section + .bc-section { margin-top: var(--space-10); }

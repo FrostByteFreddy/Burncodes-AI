@@ -1,17 +1,17 @@
 <template>
   <Sidebar :collapsible="isMobile ? 'offcanvas' : 'none'" role="navigation" :aria-label="$t('sidebar.mainNav')"
-    :class="isMobile ? '' : 'sticky top-0 h-svh border-x'">
+    :class="isMobile ? '' : 'sticky top-0 h-svh'">
     <SidebarHeader class="gap-3 p-3">
-      <router-link to="/manage-tenants" class="px-2 pt-2 pb-1"><img src="/logo.svg" alt="Burncodes AI" class="h-9 w-auto" /></router-link>
+      <router-link to="/manage-tenants" class="px-2 pt-2 pb-1"><img src="/logo_white.svg" alt="Burncodes AI" class="h-9 w-auto" /></router-link>
 
       <!-- Chatbot switcher -->
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
-          <SidebarMenuButton size="lg" variant="outline">
-            <span :class="cn('size-2.5 shrink-0 rounded-full', isOn(activeTenant) ? 'bg-success' : 'bg-muted-foreground')" aria-hidden="true"></span>
+          <SidebarMenuButton size="lg" class="border border-sidebar-border bg-white/10">
+            <span :class="cn('size-2.5 shrink-0 rounded-full', isOn(activeTenant) ? 'bg-[#7ee2a8]' : 'bg-white/50')" aria-hidden="true"></span>
             <span class="grid min-w-0 flex-1 leading-tight">
               <span class="truncate font-bold">{{ activeTenant?.name ?? $t('sidebar.selectTenant') }}</span>
-              <span v-if="activeTenant" class="truncate text-sm font-normal text-muted-foreground">{{ isOn(activeTenant) ? $t('ui.status.on') : $t('ui.status.off') }}</span>
+              <span v-if="activeTenant" class="truncate text-sm font-normal text-sidebar-foreground/80">{{ isOn(activeTenant) ? $t('ui.status.on') : $t('ui.status.off') }}</span>
             </span>
             <BcIcon name="chevron-down" />
           </SidebarMenuButton>
@@ -78,10 +78,10 @@
     <SidebarSeparator class="mx-3" />
     <SidebarFooter class="p-3">
       <div class="flex items-center gap-3 px-2 py-2">
-        <Avatar><AvatarFallback>{{ initials }}</AvatarFallback></Avatar>
+        <Avatar><AvatarFallback class="bg-white/20 font-semibold text-white">{{ initials }}</AvatarFallback></Avatar>
         <span class="grid min-w-0 leading-tight">
           <span class="truncate font-semibold">{{ userName }}</span>
-          <span class="truncate text-sm text-muted-foreground">{{ authStore.user?.email }}</span>
+          <span class="truncate text-sm text-sidebar-foreground/80">{{ authStore.user?.email }}</span>
         </span>
       </div>
       <SidebarMenu>

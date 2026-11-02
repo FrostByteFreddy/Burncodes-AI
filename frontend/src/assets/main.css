@@ -43,14 +43,14 @@
   --color-warning-soft: var(--status-warn-soft);
   --color-ai: var(--ai-text);
   --color-ai-soft: var(--ai-soft);
-  --color-sidebar: var(--surface-1);
-  --color-sidebar-foreground: var(--text-primary);
-  --color-sidebar-primary: var(--interactive);
-  --color-sidebar-primary-foreground: var(--on-interactive);
-  --color-sidebar-accent: var(--interactive-soft);
-  --color-sidebar-accent-foreground: var(--interactive);
-  --color-sidebar-border: var(--border-subtle);
-  --color-sidebar-ring: var(--focus-ring);
+  --color-sidebar: var(--sidebar-surface);
+  --color-sidebar-foreground: #ffffff;
+  --color-sidebar-primary: #ffffff;
+  --color-sidebar-primary-foreground: var(--brand-indigo);
+  --color-sidebar-accent: rgba(255, 255, 255, 0.16);
+  --color-sidebar-accent-foreground: #ffffff;
+  --color-sidebar-border: rgba(255, 255, 255, 0.22);
+  --color-sidebar-ring: #ffffff;
   --radius-2xl: 20px;
   --color-border: var(--border-subtle);
   --color-input: var(--border-strong);
@@ -84,8 +84,9 @@
   --popover-foreground: var(--text-primary);
   --border: var(--border-subtle);
   --radius: 10px;
-  --sidebar-border: var(--border-subtle);
-  --sidebar-accent: var(--interactive-soft);
+  --sidebar-surface: var(--brand-indigo);
+  --sidebar-border: rgba(255, 255, 255, 0.22);
+  --sidebar-accent: rgba(255, 255, 255, 0.16);
 }
 
 @layer base {
@@ -123,17 +124,18 @@
   margin-bottom: 32px;
 }
 .page-title {
-  font-size: var(--text-xl);
-  font-weight: 800;
-  color: var(--surface-heading);
-  line-height: var(--leading-tight);
-  letter-spacing: -0.01em;
+  font-size: clamp(2rem, 3vw, 2.5rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 .page-lede {
   margin-top: 8px;
-  max-width: var(--measure);
-  font-size: 16px;
-  color: var(--surface-muted);
+  max-width: var(--reading-max);
+  font-size: 18px;
+  line-height: 28px;
+  color: var(--text-secondary);
 }
 .page-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
@@ -185,3 +187,5 @@
 /* 32px under every page header: the margin adds to the page's own gap */
 :is(.ov, .mt-page) > :is(.bc-pagehead, .page-head) { margin-bottom: 0; }
 :is(.ins, .ins-page, .tp, .sources-page) > :is(.bc-pagehead, .page-head) { margin-bottom: 12px; }
+
+:root[data-theme="dark"] { --sidebar-surface: #11183f; }
