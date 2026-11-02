@@ -7,6 +7,7 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   site: 'https://ai.burn.codes',
   trailingSlash: 'always',
+  devToolbar: { enabled: false },
   integrations: [
     vue(),
     sitemap({

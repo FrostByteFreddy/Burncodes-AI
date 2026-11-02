@@ -1,31 +1,49 @@
 ---
 import Base from '@/layouts/Base.astro';
 import PageHero from '@/components/PageHero.astro';
+import Shot from '@/components/Shot.astro';
 import { content } from '@/content';
 import { langPaths, type Locale } from '@/site';
 
 export const getStaticPaths = langPaths;
 const lang = Astro.props.lang as Locale;
 const t = content[lang];
+// Knowledge, answers, look, installation, reports
+const SHOTS = ['calendar', null, 'configure', null, 'insights'];
 ---
 <Base lang={lang} title={t.meta.features.title} description={t.meta.features.description} path="/funktionen/">
   <PageHero h1={t.features.h1} lede={t.features.lede} />
-  {t.features.groups.map((g, i) => (
-    <section class:list={['section', i % 2 === 0 ? 'bg-background' : 'border-y bg-card']}>
-      <div class="wrap grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-14">
-        <div class="lg:sticky lg:top-24 lg:self-start">
-          <h2 class="h2">{g.title}</h2>
-          <p class="mt-3 text-muted-foreground">{g.text}</p>
-        </div>
-        <dl class="grid gap-x-10 sm:grid-cols-2">
-          {g.items.map(([title, text]) => (
-            <div class="border-t py-4">
-              <dt class="font-bold">{title}</dt>
-              <dd class="mt-1 text-muted-foreground">{text}</dd>
+  <div class="bg-card">
+    {t.features.groups.map((g, i) => {
+      const shot = SHOTS[i];
+      return (
+        <section class:list={['section', i > 0 && 'border-t']}>
+          <div class="wrap">
+            <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-14">
+              <div class="lg:sticky lg:top-28 lg:self-start">
+                <h2 class="h2">{g.title}</h2>
+                <p class="mt-3 text-lg text-muted-foreground">{g.text}</p>
+              </div>
+              <div>
+                {shot && (
+                  <figure class="mb-10">
+                    <Shot lang={lang} name={shot} alt={g.title} width={1088} widths={[544, 800, 1088, 1440]} sizes="(min-width: 1024px) 48rem, 100vw" class="rounded-xl border shadow-lg shadow-foreground/5" />
+                    <figcaption class="mt-2 text-sm text-muted-foreground">{t.home.sample}</figcaption>
+                  </figure>
+                )}
+                <dl class="grid gap-x-10 sm:grid-cols-2">
+                  {g.items.map(([title, text]) => (
+                    <div class="border-t py-4">
+                      <dt class="font-bold">{title}</dt>
+                      <dd class="mt-1 text-muted-foreground">{text}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
             </div>
-          ))}
-        </dl>
-      </div>
-    </section>
-  ))}
+          </div>
+        </section>
+      );
+    })}
+  </div>
 </Base>

@@ -21,24 +21,24 @@ const languages = LOCALES.map((l) => ({
 }));
 const current = localePath(lang, path);
 ---
-<header class="sticky top-0 z-40 border-b bg-card/95 backdrop-blur">
-  <div class="wrap flex h-16 items-center gap-6">
-    <a href={localePath(lang)} aria-label="Burncodes AI" class="shrink-0"><img src="/img/logo.svg" alt="" width="58" height="36" class="block" /></a>
-    <nav class="hidden flex-1 items-center gap-1 lg:flex" aria-label={t.nav.menu}>
+<header class="sticky top-0 z-40 bg-indigo-brand text-white">
+  <div class="wrap flex h-20 items-center gap-8">
+    <a href={localePath(lang)} aria-label="Burncodes AI" class="shrink-0"><img src="/img/logo_white.svg" alt="" width="65" height="40" class="block" /></a>
+    <nav class="hidden flex-1 items-center gap-6 lg:flex" aria-label={t.nav.menu}>
       {links.map((l) => (
-        <Button as="a" href={l.href} variant="ghost" size="sm" aria-current={current === l.href ? 'page' : undefined} class={current === l.href ? 'bg-accent text-accent-foreground' : ''}>{l.label}</Button>
+        <a href={l.href} aria-current={current === l.href ? 'page' : undefined} class:list={['font-semibold underline-offset-8 decoration-2 hover:underline', current === l.href && 'underline']}>{l.label}</a>
       ))}
     </nav>
-    <div class="ml-auto flex items-center gap-2">
-      <ul class="hidden items-center text-sm lg:flex" aria-label={t.nav.language}>
+    <div class="ml-auto flex items-center gap-4">
+      <ul class="hidden items-center gap-1 text-sm lg:flex" aria-label={t.nav.language}>
         {languages.map((l) => (
           <li>
-            <a href={l.href} lang={l.code} hreflang={l.code} aria-current={l.current ? 'true' : undefined} class:list={['rounded px-1.5 py-1 uppercase hover:text-primary', l.current ? 'font-bold text-foreground' : 'text-muted-foreground']}>{l.code}</a>
+            <a href={l.href} lang={l.code} hreflang={l.code} aria-current={l.current ? 'true' : undefined} class:list={['rounded px-1.5 py-1 uppercase hover:underline', l.current ? 'font-bold' : 'text-on-brand-muted']}>{l.code}</a>
           </li>
         ))}
       </ul>
-      <Button as="a" href={site.dashboard} variant="outline" size="sm" data-astro-prefetch="false">{t.nav.login}</Button>
-      <Button as="a" href={site.signup} size="sm" class="hidden sm:inline-flex" data-astro-prefetch="false">{t.nav.start}</Button>
+      <Button as="a" href={site.dashboard} variant="inverse-outline" data-astro-prefetch="false">{t.nav.login}</Button>
+      <Button as="a" href={site.signup} variant="inverse" class="hidden sm:inline-flex" data-astro-prefetch="false">{t.nav.start}</Button>
       <MobileNav client:idle links={links} languages={languages} start={t.nav.start} startHref={site.signup} menu={t.nav.menu} language={t.nav.language} />
     </div>
   </div>

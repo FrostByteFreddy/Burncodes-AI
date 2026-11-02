@@ -9,5 +9,5 @@ const lang = Astro.props.lang as Locale;
 const t = content[lang];
 ---
 <Base lang={lang} title={t.meta.organisations.title} description={t.meta.organisations.description} path="/organisationen/">
-  <AudiencePage a={t.audiences.organisations} />
+  <AudiencePage a={t.audiences.organisations} lang={lang} sample={t.home.sample} />
 </Base>

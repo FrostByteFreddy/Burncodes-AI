@@ -30,7 +30,7 @@ onBeforeUnmount(() => clearTimeout(timer));
 </script>
 
 <template>
-  <figure class="overflow-hidden rounded-3xl bg-card text-card-foreground shadow-[0_24px_60px_rgba(7,22,133,0.32)]">
+  <figure :aria-label="tab.title" class="overflow-hidden rounded-2xl bg-card text-card-foreground text-base shadow-2xl shadow-foreground/25">
     <div class="flex items-center justify-between gap-3 border-b p-3">
       <Tabs :model-value="tabKey" @update:model-value="onTab">
         <TabsList>
@@ -39,20 +39,19 @@ onBeforeUnmount(() => clearTimeout(timer));
       </Tabs>
       <Badge variant="secondary" class="shrink-0">{{ label }}</Badge>
     </div>
-    <figcaption class="px-5 pt-4 font-bold">{{ tab.title }}</figcaption>
-    <div class="flex min-h-64 flex-col gap-3 p-5" aria-live="polite">
-      <p class="max-w-[85%] self-end rounded-2xl bg-primary px-4 py-2.5 text-primary-foreground">{{ item.q }}</p>
+        <div class="flex min-h-56 flex-col gap-3 p-4" aria-live="polite">
+      <p class="max-w-[85%] self-end rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-primary-foreground">{{ item.q }}</p>
       <div v-if="thinking" class="flex gap-1 self-start rounded-2xl bg-muted px-4 py-4" aria-hidden="true">
         <span v-for="n in 3" :key="n" class="size-2 animate-pulse rounded-full bg-muted-foreground" :style="{ animationDelay: `${n * 120}ms` }" />
       </div>
-      <div v-else class="self-start rounded-2xl bg-muted px-4 py-3 animate-in fade-in slide-in-from-bottom-1">
+      <div v-else class="self-start rounded-2xl rounded-bl-sm bg-muted px-4 py-3 animate-in fade-in slide-in-from-bottom-1">
         <p v-html="item.a" />
         <p class="mt-2 inline-flex items-center gap-1 font-semibold text-primary"><ExternalLink class="size-4" aria-hidden="true" />{{ item.source }}</p>
         <p v-if="item.calendar" class="mt-2 flex items-center gap-1.5 border-t border-border pt-2 text-sm font-semibold"><CalendarPlus class="size-4" aria-hidden="true" />{{ calendar }}: {{ item.calendar }}</p>
       </div>
     </div>
     <div class="border-t bg-background/60 p-4">
-      <p class="mb-2 text-sm text-muted-foreground">{{ pick }}</p>
+      <p class="sr-only">{{ pick }}</p>
       <div class="flex flex-wrap gap-2">
         <button
           v-for="(it, i) in tab.items" :key="it.q" type="button"

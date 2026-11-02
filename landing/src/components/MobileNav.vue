@@ -16,7 +16,7 @@ defineProps<{
 <template>
   <Sheet>
     <SheetTrigger as-child>
-      <Button variant="ghost" size="icon" class="lg:hidden" :aria-label="menu"><Menu /></Button>
+      <Button variant="inverse" size="icon" class="lg:hidden" :aria-label="menu"><Menu /></Button>
     </SheetTrigger>
     <SheetContent side="right" class="w-[min(20rem,85vw)]">
       <SheetHeader><SheetTitle>{{ menu }}</SheetTitle></SheetHeader>

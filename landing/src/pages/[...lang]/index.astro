@@ -1,11 +1,12 @@
 ---
-import { ArrowRight, CalendarPlus, ExternalLink } from '@lucide/vue';
+import { ArrowRight, ArrowUpRight, Check } from '@lucide/vue';
 import Base from '@/layouts/Base.astro';
+import AskedBubble from '@/components/AskedBubble.astro';
 import DemoChat from '@/components/DemoChat.vue';
 import Faq from '@/components/Faq.vue';
-import { Badge } from '@/components/ui/badge';
+import PriceCalc from '@/components/PriceCalc.vue';
+import Shot from '@/components/Shot.astro';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { content } from '@/content';
 import { langPaths, localePath, site, type Locale } from '@/site';
 
@@ -13,9 +14,8 @@ export const getStaticPaths = langPaths;
 const lang = Astro.props.lang as Locale;
 const t = content[lang];
 const h = t.home;
-const d = t.demo.tabs[0].items[0];
-const topFaq = [t.faq.groups[0].items[0], t.faq.groups[1].items[0], t.faq.groups[2].items[0], t.faq.groups[1].items[2]];
-const counts = [12, 7, 4];
+const p = t.pricing;
+const topFaq = [t.faq.groups[0].items[0], t.faq.groups[1].items[1], t.faq.groups[2].items[1], t.faq.groups[3].items[1]];
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
@@ -27,122 +27,141 @@ const jsonLd = {
 };
 ---
 <Base lang={lang} title={t.meta.home.title} description={t.meta.home.description} path="/" jsonLd={jsonLd}>
-  <!-- Hero: the example chat hangs over the lower edge of the indigo field -->
+  <!-- Hero: the message, then the real product hanging over the edge of the indigo -->
   <section class="bg-indigo-brand text-white">
-    <div class="wrap grid items-end gap-10 pt-12 md:pt-20 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-14">
-      <div class="lg:pb-24">
-        <h1 class="text-5xl leading-[1.02] font-bold tracking-tight sm:text-6xl xl:text-7xl">{h.h1}</h1>
-        <p class="lede mt-6 max-w-xl">{h.lede}</p>
-        <div class="mt-8 flex flex-wrap items-center gap-3">
-          <Button as="a" href={site.signup} size="lg" variant="inverse" class="h-12 px-6 text-base">{h.cta}</Button>
-          <Button as="a" href={localePath(lang, '/funktionen/')} size="lg" variant="ghost" class="h-12 px-4 text-base text-white hover:bg-white/10 hover:text-white">{h.secondary}<ArrowRight /></Button>
+    <div class="wrap pt-10 md:pt-14">
+      <h1 class="max-w-5xl text-[clamp(3rem,7.4vw,6.5rem)] leading-[0.95] font-bold tracking-[-0.03em]">{h.h1}</h1>
+      <div class="mt-8 grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-16">
+        <p class="lede max-w-2xl">{h.lede}</p>
+        <div>
+          <Button as="a" href={site.signup} size="lg" variant="inverse" class="h-14 px-7 text-lg">{h.cta}<ArrowRight /></Button>
+          <p class="mt-3 text-sm text-on-brand-muted">{h.ctaNote}</p>
         </div>
-        <p class="mt-4 text-sm text-on-brand-muted">{h.ctaNote}</p>
       </div>
-      <div class="-mb-24 text-foreground">
+    </div>
+    <div class="wrap relative mt-10 md:mt-12">
+      <div class="relative z-10 lg:absolute lg:right-6 lg:-bottom-24 lg:w-[23rem]">
         <DemoChat client:visible tabs={t.demo.tabs} label={t.demo.label} pick={t.demo.pick} calendar={t.demo.calendar} />
       </div>
+      <figure class="mt-10 -mb-20 overflow-hidden rounded-t-xl border border-b-0 border-white/20 bg-card shadow-[0_-8px_60px_rgba(7,22,133,0.45)] lg:mt-0 lg:-mb-16">
+        <Shot lang={lang} name="overview" alt={h.sample} eager class="aspect-[16/9.4] object-cover object-top" />
+      </figure>
     </div>
   </section>
 
-  <section class="section pt-40!">
-    <div class="wrap grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-14">
-      <h2 class="h2">{h.problemTitle}</h2>
-      <p class="lede text-muted-foreground">{h.problemText}</p>
-    </div>
-  </section>
-
-  <section class="section border-y bg-card">
-    <div class="wrap">
-      <h2 class="h2">{h.stepsTitle}</h2>
-      <ol class="mt-10 grid gap-10 md:grid-cols-3">
-        {h.steps.map((s, i) => (
-          <li>
-            <p class="text-6xl leading-none font-bold text-primary" aria-hidden="true">{i + 1}</p>
-            <h3 class="mt-3 text-xl">{s.title}</h3>
-            <p class="mt-2 text-muted-foreground">{s.text}</p>
-            {i === 2 && (
-              <code class="mt-4 block rounded-lg bg-foreground p-3 font-mono text-xs leading-relaxed break-all text-white">&lt;script src="https://ai.burn.codes/api/tenants/widget.js" data-tenant-id="…"&gt;&lt;/script&gt;</code>
-            )}
-          </li>
-        ))}
-      </ol>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="wrap">
-      <h2 class="h2">{h.showTitle}</h2>
-      <div class="mt-12 space-y-16 md:space-y-20">
-        {h.show.map((s, i) => (
-          <div class="grid items-center gap-8 md:grid-cols-2 md:gap-14">
-            <div class:list={[i % 2 === 1 && 'md:order-2']}>
-              <h3 class="text-2xl md:text-3xl">{s.title}</h3>
-              <p class="mt-3 text-muted-foreground">{s.text}</p>
-            </div>
-            <div class="rounded-2xl border bg-card p-6 shadow-sm">
-              <div class="mb-4"><Badge variant="secondary">{t.words.example}</Badge></div>
-              {i === 0 && (
-                <div class="rounded-2xl bg-muted px-4 py-3">
-                  <p set:html={d.a} />
-                  <p class="mt-2 inline-flex items-center gap-1 font-semibold text-primary"><ExternalLink class="size-4" aria-hidden="true" />{d.source}</p>
-                </div>
-              )}
-              {i === 1 && (
-                <div>
-                  <p class="font-semibold">{d.calendar}</p>
-                  <ul class="mt-3 flex flex-wrap gap-2">
-                    {['Apple', 'Google', 'Outlook'].map((app) => (
-                      <li class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold"><CalendarPlus class="size-4 text-primary" aria-hidden="true" />{app}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {i === 2 && (
-                <div>
-                  <p class="font-bold">{h.fragments.openTitle}</p>
-                  <ul class="mt-2 divide-y">
-                    {h.fragments.open.map((q, n) => (
-                      <li class="flex items-baseline justify-between gap-4 py-2.5"><span>{q}</span><span class="shrink-0 text-sm text-muted-foreground">{counts[n]} {h.fragments.asked}</span></li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+  <div class="relative bg-card">
+    <!-- Facts where a logo strip usually goes -->
+    <section class="border-b" aria-label="Burncodes AI">
+      <dl class="wrap grid grid-cols-2 gap-x-8 gap-y-8 pt-36 pb-14 md:pt-40 lg:grid-cols-4">
+        {h.stats.map((s) => (
+          <div class="flex flex-col-reverse gap-1">
+            <dt class="text-muted-foreground">{s.label}</dt>
+            <dd class="text-4xl font-bold tracking-tight md:text-5xl">{s.value}</dd>
           </div>
         ))}
+      </dl>
+    </section>
+
+    <section class="section">
+      <div class="wrap grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
+        <div>
+          <AskedBubble>{h.trustQ}</AskedBubble>
+          <h2 class="h2 mt-5">{h.trustTitle}</h2>
+          <p class="lede mt-5 text-muted-foreground">{h.trustText}</p>
+          <a href={localePath(lang, '/funktionen/')} class="mt-6 inline-flex items-center gap-1 font-semibold text-primary hover:underline">{h.learnMore}<ArrowUpRight class="size-5" aria-hidden="true" /></a>
+        </div>
+        <div class="flex flex-col gap-3 rounded-2xl bg-background p-6 md:p-10" aria-label={t.words.example}>
+          <p class="max-w-[85%] self-end rounded-2xl rounded-br-sm bg-primary px-4 py-3 text-primary-foreground">{h.trustAsk}</p>
+          <p class="max-w-[90%] rounded-2xl rounded-bl-sm border bg-card px-4 py-3">{h.trustAnswer}</p>
+        </div>
       </div>
+    </section>
+
+    <section class="section border-t">
+      <div class="wrap grid items-center gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
+        <div>
+          <AskedBubble>{h.pdfQ}</AskedBubble>
+          <h2 class="h2 mt-5">{h.pdfTitle}</h2>
+          <p class="lede mt-5 text-muted-foreground">{h.pdfText}</p>
+        </div>
+        <figure>
+          <Shot lang={lang} name="calendar" alt={h.pdfTitle} width={1088} widths={[544, 800, 1088]} sizes="(min-width: 1024px) 40rem, 100vw" class="rounded-xl border shadow-lg shadow-foreground/5" />
+        </figure>
+      </div>
+    </section>
+
+    <section class="section border-t">
+      <div class="wrap grid items-center gap-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-16">
+        <figure class="order-last lg:order-first">
+          <Shot lang={lang} name="insights" alt={h.insightsTitle} width={1088} widths={[544, 800, 1088]} sizes="(min-width: 1024px) 40rem, 100vw" class="rounded-xl border shadow-lg shadow-foreground/5" />
+        </figure>
+        <div>
+          <AskedBubble>{h.insightsQ}</AskedBubble>
+          <h2 class="h2 mt-5">{h.insightsTitle}</h2>
+          <p class="lede mt-5 text-muted-foreground">{h.insightsText}</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- The one full-width break: click-to-edit is the feature people remember -->
+  <section class="overflow-hidden bg-indigo-brand text-white">
+    <div class="wrap pt-20 md:pt-28">
+      <p class="w-fit rounded-2xl rounded-bl-sm bg-white/15 px-4 py-2 font-semibold">{h.bandQ}</p>
+      <div class="mt-5 grid gap-6 lg:grid-cols-2 lg:gap-16">
+        <h2 class="text-[clamp(2.5rem,6vw,5rem)] leading-[1] font-bold tracking-[-0.025em]">{h.bandTitle}</h2>
+        <p class="lede self-end">{h.bandText}</p>
+      </div>
+      <figure class="mt-14 overflow-hidden rounded-t-xl border border-b-0 border-white/20 bg-card">
+        <Shot lang={lang} name="configure" alt={h.bandTitle} class="aspect-[16/9] object-cover object-top" />
+      </figure>
     </div>
   </section>
 
-  <section class="section border-t bg-card">
-    <div class="wrap">
-      <h2 class="h2">{h.audienceTitle}</h2>
-      <div class="mt-8 grid gap-5 md:grid-cols-2">
-        {h.audience.map((a) => (
-          <Card>
-            <CardHeader><CardTitle class="text-2xl font-bold">{a.title}</CardTitle></CardHeader>
-            <CardContent>
-              <p class="text-muted-foreground">{a.text}</p>
-              <Button as="a" href={localePath(lang, a.href)} variant="outline" class="mt-5">{a.link}<ArrowRight /></Button>
-            </CardContent>
-          </Card>
-        ))}
+  <div class="bg-card">
+    <section class="section">
+      <div class="wrap">
+        <h2 class="h2">{h.stepsTitle}</h2>
+        <ol class="mt-10 grid gap-10 md:grid-cols-3 md:gap-8">
+          {h.steps.map((s, i) => (
+            <li class="border-t-2 border-foreground pt-5">
+              <p class="font-bold text-muted-foreground" aria-hidden="true">{i + 1}</p>
+              <h3 class="mt-2 text-xl">{s.title}</h3>
+              <p class="mt-2 text-muted-foreground">{s.text}</p>
+            </li>
+          ))}
+        </ol>
+        <code class="mt-10 block rounded-xl bg-foreground p-5 font-mono text-sm leading-relaxed break-all text-background md:text-base">&lt;script src="https://ai.burn.codes/api/tenants/widget.js" data-tenant-id="…"&gt;&lt;/script&gt;</code>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section class="section">
-    <div class="wrap grid items-center gap-8 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:gap-14">
+    <section class="section border-t">
+      <div class="wrap grid gap-10 lg:grid-cols-2 lg:gap-20">
+        <div>
+          <AskedBubble>{h.langQ}</AskedBubble>
+          <h2 class="h2 mt-5">{h.langTitle}</h2>
+          <p class="lede mt-5 text-muted-foreground">{h.langText}</p>
+        </div>
+        <dl class="divide-y self-end border-y">
+          {h.languagesSample.map(([code, text]) => (
+            <div class="flex gap-5 py-4 text-lg"><dt class="w-8 shrink-0 font-bold text-muted-foreground uppercase">{code}</dt><dd>{text}</dd></div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  </div>
+
+  <section class="section bg-background">
+    <div class="wrap grid gap-12 lg:grid-cols-2 lg:gap-20">
       <div>
         <h2 class="h2">{h.pricingTitle}</h2>
-        <p class="lede mt-4 text-muted-foreground">{h.pricingText}</p>
-        <Button as="a" href={localePath(lang, '/preise/')} variant="outline" class="mt-6">{h.pricingLink}<ArrowRight /></Button>
+        <p class="lede mt-5 text-muted-foreground">{h.pricingText}</p>
+        <ul class="mt-8 flex flex-col gap-3">
+          {p.free.slice(1, 4).map((f) => <li class="flex gap-3"><Check class="mt-1 size-5 shrink-0 text-primary" aria-hidden="true" />{f}</li>)}
+        </ul>
+        <Button as="a" href={localePath(lang, '/preise/')} variant="outline" size="lg" class="mt-8">{h.pricingLink}<ArrowRight /></Button>
       </div>
-      <div class="md:text-right">
-        <p class="text-5xl font-bold text-primary lg:text-6xl">{h.pricingFigure}</p>
-        <p class="mt-2 text-muted-foreground">{h.pricingFigureLabel}</p>
-      </div>
+      <PriceCalc client:visible title={p.calcTitle} label={p.calcLabel} result={p.calcResult} note={p.calcNote} rappen={site.price.answerRappen} locale={t.htmlLang} />
     </div>
   </section>
 
@@ -153,6 +172,16 @@ const jsonLd = {
         <a class="mt-3 inline-block font-semibold text-primary hover:underline" href={localePath(lang, '/fragen/')}>{h.faqLink}</a>
       </div>
       <Faq client:visible items={topFaq} />
+    </div>
+  </section>
+
+  <section class="bg-indigo-brand text-white">
+    <div class="wrap py-20 md:py-28">
+      <h2 class="max-w-4xl text-[clamp(2.25rem,5vw,4.25rem)] leading-[1.02] font-bold tracking-[-0.025em]">{h.finalTitle}</h2>
+      <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+        <Button as="a" href={site.signup} size="lg" variant="inverse" class="h-14 px-7 text-lg">{h.cta}<ArrowRight /></Button>
+        <p class="text-on-brand-muted">{h.finalNote}</p>
+      </div>
     </div>
   </section>
 </Base>

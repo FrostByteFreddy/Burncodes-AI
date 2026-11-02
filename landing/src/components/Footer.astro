@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { content } from '@/content';
 import { localePath, site, type Locale } from '@/site';
 
-interface Props { lang: Locale }
-const { lang } = Astro.props;
+interface Props { lang: Locale; hideCta?: boolean }
+const { lang, hideCta = false } = Astro.props;
 const t = content[lang];
 const links = [
   { href: localePath(lang, '/funktionen/'), label: t.nav.features },
@@ -15,10 +15,12 @@ const links = [
 ];
 ---
 <footer class="bg-indigo-brand text-white">
-  <div class="wrap flex flex-wrap items-center justify-between gap-6 py-14">
-    <p class="max-w-xl text-3xl leading-tight font-bold md:text-4xl">{t.footer.cta}</p>
-    <Button as="a" href={site.signup} size="lg" variant="inverse" class="h-12 px-6 text-base">{t.footer.ctaButton}</Button>
-  </div>
+  {!hideCta && (
+    <div class="wrap flex flex-wrap items-center justify-between gap-6 py-14">
+      <p class="max-w-xl text-3xl leading-tight font-bold md:text-4xl">{t.footer.cta}</p>
+      <Button as="a" href={site.signup} size="lg" variant="inverse" class="h-12 px-6 text-base">{t.footer.ctaButton}</Button>
+    </div>
+  )}
   <div class="border-t border-white/20">
     <div class="wrap grid gap-8 py-10 text-sm md:grid-cols-[2fr_1fr_1fr]">
       <div>
