@@ -78,7 +78,7 @@
                   <Label class="mb-2">{{ $t('tenant.sources.wizard.scope.question') }}</Label>
                   <button v-for="scope in scopes" :key="scope.single" type="button" @click="singlePageOnly = scope.single"
                     class="radio-card p-4" :class="{ 'is-selected': singlePageOnly === scope.single }">
-                    <div class="text-xl mt-0.5">{{ scope.emoji }}</div>
+                    <div class="text-xl mt-0.5"><font-awesome-icon :icon="['fas', scope.icon]" /></div>
                     <div class="flex-1">
                       <p class="step-heading">{{ scope.title }}</p>
                       <p class="step-subtext">{{ scope.desc }}</p>
@@ -160,7 +160,7 @@
                   @click="crawlMode = mode.value"
                   class="radio-card"
                   :class="{ 'is-selected': crawlMode === mode.value }">
-                  <div class="text-xl leading-none mt-0.5 w-6 shrink-0">{{ mode.emoji }}</div>
+                  <div class="text-xl leading-none mt-0.5 w-6 shrink-0"><font-awesome-icon :icon="['fas', mode.icon]" /></div>
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2">
                       <span class="text-sm font-bold text-foreground">{{ mode.label }}</span>
@@ -270,13 +270,13 @@ const type = ref(null); // 'website' | 'document'
 const lastStep = computed(() => (type.value === 'website' ? 3 : 2));
 
 const scopes = computed(() => [
-  { single: false, emoji: '🌐', title: t('tenant.sources.wizard.scope.fullTitle'), desc: t('tenant.sources.wizard.scope.fullDesc') },
-  { single: true,  emoji: '📄', title: t('tenant.sources.wizard.singlePageLabel'), desc: t('tenant.sources.wizard.scope.singleDesc') },
+  { single: false, icon: 'globe', title: t('tenant.sources.wizard.scope.fullTitle'), desc: t('tenant.sources.wizard.scope.fullDesc') },
+  { single: true,  icon: 'file', title: t('tenant.sources.wizard.singlePageLabel'), desc: t('tenant.sources.wizard.scope.singleDesc') },
 ]);
 
 const crawlModes = computed(() => [
-  { value: 'soup',       emoji: '⚡', label: t('tenant.sources.wizard.modeSoup'),       desc: t('tenant.sources.wizard.modeSoupDesc'),      badge: t('tenant.sources.wizard.modeSoupBadge'),       badgeClass: 'bg-success/15 text-success' },
-  { value: 'playwright', emoji: '🌐', label: t('tenant.sources.wizard.modePlaywright'), desc: t('tenant.sources.wizard.modePlaywrightDesc'), badge: t('tenant.sources.wizard.modePlaywrightBadge'), badgeClass: 'bg-warning/15 text-warning'  },
+  { value: 'soup',       icon: 'bolt', label: t('tenant.sources.wizard.modeSoup'),       desc: t('tenant.sources.wizard.modeSoupDesc'),      badge: t('tenant.sources.wizard.modeSoupBadge'),       badgeClass: 'bg-success/15 text-success' },
+  { value: 'playwright', icon: 'globe', label: t('tenant.sources.wizard.modePlaywright'), desc: t('tenant.sources.wizard.modePlaywrightDesc'), badge: t('tenant.sources.wizard.modePlaywrightBadge'), badgeClass: 'bg-warning/15 text-warning'  },
 ]);
 const url = ref('');
 const crawlMode = ref('soup');
@@ -381,7 +381,7 @@ const submit = async () => {
 /* ── Option rows ─────────────────────────────────────────────────── */
 .option-row {
   display: flex; align-items: flex-start; gap: 12px; cursor: pointer;
-  padding: 12px 14px; border-radius: var(--radius-md);
+  padding: 12px 16px; border-radius: var(--radius-md);
   background: var(--surface-2); border: 1px solid var(--surface-3);
 }
 
@@ -399,8 +399,8 @@ const submit = async () => {
 
 /* ── Info box ────────────────────────────────────────────────────── */
 .info-box {
-  display: flex; gap: 10px; align-items: flex-start;
-  padding: 14px;
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 16px;
   background: var(--surface-2);
   border: 1px solid var(--surface-3);
   border-radius: var(--radius-md);
@@ -411,13 +411,13 @@ const submit = async () => {
 /* ── Field icon ──────────────────────────────────────────────────── */
 .field-icon {
   position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-  padding-left: 14px; pointer-events: none; color: var(--surface-muted);
+  padding-left: 16px; pointer-events: none; color: var(--surface-muted);
 }
 
 /* ── File drop zone ──────────────────────────────────────────────── */
 .file-drop {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 14px; padding: 36px 20px;
+  gap: 16px; padding: 36px 20px;
   border-radius: var(--radius-lg);
   border: 1.5px dashed var(--surface-3);
   cursor: pointer;
@@ -433,7 +433,7 @@ const submit = async () => {
 }
 .file-drop:hover .file-drop__icon,
 .file-drop__icon--active { background: rgba(10,31,171,0.15); color: var(--brand-indigo); }
-.file-drop__name        { font-size: 13px; font-weight: 600; color: var(--surface-muted); }
+.file-drop__name        { font-size: 14px; font-weight: 600; color: var(--surface-muted); }
 .file-drop__name--active { color: var(--brand-indigo); }
 </style>
 

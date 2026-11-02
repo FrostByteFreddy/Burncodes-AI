@@ -3,8 +3,8 @@
   width: 100%;
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  padding: 14px;
+  gap: 16px;
+  padding: 16px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--surface-3);
   background: var(--surface-2);
@@ -61,13 +61,13 @@
 .path-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   background: var(--surface-2);
   border: 1px solid var(--surface-3);
   color: var(--surface-muted);
   font-size: 11px;
   font-family: ui-monospace, monospace;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: var(--radius-md);
 }
 
@@ -102,7 +102,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--surface-muted);
   background: none;
   border: none;
@@ -135,7 +135,7 @@
   flex: 1;
   padding-left: 1.5rem;
   height: 36px;
-  font-size: 13px;
+  font-size: 14px;
   font-family: ui-monospace, monospace;
   background: var(--surface-2);
   border: 1px solid var(--brand-indigo);
@@ -161,10 +161,10 @@
   display: grid;
   grid-template-columns: 28px 1fr auto;
   align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
+  gap: 8px;
+  padding: 16px 16px;
   border-bottom: 1px solid var(--surface-3);
-  font-size: 13px;
+  font-size: 14px;
 }
 .confirm-item:last-child { border-bottom: none; }
 
@@ -204,7 +204,7 @@
 }
 
 /* ── Progress bar ────────────────────────────────────────────────────── */
-.wizard-progress { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.wizard-progress { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 
 .wizard-progress__dot {
   height: 4px;

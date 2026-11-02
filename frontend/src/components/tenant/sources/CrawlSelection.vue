@@ -288,15 +288,15 @@ const onCheck = (row, checked) => (row.folder && row.hasChildren ? setFolder(row
 </script>
 
 <style scoped>
-.cs { display: flex; flex-direction: column; gap: 18px; border-top: 1px solid var(--surface-3); padding-top: 16px; }
-.cs__block { display: flex; flex-direction: column; gap: 10px; }
-.cs__heading { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: var(--surface-heading); }
+.cs { display: flex; flex-direction: column; gap: 16px; border-top: 1px solid var(--surface-3); padding-top: 16px; }
+.cs__block { display: flex; flex-direction: column; gap: 8px; }
+.cs__heading { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: var(--surface-heading); }
 .cs__heading-icon { color: var(--ai); }
 
 .cs__suggestions { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .cs__suggestion {
   display: flex; align-items: center; gap: 16px; justify-content: space-between;
-  padding: 12px 14px; border-radius: var(--radius-md);
+  padding: 12px 16px; border-radius: var(--radius-md);
   background: var(--ai-soft); border: 1px solid transparent;
 }
 .cs__suggestion--done { background: var(--surface-2); border-color: var(--surface-3); }
@@ -307,24 +307,24 @@ const onCheck = (row, checked) => (row.folder && row.hasChildren ? setFolder(row
 .cs__exclude { flex-shrink: 0; }
 
 .cs__reasons { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; }
-.cs__reason { display: inline-flex; gap: 10px; align-items: baseline; }
-.cs__link { background: none; border: none; padding: 0; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--interactive); }
+.cs__reason { display: inline-flex; gap: 8px; align-items: baseline; }
+.cs__link { background: none; border: none; padding: 0; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--interactive); }
 .cs__link:hover:not(:disabled) { text-decoration: underline; }
 .cs__link:disabled { opacity: 0.5; cursor: default; }
 
 .cs__toggle {
   align-self: flex-start; display: inline-flex; align-items: center; gap: 8px;
   background: none; border: none; padding: 0; cursor: pointer;
-  font-size: 15px; font-weight: 700; color: var(--surface-heading);
+  font-size: 16px; font-weight: 700; color: var(--surface-heading);
 }
 .cs__toggle svg { font-size: 11px; color: var(--surface-muted); }
 
 .cs__filter { position: relative; max-width: 320px; }
 .cs__filter-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--surface-muted); }
 .cs__filter-input {
-  width: 100%; padding: 9px 12px 9px 34px; border-radius: var(--radius-md);
+  width: 100%; padding: 8px 12px 8px 32px; border-radius: var(--radius-md);
   border: 1px solid var(--surface-3); background: var(--surface-2);
-  font-size: 13px; color: var(--surface-text); outline: none;
+  font-size: 14px; color: var(--surface-text); outline: none;
 }
 .cs__filter-input:focus { border-color: var(--brand-indigo); }
 
@@ -332,7 +332,7 @@ const onCheck = (row, checked) => (row.folder && row.hasChildren ? setFolder(row
 .cs__row {
   display: grid; grid-template-columns: minmax(0, 1fr) 96px; align-items: center; gap: 12px;
   min-height: 40px; padding: 4px 12px; border-top: 1px solid var(--surface-3);
-  font-size: 13px; color: var(--surface-text);
+  font-size: 14px; color: var(--surface-text);
 }
 .cs__row:first-child { border-top: none; }
 .cs__row:hover { background: var(--surface-2); }
@@ -359,7 +359,7 @@ a.cs__label:hover { color: var(--interactive); text-decoration: underline; }
 .cs__badge { flex-shrink: 0; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-pill); background: var(--surface-3); color: var(--surface-muted); }
 .cs__badge--info { background: var(--interactive-soft); color: var(--interactive); }
 .cs__cost { text-align: right; color: var(--surface-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.cs__empty { padding: 16px; font-size: 13px; color: var(--surface-muted); }
+.cs__empty { padding: 16px; font-size: 14px; color: var(--surface-muted); }
 .cs__ghost { display: block; height: 12px; width: 60%; border-radius: var(--radius-sm); background: var(--surface-3); }
 
 @media (max-width: 760px) {

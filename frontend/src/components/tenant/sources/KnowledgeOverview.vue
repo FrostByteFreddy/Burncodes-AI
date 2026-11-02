@@ -201,8 +201,8 @@ defineExpose({ reload: load });
   background: var(--surface-1);
   border: 1px solid var(--surface-3);
 }
-.ko-strip__head { margin-bottom: 18px; }
-.ko-strip__empty { font-size: 15px; color: var(--surface-muted); max-width: var(--measure); }
+.ko-strip__head { margin-bottom: 16px; }
+.ko-strip__empty { font-size: 16px; color: var(--surface-muted); max-width: var(--measure); }
 
 /* Two weeks as two rows of seven days — the shape of a printed collection calendar */
 .ko-days {
@@ -213,7 +213,7 @@ defineExpose({ reload: load });
 }
 .ko-day {
   min-height: 118px;
-  padding: 12px 12px 14px;
+  padding: 12px 12px 16px;
   border-left: 1px solid var(--surface-3);
   border-bottom: 1px solid var(--surface-3);
   position: relative;
@@ -228,45 +228,45 @@ defineExpose({ reload: load });
 }
 .ko-day__weekday { font-size: var(--text-xs); font-weight: 600; color: var(--surface-muted); }
 .ko-day--today .ko-day__weekday { color: var(--interactive); }
-.ko-day__date { display: flex; align-items: baseline; gap: 4px; margin: 2px 0 10px; }
+.ko-day__date { display: flex; align-items: baseline; gap: 4px; margin: 2px 0 8px; }
 .ko-day__num { font-size: 28px; font-weight: 700; line-height: 1; color: var(--text-primary); letter-spacing: -0.01em; }
 .ko-day--empty .ko-day__num { color: var(--text-disabled); }
 .ko-day__month { font-size: var(--text-xs); color: var(--surface-muted); }
 
-.ko-day__events { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ko-day__events { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .ko-event {
   display: flex; flex-direction: column; gap: 2px;
-  padding: 6px 8px;
+  padding: 8px 8px;
   border-radius: var(--radius-sm);
   background: var(--interactive-soft);
 }
 .ko-event--moved { background: var(--status-warning-soft); border-left-color: var(--status-warning); }
-.ko-event__series { font-size: 13px; font-weight: 700; color: var(--surface-heading); line-height: 1.25; hyphens: auto; overflow-wrap: break-word; }
+.ko-event__series { font-size: 14px; font-weight: 700; color: var(--surface-heading); line-height: 1.25; hyphens: auto; overflow-wrap: break-word; }
 .ko-event__zone { font-size: var(--text-xs); color: var(--surface-text); }
 .ko-event__moved { font-size: var(--text-xs); font-weight: 700; color: var(--status-warning); }
 
 /* ── Calendars ───────────────────────────────────────────────────── */
-.ko-cal { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--surface-3); }
+.ko-cal { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--surface-3); }
 .ko-cal__row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.ko-cal__title { font-size: 15px; font-weight: 700; color: var(--surface-heading); cursor: pointer; }
+.ko-cal__title { font-size: 16px; font-weight: 700; color: var(--surface-heading); cursor: pointer; }
 .ko-cal__warn { margin-top: 8px; color: var(--status-warning); }
 .ko-cal__list { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; max-width: 560px; }
-.ko-cal__feed { display: grid; grid-template-columns: minmax(0, 1fr) auto 32px; align-items: center; gap: 12px; padding: 6px 0; border-top: 1px solid var(--surface-3); font-size: var(--text-sm); }
+.ko-cal__feed { display: grid; grid-template-columns: minmax(0, 1fr) auto 32px; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--surface-3); font-size: var(--text-sm); }
 .ko-cal__feed:first-child { border-top: none; }
 .ko-cal__name { font-size: var(--text-sm); font-weight: 700; color: var(--surface-heading); }
 .ko-cal__copy { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: var(--radius-md); background: none; color: var(--surface-muted); cursor: pointer; }
 .ko-cal__copy:hover { color: var(--interactive); background: var(--surface-3); }
-.ko-cal__more { margin-top: 10px; background: none; border: none; padding: 0; cursor: pointer; font-size: var(--text-sm); color: var(--surface-text); }
-.ko-cal__more-action { margin-left: 6px; font-weight: 600; color: var(--interactive); }
+.ko-cal__more { margin-top: 8px; background: none; border: none; padding: 0; cursor: pointer; font-size: var(--text-sm); color: var(--surface-text); }
+.ko-cal__more-action { margin-left: 8px; font-weight: 600; color: var(--interactive); }
 .ko-cal__more:hover .ko-cal__more-action { text-decoration: underline; }
 
 /* ── Needs you ───────────────────────────────────────────────────── */
 
 /* Phones: one day per row, empty days collapse to a single line */
 @media (max-width: 760px) {
-  .ko-strip { padding: 18px 16px 14px; }
+  .ko-strip { padding: 16px 16px 16px; }
   .ko-days { grid-template-columns: 1fr; }
-  .ko-day { min-height: 0; display: grid; grid-template-columns: 64px 1fr; gap: 4px 12px; border-left: none; padding: 10px 0; }
+  .ko-day { min-height: 0; display: grid; grid-template-columns: 64px 1fr; gap: 4px 12px; border-left: none; padding: 8px 0; }
   .ko-day:nth-last-child(-n + 7) { border-bottom: 1px solid var(--surface-3); }
   .ko-day:last-child { border-bottom: none; }
   .ko-day__weekday { grid-column: 1; }
@@ -275,8 +275,8 @@ defineExpose({ reload: load });
   .ko-day__num { font-size: var(--text-lg); }
   .ko-day--today::before { right: auto; bottom: 0; width: 3px; height: auto; left: -16px; }
 }
-.ko-contact { margin-top: 18px; }
-.ko-contact__grid { display: flex; flex-wrap: wrap; gap: 16px 48px; margin-top: 14px; }
+.ko-contact { margin-top: 16px; }
+.ko-contact__grid { display: flex; flex-wrap: wrap; gap: 16px 48px; margin-top: 16px; }
 .ko-contact__col { display: flex; flex-direction: column; gap: 4px; font-size: var(--text-sm); color: var(--surface-text); }
 .ko-contact__name { font-weight: 700; color: var(--surface-heading); }
 a.ko-contact__line { color: var(--interactive); text-decoration: none; }

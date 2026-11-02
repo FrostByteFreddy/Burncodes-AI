@@ -382,8 +382,8 @@ onBeforeUnmount(() => {
   position: absolute; pointer-events: auto; z-index: 100;
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 14px; border-radius: var(--radius-pill); cursor: pointer;
-  background: rgba(255, 255, 255, 0.85); border: 2px dashed var(--interactive-strong);
-  color: var(--interactive-strong); font: inherit; font-size: var(--text-sm); font-weight: 700;
+  background: rgba(255, 255, 255, 0.85); border: 2px dashed var(--brand-indigo);
+  color: var(--brand-indigo); font: inherit; font-size: var(--text-sm); font-weight: 700;
 }
 .epv__add:hover { background: #fff; }
 

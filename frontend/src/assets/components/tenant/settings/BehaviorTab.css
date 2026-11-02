@@ -2,9 +2,9 @@
 
 .form-field {
   display: block;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--surface-heading);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .space-y-6 > * + * { margin-top: 24px; }

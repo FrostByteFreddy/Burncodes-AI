@@ -1,5 +1,5 @@
 <template>
-  <Sidebar :collapsible="isMobile ? 'offcanvas' : 'none'" :aria-label="$t('sidebar.mainNav')"
+  <Sidebar :collapsible="isMobile ? 'offcanvas' : 'none'" role="navigation" :aria-label="$t('sidebar.mainNav')"
     :class="isMobile ? '' : 'sticky top-0 h-svh border-x'">
     <SidebarHeader class="gap-3 p-3">
       <router-link to="/manage-tenants" class="px-2 pt-2 pb-1"><img src="/logo.svg" alt="Burncodes AI" class="h-9 w-auto" /></router-link>

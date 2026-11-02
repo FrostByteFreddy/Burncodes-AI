@@ -316,31 +316,31 @@ const handleDelete = async () => {
 </script>
 
 <style scoped>
-.ksummary { margin-top: 10px; font-size: var(--text-sm); color: var(--surface-text); }
+.ksummary { margin-top: 8px; font-size: var(--text-sm); color: var(--surface-text); }
 
 .kjobs { list-style: none; padding: 0; margin: 0; }
 .krecrawl__hint { margin: -6px 0 12px; font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); }
 .krecrawl__hint a { color: var(--interactive); font-weight: 600; }
 .kjobs__more {
-  align-self: center; padding: 6px 14px; border-radius: var(--radius-pill);
+  align-self: center; padding: 8px 16px; border-radius: var(--radius-pill);
   border: 1px solid var(--surface-3); background: none; cursor: pointer;
   font-size: 12px; font-weight: 600; color: var(--surface-muted);
 }
 .kjobs__more:hover { color: var(--surface-heading); border-color: var(--surface-muted); }
-.kempty { font-size: 13px; color: var(--surface-muted); padding: 8px 0; }
+.kempty { font-size: 14px; color: var(--surface-muted); padding: 8px 0; }
 
-.kfiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.kfiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
 .kfile {
-  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 12px; padding: 12px 16px;
   border-radius: var(--radius-lg); background: var(--surface-2);
 }
 .kfile__icon {
   width: 36px; height: 36px; flex-shrink: 0; border-radius: var(--radius-md);
   display: flex; align-items: center; justify-content: center;
-  background: rgba(255, 32, 149, 0.12); color: var(--brand-magenta); font-size: 15px;
+  background: rgba(255, 32, 149, 0.12); color: var(--brand-magenta); font-size: 16px;
 }
 .kfile__info { flex: 1; min-width: 0; }
-.kfile__name { font-size: 13px; font-weight: 600; color: var(--surface-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kfile__name { font-size: 14px; font-weight: 600; color: var(--surface-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kfile__meta { font-size: 11px; color: var(--surface-muted); margin-top: 2px; }
 .kfile__status--completed { color: var(--status-success); }
 .kfile__status--error, .kfile__status--unsupported { color: var(--status-warning); }

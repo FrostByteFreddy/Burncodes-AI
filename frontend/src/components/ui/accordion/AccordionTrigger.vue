@@ -18,7 +18,7 @@ const delegatedProps = reactiveOmit(props, "class");
 </script>
 
 <template>
-  <AccordionHeader class="flex">
+  <AccordionHeader as="h2" class="flex">
     <AccordionTrigger
       data-slot="accordion-trigger"
       v-bind="delegatedProps"

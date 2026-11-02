@@ -46,7 +46,7 @@ onMounted(() => logoutButton.value?.focus());
 }
 .modal-btn {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 10px 24px; font-size: 13px; font-weight: 600;
+  padding: 8px 24px; font-size: 14px; font-weight: 600;
   border: none; border-radius: var(--radius-md);
   cursor: pointer; transition: opacity var(--t-fast);
 }

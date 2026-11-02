@@ -6,7 +6,7 @@
         <p class="page-lede">{{ $t('pages.install') }}</p>
       </div>
       <div class="page-actions">
-        <Button as-child variant="outline" class="h-auto min-h-10 max-w-full shrink whitespace-normal py-2"><a :href="`${baseUrl}preview.html?tenant_id=${tenantId}`" target="_blank" rel="noopener" class="inst-link">
+        <Button as-child variant="outline"><a :href="`${baseUrl}preview.html?tenant_id=${tenantId}`" target="_blank" rel="noopener" class="inst-link">
           <font-awesome-icon :icon="['fas', 'arrow-up-right-from-square']" /> {{ $t('install.example') }}
         </a></Button>
       </div>
@@ -61,7 +61,7 @@
 
             <div class="inst-delegate">
               <p>{{ $t('install.delegate.text') }}</p>
-              <Button as-child variant="outline" class="h-auto min-h-10 max-w-full shrink whitespace-normal py-2"><a :href="mailto" class="inst-link">
+              <Button as-child variant="outline"><a :href="mailto" class="inst-link">
                 <font-awesome-icon :icon="['fas', 'envelope']" /> {{ $t('install.delegate.button') }}
               </a></Button>
             </div>
@@ -125,7 +125,7 @@ const mailto = computed(() => {
 .ins-page { display: flex; flex-direction: column; gap: 20px; }
 .inst-link { text-decoration: none; }
 
-.inst-note { display: flex; gap: 10px; align-items: baseline; font-size: var(--text-sm); color: var(--surface-text); padding: 12px 16px; border-radius: var(--radius-lg); background: var(--surface-1); border: 1px solid var(--surface-3); }
+.inst-note { display: flex; gap: 8px; align-items: baseline; font-size: var(--text-sm); color: var(--surface-text); padding: 12px 16px; border-radius: var(--radius-lg); background: var(--surface-1); border: 1px solid var(--surface-3); }
 .inst-note--warn { color: var(--status-warning); border-color: rgba(242, 178, 76, 0.4); }
 .inst-note a { color: inherit; font-weight: 600; }
 
@@ -140,27 +140,27 @@ const mailto = computed(() => {
   background: var(--interactive-soft); color: var(--interactive); font-weight: 800;
 }
 .inst-step__body { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-.inst-step__title { font-size: var(--text-lg); font-weight: 700; color: var(--surface-heading); margin-top: 3px; }
-.inst-step__text { font-size: 15px; color: var(--surface-text); max-width: var(--measure); line-height: var(--leading-body); }
+.inst-step__title { font-size: var(--text-lg); font-weight: 700; color: var(--surface-heading); margin-top: 4px; }
+.inst-step__text { font-size: 16px; color: var(--surface-text); max-width: var(--measure); line-height: var(--leading-body); }
 
 .inst-code { margin-top: 8px; border-radius: var(--radius-lg); background: var(--surface-0); border: 1px solid var(--surface-3); overflow: hidden; }
-.inst-code pre { margin: 0; padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.6; color: var(--surface-heading); }
+.inst-code pre { margin: 0; padding: 16px; overflow-x: auto; font-size: 14px; line-height: 1.6; color: var(--surface-heading); }
 .inst-code code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; word-break: break-all; }
 .inst-code__copy { margin: 0 16px 16px; }
 
 .inst-builders { margin-top: 8px; display: flex; flex-direction: column; border: 1px solid var(--surface-3); border-radius: var(--radius-lg); overflow: hidden; }
 .inst-builder + .inst-builder { border-top: 1px solid var(--surface-3); }
-.inst-builder summary { display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer; list-style: none; font-size: 15px; font-weight: 600; color: var(--surface-heading); }
+.inst-builder summary { display: flex; align-items: center; gap: 8px; padding: 12px 16px; cursor: pointer; list-style: none; font-size: 16px; font-weight: 600; color: var(--surface-heading); }
 .inst-builder summary::-webkit-details-marker { display: none; }
 .inst-builder summary:hover { background: var(--surface-2); }
 .inst-builder__chevron { font-size: 11px; color: var(--surface-muted); transition: transform var(--t-fast); }
 .inst-builder[open] .inst-builder__chevron { transform: rotate(90deg); }
-.inst-builder p { padding: 0 16px 14px 37px; font-size: var(--text-sm); color: var(--surface-text); line-height: var(--leading-body); max-width: var(--measure); }
+.inst-builder p { padding: 0 16px 16px 37px; font-size: var(--text-sm); color: var(--surface-text); line-height: var(--leading-body); max-width: var(--measure); }
 
-.inst-delegate { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 8px; padding: 14px 16px; border-radius: var(--radius-lg); background: var(--surface-2); }
+.inst-delegate { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 8px; padding: 16px 16px; border-radius: var(--radius-lg); background: var(--surface-2); }
 .inst-delegate p { font-size: var(--text-sm); color: var(--surface-text); flex: 1; min-width: 220px; }
 
-.inst-checks { margin: 4px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); }
+.inst-checks { margin: 4px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 8px; font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); }
 
 @media (prefers-reduced-motion: reduce) { .inst-builder__chevron { transition: none; } }
 </style>

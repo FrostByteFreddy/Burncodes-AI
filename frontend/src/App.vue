@@ -70,6 +70,7 @@ const layout = computed(() => {
 
   a:not([data-slot]) { color: var(--text-link); text-underline-offset: 2px; }
   a:not([data-slot]):hover { color: var(--interactive-hover); }
+  p a:not([data-slot]) { text-decoration: underline; }
 
   /* One visible focus style everywhere (keyboard only) */
   :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }

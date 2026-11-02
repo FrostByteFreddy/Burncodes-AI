@@ -70,7 +70,7 @@ defineEmits(['close', 'back', 'next', 'submit']);
 /* ── Progress dots ─────────────────────────────────────────────── */
 .wizard-progress {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   margin-top: 8px;
 }
 .wizard-progress__dot {
@@ -95,7 +95,7 @@ defineEmits(['close', 'back', 'next', 'submit']);
 /* ── Footer ────────────────────────────────────────────────────── */
 .wizard-footer {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   padding: 20px 24px;
   border-top: 1px solid var(--surface-3);
   flex-shrink: 0;

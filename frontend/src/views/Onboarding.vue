@@ -96,7 +96,7 @@
                   <BcButton v-if="!balanceShort" variant="primary" size="lg" block :loading="confirming" @click="startLearning">
                     {{ $t('onboarding.learning.start', { cost: formatCHF(cost) }) }}
                   </BcButton>
-                  <a :href="crawlHref" target="_blank" rel="noopener" class="bc-btn bc-btn--quiet bc-btn--md bc-btn--block">{{ $t('onboarding.learning.choose') }}</a>
+                  <Button as-child variant="ghost"><a :href="crawlHref" target="_blank" rel="noopener" >{{ $t('onboarding.learning.choose') }}</a></Button>
                 </div>
               </div>
             </BcPanel>
@@ -104,7 +104,7 @@
             <BcNotice v-if="estimate.to_learn && balanceShort" tone="warning" :title="$t('onboarding.learning.balanceShortTitle')">
               {{ $t('onboarding.learning.balanceShort', { cost: formatCHF(cost), balance: formatCHF(billing.balance) }) }}
               <template #actions>
-                <a :href="billingHref" target="_blank" rel="noopener" class="bc-btn bc-btn--primary bc-btn--sm">{{ $t('onboarding.learning.topUp') }}</a>
+                <Button as-child variant="default" size="sm"><a :href="billingHref" target="_blank" rel="noopener" >{{ $t('onboarding.learning.topUp') }}</a></Button>
                 <BcButton variant="quiet" size="sm" @click="billing.fetchBalance()">{{ $t('onboarding.learning.recheck') }}</BcButton>
               </template>
             </BcNotice>
@@ -114,7 +114,7 @@
             :detail="$t('onboarding.learning.learning')" />
           <BcNotice v-else-if="job.status === 'COMPLETED'" tone="success" :title="$t('onboarding.learning.done')" />
           <BcNotice v-else tone="warning" :title="$t('onboarding.learning.stopped')">
-            <template #actions><a :href="crawlHref" target="_blank" rel="noopener" class="bc-btn bc-btn--secondary bc-btn--sm">{{ $t('onboarding.learning.details') }}</a></template>
+            <template #actions><Button as-child variant="outline" size="sm"><a :href="crawlHref" target="_blank" rel="noopener" >{{ $t('onboarding.learning.details') }}</a></Button></template>
           </BcNotice>
         </div>
 
@@ -157,6 +157,7 @@
 </template>
 
 <script setup>
+import { Button } from '@/components/ui/button';
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -428,7 +429,7 @@ function leave() {
 .onb-steps li.is-current { background: rgba(255, 255, 255, 0.16); color: #fff; }
 .onb-steps__num {
   width: 26px; height: 26px; flex: none; border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center; font-size: 13px;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 14px;
   border: 1.5px solid rgba(255, 255, 255, 0.6);
 }
 .is-current .onb-steps__num { background: #fff; color: var(--brand-indigo); border-color: #fff; }

@@ -40,18 +40,18 @@ watch(() => rows.value.length, async () => {
 
 <style scoped>
 .alog {
-  list-style: none; margin: 0; padding: 6px 0;
+  list-style: none; margin: 0; padding: 8px 0;
   overflow-y: auto;
   display: flex; flex-direction: column;
 }
 .alog__row {
-  display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: baseline; gap: 10px;
-  padding: 7px 4px; border-top: 1px solid var(--surface-3);
+  display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: baseline; gap: 8px;
+  padding: 8px 4px; border-top: 1px solid var(--surface-3);
   font-size: var(--text-sm); color: var(--surface-text);
 }
 .alog__row:first-child { border-top: none; }
 .alog__icon { display: flex; justify-content: center; font-size: 12px; color: var(--surface-muted); }
-.alog__dot { width: 5px; height: 5px; margin-top: 7px; border-radius: 50%; background: var(--surface-muted); }
+.alog__dot { width: 5px; height: 5px; margin-top: 8px; border-radius: 50%; background: var(--surface-muted); }
 .alog__row--running .alog__icon { color: var(--ai); }
 .alog__row--done .alog__icon { color: var(--status-success); }
 .alog__row--failed .alog__icon, .alog__row--failed .alog__text { color: var(--status-warning); }

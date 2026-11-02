@@ -37,7 +37,7 @@ const checkColor = (hex) => readableOn(hex);
 </script>
 
 <style scoped>
-.swp { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.swp { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .swp__dot {
   width: 32px; height: 32px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;

@@ -6,7 +6,7 @@ export { default as AlertDescription } from "./AlertDescription.vue";
 export { default as AlertTitle } from "./AlertTitle.vue";
 
 export const alertVariants = cva(
-  "grid gap-0.5 rounded-lg border p-4 text-left text-base has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-3 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*=size-])]:size-5 group/alert relative w-full",
+  "grid gap-0.5 rounded-lg border p-4 text-left text-base has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_minmax(0,1fr)] has-[>svg]:gap-x-3 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*=size-])]:size-5 group/alert relative w-full",
   {
     variants: {
       variant: {

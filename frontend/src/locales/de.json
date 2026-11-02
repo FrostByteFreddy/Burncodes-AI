@@ -116,7 +116,8 @@
       "taskStatus": "Fehler: Konnte Task-Status nicht abrufen.",
       "sendMessage": "Fehler: Konnte Nachricht nicht senden."
     },
-    "openChat": "Chat öffnen"
+    "openChat": "Chat öffnen",
+    "send": "Nachricht senden"
   },
   "subscription": {
     "title": "Abrechnung & Abonnement",

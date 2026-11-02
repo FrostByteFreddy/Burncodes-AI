@@ -263,10 +263,10 @@ watch(tenantId, (id) => {
 
 <style scoped>
 .ins { display: flex; flex-direction: column; gap: 20px; }
-.ins-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.ins-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
 
 
-.ins-empty { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--surface-text); }
+.ins-empty { display: flex; align-items: center; gap: 8px; font-size: 16px; color: var(--surface-text); }
 .ins-empty__icon { color: var(--status-success); }
 
 /* Findings */
@@ -276,25 +276,25 @@ watch(tenantId, (id) => {
   padding: 16px 0; border-top: 1px solid var(--surface-3);
 }
 .ins-finding:first-child { border-top: none; padding-top: 0; }
-.ins-kind { justify-self: start; margin-top: 2px; padding: 3px 10px; border-radius: var(--radius-pill); font-size: var(--text-xs); font-weight: 700; background: var(--surface-2); color: var(--surface-text); }
+.ins-kind { justify-self: start; white-space: nowrap; margin-top: 2px; padding: 4px 8px; border-radius: var(--radius-pill); font-size: var(--text-xs); font-weight: 700; background: var(--surface-2); color: var(--surface-text); }
 .ins-kind--unanswered { background: var(--interactive-soft); color: var(--interactive); }
 .ins-kind--wrong { background: var(--status-error-soft, rgba(255, 107, 107, 0.12)); color: var(--status-error); }
 .ins-kind--pushback { background: var(--status-warning-soft); color: var(--status-warning); }
 .ins-kind--unclear { background: var(--surface-2); color: var(--surface-text); }
 .ins-finding__body { min-width: 0; display: flex; flex-direction: column; gap: 4px; max-width: var(--measure); }
-.ins-finding__question { font-size: 15px; font-weight: 700; color: var(--surface-heading); overflow-wrap: anywhere; }
+.ins-finding__question { font-size: 16px; font-weight: 700; color: var(--surface-heading); overflow-wrap: anywhere; }
 .ins-finding__problem { font-size: var(--text-sm); color: var(--surface-text); }
 .ins-finding__suggestion { display: flex; gap: 8px; align-items: baseline; font-size: var(--text-sm); color: var(--surface-heading); }
 .ins-finding__suggestion svg { color: var(--status-warning); }
-.ins-finding__meta { display: flex; gap: 14px; align-items: baseline; margin-top: 2px; font-size: var(--text-xs); color: var(--surface-muted); }
+.ins-finding__meta { display: flex; gap: 16px; align-items: baseline; margin-top: 2px; font-size: var(--text-xs); color: var(--surface-muted); }
 .ins-link { padding: 0; border: none; background: none; cursor: pointer; font: inherit; font-size: var(--text-xs); font-weight: 600; color: var(--interactive); }
 .ins-link:hover { text-decoration: underline; }
-.ins-finding__actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.ins-finding__actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .ins-dismiss { color: var(--surface-muted); }
 
 .ins-review { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--surface-3); }
 .ins-review .meta { flex: 1; min-width: 240px; }
-.ins-link--inline { margin-left: 6px; font-size: inherit; text-decoration: none; }
+.ins-link--inline { margin-left: 8px; font-size: inherit; text-decoration: none; }
 
 /* Conversations: list, and a reader beside it once one is open */
 .ins-convos { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
@@ -306,20 +306,20 @@ watch(tenantId, (id) => {
 }
 .ins-row:hover { background: var(--surface-2); }
 .ins-row--on { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--interactive); }
-.ins-row__first { font-size: 15px; font-weight: 600; color: var(--surface-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ins-row__first { font-size: 16px; font-weight: 600; color: var(--surface-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ins-row__time { grid-column: 2; grid-row: 1; font-size: var(--text-xs); color: var(--surface-muted); white-space: nowrap; }
 .ins-row__meta { grid-column: 1 / -1; font-size: var(--text-sm); color: var(--surface-muted); }
 .ins-row__flag { margin-left: 8px; padding: 1px 8px; border-radius: var(--radius-pill); font-size: var(--text-xs); font-weight: 700; background: var(--status-warning-soft); color: var(--status-warning); }
 
 .ins-reader { border: 1px solid var(--surface-3); border-radius: var(--radius-lg); background: var(--surface-0); display: flex; flex-direction: column; min-height: 0; }
 .ins-reader__head { display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 8px 16px; border-bottom: 1px solid var(--surface-3); }
-.ins-reader__scroll { padding: 16px; max-height: 600px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
-.ins-turn { display: flex; flex-direction: column; gap: 8px; padding: 6px; border-radius: var(--radius-md); }
+.ins-reader__scroll { padding: 16px; max-height: 600px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+.ins-turn { display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: var(--radius-md); }
 .ins-turn--hit { background: var(--status-warning-soft); outline: 1px solid var(--status-warning); }
-.ins-bubble { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: var(--text-sm); line-height: var(--leading-body); overflow-wrap: anywhere; }
-.ins-bubble--user { align-self: flex-end; background: var(--interactive-strong); color: #fff; border-bottom-right-radius: 4px; }
+.ins-bubble { max-width: 85%; padding: 8px 16px; border-radius: 14px; font-size: var(--text-sm); line-height: var(--leading-body); overflow-wrap: anywhere; }
+.ins-bubble--user { align-self: flex-end; background: var(--interactive-strong); color: var(--on-interactive); border-bottom-right-radius: 4px; }
 .ins-bubble--bot { align-self: flex-start; background: var(--surface-2); color: var(--surface-text); border-bottom-left-radius: 4px; }
-.ins-bubble--bot :deep(p) { margin: 0 0 6px; }
+.ins-bubble--bot :deep(p) { margin: 0 0 8px; }
 .ins-bubble--bot :deep(p:last-child) { margin-bottom: 0; }
 .ins-bubble--bot :deep(a) { color: var(--interactive); }
 

@@ -13,7 +13,8 @@
           @click="$emit('share')"
           :disabled="!hasUserMessages"
           class="share-button rounded-full"
-          :title="hasUserMessages ? $t('chat.share') : ''"
+          :title="$t('chat.share')"
+          :aria-label="$t('chat.share')"
         >
           <font-awesome-icon :icon="['fas', 'share-nodes']" />
         </Button>
@@ -32,6 +33,7 @@
           @click="$emit('reset')"
           class="reset-button rounded-full"
           :title="$t('chat.reset')"
+          :aria-label="$t('chat.reset')"
         >
           <font-awesome-icon :icon="['fas', 'arrows-rotate']" />
         </Button>
@@ -42,13 +44,14 @@
           @click="$emit('close')"
           class="close-button rounded-full"
           :title="$t('chat.close')"
+          :aria-label="$t('chat.close')"
         >
           <font-awesome-icon :icon="['fas', 'xmark']" />
         </Button>
       </div>
     </header>
 
-    <main class="chat-main" :class="{ 'chat-main--rounded-bottom': isSharedView }" ref="chatContainer">
+    <div class="chat-main" :class="{ 'chat-main--rounded-bottom': isSharedView }" ref="chatContainer">
       <div
         v-for="(message, index) in chatHistory"
         :key="index"
@@ -124,7 +127,7 @@
           </Transition>
         </div>
       </div>
-    </main>
+    </div>
 
     <footer v-if="!isSharedView" class="chat-footer">
       <div class="chat-input-row">
@@ -143,6 +146,8 @@
           @click="$emit('sendMessage')"
           :disabled="!userMessage.trim() || isThinking"
           class="send-button chat-send-btn disabled:opacity-100"
+          :title="$t('chat.send')"
+          :aria-label="$t('chat.send')"
         >
           <font-awesome-icon :icon="['fas', 'paper-plane']" />
         </Button>
@@ -657,6 +662,13 @@ const widgetCssVariables = computed(() => {
 .close-button {
   background-color: var(--chat-close-button-background-color) !important;
   color: var(--chat-close-button-icon-color) !important;
+}
+
+.reset-button:hover,
+.close-button:hover,
+.share-button:hover:not(:disabled),
+.chat-send-btn:hover:not(:disabled) {
+  filter: brightness(1.15);
 }
 
 .share-button {

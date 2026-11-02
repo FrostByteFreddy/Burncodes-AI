@@ -12,7 +12,7 @@
 
     <BcEmptyState v-else-if="!tenantsStore.tenants.length" icon="layer-group" :title="$t('manageTenants.noChatbots')" :description="$t('manageTenants.noChatbotsSubtitle')">
       <template #action>
-        <router-link :to="{ path: '/onboarding', query: { onboarding: '' } }" class="bc-btn bc-btn--primary bc-btn--lg">{{ $t('manageTenants.guided') }}</router-link>
+        <Button as-child variant="default" size="lg"><router-link :to="{ path: '/onboarding', query: { onboarding: '' } }" >{{ $t('manageTenants.guided') }}</router-link></Button>
         <BcButton variant="quiet" @click="showCreateModal = true">{{ $t('manageTenants.createChatbot') }}</BcButton>
       </template>
     </BcEmptyState>
@@ -53,6 +53,7 @@
 </template>
 
 <script setup>
+import { Button } from '@/components/ui/button';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useTenantsStore } from '../stores/tenants';

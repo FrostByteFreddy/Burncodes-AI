@@ -116,7 +116,8 @@
       "taskStatus": "Erreur : Impossible de récupérer le statut de la tâche.",
       "sendMessage": "Erreur : Impossible d'envoyer le message."
     },
-    "openChat": "Ouvrir le chat"
+    "openChat": "Ouvrir le chat",
+    "send": "Envoyer le message"
   },
   "subscription": {
     "title": "Facturation et abonnement",

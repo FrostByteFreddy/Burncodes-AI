@@ -64,10 +64,10 @@ const remove = async () => {
 
 <style scoped>
 .dz { border-color: rgba(255, 107, 107, 0.45); }
-.dz-list { margin: 12px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: var(--text-sm); color: var(--surface-text); max-width: var(--measure); }
+.dz-list { margin: 12px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; font-size: var(--text-sm); color: var(--surface-text); max-width: var(--measure); }
 .dz-btn {
-  display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: var(--radius-md);
-  border: none; background: var(--status-error); color: #fff; font: inherit; font-weight: 700; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: var(--radius-md);
+  border: none; background: var(--status-error); color: var(--on-status-error); font: inherit; font-weight: 700; cursor: pointer;
 }
 .dz-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>

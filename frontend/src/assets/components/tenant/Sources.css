@@ -14,7 +14,7 @@
   padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 .knowledge-panel__header {
@@ -27,7 +27,7 @@
 .knowledge-panel__header-left {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
 }
 
 .knowledge-panel__title {

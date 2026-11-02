@@ -16,9 +16,9 @@
         </template>
         <template #status><BcStatusBadge :status="badge" /></template>
         <template #actions>
-          <a :href="job.start_url" target="_blank" rel="noopener noreferrer" class="bc-btn bc-btn--quiet bc-btn--md">
+          <Button as-child variant="ghost"><a :href="job.start_url" target="_blank" rel="noopener noreferrer" >
             <BcIcon name="arrow-up-right-from-square" />{{ $t('knowledge.job.openSite') }}
-          </a>
+          </a></Button>
           <BcButton v-if="job.status === 'IN_PROGRESS' || job.status === 'INDEXING'" variant="secondary" icon="stop" :disabled="busy" @click="onStop">{{ $t('knowledge.job.stop') }}</BcButton>
           <BcButton v-if="job.status === 'FAILED'" variant="primary" icon="play" :loading="busy" @click="onResume">{{ $t('knowledge.job.resume') }}</BcButton>
           <BcButton v-if="!isActive" variant="destructive-quiet" icon="trash" @click="askDelete = true">{{ $t('knowledge.job.delete') }}</BcButton>
@@ -58,7 +58,7 @@
         <BcNotice v-if="estimate.to_learn && balanceShort" tone="warning" :title="$t('onboarding.learning.balanceShortTitle')">
           {{ $t('onboarding.learning.balanceShort', { cost: formatCHF(cost), balance: formatCHF(balance) }) }}
           <template #actions>
-            <router-link :to="{ name: 'AccountSettings', params: { section: 'billing' } }" class="bc-btn bc-btn--primary bc-btn--sm">{{ $t('onboarding.learning.topUp') }}</router-link>
+            <Button as-child variant="default" size="sm"><router-link :to="{ name: 'AccountSettings', params: { section: 'billing' } }" >{{ $t('onboarding.learning.topUp') }}</router-link></Button>
             <BcButton variant="quiet" size="sm" @click="billing.fetchBalance()">{{ $t('onboarding.learning.recheck') }}</BcButton>
           </template>
         </BcNotice>
@@ -106,6 +106,7 @@
 </template>
 
 <script setup>
+import { Button } from '@/components/ui/button';
 import { CardTitle } from '@/components/ui/card';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';

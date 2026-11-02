@@ -28,12 +28,13 @@
         {{ $t('knowledge.estimate.learn', { cost: fmtChf(job.estimate.cost_chf) }) }}
       </BcButton>
       <BcButton v-if="job.status === 'FAILED'" variant="secondary" size="sm" icon="play" :loading="busy" @click="onResume">{{ $t('knowledge.job.resume') }}</BcButton>
-      <router-link :to="detailRoute" class="bc-btn bc-btn--quiet bc-btn--sm">{{ $t('knowledge.job.details') }}</router-link>
+      <Button as-child variant="ghost" size="sm"><router-link :to="detailRoute" >{{ $t('knowledge.job.details') }}</router-link></Button>
     </div>
   </li>
 </template>
 
 <script setup>
+import { Button } from '@/components/ui/button';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { isPreparing, learnProgress, useCrawlActions, useCrawlText } from '@/composables/useCrawl';

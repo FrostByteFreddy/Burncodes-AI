@@ -22,10 +22,10 @@ export const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-10 gap-2 px-4",
+        default: "h-10 gap-2 px-4 max-sm:h-auto max-sm:max-w-full max-sm:shrink max-sm:whitespace-normal max-sm:py-2",
         xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*=size-])]:size-3",
-        sm: "h-8 gap-1.5 px-3 text-sm [&_svg:not([class*=size-])]:size-3.5",
-        lg: "h-12 gap-2 px-6 text-[17px]",
+        sm: "h-8 gap-1.5 px-3 text-sm [&_svg:not([class*=size-])]:size-3.5 max-sm:h-auto max-sm:max-w-full max-sm:shrink max-sm:whitespace-normal max-sm:py-2",
+        lg: "h-12 gap-2 px-6 text-[17px] max-sm:h-auto max-sm:max-w-full max-sm:shrink max-sm:whitespace-normal max-sm:py-2",
         icon: "size-10",
         "icon-xs":
           "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*=size-])]:size-3",

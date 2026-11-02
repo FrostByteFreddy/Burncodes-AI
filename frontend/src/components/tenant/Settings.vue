@@ -137,12 +137,12 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload)
 .cfg-savebar {
   position: sticky; bottom: 32px; z-index: 20;
   display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-  margin-top: 20px; padding: 14px 16px 14px 20px;
+  margin-top: 20px; padding: 16px 16px 16px 20px;
   border-radius: var(--radius-lg);
   background: var(--surface-2); border: 1px solid var(--interactive-strong);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
 }
-.cfg-savebar p { font-size: 15px; font-weight: 600; color: var(--surface-heading); }
+.cfg-savebar p { font-size: 16px; font-weight: 600; color: var(--surface-heading); }
 .cfg-bar-enter-active, .cfg-bar-leave-active { transition: opacity var(--t-fast), transform var(--t-fast); }
 .cfg-bar-enter-from, .cfg-bar-leave-to { opacity: 0; transform: translateY(8px); }
 

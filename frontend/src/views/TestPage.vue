@@ -155,9 +155,9 @@ const savePassword = () => save(newPassword.value, t('testPage.password.saved'))
 .tp { display: flex; flex-direction: column; gap: 20px; }
 
 .tp-link { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 16px; padding: 12px 12px 12px 16px; border-radius: var(--radius-lg); background: var(--surface-2); border: 1px solid var(--surface-3); }
-.tp-link__url { flex: 1; min-width: 240px; font-family: inherit; font-size: 15px; font-weight: 600; color: var(--surface-heading); overflow-wrap: anywhere; }
+.tp-link__url { flex: 1; min-width: 240px; font-family: inherit; font-size: 16px; font-weight: 600; color: var(--surface-heading); overflow-wrap: anywhere; }
 .tp-open { text-decoration: none; }
-.tp-note { display: flex; gap: 10px; align-items: baseline; margin-top: 14px; font-size: var(--text-sm); color: var(--surface-text); }
+.tp-note { display: flex; gap: 8px; align-items: baseline; margin-top: 16px; font-size: var(--text-sm); color: var(--surface-text); }
 .tp-note svg { color: var(--surface-muted); }
 .tp-note--warn, .tp-note--warn svg { color: var(--status-warning); }
 .tp-note a { color: inherit; font-weight: 600; }
@@ -168,9 +168,9 @@ const savePassword = () => save(newPassword.value, t('testPage.password.saved'))
 
 .tp-pw { display: flex; gap: 8px; align-items: center; }
 .tp-pw [data-slot=input] { flex: 1; max-width: 360px; }
-.tp-set { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 16px; padding: 12px 16px; border-radius: var(--radius-lg); background: var(--surface-2); font-size: 15px; color: var(--surface-heading); }
-.tp-set__ok { color: var(--status-success); margin-right: 6px; }
-.tp-notes { margin: 18px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); }
+.tp-set { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 16px; padding: 12px 16px; border-radius: var(--radius-lg); background: var(--surface-2); font-size: 16px; color: var(--surface-heading); }
+.tp-set__ok { color: var(--status-success); margin-right: 8px; }
+.tp-notes { margin: 16px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 8px; font-size: var(--text-sm); color: var(--surface-muted); max-width: var(--measure); }
 
 @media (prefers-reduced-motion: reduce) { .ov-switch, .ov-switch::after { transition: none; } }
 </style>

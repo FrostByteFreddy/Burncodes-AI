@@ -137,14 +137,14 @@ const openPortal = async () => {
 
 .bil-amounts { display: flex; flex-wrap: wrap; gap: 8px; }
 .bil-amount {
-  padding: 10px 18px; border-radius: var(--radius-md); cursor: pointer; font: inherit; font-weight: 700;
+  padding: 8px 16px; border-radius: var(--radius-md); cursor: pointer; font: inherit; font-weight: 700;
   background: var(--surface-2); border: 1px solid var(--surface-3); color: var(--surface-heading);
 }
 .bil-amount:hover { border-color: var(--surface-muted); }
 .bil-amount--on { border-color: var(--interactive); background: var(--interactive-soft); }
 .bil-custom { display: flex; align-items: center; gap: 8px; padding: 0 12px; border-radius: var(--radius-md); background: var(--surface-2); border: 1px solid var(--surface-3); color: var(--surface-muted); }
-.bil-custom:focus-within { border-color: var(--interactive); }
-.bil-custom input { width: 110px; padding: 10px 0; border: none; background: none; color: var(--surface-heading); font: inherit; font-weight: 700; outline: none; }
+.bil-custom:focus-within { border-color: var(--focus-ring); outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.bil-custom input { width: 110px; padding: 8px 0; border: none; background: none; color: var(--surface-heading); font: inherit; font-weight: 700; outline: none; }
 
 .bil-pdf { color: var(--interactive); font-weight: 600; text-decoration: none; }
 .bil-pdf:hover { text-decoration: underline; }

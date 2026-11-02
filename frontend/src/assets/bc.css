@@ -2,19 +2,6 @@
    Every colour, space, radius and shadow comes from tokens.css. */
 .bc-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .bc-icon { width: 1.15em; text-align: center; flex: none; }
-/* ---------- Buttons ---------- */
-.bc-btn { font: inherit; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: var(--control-md); padding: 0 var(--space-4); border-radius: var(--radius-md); border: 1px solid transparent; cursor: pointer; white-space: nowrap; text-decoration: none; transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard); }
-.bc-btn--sm { height: var(--control-sm); padding: 0 var(--space-3); font-size: 14px; }
-.bc-btn--lg { height: var(--control-lg); padding: 0 var(--space-6); font-size: 17px; }
-.bc-btn--block { width: 100%; }
-.bc-btn--primary { background: var(--interactive); color: var(--on-interactive); }
-.bc-btn--primary:hover { background: var(--interactive-hover); }
-.bc-btn--secondary { background: var(--surface-1); color: var(--text-primary); border-color: var(--border-strong); }
-.bc-btn--secondary:hover { background: var(--surface-2); }
-.bc-btn--quiet { background: transparent; color: var(--interactive); }
-.bc-btn--quiet:hover { background: var(--interactive-soft); }
-.bc-btn:disabled { cursor: not-allowed; background: var(--surface-2); color: var(--text-disabled); border-color: transparent; filter: none; }
-.bc-btn--quiet:disabled { background: transparent; }
 .bc-iconbtn { display: inline-flex; align-items: center; justify-content: center; width: var(--control-md); height: var(--control-md); border-radius: var(--radius-md); border: 1px solid transparent; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 16px; flex: none; }
 .bc-iconbtn:hover { background: var(--surface-2); color: var(--text-primary); }
 .bc-iconbtn:disabled { color: var(--text-disabled); cursor: not-allowed; background: transparent; }
@@ -24,7 +11,7 @@
 .bc-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
 .bc-dot--pulse { animation: bc-pulse 1.6s var(--ease-standard) infinite; }
 @keyframes bc-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
-.bc-tag { display: inline-flex; align-items: center; gap: 4px; margin-left: var(--space-2); padding: 0 6px; border-radius: var(--radius-sm); font-size: 13px; line-height: 20px; font-weight: 600; background: var(--interactive-soft); color: var(--interactive); vertical-align: 1px; white-space: nowrap; }
+.bc-tag { display: inline-flex; align-items: center; gap: 4px; margin-left: var(--space-2); padding: 0 8px; border-radius: var(--radius-sm); font-size: 14px; line-height: 20px; font-weight: 600; background: var(--interactive-soft); color: var(--interactive); vertical-align: 1px; white-space: nowrap; }
 /* ---------- Progress ---------- */
 .bc-progress { display: flex; flex-direction: column; gap: var(--space-2); }
 .bc-progress__top { display: flex; justify-content: space-between; gap: var(--space-4); font-weight: 600; }
@@ -97,13 +84,13 @@
 .bc-checkrow + .bc-checkrow { border-top: 1px solid var(--border-subtle); }
 .bc-checkrow__text { display: flex; flex-direction: column; }
 .bc-checkrow__title { font-weight: 600; }
-.bc-checkrow__desc { color: var(--text-secondary); font-size: 15px; line-height: 22px; }
+.bc-checkrow__desc { color: var(--text-secondary); font-size: 16px; line-height: 22px; }
 .bc-checkrow.is-disabled { cursor: not-allowed; color: var(--text-disabled); }
 .bc-switchrow { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-6); padding: var(--space-4) 0; }
 .bc-switchrow + .bc-switchrow { border-top: 1px solid var(--border-subtle); }
 .bc-switchrow__text { display: flex; flex-direction: column; max-width: var(--reading-max); }
 .bc-switchrow__title { font-weight: 600; }
-.bc-switchrow__desc { color: var(--text-secondary); font-size: 15px; line-height: 22px; }
+.bc-switchrow__desc { color: var(--text-secondary); font-size: 16px; line-height: 22px; }
 .bc-switchrow__ctl { display: flex; align-items: center; gap: var(--space-3); }
 .bc-switchrow__state { font-size: 14px; color: var(--text-secondary); min-width: 24px; text-align: right; }
 .bc-radiocards { border: 0; margin: 0; padding: 0; min-width: 0; }
@@ -117,9 +104,9 @@
 .bc-radiocard__icon { width: 24px; color: var(--text-secondary); margin-top: 1px; }
 .bc-radiocard.is-checked .bc-radiocard__icon { color: var(--interactive); }
 .bc-radiocard__text { display: flex; flex-direction: column; gap: 2px; }
-.bc-radiocard__title { font-weight: 700; font-size: 17px; line-height: 24px; }
-.bc-radiocard__badge { margin-left: var(--space-2); font-size: 13px; font-weight: 600; color: var(--interactive); }
-.bc-radiocard__desc { color: var(--text-secondary); font-size: 15px; line-height: 22px; }
+.bc-radiocard__title { font-weight: 700; font-size: 16px; line-height: 24px; }
+.bc-radiocard__badge { margin-left: var(--space-2); font-size: 14px; font-weight: 600; color: var(--interactive); }
+.bc-radiocard__desc { color: var(--text-secondary); font-size: 16px; line-height: 22px; }
 .bc-chip { display: inline-flex; align-items: center; gap: var(--space-1); height: 32px; padding: 0 4px 0 var(--space-3); border-radius: var(--radius-full); background: var(--surface-2); border: 1px solid var(--border-subtle); color: var(--text-primary); font-size: 14px; max-width: 100%; }
 .bc-chip__mono { font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bc-chip__x { width: 24px; height: 24px; border-radius: 50%; border: 0; background: transparent; color: var(--text-secondary); cursor: pointer; display: inline-grid; place-content: center; font-size: 12px; }
@@ -127,10 +114,10 @@
 /* ---------- Disclosure / Tabs ---------- */
 .bc-disc { border-top: 1px solid var(--border-subtle); }
 .bc-disc__btn { font: inherit; font-weight: 600; width: 100%; display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) 0; border: 0; background: transparent; color: var(--interactive); cursor: pointer; text-align: left; }
-.bc-disc__chev { transition: transform var(--duration-base) var(--ease-standard); font-size: 13px; }
+.bc-disc__chev { transition: transform var(--duration-base) var(--ease-standard); font-size: 14px; }
 .bc-disc.is-open .bc-disc__chev { transform: rotate(90deg); }
 .bc-disc__meta { margin-left: auto; font-weight: 400; color: var(--text-tertiary); font-size: 14px; }
-.bc-disc__body { padding: 0 0 var(--space-4) 26px; display: flex; flex-direction: column; gap: var(--space-4); }
+.bc-disc__body { padding: 0 0 var(--space-4) 24px; display: flex; flex-direction: column; gap: var(--space-4); }
 /* ---------- Steps ---------- */
 .bc-stepind { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--space-2); }
 .bc-stepind__item { flex: 1; display: flex; flex-direction: column; gap: var(--space-2); font-size: 14px; line-height: 20px; color: var(--text-tertiary); padding-top: var(--space-2); border-top: 3px solid var(--surface-3); }
@@ -142,7 +129,7 @@
 .bc-stepper__compact strong { color: var(--text-primary); }
 .bc-stepper__list { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--space-4); }
 .bc-stepper__item { display: flex; align-items: center; gap: var(--space-2); font-size: 14px; line-height: 20px; color: var(--text-tertiary); white-space: nowrap; }
-.bc-stepper__num { width: 24px; height: 24px; border-radius: 50%; display: inline-grid; place-content: center; font-size: 13px; font-weight: 700; border: 1.5px solid var(--border-strong); color: var(--text-secondary); background: var(--surface-1); }
+.bc-stepper__num { width: 24px; height: 24px; border-radius: 50%; display: inline-grid; place-content: center; font-size: 14px; font-weight: 700; border: 1.5px solid var(--border-strong); color: var(--text-secondary); background: var(--surface-1); }
 .bc-stepper__item.is-done { color: var(--text-secondary); }
 .bc-stepper__item.is-done .bc-stepper__num { background: var(--interactive-soft); border-color: transparent; color: var(--interactive); font-size: 11px; }
 .bc-stepper__item.is-current { color: var(--text-primary); font-weight: 600; }
@@ -160,13 +147,13 @@
 .bc-sidepanel__steps { padding: 0 var(--space-6) var(--space-4); }
 .bc-sidepanel__body { flex: 1; overflow: auto; padding: var(--space-2) var(--space-6) var(--space-6); display: flex; flex-direction: column; gap: var(--space-6); }
 .bc-sidepanel__foot { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); background: var(--surface-1); }
-.bc-skel-group { display: flex; flex-direction: column; gap: 10px; }
+.bc-skel-group { display: flex; flex-direction: column; gap: 8px; }
 .bc-skel--line { height: 14px; }
 @keyframes bc-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 .bc-code { border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); background: var(--surface-2); overflow: hidden; }
 .bc-code__head { display: flex; justify-content: space-between; align-items: center; padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); border-bottom: 1px solid var(--border-subtle); }
 .bc-code__label { font-size: 14px; color: var(--text-tertiary); font-weight: 600; }
-.bc-code__copy { font: inherit; font-weight: 600; font-size: 15px; display: inline-flex; align-items: center; gap: var(--space-2); height: 36px; padding: 0 var(--space-3); border-radius: var(--radius-md); border: 0; background: var(--interactive); color: var(--on-interactive); cursor: pointer; }
+.bc-code__copy { font: inherit; font-weight: 600; font-size: 16px; display: inline-flex; align-items: center; gap: var(--space-2); height: 36px; padding: 0 var(--space-3); border-radius: var(--radius-md); border: 0; background: var(--interactive); color: var(--on-interactive); cursor: pointer; }
 .bc-code__copy:hover { background: var(--interactive-hover); }
 .bc-code__copy.is-done { background: var(--status-ok-soft); color: var(--status-ok); }
 .bc-code__pre { margin: 0; padding: var(--space-4); font-family: var(--font-mono); font-size: 14px; line-height: 22px; color: var(--text-primary); white-space: pre-wrap; word-break: break-all; }

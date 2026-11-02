@@ -59,8 +59,8 @@ const go = (key) => router.push({ name: 'AccountSettings', params: { section: ke
 .set-nav { position: sticky; top: 40px; display: flex; flex-direction: column; gap: 2px; }
 /* Same look as the sidebar's nav items */
 .set-nav__item {
-  display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius-md);
-  font-size: 15px; font-weight: 500; color: var(--surface-muted); text-decoration: none;
+  display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: var(--radius-md);
+  font-size: 16px; font-weight: 500; color: var(--surface-muted); text-decoration: none;
   transition: color var(--t-fast), background var(--t-fast);
 }
 .set-nav__item:hover { color: var(--surface-text); background: var(--surface-1); }
@@ -76,7 +76,7 @@ const go = (key) => router.push({ name: 'AccountSettings', params: { section: ke
   .set-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .set-nav { display: none; }
   .set-select {
-    display: block; width: 100%; padding: 10px 12px; border-radius: var(--radius-md);
+    display: block; width: 100%; padding: 8px 12px; border-radius: var(--radius-md);
     background: var(--surface-1); border: 1px solid var(--surface-3); color: var(--surface-heading); font: inherit;
   }
 }

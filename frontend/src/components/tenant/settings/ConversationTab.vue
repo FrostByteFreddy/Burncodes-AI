@@ -2,7 +2,7 @@
   <Accordion type="multiple" :default-value="['personality']" :unmount-on-hide="false" class="cfg-stack">
     <!-- Look: palette and font; the click-to-edit preview covers the rest -->
     <AccordionItem value="look" class="rounded-lg border bg-card">
-      <AccordionTrigger class="items-center px-6 py-5 text-left hover:no-underline">
+      <AccordionTrigger class="items-center px-6 py-5 text-left transition-colors hover:bg-muted/60 hover:no-underline">
         <span class="flex flex-col font-normal">
           <span class="panel-title">{{ $t('configure.look.title') }}</span>
           <span class="panel-sub">{{ $t('configure.look.sub') }}</span>
@@ -18,7 +18,7 @@
 
     <!-- Personality: name, tone and the texts shown while it thinks -->
     <AccordionItem value="personality" class="rounded-lg border bg-card">
-      <AccordionTrigger class="items-center px-6 py-5 text-left hover:no-underline">
+      <AccordionTrigger class="items-center px-6 py-5 text-left transition-colors hover:bg-muted/60 hover:no-underline">
         <span class="flex flex-col font-normal">
           <span class="panel-title">{{ $t('configure.personality.title') }}</span>
           <span class="panel-sub">{{ $t('configure.tone.sub') }}</span>
@@ -61,7 +61,7 @@
 
     <!-- Advanced: the raw instruction template -->
     <AccordionItem value="advanced" class="rounded-lg border bg-card">
-      <AccordionTrigger class="items-center px-6 py-5 text-left hover:no-underline">
+      <AccordionTrigger class="items-center px-6 py-5 text-left transition-colors hover:bg-muted/60 hover:no-underline">
         <span class="flex flex-col font-normal">
           <span class="panel-title">{{ $t('configure.advanced.title') }}</span>
           <span class="panel-sub">{{ $t('configure.advanced.sub') }}</span>
@@ -122,22 +122,22 @@ const restoreTemplate = () => { local.value.rag_prompt_template = PROMPT_TEMPLAT
 </script>
 
 <style scoped>
-.cfg-tones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.cfg-tones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .cfg-tone {
   display: flex; flex-direction: column; gap: 4px; text-align: left;
-  padding: 12px 14px; border-radius: var(--radius-md);
+  padding: 12px 16px; border-radius: var(--radius-md);
   background: var(--surface-2); border: 1px solid var(--surface-3);
   color: var(--surface-text); cursor: pointer; font: inherit;
   transition: border-color var(--t-fast);
 }
 .cfg-tone:hover { border-color: var(--surface-muted); }
 .cfg-tone--active { border-color: var(--interactive); background: var(--interactive-soft); }
-.cfg-tone__name { font-size: 15px; font-weight: 700; color: var(--surface-heading); }
+.cfg-tone__name { font-size: 16px; font-weight: 700; color: var(--surface-heading); }
 .cfg-tone__desc { font-size: var(--text-sm); color: var(--surface-muted); line-height: 1.4; }
 
 
 .cfg-warning {
-  display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 10px; align-items: baseline;
+  display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 8px; align-items: baseline;
   font-size: var(--text-sm); color: var(--status-warning); max-width: var(--measure);
 }
 

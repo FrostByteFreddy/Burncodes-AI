@@ -116,7 +116,8 @@
       "taskStatus": "Error: Could not get task status.",
       "sendMessage": "Error: Could not send message."
     },
-    "openChat": "Open chat"
+    "openChat": "Open chat",
+    "send": "Send message"
   },
   "subscription": {
     "title": "Billing & Subscription",

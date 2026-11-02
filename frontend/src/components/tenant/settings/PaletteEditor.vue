@@ -81,7 +81,7 @@ function add() {
 </script>
 
 <style scoped>
-.cfg-subhead { font-size: 15px; font-weight: 700; color: var(--surface-heading); }
+.cfg-subhead { font-size: 16px; font-weight: 700; color: var(--surface-heading); }
 .pal { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
 .pal__row { display: grid; grid-template-columns: 40px minmax(0, 1fr) 7.5rem 36px; gap: 8px; align-items: center; }
 .pal__swatch {

@@ -125,13 +125,13 @@ const submit = () => {
   color: var(--surface-heading);
   line-height: 1.3;
 }
-.step-subtext { font-size: 13px; color: var(--surface-muted); line-height: 1.5; }
+.step-subtext { font-size: 14px; color: var(--surface-muted); line-height: 1.5; }
 
 .info-box {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: flex-start;
-  padding: 14px;
+  padding: 16px;
   background: var(--surface-2);
   border: 1px solid var(--surface-3);
   border-radius: var(--radius-md);
@@ -152,7 +152,7 @@ const submit = () => {
 .trigger-preview {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .trigger-preview__label {
   font-size: 11px;
@@ -164,20 +164,20 @@ const submit = () => {
 }
 .trigger-chip {
   display: inline-block;
-  padding: 4px 14px;
+  padding: 4px 16px;
   background: rgba(10,31,171,0.12);
   border: 1px solid rgba(10,31,171,0.25);
   color: var(--brand-indigo);
   border-radius: var(--radius-pill);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
 }
 
 .recap-card {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 12px 16px;
   background: var(--surface-2);
   border: 1px solid var(--surface-3);
   border-radius: var(--radius-md);
@@ -191,7 +191,7 @@ const submit = () => {
   flex-shrink: 0;
 }
 .recap-card__value {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--brand-indigo);
   font-weight: 500;
 }

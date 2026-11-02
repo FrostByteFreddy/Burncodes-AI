@@ -1,7 +1,7 @@
 /* ── Shared modal button classes ─────────────────────────── */
 .modal-btn {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 9px 20px; font-size: 13px; font-weight: 600;
+  padding: 8px 20px; font-size: 14px; font-weight: 600;
   border: none; border-radius: var(--radius-md);
   cursor: pointer; transition: opacity var(--t-fast), background var(--t-fast);
 }
@@ -37,7 +37,7 @@
   padding: 12px 0;
   margin-top: 4px;
   border-radius: var(--radius-lg);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   outline: none;
   transition: box-shadow var(--t-fast);
@@ -116,8 +116,8 @@
 /* ── Shared modal form classes (used by rule-modal) ───── */
 .form-field {
   display: block;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--surface-heading);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }

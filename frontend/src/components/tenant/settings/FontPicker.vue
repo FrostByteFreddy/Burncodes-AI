@@ -34,11 +34,11 @@ const stacks = Object.fromEntries(Object.keys(CHAT_FONTS).map((key) => [key, loa
 </script>
 
 <style scoped>
-.cfg-subhead { font-size: 15px; font-weight: 700; color: var(--surface-heading); }
-.fnt { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 16px; }
+.cfg-subhead { font-size: 16px; font-weight: 700; color: var(--surface-heading); }
+.fnt { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 16px; }
 .fnt__opt {
   display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left;
-  padding: 12px 14px; border-radius: var(--radius-md); cursor: pointer;
+  padding: 12px 16px; border-radius: var(--radius-md); cursor: pointer;
   background: var(--surface-2); border: 1px solid var(--surface-3); color: var(--surface-text);
   transition: border-color var(--t-fast);
 }
@@ -46,6 +46,6 @@ const stacks = Object.fromEntries(Object.keys(CHAT_FONTS).map((key) => [key, loa
 .fnt__opt:focus-visible { box-shadow: var(--focus-ring-shadow); }
 .fnt__opt--on { border-color: var(--interactive); background: var(--interactive-soft); }
 .fnt__sample { font-size: 26px; line-height: 1.2; font-weight: 600; color: var(--surface-heading); }
-.fnt__name { font-size: 15px; }
+.fnt__name { font-size: 16px; }
 .fnt__note { font-family: var(--font-sans); font-size: var(--text-xs); color: var(--surface-muted); }
 </style>

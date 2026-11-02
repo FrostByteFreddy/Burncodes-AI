@@ -49,7 +49,7 @@ const onFile = (event) => {
 </script>
 
 <style scoped>
-.imgf { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
+.imgf { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
 .imgf__preview {
   width: 64px; height: 64px; flex-shrink: 0; border-radius: var(--radius-md);
   display: flex; align-items: center; justify-content: center; overflow: hidden;
