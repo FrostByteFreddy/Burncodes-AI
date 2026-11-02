@@ -52,7 +52,8 @@ Everything reaches production as a version tag on `main`:
 
 1. Work on a branch, push it, merge it into `main` through a PR (CI must be green).
 2. Run new SQL from `supabase/migrations/` in the Supabase SQL editor **before**
-   tagging; deploys never migrate.
+   tagging; deploys never migrate. Local stacks use the same database, so a local
+   backend with new columns in its queries also needs this first.
 3. Tag the merged `main` and push the tag:
    ```sh
    git checkout main && git pull
@@ -148,3 +149,9 @@ Data checks (via a local container, production DB):
 - orphaned Gemini documents: list the store's documents and compare with the
   rows' `gemini_document_names`
 - ledger consistency: sum of `billing_ledger.amount_chf` per user = `user_billing.balance_chf`
+
+### After a deploy
+
+`./_prod_smoke.sh [base url]` checks that the website, dashboard, chat, old
+addresses and API each answer with the right app. The release workflow runs it;
+`CURL_OPTS=-k` lets it run against a self-signed test setup.

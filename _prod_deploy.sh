@@ -29,6 +29,7 @@ rsync -avz \
   --exclude 'landing/dist' \
   --exclude 'landing/.astro' \
   --exclude '.env.*' \
+  --exclude 'claude-design-system-prompt' \
   ./ "$SERVER:$APP_DIR"
 
 echo "✅ Code synced successfully."
