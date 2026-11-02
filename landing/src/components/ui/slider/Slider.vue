@@ -5,6 +5,7 @@ import { reactiveOmit } from '@vueuse/core'
 import { cn } from 'cn'
 import { SliderRange, SliderRoot, SliderThumb, SliderTrack, useForwardPropsEmits } from 'reka-ui'
 
+defineOptions({ inheritAttrs: false });
 const props = defineProps<SliderRootProps & { class?: HTMLAttributes['class'] }>()
 const emits = defineEmits<SliderRootEmits>()
 
@@ -40,6 +41,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
 
     <SliderThumb
       v-for="(_, key) in modelValue"
+      :aria-labelledby="$attrs['aria-labelledby']"
       :key="key"
       data-slot="slider-thumb"
       :data-vertical="props.orientation === 'vertical' ? '' : undefined"
